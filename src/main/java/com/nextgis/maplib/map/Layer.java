@@ -20,11 +20,14 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import android.content.Context;
+
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
+import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.util.FileUtil;
 
 import org.json.JSONException;
@@ -47,9 +50,11 @@ public class Layer implements ILayer, ILayerView, IJSONStore, IRenderer {
     protected IRenderer mRenderer;
     protected GeoEnvelope mExtents;
     protected ILayer mParent;
+    protected Context mContext;
 
-    public Layer(File path){
+    public Layer(Context context, File path){
         mPath = path;
+        mContext = context;
     }
 
     @Override
@@ -167,9 +172,9 @@ public class Layer implements ILayer, ILayerView, IJSONStore, IRenderer {
     }
 
     @Override
-    public void runDraw() {
+    public void runDraw(GISDisplay display) {
         if (mRenderer != null) {
-            mRenderer.runDraw();
+            mRenderer.runDraw(display);
         }
     }
 
@@ -181,10 +186,10 @@ public class Layer implements ILayer, ILayerView, IJSONStore, IRenderer {
     }
 
     @Override
-    public void onDrawFinished() {
+    public synchronized void onDrawFinished(int id, float percent) {
         if(mParent != null && mParent instanceof ILayerView){
             ILayerView renderer = (ILayerView)mParent;
-            renderer.onDrawFinished();
+            renderer.onDrawFinished(id, percent);
         }
     }
 

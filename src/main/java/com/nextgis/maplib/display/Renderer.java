@@ -25,6 +25,9 @@ import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.map.Layer;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public abstract class Renderer implements IJSONStore, IRenderer {
 
     protected final ILayer mLayer;

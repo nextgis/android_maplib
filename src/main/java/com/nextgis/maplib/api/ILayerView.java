@@ -27,5 +27,5 @@ public interface ILayerView {
     public void setMaxZoom(float maxZoom);
     public float getMinZoom();
     public void setMinZoom(float minZoom);
-    public void onDrawFinished();
+    public void onDrawFinished(int id, float percent);
 }

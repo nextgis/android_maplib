@@ -20,7 +20,9 @@
  ****************************************************************************/
 package com.nextgis.maplib.api;
 
+import com.nextgis.maplib.display.GISDisplay;
+
 public interface IRenderer {
-    public void runDraw();
+    public void runDraw(final GISDisplay display);
     public void cancelDraw();
 }

@@ -20,13 +20,15 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import android.content.Context;
+
 import java.io.File;
 
 public class MapBase extends LayerGroup {
     protected short mNewId;
 
-    public MapBase(File path, LayerFactory layerFactory){
-        super(path, layerFactory);
+    public MapBase(Context context, File path, LayerFactory layerFactory){
+        super(context, path, layerFactory);
         mNewId = 0;
     }
 

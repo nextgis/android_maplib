@@ -20,28 +20,21 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import android.content.Context;
 import android.graphics.Bitmap;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 
-import com.nextgis.maplib.api.ILayer;
-import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IMapView;
-import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
 public class MapDrawable extends MapEventSource implements IMapView{
-    protected GISDisplay mDisplay;
 
-    public MapDrawable(Bitmap backgroundTile, File mapPath, LayerFactory layerFactory) {
-        super(mapPath, layerFactory);
+    public MapDrawable(Bitmap backgroundTile, Context context, File mapPath, LayerFactory layerFactory) {
+        super(context, mapPath, layerFactory);
 
         //initialise display
         mDisplay = new GISDisplay(backgroundTile);
@@ -64,12 +57,12 @@ public class MapDrawable extends MapEventSource implements IMapView{
     }
 
     @Override
-    public void runDraw(){
+    public void runDraw(final GISDisplay display){
         cancelDraw();
         mDisplay.clearBackground();
         mDisplay.clearLayer();
 
-        drawNext();
+        drawNext(display);
     }
 
     @Override

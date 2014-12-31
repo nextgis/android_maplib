@@ -20,12 +20,14 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import android.content.Context;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
-import com.nextgis.maplib.api.MapEventListener;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.display.GISDisplay;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -42,9 +44,10 @@ public class LayerGroup extends Layer{
     protected List<ILayer> mLayers;
     protected LayerFactory mLayerFactory;
     protected int mLayerDrawId;
+    protected GISDisplay mDisplay;
 
-    public LayerGroup(File path, LayerFactory layerFactory) {
-        super(path);
+    public LayerGroup(Context context, File path, LayerFactory layerFactory) {
+        super(context, path);
 
         mLayerFactory = layerFactory;
         mLayers = new ArrayList<>();
@@ -181,9 +184,13 @@ public class LayerGroup extends Layer{
     }
 
     @Override
-    public void runDraw() {
+    public void runDraw(GISDisplay display) {
+        if(mDisplay == null)
+            mDisplay = display;
+        if(mDisplay != display)
+            mDisplay = display;
         mLayerDrawId = 0;
-        drawNext();
+        drawNext(display);
     }
 
     @Override
@@ -197,23 +204,27 @@ public class LayerGroup extends Layer{
     }
 
     @Override
-    public void onDrawFinished() {
+    public void onDrawFinished(int id, float percent) {
         if(mLayers.size() >= mLayerDrawId) {
             if(mParent != null && mParent instanceof ILayerView){
                 ILayerView renderer = (ILayerView)mParent;
-                renderer.onDrawFinished();
+                renderer.onDrawFinished(getId(), 100);
             }
         }
         else{
-            drawNext();
+            drawNext(mDisplay);
+            if(mParent instanceof ILayerView){
+                ILayerView layerView = (ILayerView) mParent;
+                layerView.onDrawFinished(id, percent);
+            }
         }
     }
 
-    protected void drawNext(){
+    protected void drawNext(final GISDisplay display){
         ILayer layer = mLayers.get(mLayerDrawId);
         if(layer instanceof IRenderer) {
             IRenderer renderer = (IRenderer) layer;
-            renderer.runDraw();
+            renderer.runDraw(display);
         }
         mLayerDrawId++;
     }
@@ -259,5 +270,9 @@ public class LayerGroup extends Layer{
 
     public ILayer getLayer(int index){
         return mLayers.get(index);
+    }
+
+    public LayerFactory getLayerFactory() {
+        return mLayerFactory;
     }
 }

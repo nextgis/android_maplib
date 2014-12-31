@@ -20,6 +20,8 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import android.content.Context;
+
 import com.nextgis.maplib.api.IEventSource;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
@@ -33,8 +35,8 @@ public class MapEventSource extends MapBase implements IEventSource{
     protected List<MapEventListener> mListeners;
     //protected Handler mHandler;
 
-    public MapEventSource(File mapPath, LayerFactory layerFactory) {
-        super(mapPath, layerFactory);
+    public MapEventSource(Context context, File mapPath, LayerFactory layerFactory) {
+        super(context, mapPath, layerFactory);
         mListeners = new ArrayList<MapEventListener>();
 
         //createHandler();
@@ -120,6 +122,21 @@ public class MapEventSource extends MapBase implements IEventSource{
             return;
         for (MapEventListener listener : mListeners)
             listener.onLayersReordered();
+    }
+
+    /**
+     * Send layers draw finished event to all listeners
+     */
+    protected void onLayerDrawFinished(int id, float percent){
+        if(mListeners == null)
+            return;
+        for (MapEventListener listener : mListeners)
+            listener.onLayerDrawFinished(id, percent);
+    }
+
+    @Override
+    public void onDrawFinished(int id, float percent) {
+        onLayerDrawFinished(id, percent);
     }
 
     /*

@@ -76,7 +76,6 @@ public interface Constants {
     public final static String LOCATION_HINT = "ngm.location";
     public final static String TAG = "nextgismobile";
 
-    public static final int MAX_DRAWLER_WIDTH = 640;
     public static final float MIN_SCROLL_STEP = 5.5f;
 
     public static final int MAP_LIMITS_NO = 1; // no limits to scroll map
@@ -127,7 +126,6 @@ public interface Constants {
      */
     public static final String JSON_NAME_KEY = "name";
     public static final String JSON_VISIBILITY_KEY = "visible";
-    public static final String JSON_TMSTYPE_KEY = "tms_type";
     public static final String JSON_LEVELS_KEY = "levels";
     public static final String JSON_LEVEL_KEY = "level";
     public static final String JSON_TYPE_KEY = "type";
@@ -141,7 +139,6 @@ public interface Constants {
     public static final String JSON_LAYER_KEY = "layer";
     public static final String JSON_PATH_KEY = "path";
     public static final String JSON_MAP_KEY = "map";
-    public static final String JSON_URL_KEY = "url";
     public static final String JSON_CONNECTION_ID_KEY = "connection_id";
     public static final String JSON_LOGIN_KEY = "login";
     public static final String JSON_PASSWORD_KEY = "password";

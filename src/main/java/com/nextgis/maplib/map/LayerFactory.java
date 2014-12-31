@@ -20,6 +20,7 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.nextgis.maplib.api.ILayer;
@@ -30,10 +31,18 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static com.nextgis.maplib.util.Constants.*;
 
-public class LayerFactory {
+public abstract class LayerFactory {
+
+    protected File mMapPath;
+
+    public LayerFactory(File mapPath) {
+        mMapPath = mapPath;
+    }
 
     public ILayer createLayer(File path){
         File config_file = new File(path, LAYER_CONFIG);
@@ -74,4 +83,12 @@ public class LayerFactory {
 
         return layer;
     }
+
+    protected File cretateLayerStorage() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        String layerDir = LAYER_PREFIX + sdf.format(new Date());
+        return new File(mMapPath, layerDir);
+    }
+
+    public abstract void createNewRemoteTMSLayer(final Context context, final LayerGroup groupLayer);
 }
