@@ -18,12 +18,16 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
-package com.nextgis.maplib.datasource;
+package com.nextgis.maplib.api;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 
-public interface JSONStore {
-    public JSONObject toJSON() throws JSONException;
-    public void fromJSON(JSONObject jsonObject) throws JSONException;
+import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.map.Layer;
+
+public interface MapEventListener {
+    public abstract void onLayerAdded(ILayer layer);
+    public abstract void onLayerDeleted(int id);
+    public abstract void onLayerChanged(ILayer layer);
+    public abstract void onExtentChanged(int zoom, GeoPoint center);
+    public abstract void onLayersReordered();
 }

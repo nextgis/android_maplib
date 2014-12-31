@@ -18,23 +18,21 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
-package com.nextgis.maplib.display;
+package com.nextgis.maplib.api;
 
-import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.api.ILayer;
-import com.nextgis.maplib.api.IRenderer;
-import com.nextgis.maplib.map.Layer;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 
-public abstract class Renderer implements IJSONStore, IRenderer {
+import java.io.File;
 
-    protected final ILayer mLayer;
-    protected static int mCPUTotalCount;
-
-    public Renderer(ILayer layer){
-        mLayer = layer;
-
-        mCPUTotalCount = Runtime.getRuntime().availableProcessors() * 8;
-        if(mCPUTotalCount < 1)
-            mCPUTotalCount = 1;
-    }
+public interface ILayer {
+    public String getName();
+    public void setName(String newName);
+    public short getId();
+    public int getType();
+    public boolean delete();
+    public File getPath();
+    public boolean save();
+    public boolean load();
+    public GeoEnvelope getExtents();
+    public void setParent(ILayer layer);
 }

@@ -25,6 +25,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
+import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.api.ILayerView;
+import com.nextgis.maplib.api.IMapView;
+import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 
@@ -33,7 +37,7 @@ import java.io.File;
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public class MapDrawable extends MapEventSource {
+public class MapDrawable extends MapEventSource implements IMapView{
     protected GISDisplay mDisplay;
 
     public MapDrawable(Bitmap backgroundTile, File mapPath, LayerFactory layerFactory) {
@@ -43,70 +47,47 @@ public class MapDrawable extends MapEventSource {
         mDisplay = new GISDisplay(backgroundTile);
     }
 
-    public Bitmap getMap(){
+    @Override
+    public Bitmap getView(){
         if(mDisplay != null){
             return mDisplay.getDisplay(true);
         }
         return null;
     }
 
-    public void setSize(int w, int h) {
+    @Override
+    public void setViewSize(int w, int h) {
         if(mDisplay != null){
             mDisplay.setSize(w, h);
             onExtentChanged((int) mDisplay.getZoomLevel(), mDisplay.getCenter());
         }
     }
 
-
-    protected void runDraw(){
+    @Override
+    public void runDraw(){
         cancelDraw();
         mDisplay.clearBackground();
         mDisplay.clearLayer();
 
-        drawNext(NOT_FOUND);
+        drawNext();
     }
 
-    protected void cancelDraw(){
-        for(Layer layer : mLayers) {
-            if(layer.isVisible()) {
-                layer.cancelDraw();
-            }
-        }
-    }
-
-    protected void drawNext(int layerId){
-        if(mLayers.isEmpty())
-            return;
-        if(layerId == NOT_FOUND){
-            mLayers.get(0).runDraw();
-        } else {
-            boolean bDrawNext = false;
-            for(Layer layer : mLayers) {
-                if(bDrawNext){
-                    layer.runDraw();
-                    break;
-                }
-
-                if(layer.getId() == layerId) {
-                    bDrawNext = true;
-                }
-            }
-        }
-    }
-
-    public final double getZoomLevel() {
+    @Override
+    public float getZoomLevel() {
         if(mDisplay != null)
             return mDisplay.getZoomLevel();
         return 0;
     }
 
-    public final double getMaxZoomLevel() {
+    @Override
+    public float getMaxZoom() {
         if(mDisplay != null)
             return mDisplay.getMaxZoomLevel();
-        return ZOOMLEVEL_MAX;
+        return DEFAULT_MAX_ZOOM;
     }
 
-    public final double getMinZoomLevel() {
+    @Override
+    public float getMinZoom() {
         if(mDisplay != null)
             return mDisplay.getMinZoomLevel();
         return 0;
@@ -117,9 +98,10 @@ public class MapDrawable extends MapEventSource {
      * @param zoom A zoom level
      * @param center A map center coordinates
      */
-    public void setZoomAndCenter(final double zoom, final GeoPoint center){
+    @Override
+    public void setZoomAndCenter(float zoom, GeoPoint center){
         if(mDisplay != null){
-            double newZoom = zoom;
+            float newZoom = zoom;
             if( zoom < mDisplay.getMinZoomLevel())
                 newZoom = mDisplay.getMinZoomLevel();
             else if( zoom > mDisplay.getMaxZoomLevel())
@@ -129,7 +111,8 @@ public class MapDrawable extends MapEventSource {
         }
     }
 
-    public final GeoPoint getMapCenter(){
+    @Override
+    public GeoPoint getMapCenter(){
         if(mDisplay != null){
             return mDisplay.getCenter();
         }

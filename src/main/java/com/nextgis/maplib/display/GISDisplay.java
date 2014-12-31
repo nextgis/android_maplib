@@ -50,9 +50,9 @@ public class GISDisplay {
     protected Matrix mTransformMatrix;
     protected Matrix mInvertTransformMatrix;
     protected final int mTileSize = 256;
-    protected double mMinZoomLevel;
-    protected double mMaxZoomLevel;
-    protected double mZoomLevel;
+    protected float mMinZoomLevel;
+    protected float mMaxZoomLevel;
+    protected float mZoomLevel;
     protected double mScale;
     protected double mInvertScale;
     protected float mMainBitmapOffsetX;
@@ -67,7 +67,7 @@ public class GISDisplay {
         mBkBitmap = backgroundTile;
         //set max zoom
         mMinZoomLevel = NOT_FOUND;
-        mMaxZoomLevel = ZOOMLEVEL_MAX;
+        mMaxZoomLevel = DEFAULT_MAX_ZOOM;
         mLimitType = MAP_LIMITS_Y;
 
         mMainBitmap = null;
@@ -92,7 +92,7 @@ public class GISDisplay {
     }
 
     public void setSize(int w, int h){
-        //Log.d(TAG, "new size: " + w + " x " + h);
+        Log.d(TAG, "new size: " + w + " x " + h);
 
         mScreenBounds = new GeoEnvelope(0, w, 0, h);
         double extraX = (w * OFFSCREEN_EXTRASIZE_RATIO - w) * .5;
@@ -103,7 +103,7 @@ public class GISDisplay {
         // we calc the zoom level for full cover the whole display with tiles
         // if the zoom level is already set - do nothing
         if(mMinZoomLevel == NOT_FOUND)
-            mMinZoomLevel = Math.ceil((float)Math.min(w, h) / mTileSize);
+            mMinZoomLevel = (float)Math.ceil((float)Math.min(w, h) / mTileSize);
 
         mBackgroundBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mBackgroundCanvas = new Canvas(mBackgroundBitmap);
@@ -124,7 +124,7 @@ public class GISDisplay {
         mMainBitmap.eraseColor(Color.TRANSPARENT);
     }
 
-    public void setZoomAndCenter(final double  zoom, final GeoPoint center){
+    public void setZoomAndCenter(float  zoom, GeoPoint center){
         if(zoom > mMaxZoomLevel || zoom < mMinZoomLevel)
             return;
         mZoomLevel = zoom;
@@ -311,7 +311,7 @@ public class GISDisplay {
         mMainCanvas.drawCircle(x, y, (float) (radius / mScale), paint);
     }
 
-    public final double getZoomLevel() {
+    public final float getZoomLevel() {
         return mZoomLevel;
     }
 
@@ -378,11 +378,11 @@ public class GISDisplay {
         return outEnv;
     }
 
-    public double getMinZoomLevel() {
+    public float getMinZoomLevel() {
         return mMinZoomLevel;
     }
 
-    public double getMaxZoomLevel() {
+    public float getMaxZoomLevel() {
         return mMaxZoomLevel;
     }
 
@@ -401,7 +401,7 @@ public class GISDisplay {
         double scale = (float)(mScreenBounds.width()) / mLimits.width();
         double zoom = Math.log(scale)/Math.log(2.0) + 2;
 
-        mMinZoomLevel = Math.ceil(getZoomLevel() + zoom);
+        mMinZoomLevel = (float)Math.ceil(getZoomLevel() + zoom);
         mCenter = mGeoLimits.getCenter();
         setZoomAndCenter(mMinZoomLevel, mCenter);
         Log.d(TAG, "min zoom level: " + mMinZoomLevel);

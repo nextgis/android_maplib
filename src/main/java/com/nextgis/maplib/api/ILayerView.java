@@ -18,15 +18,14 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
-package com.nextgis.maplib.map;
+package com.nextgis.maplib.api;
 
-
-import com.nextgis.maplib.datasource.GeoPoint;
-
-public interface MapEventListener {
-    public abstract void onLayerAdded(Layer layer);
-    public abstract void onLayerDeleted(int id);
-    public abstract void onLayerChanged(Layer layer);
-    public abstract void onExtentChanged(int zoom, GeoPoint center);
-    public abstract void onLayersReordered();
+public interface ILayerView {
+    public boolean isVisible();
+    public void setVisible(boolean visible);
+    public float getMaxZoom();
+    public void setMaxZoom(float maxZoom);
+    public float getMinZoom();
+    public void setMinZoom(float minZoom);
+    public void onDrawFinished();
 }

@@ -20,12 +20,14 @@
  ****************************************************************************/
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.api.IJSONStore;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import static com.nextgis.maplib.util.Constants.*;
 
-public class GeoEnvelope implements JSONStore {
+public class GeoEnvelope implements IJSONStore {
     protected Double mMinX;
     protected Double mMaxX;
     protected Double mMinY;

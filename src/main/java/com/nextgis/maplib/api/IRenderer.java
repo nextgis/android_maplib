@@ -18,23 +18,9 @@
  *    You should have received a copy of the GNU General Public License
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
-package com.nextgis.maplib.display;
+package com.nextgis.maplib.api;
 
-import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.api.ILayer;
-import com.nextgis.maplib.api.IRenderer;
-import com.nextgis.maplib.map.Layer;
-
-public abstract class Renderer implements IJSONStore, IRenderer {
-
-    protected final ILayer mLayer;
-    protected static int mCPUTotalCount;
-
-    public Renderer(ILayer layer){
-        mLayer = layer;
-
-        mCPUTotalCount = Runtime.getRuntime().availableProcessors() * 8;
-        if(mCPUTotalCount < 1)
-            mCPUTotalCount = 1;
-    }
+public interface IRenderer {
+    public void runDraw();
+    public void cancelDraw();
 }

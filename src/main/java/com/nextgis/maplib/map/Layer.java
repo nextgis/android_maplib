@@ -20,9 +20,11 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.api.ILayerView;
+import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
-import com.nextgis.maplib.datasource.JSONStore;
-import com.nextgis.maplib.display.Renderer;
 import com.nextgis.maplib.util.FileUtil;
 
 import org.json.JSONException;
@@ -34,69 +36,83 @@ import java.io.IOException;
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public class Layer implements JSONStore{
+public class Layer implements ILayer, ILayerView, IJSONStore, IRenderer {
     protected String mName;
     protected boolean mIsVisible;
     protected short mId;
-    protected int mMaxZoom;
-    protected int mMinZoom;
+    protected float mMaxZoom;
+    protected float mMinZoom;
     protected File mPath;
     protected int mLayerType;
-    protected Renderer mRenderer;
+    protected IRenderer mRenderer;
     protected GeoEnvelope mExtents;
+    protected ILayer mParent;
 
     public Layer(File path){
         mPath = path;
     }
 
-    public final String getName() {
+    @Override
+    public String getName() {
         return mName;
     }
 
+    @Override
     public void setName(String newName) {
         this.mName = newName;
     }
 
-    public final short getId(){
+    @Override
+    public short getId(){
         return mId;
     }
 
+    @Override
     public int getType(){
         return mLayerType;
     }
 
-    public final boolean isVisible(){
+    @Override
+    public boolean isVisible(){
         return mIsVisible;
     }
 
+    @Override
     public void setVisible(boolean visible){
         mIsVisible = visible;
     }
 
+    @Override
     public boolean delete(){
         return FileUtil.deleteRecursive(mPath);
     }
 
-    public int getMaxZoom() {
+    @Override
+    public float getMaxZoom() {
         return mMaxZoom;
     }
 
-    public void setMaxZoom(int maxZoom) {
+    @Override
+    public void setMaxZoom(float maxZoom) {
         mMaxZoom = maxZoom;
     }
 
-    public int getMinZoom() {
+    @Override
+    public float getMinZoom() {
         return mMinZoom;
     }
 
-    public void setMinZoom(int minZoom) {
+    @Override
+    public void setMinZoom(float minZoom) {
         mMinZoom = minZoom;
     }
 
+    @Override
     public File getPath() {
         return mPath;
     }
 
+    @Override
     public boolean save(){
         try {
             FileUtil.createDir(getPath());
@@ -110,6 +126,7 @@ public class Layer implements JSONStore{
         return true;
     }
 
+    @Override
     public boolean load(){
         try {
             JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getPath()));
@@ -149,23 +166,35 @@ public class Layer implements JSONStore{
         mIsVisible = jsonObject.getBoolean(JSON_VISIBILITY_KEY);
     }
 
-    public void runDraw() throws NullPointerException {
+    @Override
+    public void runDraw() {
         if (mRenderer != null) {
             mRenderer.runDraw();
         }
     }
 
+    @Override
     public void cancelDraw(){
         if(mRenderer != null){
             mRenderer.cancelDraw();
         }
     }
 
-    public Renderer getRenderer() {
-        return mRenderer;
+    @Override
+    public void onDrawFinished() {
+        if(mParent != null && mParent instanceof ILayerView){
+            ILayerView renderer = (ILayerView)mParent;
+            renderer.onDrawFinished();
+        }
     }
 
+    @Override
     public GeoEnvelope getExtents() {
         return mExtents;
+    }
+
+    @Override
+    public void setParent(ILayer layer) {
+        mParent = layer;
     }
 }

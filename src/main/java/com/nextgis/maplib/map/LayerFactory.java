@@ -22,6 +22,7 @@ package com.nextgis.maplib.map;
 
 import android.util.Log;
 
+import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.util.FileUtil;
 
 import org.json.JSONException;
@@ -34,9 +35,9 @@ import static com.nextgis.maplib.util.Constants.*;
 
 public class LayerFactory {
 
-    public static Layer createLayer(File path){
+    public ILayer createLayer(File path){
         File config_file = new File(path, LAYER_CONFIG);
-        Layer layer = null;
+        ILayer layer = null;
 
         try {
             String sData = FileUtil.readFromFile(config_file);
@@ -67,9 +68,7 @@ public class LayerFactory {
                 case LAYERTYPE_NGW:
                     break;
             }
-        } catch (IOException e){
-            Log.d(TAG, e.getLocalizedMessage());
-        } catch (JSONException e){
+        } catch (IOException | JSONException e){
             Log.d(TAG, e.getLocalizedMessage());
         }
 

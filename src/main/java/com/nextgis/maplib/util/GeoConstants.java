@@ -26,7 +26,6 @@ public interface GeoConstants {
      * Mercator projection constants
      */
     public static final double MERCATOR_MAX = 20037508.34;
-    public static final double ZOOMLEVEL_MAX = 25;
 
     /**
      * DataSource type

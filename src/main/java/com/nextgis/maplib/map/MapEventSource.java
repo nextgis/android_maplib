@@ -20,13 +20,16 @@
  ****************************************************************************/
 package com.nextgis.maplib.map;
 
+import com.nextgis.maplib.api.IEventSource;
+import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.api.MapEventListener;
 import com.nextgis.maplib.datasource.GeoPoint;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapEventSource extends MapBase{
+public class MapEventSource extends MapBase implements IEventSource{
     protected List<MapEventListener> mListeners;
     //protected Handler mHandler;
 
@@ -38,39 +41,11 @@ public class MapEventSource extends MapBase{
     }
 
     /**
-     * Create existed layer from path and add it to the map
-     *
-     * @param layer A layer object
-     */
-    @Override
-    protected void addLayer(Layer layer) {
-        super.addLayer(layer);
-
-        if(layer != null) {
-            onLayerAdded(layer);
-        }
-    }
-
-    /**
-     * Delete layer by identifictor
-     *
-     * @param id An identificator
-     * @return true on success or false
-     */
-    @Override
-    public boolean deleteLayerById(int id) {
-        boolean ret = super.deleteLayerById(id);
-        if(ret){
-            onLayerDeleted(id);
-        }
-        return ret;
-    }
-
-    /**
      * Add new listener for map events
      *
      * @param listener A listener class implements MapEventListener adding to listeners array
      */
+    @Override
     public void addListener(MapEventListener listener){
         if(mListeners != null && !mListeners.contains(listener)){
             mListeners.add(listener);
@@ -82,6 +57,7 @@ public class MapEventSource extends MapBase{
      *
      * @param listener A listener class implements MapEventListener removing from listeners array
      */
+    @Override
     public void removeListener(MapEventListener listener){
         if(mListeners != null){
             mListeners.remove(listener);
@@ -93,7 +69,7 @@ public class MapEventSource extends MapBase{
      *
      * @param layer A new layer
      */
-    protected void onLayerAdded(Layer layer){
+    protected void onLayerAdded(ILayer layer){
         if(mListeners == null)
             return;
         for (MapEventListener listener : mListeners)
@@ -105,7 +81,7 @@ public class MapEventSource extends MapBase{
      *
      * @param layer A changed layer
      */
-    protected void onLayerChanged(Layer layer){
+    protected void onLayerChanged(ILayer layer){
         if(mListeners == null)
             return;
         for (MapEventListener listener : mListeners)
