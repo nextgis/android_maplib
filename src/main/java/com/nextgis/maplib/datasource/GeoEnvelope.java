@@ -21,104 +21,98 @@
 package com.nextgis.maplib.datasource;
 
 import com.nextgis.maplib.api.IJSONStore;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import static com.nextgis.maplib.util.Constants.*;
 
-public class GeoEnvelope implements IJSONStore {
+
+public class GeoEnvelope
+        implements IJSONStore
+{
     protected Double mMinX;
     protected Double mMaxX;
     protected Double mMinY;
     protected Double mMaxY;
 
-    public GeoEnvelope() {
+
+    public GeoEnvelope()
+    {
         unInit();
     }
 
-    protected void unInit() {
+
+    protected void unInit()
+    {
         mMinX = null;
         mMaxX = null;
         mMinY = null;
         mMaxY = null;
     }
 
-    public GeoEnvelope(double minX, double maxX, double minY, double maxY) {
+
+    public GeoEnvelope(
+            double minX,
+            double maxX,
+            double minY,
+            double maxY)
+    {
         mMinX = minX;
         mMaxX = maxX;
         mMinY = minY;
         mMaxY = maxY;
     }
 
-    public GeoEnvelope(final GeoEnvelope env) {
+
+    public GeoEnvelope(final GeoEnvelope env)
+    {
         mMinX = env.mMinX;
         mMaxX = env.mMaxX;
         mMinY = env.mMinY;
         mMaxY = env.mMaxY;
     }
 
-    public void setMin(double x, double y) {
+
+    public void setMin(
+            double x,
+            double y)
+    {
         mMinX = x;
         mMinY = y;
     }
 
-    public void setMax(double x, double y) {
+
+    public void setMax(
+            double x,
+            double y)
+    {
         mMaxX = x;
         mMaxY = y;
     }
 
-    public void setMinX(double x) {
-        mMinX = x;
-    }
 
-    public void setMaxX(double x) {
-        mMaxX = x;
-    }
-
-    public void setMinY(double y) {
-        mMinY = y;
-    }
-
-    public void setMaxY(double y) {
-        mMaxY = y;
-    }
-
-    public final double getMinX() {
-        return mMinX;
-    }
-
-    public final double getMinY() {
-        return mMinY;
-    }
-
-    public final double getMaxX() {
-        return mMaxX;
-    }
-
-    public final double getMaxY() {
-        return mMaxY;
-    }
-
-    public final boolean isInit() {
-        return mMinX != null && mMinY != null && mMaxX != null && mMaxY != null;
-    }
-
-    public final GeoPoint getCenter() {
+    public final GeoPoint getCenter()
+    {
         double x = mMinX + width() / 2.0;
         double y = mMinY + height() / 2.0;
         return new GeoPoint(x, y);
     }
 
-    public final double width() {
+
+    public final double width()
+    {
         return mMaxX - mMinX;
     }
 
-    public final double height() {
+
+    public final double height()
+    {
         return mMaxY - mMinY;
     }
 
-    public void adjust(double ratio) {
+
+    public void adjust(double ratio)
+    {
         double w = width() / 2.0;
         double h = height() / 2.0;
         double centerX = mMinX + w;
@@ -126,8 +120,9 @@ public class GeoEnvelope implements IJSONStore {
 
         double envRatio = w / h;
 
-        if (envRatio == ratio)
+        if (envRatio == ratio) {
             return;
+        }
 
         if (ratio > envRatio) //increase width
         {
@@ -142,7 +137,9 @@ public class GeoEnvelope implements IJSONStore {
         }
     }
 
-    public void merge(final GeoEnvelope other) {
+
+    public void merge(final GeoEnvelope other)
+    {
         if (isInit()) {
             mMinX = Math.min(mMinX, other.mMinX);
             mMaxX = Math.max(mMaxX, other.mMaxX);
@@ -156,7 +153,17 @@ public class GeoEnvelope implements IJSONStore {
         }
     }
 
-    public void merge(double dfX, double dfY) {
+
+    public final boolean isInit()
+    {
+        return mMinX != null && mMinY != null && mMaxX != null && mMaxY != null;
+    }
+
+
+    public void merge(
+            double dfX,
+            double dfY)
+    {
         if (isInit()) {
             mMinX = Math.min(mMinX, dfX);
             mMaxX = Math.max(mMaxX, dfX);
@@ -168,7 +175,9 @@ public class GeoEnvelope implements IJSONStore {
         }
     }
 
-    public void intersect(final GeoEnvelope other) {
+
+    public void intersect(final GeoEnvelope other)
+    {
         if (intersects(other)) {
             if (isInit()) {
                 mMinX = Math.max(mMinX, other.mMinX);
@@ -186,31 +195,47 @@ public class GeoEnvelope implements IJSONStore {
         }
     }
 
-    public final boolean intersects(final GeoEnvelope other) {
-        return mMinX <= other.mMaxX && mMaxX >= other.mMinX && mMinY <= other.mMaxY && mMaxY >= other.mMinY;
+
+    public final boolean intersects(final GeoEnvelope other)
+    {
+        return mMinX <= other.mMaxX && mMaxX >= other.mMinX && mMinY <= other.mMaxY &&
+               mMaxY >= other.mMinY;
     }
 
-    public final boolean contains(final GeoEnvelope other) {
-        return mMinX <= other.mMinX && mMinY <= other.mMinY && mMaxX >= other.mMaxX && mMaxY >= other.mMaxY;
+
+    public final boolean contains(final GeoEnvelope other)
+    {
+        return mMinX <= other.mMinX && mMinY <= other.mMinY && mMaxX >= other.mMaxX &&
+               mMaxY >= other.mMaxY;
     }
 
-    public final boolean contains(final GeoPoint pt) {
+
+    public final boolean contains(final GeoPoint pt)
+    {
         return mMinX <= pt.getX() && mMinY <= pt.getY() && mMaxX >= pt.getX() && mMaxY >= pt.getY();
     }
 
-    public void offset(double x, double y) {
+
+    public void offset(
+            double x,
+            double y)
+    {
         mMinX += x;
         mMaxX += x;
         mMinY += y;
         mMaxY += y;
     }
 
-    public void scale(double scale) {
+
+    public void scale(double scale)
+    {
         mMaxX = mMinX + width() * scale;
         mMaxY = mMinY + height() * scale;
     }
 
-    public void fix() {
+
+    public void fix()
+    {
         if (mMinX > mMaxX) {
             double tmp = mMinX;
             mMinX = mMaxX;
@@ -224,12 +249,17 @@ public class GeoEnvelope implements IJSONStore {
         }
     }
 
-    public String toString() {
+
+    public String toString()
+    {
         return "MinX: " + mMinX + ", MinY: " + mMinY + ", MaxX: " + mMaxX + ", MaxY: " + mMaxY;
     }
 
+
     @Override
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON()
+            throws JSONException
+    {
         JSONObject oJSONBBox = new JSONObject();
         oJSONBBox.put(JSON_BBOX_MINX_KEY, getMinX());
         oJSONBBox.put(JSON_BBOX_MINY_KEY, getMinY());
@@ -238,8 +268,59 @@ public class GeoEnvelope implements IJSONStore {
         return oJSONBBox;
     }
 
+
+    public final double getMinX()
+    {
+        return mMinX;
+    }
+
+
+    public void setMinX(double x)
+    {
+        mMinX = x;
+    }
+
+
+    public final double getMinY()
+    {
+        return mMinY;
+    }
+
+
+    public void setMinY(double y)
+    {
+        mMinY = y;
+    }
+
+
+    public final double getMaxX()
+    {
+        return mMaxX;
+    }
+
+
+    public void setMaxX(double x)
+    {
+        mMaxX = x;
+    }
+
+
+    public final double getMaxY()
+    {
+        return mMaxY;
+    }
+
+
+    public void setMaxY(double y)
+    {
+        mMaxY = y;
+    }
+
+
     @Override
-    public void fromJSON(JSONObject jsonObject) throws JSONException {
+    public void fromJSON(JSONObject jsonObject)
+            throws JSONException
+    {
         setMinX(jsonObject.getDouble(JSON_BBOX_MINX_KEY));
         setMinY(jsonObject.getDouble(JSON_BBOX_MINY_KEY));
         setMaxX(jsonObject.getDouble(JSON_BBOX_MAXX_KEY));

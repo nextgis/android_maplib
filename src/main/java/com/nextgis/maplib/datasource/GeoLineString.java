@@ -26,39 +26,37 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 
-public class GeoLineString extends GeoGeometry {
+
+public class GeoLineString
+        extends GeoGeometry
+{
 
     protected List<GeoPoint> mPoints;
 
-    public GeoLineString() {
+
+    public GeoLineString()
+    {
         mPoints = new ArrayList<GeoPoint>();
     }
 
-    public List<GeoPoint> getPoints() {
+
+    public List<GeoPoint> getPoints()
+    {
         return mPoints;
     }
 
-    public void add(GeoPoint point) throws IllegalArgumentException {
-        if (point == null) {
-            throw new IllegalArgumentException("GeoLineString: point == null.");
-        }
 
-        mPoints.add(point);
-    }
-
-    public GeoPoint remove(int index) {
+    public GeoPoint remove(int index)
+    {
         return mPoints.remove(index);
     }
 
-    @Override
-    public int getType() {
-        return GTLineString;
-    }
 
     @Override
-    protected boolean rawProject(int toCrs) {
+    protected boolean rawProject(int toCrs)
+    {
         boolean isOk = true;
         for (GeoPoint point : mPoints) {
             isOk = isOk && point.rawProject(toCrs);
@@ -66,8 +64,10 @@ public class GeoLineString extends GeoGeometry {
         return isOk;
     }
 
+
     @Override
-    public GeoEnvelope getEnvelope() {
+    public GeoEnvelope getEnvelope()
+    {
         GeoEnvelope envelope = new GeoEnvelope();
 
         for (GeoPoint point : mPoints) {
@@ -77,10 +77,35 @@ public class GeoLineString extends GeoGeometry {
         return envelope;
     }
 
+
     @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
+    public JSONArray coordinatesToJSON()
+            throws JSONException
+    {
+        JSONArray coordinates = new JSONArray();
+
+        for (GeoPoint point : this.mPoints) {
+            coordinates.put(point.coordinatesToJSON());
+        }
+
+        return coordinates;
+    }
+
+
+    @Override
+    public int getType()
+    {
+        return GTLineString;
+    }
+
+
+    @Override
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
         if (coordinates.length() < 2) {
-            throw new JSONException("For type \"LineString\", the \"coordinates\" member must be an array of two or more positions.");
+            throw new JSONException(
+                    "For type \"LineString\", the \"coordinates\" member must be an array of two or more positions.");
         }
 
         for (int i = 0; i < coordinates.length(); ++i) {
@@ -90,14 +115,14 @@ public class GeoLineString extends GeoGeometry {
         }
     }
 
-    @Override
-    public JSONArray coordinatesToJSON() throws JSONException {
-        JSONArray coordinates = new JSONArray();
 
-        for (GeoPoint point : this.mPoints) {
-            coordinates.put(point.coordinatesToJSON());
+    public void add(GeoPoint point)
+            throws IllegalArgumentException
+    {
+        if (point == null) {
+            throw new IllegalArgumentException("GeoLineString: point == null.");
         }
 
-        return coordinates;
+        mPoints.add(point);
     }
 }

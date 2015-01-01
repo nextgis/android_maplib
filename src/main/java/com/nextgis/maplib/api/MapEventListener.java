@@ -22,13 +22,23 @@ package com.nextgis.maplib.api;
 
 
 import com.nextgis.maplib.datasource.GeoPoint;
-import com.nextgis.maplib.map.Layer;
 
-public interface MapEventListener {
+
+public interface MapEventListener
+{
     public abstract void onLayerAdded(ILayer layer);
+
     public abstract void onLayerDeleted(int id);
+
     public abstract void onLayerChanged(ILayer layer);
-    public abstract void onExtentChanged(int zoom, GeoPoint center);
+
+    public abstract void onExtentChanged(
+            int zoom,
+            GeoPoint center);
+
     public abstract void onLayersReordered();
-    public abstract void onLayerDrawFinished(int id, float percent);
+
+    public abstract void onLayerDrawFinished(
+            int id,
+            float percent);
 }

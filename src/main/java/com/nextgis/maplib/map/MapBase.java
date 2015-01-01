@@ -24,20 +24,30 @@ import android.content.Context;
 
 import java.io.File;
 
-public class MapBase extends LayerGroup {
+
+public class MapBase
+        extends LayerGroup
+{
     protected short mNewId;
 
-    public MapBase(Context context, File path, LayerFactory layerFactory){
+
+    public MapBase(
+            Context context,
+            File path,
+            LayerFactory layerFactory)
+    {
         super(context, path, layerFactory);
         mNewId = 0;
     }
+
 
     /**
      * The identificator generator
      *
      * @return new id
      */
-    public short getNewId(){
+    public short getNewId()
+    {
         return mNewId++;
     }
 

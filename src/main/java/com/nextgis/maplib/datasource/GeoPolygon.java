@@ -23,63 +23,88 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
-public class GeoPolygon extends GeoGeometry {
+
+public class GeoPolygon
+        extends GeoGeometry
+{
 
     protected GeoLinearRing mOuterRing;
 
-    public GeoPolygon() {
+
+    public GeoPolygon()
+    {
         mOuterRing = new GeoLinearRing();
     }
 
-    public GeoLinearRing getOuterRing() {
-        return mOuterRing;
-    }
 
-    public void add(GeoPoint point) {
+    public void add(GeoPoint point)
+    {
         mOuterRing.add(point);
     }
 
-    public GeoPoint remove(int index) {
+
+    public GeoPoint remove(int index)
+    {
         return mOuterRing.remove(index);
     }
 
-    @Override
-    public int getType() {
-        return GTPolygon;
-    }
 
     @Override
-    protected boolean rawProject(int toCrs) {
+    protected boolean rawProject(int toCrs)
+    {
         return mOuterRing.rawProject(toCrs);
     }
 
+
     @Override
-    public GeoEnvelope getEnvelope() {
+    public GeoEnvelope getEnvelope()
+    {
         return mOuterRing.getEnvelope();
     }
 
+
     @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
+    public JSONArray coordinatesToJSON()
+            throws JSONException
+    {
+        JSONArray coordinates = new JSONArray();
+        coordinates.put(mOuterRing.coordinatesToJSON());
+
+        return coordinates;
+    }
+
+
+    @Override
+    public int getType()
+    {
+        return GTPolygon;
+    }
+
+
+    @Override
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
         JSONArray outerRingCoordinates = coordinates.getJSONArray(0);
 
         if (outerRingCoordinates.length() < 4) {
-            throw new JSONException("For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. A LinearRing must be with 4 or more positions.");
+            throw new JSONException(
+                    "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. A LinearRing must be with 4 or more positions.");
         }
 
         mOuterRing.setCoordinatesFromJSON(outerRingCoordinates);
 
         if (!getOuterRing().isClosed()) {
-            throw new JSONException("For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. The first and last positions of LinearRing must be equivalent (they represent equivalent points).");
+            throw new JSONException(
+                    "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. The first and last positions of LinearRing must be equivalent (they represent equivalent points).");
         }
     }
 
-    @Override
-    public JSONArray coordinatesToJSON() throws JSONException {
-        JSONArray coordinates = new JSONArray();
-        coordinates.put(mOuterRing.coordinatesToJSON());
 
-        return coordinates;
+    public GeoLinearRing getOuterRing()
+    {
+        return mOuterRing;
     }
 }

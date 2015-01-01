@@ -26,13 +26,15 @@ import org.json.JSONObject;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public abstract class GeoGeometry {
+
+public abstract class GeoGeometry
+{
 
     protected int mCRS;
 
-    public abstract int getType();
 
-    public static int typeFromJSON(String jsonType) {
+    public static int typeFromJSON(String jsonType)
+    {
         if (jsonType.equals(GEOJSON_TYPE_Point)) {
             return GTPoint;
 
@@ -54,45 +56,15 @@ public abstract class GeoGeometry {
         } else if (jsonType.equals(GEOJSON_TYPE_GeometryCollection)) {
             return GTGeometryCollection;
 
-        } else return GTNone;
-    }
-
-    public String typeToJSON() {
-        switch (getType()) {
-            case GTPoint:
-                return GEOJSON_TYPE_Point;
-            case GTLineString:
-                return GEOJSON_TYPE_LineString;
-            case GTPolygon:
-                return GEOJSON_TYPE_Polygon;
-            case GTMultiPoint:
-                return GEOJSON_TYPE_MultiPoint;
-            case GTMultiLineString:
-                return GEOJSON_TYPE_MultiLineString;
-            case GTMultiPolygon:
-                return GEOJSON_TYPE_MultiPolygon;
-            case GTGeometryCollection:
-                return GEOJSON_TYPE_GeometryCollection;
-            case GTNone:
-            default:
-                return "";
+        } else {
+            return GTNone;
         }
     }
 
-    public boolean project(int toCrs) {
-        return (mCRS == CRS_WGS84 && toCrs == CRS_WEB_MERCATOR
-                || mCRS == CRS_WEB_MERCATOR && toCrs == CRS_WGS84) && rawProject(toCrs);
-    }
 
-    protected abstract boolean rawProject(int toCrs);
-
-    public abstract GeoEnvelope getEnvelope();
-
-    public void setCRS(int crs) {
-        mCRS = crs;
-    }
-
-    public static GeoGeometry fromJson(JSONObject jsonObject) throws JSONException {
+    public static GeoGeometry fromJson(JSONObject jsonObject)
+            throws JSONException
+    {
         String jsonType = jsonObject.getString(GEOJSON_TYPE);
         int type = typeFromJSON(jsonType);
 
@@ -155,7 +127,29 @@ public abstract class GeoGeometry {
         return output;
     }
 
-    public JSONObject toJSON() throws JSONException {
+
+    public boolean project(int toCrs)
+    {
+        return (mCRS == CRS_WGS84 && toCrs == CRS_WEB_MERCATOR ||
+                mCRS == CRS_WEB_MERCATOR && toCrs == CRS_WGS84) && rawProject(toCrs);
+    }
+
+
+    protected abstract boolean rawProject(int toCrs);
+
+
+    public abstract GeoEnvelope getEnvelope();
+
+
+    public void setCRS(int crs)
+    {
+        mCRS = crs;
+    }
+
+
+    public JSONObject toJSON()
+            throws JSONException
+    {
         JSONObject jsonOutObject = new JSONObject();
         jsonOutObject.put(GEOJSON_TYPE, typeToJSON());
         jsonOutObject.put(GEOJSON_COORDINATES, coordinatesToJSON());
@@ -163,6 +157,38 @@ public abstract class GeoGeometry {
         return jsonOutObject;
     }
 
-    public abstract void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException;
-    public abstract JSONArray coordinatesToJSON() throws JSONException, ClassCastException;
+
+    public String typeToJSON()
+    {
+        switch (getType()) {
+            case GTPoint:
+                return GEOJSON_TYPE_Point;
+            case GTLineString:
+                return GEOJSON_TYPE_LineString;
+            case GTPolygon:
+                return GEOJSON_TYPE_Polygon;
+            case GTMultiPoint:
+                return GEOJSON_TYPE_MultiPoint;
+            case GTMultiLineString:
+                return GEOJSON_TYPE_MultiLineString;
+            case GTMultiPolygon:
+                return GEOJSON_TYPE_MultiPolygon;
+            case GTGeometryCollection:
+                return GEOJSON_TYPE_GeometryCollection;
+            case GTNone:
+            default:
+                return "";
+        }
+    }
+
+
+    public abstract JSONArray coordinatesToJSON()
+            throws JSONException, ClassCastException;
+
+
+    public abstract int getType();
+
+
+    public abstract void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException;
 }

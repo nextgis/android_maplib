@@ -23,7 +23,12 @@ package com.nextgis.maplib.api;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public interface IJSONStore {
-    public JSONObject toJSON() throws JSONException;
-    public void fromJSON(JSONObject jsonObject) throws JSONException;
+
+public interface IJSONStore
+{
+    public JSONObject toJSON()
+            throws JSONException;
+
+    public void fromJSON(JSONObject jsonObject)
+            throws JSONException;
 }

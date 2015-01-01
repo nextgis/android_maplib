@@ -23,12 +23,17 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 
-public class GeoMultiPoint extends GeoGeometryCollection {
+
+public class GeoMultiPoint
+        extends GeoGeometryCollection
+{
 
     @Override
-    public void add(GeoGeometry geometry) throws ClassCastException {
+    public void add(GeoGeometry geometry)
+            throws ClassCastException
+    {
         if (!(geometry instanceof GeoPoint)) {
             throw new ClassCastException("GeoMultiPoint: geometry is not GeoPoint type.");
         }
@@ -36,26 +41,35 @@ public class GeoMultiPoint extends GeoGeometryCollection {
         super.add(geometry);
     }
 
-    public void add(GeoPoint point) {
-        super.add(point);
-    }
 
     @Override
-    public GeoPoint get(int index) {
+    public GeoPoint get(int index)
+    {
         return (GeoPoint) mGeometries.get(index);
     }
 
+
     @Override
-    public int getType() {
+    public int getType()
+    {
         return GTMultiPoint;
     }
 
+
     @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
         for (int i = 0; i < coordinates.length(); ++i) {
             GeoPoint point = new GeoPoint();
             point.setCoordinatesFromJSON(coordinates.getJSONArray(i));
             add(point);
         }
+    }
+
+
+    public void add(GeoPoint point)
+    {
+        super.add(point);
     }
 }

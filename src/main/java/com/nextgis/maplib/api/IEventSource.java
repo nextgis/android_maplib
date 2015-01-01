@@ -20,19 +20,22 @@
  ****************************************************************************/
 package com.nextgis.maplib.api;
 
-public interface IEventSource {
+public interface IEventSource
+{
 
     /**
      * Add new listener for map events
      *
-     * @param listener A listener class implements MapEventListener adding to listeners array
+     * @param listener
+     *         A listener class implements MapEventListener adding to listeners array
      */
     public void addListener(MapEventListener listener);
 
     /**
      * Remove listener from listeners
      *
-     * @param listener A listener class implements MapEventListener removing from listeners array
+     * @param listener
+     *         A listener class implements MapEventListener removing from listeners array
      */
     public void removeListener(MapEventListener listener);
 }

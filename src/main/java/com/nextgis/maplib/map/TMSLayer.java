@@ -22,13 +22,11 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.display.GISDisplay;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -36,33 +34,49 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 
-public abstract class TMSLayer extends Layer {
+
+public abstract class TMSLayer
+        extends Layer
+{
+    protected static final String JSON_RENDERERPROPS_KEY = "renderer_properties";
+    protected static final String JSON_TMSTYPE_KEY       = "tms_type";
     protected int mTMSType;
 
-    protected static final String JSON_RENDERERPROPS_KEY = "renderer_properties";
-    protected static final String JSON_TMSTYPE_KEY = "tms_type";
 
-    protected TMSLayer(Context contex, File path) {
+    protected TMSLayer(
+            Context contex,
+            File path)
+    {
         super(contex, path);
     }
 
-    public int getTMSType() {
+
+    public int getTMSType()
+    {
         return mTMSType;
     }
 
-    public void setTMSType(int type) {
+
+    public void setTMSType(int type)
+    {
         mTMSType = type;
     }
 
-    public final List<TileItem> getTielsForBounds(GISDisplay display, GeoEnvelope bounds, double zoom) {
 
-        int nZoom = (int)zoom;
+    public final List<TileItem> getTielsForBounds(
+            GISDisplay display,
+            GeoEnvelope bounds,
+            double zoom)
+    {
+
+        int nZoom = (int) zoom;
         int tilesInMap = 1 << nZoom;
         double halfTilesInMap = tilesInMap / 2;
         GeoEnvelope fullBounds = display.getFullBounds();
-        GeoPoint mapTileSize = new GeoPoint(fullBounds.width() / tilesInMap, fullBounds.height() / tilesInMap);
+        GeoPoint mapTileSize =
+                new GeoPoint(fullBounds.width() / tilesInMap, fullBounds.height() / tilesInMap);
 
         List<TileItem> list = new ArrayList<>();
         int begX = (int) (bounds.getMinX() / mapTileSize.getX() - .5 + halfTilesInMap);
@@ -70,10 +84,12 @@ public abstract class TMSLayer extends Layer {
         int endX = (int) (bounds.getMaxX() / mapTileSize.getX() + .5 + halfTilesInMap);
         int endY = (int) (bounds.getMaxY() / mapTileSize.getY() + .5 + halfTilesInMap);
 
-        if(begY < 0)
+        if (begY < 0) {
             begY = 0;
-        if(endY > tilesInMap)
+        }
+        if (endY > tilesInMap) {
             endY = tilesInMap;
+        }
 
         //fill tiles from center
 
@@ -84,9 +100,9 @@ public abstract class TMSLayer extends Layer {
         //add center point
         addItemToList(fullBounds, mapTileSize, centerX, centerY, nZoom, tilesInMap, list);
 
-        for(int k = 1; k < center + 2; k++){
+        for (int k = 1; k < center + 2; k++) {
             //1. top and bottom
-            if(k + centerX < endX + 1) {
+            if (k + centerX < endX + 1) {
                 int tileYBottom = centerY - k;
                 int tileYTop = centerY + k;
                 for (int i = centerX - k; i < centerX + k + 1; i++) {
@@ -96,7 +112,7 @@ public abstract class TMSLayer extends Layer {
             }
 
             //2. left and right
-            if(k + centerY < endY + 1) {
+            if (k + centerY < endY + 1) {
                 int tileLeft = centerX - k;
                 int tileRight = centerX + k;
                 for (int j = centerY - k + 1; j < centerY + k; j++) {
@@ -123,45 +139,64 @@ public abstract class TMSLayer extends Layer {
         return list;
     }
 
-    protected void addItemToList(final GeoEnvelope fullBounds, final GeoPoint mapTileSize, int x, int y, int zoom, int tilesInMap, List<TileItem> list) {
-        int realX = x;
-        if(realX < 0)
-            realX += tilesInMap;
-        else if(realX >= tilesInMap)
-            realX -= tilesInMap;
 
-        final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(), fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
+    protected void addItemToList(
+            final GeoEnvelope fullBounds,
+            final GeoPoint mapTileSize,
+            int x,
+            int y,
+            int zoom,
+            int tilesInMap,
+            List<TileItem> list)
+    {
+        int realX = x;
+        if (realX < 0) {
+            realX += tilesInMap;
+        } else if (realX >= tilesInMap) {
+            realX -= tilesInMap;
+        }
+
+        final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(),
+                                         fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
         int realY = y;
-        if(mTMSType == TMSTYPE_OSM){
+        if (mTMSType == TMSTYPE_OSM) {
             realY = tilesInMap - y - 1;
         }
 
-        if(realY < 0 || realY >= tilesInMap)
+        if (realY < 0 || realY >= tilesInMap) {
             return;
+        }
 
         TileItem item = new TileItem(realX, realY, zoom, pt);
         list.add(item);
     }
 
+
     public abstract Bitmap getBitmap(TileItem tile);
 
+
     @Override
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON()
+            throws JSONException
+    {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_TMSTYPE_KEY, mTMSType);
-        if(mRenderer instanceof IJSONStore) {
+        if (mRenderer instanceof IJSONStore) {
             IJSONStore jsonStore = (IJSONStore) mRenderer;
             rootConfig.put(JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
         }
         return rootConfig;
     }
 
+
     @Override
-    public void fromJSON(JSONObject jsonObject) throws JSONException {
+    public void fromJSON(JSONObject jsonObject)
+            throws JSONException
+    {
         super.fromJSON(jsonObject);
         mTMSType = jsonObject.getInt(JSON_TMSTYPE_KEY);
-        if(jsonObject.has(JSON_RENDERERPROPS_KEY)){
-            if(mRenderer instanceof IJSONStore) {
+        if (jsonObject.has(JSON_RENDERERPROPS_KEY)) {
+            if (mRenderer instanceof IJSONStore) {
                 IJSONStore jsonStore = (IJSONStore) mRenderer;
                 jsonStore.fromJSON(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
             }

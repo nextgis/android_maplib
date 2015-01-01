@@ -29,16 +29,23 @@ import java.util.List;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public class GeoGeometryCollection extends GeoGeometry {
+
+public class GeoGeometryCollection
+        extends GeoGeometry
+{
 
     List<GeoGeometry> mGeometries;
 
 
-    public GeoGeometryCollection() {
+    public GeoGeometryCollection()
+    {
         mGeometries = new ArrayList<GeoGeometry>();
     }
 
-    public void add(GeoGeometry geometry) throws IllegalArgumentException {
+
+    public void add(GeoGeometry geometry)
+            throws IllegalArgumentException
+    {
         if (geometry == null) {
             throw new IllegalArgumentException("GeoGeometryCollection: geometry == null.");
         }
@@ -46,25 +53,35 @@ public class GeoGeometryCollection extends GeoGeometry {
         mGeometries.add(geometry);
     }
 
-    public GeoGeometry remove(int index) {
+
+    public GeoGeometry remove(int index)
+    {
         return mGeometries.remove(index);
     }
 
-    public GeoGeometry get(int index) {
+
+    public GeoGeometry get(int index)
+    {
         return mGeometries.get(index);
     }
 
-    public int size() {
+
+    public int size()
+    {
         return mGeometries.size();
     }
 
+
     @Override
-    public int getType() {
+    public int getType()
+    {
         return GTGeometryCollection;
     }
 
+
     @Override
-    protected boolean rawProject(int toCrs) {
+    protected boolean rawProject(int toCrs)
+    {
         boolean isOk = true;
         for (GeoGeometry geometry : mGeometries) {
             isOk = isOk && geometry.rawProject(toCrs);
@@ -72,8 +89,10 @@ public class GeoGeometryCollection extends GeoGeometry {
         return isOk;
     }
 
+
     @Override
-    public GeoEnvelope getEnvelope() {
+    public GeoEnvelope getEnvelope()
+    {
         GeoEnvelope envelope = new GeoEnvelope();
 
         for (GeoGeometry geometry : mGeometries) {
@@ -83,11 +102,14 @@ public class GeoGeometryCollection extends GeoGeometry {
         return envelope;
     }
 
-    @Override
-    public JSONObject toJSON() throws JSONException {
-        if (getType() != GTGeometryCollection) return super.toJSON();
 
-        else {
+    @Override
+    public JSONObject toJSON()
+            throws JSONException
+    {
+        if (getType() != GTGeometryCollection) {
+            return super.toJSON();
+        } else {
             JSONObject jsonOutObject = new JSONObject();
             jsonOutObject.put(GEOJSON_TYPE, GEOJSON_TYPE_GeometryCollection);
             JSONArray geometries = new JSONArray();
@@ -101,13 +123,19 @@ public class GeoGeometryCollection extends GeoGeometry {
         }
     }
 
+
     @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
         //if (getType() == GTGeometryCollection) return;
     }
 
+
     @Override
-    public JSONArray coordinatesToJSON() throws JSONException, ClassCastException {
+    public JSONArray coordinatesToJSON()
+            throws JSONException, ClassCastException
+    {
         JSONArray coordinates = new JSONArray();
 
         for (GeoGeometry geometry : mGeometries) {

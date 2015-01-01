@@ -22,10 +22,8 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.util.Log;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.util.FileUtil;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -36,15 +34,21 @@ import java.util.Date;
 
 import static com.nextgis.maplib.util.Constants.*;
 
-public abstract class LayerFactory {
+
+public abstract class LayerFactory
+{
 
     protected File mMapPath;
 
-    public LayerFactory(File mapPath) {
+
+    public LayerFactory(File mapPath)
+    {
         mMapPath = mapPath;
     }
 
-    public ILayer createLayer(File path){
+
+    public ILayer createLayer(File path)
+    {
         File config_file = new File(path, LAYER_CONFIG);
         ILayer layer = null;
 
@@ -53,7 +57,7 @@ public abstract class LayerFactory {
             JSONObject rootObject = new JSONObject(sData);
             int nType = rootObject.getInt(JSON_TYPE_KEY);
 
-            switch (nType){
+            switch (nType) {
                 case LAYERTYPE_LOCAL_TMS:
                     //layer = new LocalTMSLayer(this, path, rootObject);
                     break;
@@ -77,18 +81,23 @@ public abstract class LayerFactory {
                 case LAYERTYPE_NGW:
                     break;
             }
-        } catch (IOException | JSONException e){
+        } catch (IOException | JSONException e) {
             Log.d(TAG, e.getLocalizedMessage());
         }
 
         return layer;
     }
 
-    protected File cretateLayerStorage() {
+
+    protected File cretateLayerStorage()
+    {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         String layerDir = LAYER_PREFIX + sdf.format(new Date());
         return new File(mMapPath, layerDir);
     }
 
-    public abstract void createNewRemoteTMSLayer(final Context context, final LayerGroup groupLayer);
+
+    public abstract void createNewRemoteTMSLayer(
+            final Context context,
+            final LayerGroup groupLayer);
 }

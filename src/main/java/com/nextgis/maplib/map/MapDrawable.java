@@ -22,42 +22,104 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 
-public class MapDrawable extends MapEventSource implements IMapView{
 
-    public MapDrawable(Bitmap backgroundTile, Context context, File mapPath, LayerFactory layerFactory) {
+public class MapDrawable
+        extends MapEventSource
+        implements IMapView
+{
+
+    public MapDrawable(
+            Bitmap backgroundTile,
+            Context context,
+            File mapPath,
+            LayerFactory layerFactory)
+    {
         super(context, mapPath, layerFactory);
 
         //initialise display
         mDisplay = new GISDisplay(backgroundTile);
     }
 
+
     @Override
-    public Bitmap getView(){
-        if(mDisplay != null){
+    public Bitmap getView()
+    {
+        if (mDisplay != null) {
             return mDisplay.getDisplay(true);
         }
         return null;
     }
 
+
     @Override
-    public void setViewSize(int w, int h) {
-        if(mDisplay != null){
+    public void setViewSize(
+            int w,
+            int h)
+    {
+        if (mDisplay != null) {
             mDisplay.setSize(w, h);
             onExtentChanged((int) mDisplay.getZoomLevel(), mDisplay.getCenter());
         }
     }
 
+
     @Override
-    public void runDraw(final GISDisplay display){
+    public float getZoomLevel()
+    {
+        if (mDisplay != null) {
+            return mDisplay.getZoomLevel();
+        }
+        return 0;
+    }
+
+
+    /**
+     * Set new map extent according zoom level and center
+     *
+     * @param zoom
+     *         A zoom level
+     * @param center
+     *         A map center coordinates
+     */
+    @Override
+    public void setZoomAndCenter(
+            float zoom,
+            GeoPoint center)
+    {
+        if (mDisplay != null) {
+            float newZoom = zoom;
+            if (zoom < mDisplay.getMinZoomLevel()) {
+                newZoom = mDisplay.getMinZoomLevel();
+            } else if (zoom > mDisplay.getMaxZoomLevel()) {
+                newZoom = mDisplay.getMaxZoomLevel();
+            }
+            mDisplay.setZoomAndCenter(newZoom, center);
+            onExtentChanged((int) newZoom, center);
+        }
+    }
+
+
+    @Override
+    public GeoPoint getMapCenter()
+    {
+        if (mDisplay != null) {
+            return mDisplay.getCenter();
+        }
+        return new GeoPoint();
+    }
+
+
+    @Override
+    public void runDraw(final GISDisplay display)
+    {
         cancelDraw();
         mDisplay.clearBackground();
         mDisplay.clearLayer();
@@ -65,50 +127,23 @@ public class MapDrawable extends MapEventSource implements IMapView{
         drawNext(display);
     }
 
-    @Override
-    public float getZoomLevel() {
-        if(mDisplay != null)
-            return mDisplay.getZoomLevel();
-        return 0;
-    }
 
     @Override
-    public float getMaxZoom() {
-        if(mDisplay != null)
+    public float getMaxZoom()
+    {
+        if (mDisplay != null) {
             return mDisplay.getMaxZoomLevel();
+        }
         return DEFAULT_MAX_ZOOM;
     }
 
+
     @Override
-    public float getMinZoom() {
-        if(mDisplay != null)
+    public float getMinZoom()
+    {
+        if (mDisplay != null) {
             return mDisplay.getMinZoomLevel();
+        }
         return 0;
-    }
-
-    /**
-     * Set new map extent according zoom level and center
-     * @param zoom A zoom level
-     * @param center A map center coordinates
-     */
-    @Override
-    public void setZoomAndCenter(float zoom, GeoPoint center){
-        if(mDisplay != null){
-            float newZoom = zoom;
-            if( zoom < mDisplay.getMinZoomLevel())
-                newZoom = mDisplay.getMinZoomLevel();
-            else if( zoom > mDisplay.getMaxZoomLevel())
-                newZoom = mDisplay.getMaxZoomLevel();
-            mDisplay.setZoomAndCenter(newZoom, center);
-            onExtentChanged((int) newZoom, center);
-        }
-    }
-
-    @Override
-    public GeoPoint getMapCenter(){
-        if(mDisplay != null){
-            return mDisplay.getCenter();
-        }
-        return new GeoPoint();
     }
 }

@@ -21,7 +21,6 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
-
 import com.nextgis.maplib.api.IEventSource;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
@@ -31,112 +30,165 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapEventSource extends MapBase implements IEventSource{
+
+public class MapEventSource
+        extends MapBase
+        implements IEventSource
+{
     protected List<MapEventListener> mListeners;
     //protected Handler mHandler;
 
-    public MapEventSource(Context context, File mapPath, LayerFactory layerFactory) {
+
+    public MapEventSource(
+            Context context,
+            File mapPath,
+            LayerFactory layerFactory)
+    {
         super(context, mapPath, layerFactory);
         mListeners = new ArrayList<MapEventListener>();
 
         //createHandler();
     }
 
+
     /**
      * Add new listener for map events
      *
-     * @param listener A listener class implements MapEventListener adding to listeners array
+     * @param listener
+     *         A listener class implements MapEventListener adding to listeners array
      */
     @Override
-    public void addListener(MapEventListener listener){
-        if(mListeners != null && !mListeners.contains(listener)){
+    public void addListener(MapEventListener listener)
+    {
+        if (mListeners != null && !mListeners.contains(listener)) {
             mListeners.add(listener);
         }
     }
 
+
     /**
      * Remove listener from listeners
      *
-     * @param listener A listener class implements MapEventListener removing from listeners array
+     * @param listener
+     *         A listener class implements MapEventListener removing from listeners array
      */
     @Override
-    public void removeListener(MapEventListener listener){
-        if(mListeners != null){
+    public void removeListener(MapEventListener listener)
+    {
+        if (mListeners != null) {
             mListeners.remove(listener);
         }
     }
 
+
+    @Override
+    public void onDrawFinished(
+            int id,
+            float percent)
+    {
+        onLayerDrawFinished(id, percent);
+    }
+
+
     /**
      * Send layer added event to all listeners
      *
-     * @param layer A new layer
+     * @param layer
+     *         A new layer
      */
-    protected void onLayerAdded(ILayer layer){
-        if(mListeners == null)
+    protected void onLayerAdded(ILayer layer)
+    {
+        if (mListeners == null) {
             return;
-        for (MapEventListener listener : mListeners)
+        }
+        for (MapEventListener listener : mListeners) {
             listener.onLayerAdded(layer);
+        }
     }
+
 
     /**
      * Send layer changed event to all listeners
      *
-     * @param layer A changed layer
+     * @param layer
+     *         A changed layer
      */
-    protected void onLayerChanged(ILayer layer){
-        if(mListeners == null)
+    protected void onLayerChanged(ILayer layer)
+    {
+        if (mListeners == null) {
             return;
-        for (MapEventListener listener : mListeners)
+        }
+        for (MapEventListener listener : mListeners) {
             listener.onLayerChanged(layer);
+        }
     }
+
 
     /**
      * Send layer delete event to all listeners
      *
-     * @param id A deleted layer identificator
+     * @param id
+     *         A deleted layer identificator
      */
-    protected void onLayerDeleted(int id){
-        if(mListeners == null)
+    protected void onLayerDeleted(int id)
+    {
+        if (mListeners == null) {
             return;
-        for (MapEventListener listener : mListeners)
+        }
+        for (MapEventListener listener : mListeners) {
             listener.onLayerDeleted(id);
+        }
     }
+
 
     /**
      * Send extent change event to all listeners
-     * @param zoom A zoom level
-     * @param center A map center coordinates
+     *
+     * @param zoom
+     *         A zoom level
+     * @param center
+     *         A map center coordinates
      */
-    protected void onExtentChanged(int zoom, GeoPoint center){
-        if(mListeners == null)
+    protected void onExtentChanged(
+            int zoom,
+            GeoPoint center)
+    {
+        if (mListeners == null) {
             return;
-        for (MapEventListener listener : mListeners)
+        }
+        for (MapEventListener listener : mListeners) {
             listener.onExtentChanged(zoom, center);
+        }
     }
+
 
     /**
      * Send layers reordered event to all listeners
      */
-    protected void onLayersReordered(){
-        if(mListeners == null)
+    protected void onLayersReordered()
+    {
+        if (mListeners == null) {
             return;
-        for (MapEventListener listener : mListeners)
+        }
+        for (MapEventListener listener : mListeners) {
             listener.onLayersReordered();
+        }
     }
+
 
     /**
      * Send layers draw finished event to all listeners
      */
-    protected void onLayerDrawFinished(int id, float percent){
-        if(mListeners == null)
+    protected void onLayerDrawFinished(
+            int id,
+            float percent)
+    {
+        if (mListeners == null) {
             return;
-        for (MapEventListener listener : mListeners)
+        }
+        for (MapEventListener listener : mListeners) {
             listener.onLayerDrawFinished(id, percent);
-    }
-
-    @Override
-    public void onDrawFinished(int id, float percent) {
-        onLayerDrawFinished(id, percent);
+        }
     }
 
     /*

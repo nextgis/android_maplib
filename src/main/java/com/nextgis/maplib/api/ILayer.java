@@ -24,15 +24,26 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 
 import java.io.File;
 
-public interface ILayer {
+
+public interface ILayer
+{
     public String getName();
+
     public void setName(String newName);
+
     public short getId();
+
     public int getType();
+
     public boolean delete();
+
     public File getPath();
+
     public boolean save();
+
     public boolean load();
+
     public GeoEnvelope getExtents();
+
     public void setParent(ILayer layer);
 }

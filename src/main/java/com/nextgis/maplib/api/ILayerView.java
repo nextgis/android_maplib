@@ -20,12 +20,21 @@
  ****************************************************************************/
 package com.nextgis.maplib.api;
 
-public interface ILayerView {
+public interface ILayerView
+{
     public boolean isVisible();
+
     public void setVisible(boolean visible);
+
     public float getMaxZoom();
+
     public void setMaxZoom(float maxZoom);
+
     public float getMinZoom();
+
     public void setMinZoom(float minZoom);
-    public void onDrawFinished(int id, float percent);
+
+    public void onDrawFinished(
+            int id,
+            float percent);
 }

@@ -25,72 +25,79 @@ import org.json.JSONException;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public class GeoPoint extends GeoGeometry {
+
+public class GeoPoint
+        extends GeoGeometry
+{
 
     protected double mX;
     protected double mY;
 
-    public GeoPoint() {
+
+    public GeoPoint()
+    {
         mX = mY = 0.0;
     }
 
-    public GeoPoint(double x, double y) {
+
+    public GeoPoint(
+            double x,
+            double y)
+    {
         this.mX = x;
         this.mY = y;
     }
 
-    public GeoPoint(final GeoPoint point) {
+
+    public GeoPoint(final GeoPoint point)
+    {
         this.mX = point.mX;
         this.mY = point.mY;
     }
 
-    public final double getX() {
+
+    public final double getX()
+    {
         return mX;
     }
 
-    public final double getY() {
+
+    public void setX(double x)
+    {
+        mX = x;
+    }
+
+
+    public final double getY()
+    {
         return mY;
     }
 
-    public void setX(double x) {
-        mX = x;
-    }
 
-    public void setY(double y) {
+    public void setY(double y)
+    {
         mY = y;
     }
 
-    public void setCoordinates(double x, double y) {
+
+    public void setCoordinates(
+            double x,
+            double y)
+    {
         mX = x;
         mY = y;
     }
 
-    @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
-        mX = coordinates.getDouble(0);
-        mY = coordinates.getDouble(1);
-    }
 
-    @Override
-    public JSONArray coordinatesToJSON() throws JSONException {
-        JSONArray coordinates = new JSONArray();
-        coordinates.put(mX);
-        coordinates.put(mY);
-
-        return coordinates;
-    }
-
-    @Override
-    public final int getType() {
-        return GTPoint;
-    }
-
-    public boolean equals(GeoPoint point) {
+    public boolean equals(GeoPoint point)
+    {
         return mX == point.mX && mY == point.mY;
     }
 
+
     @Override
-    protected boolean rawProject(int toCrs) {
+    protected boolean rawProject(int toCrs)
+    {
         switch (toCrs) {
             case CRS_WEB_MERCATOR:
                 Geo.wgs84ToMercatorSphere(this);
@@ -103,12 +110,44 @@ public class GeoPoint extends GeoGeometry {
         }
     }
 
+
     @Override
-    public GeoEnvelope getEnvelope() {
+    public GeoEnvelope getEnvelope()
+    {
         return new GeoEnvelope(mX, mX, mY, mY);
     }
 
-    public String toString() {
+
+    @Override
+    public JSONArray coordinatesToJSON()
+            throws JSONException
+    {
+        JSONArray coordinates = new JSONArray();
+        coordinates.put(mX);
+        coordinates.put(mY);
+
+        return coordinates;
+    }
+
+
+    @Override
+    public final int getType()
+    {
+        return GTPoint;
+    }
+
+
+    @Override
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
+        mX = coordinates.getDouble(0);
+        mY = coordinates.getDouble(1);
+    }
+
+
+    public String toString()
+    {
         return "X: " + mX + ", Y: " + mY;
     }
 }

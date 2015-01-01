@@ -30,37 +30,48 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-public class FileUtil {
 
-    public static boolean isIntegerParseInt(String str) {
+public class FileUtil
+{
+
+    public static boolean isIntegerParseInt(String str)
+    {
         try {
             Integer.parseInt(str);
             return true;
-        } catch (NumberFormatException nfe) {}
+        } catch (NumberFormatException nfe) {
+        }
         return false;
     }
 
 
-    public static void writeToFile(File filePath, String sData) throws IOException{
+    public static void writeToFile(
+            File filePath,
+            String sData)
+            throws IOException
+    {
         FileOutputStream os = new FileOutputStream(filePath, false);
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(os);
         outputStreamWriter.write(sData);
         outputStreamWriter.close();
     }
 
-    public static String readFromFile(File filePath) throws IOException  {
+
+    public static String readFromFile(File filePath)
+            throws IOException
+    {
 
         String ret = "";
 
         FileInputStream inputStream = new FileInputStream(filePath);
 
-        if ( inputStream != null ) {
+        if (inputStream != null) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
             String receiveString = "";
             StringBuilder stringBuilder = new StringBuilder();
 
-            while ( (receiveString = bufferedReader.readLine()) != null ) {
+            while ((receiveString = bufferedReader.readLine()) != null) {
                 stringBuilder.append(receiveString);
             }
 
@@ -70,7 +81,9 @@ public class FileUtil {
         return ret;
     }
 
-    public static void createDir(File dir) {
+
+    public static void createDir(File dir)
+    {
         if (dir.exists()) {
             return;
         }
@@ -79,21 +92,34 @@ public class FileUtil {
         }
     }
 
-    public static boolean deleteRecursive(File fileOrDirectory) {
+
+    public static boolean deleteRecursive(File fileOrDirectory)
+    {
         boolean isOK = true;
 
-        if (fileOrDirectory.isDirectory())
-            for (File child : fileOrDirectory.listFiles())
+        if (fileOrDirectory.isDirectory()) {
+            for (File child : fileOrDirectory.listFiles()) {
                 isOK = deleteRecursive(child) && isOK;
+            }
+        }
 
         return fileOrDirectory.delete() && isOK;
     }
 
-    public static void copyStream( InputStream is, OutputStream os, byte[] buffer, int bufferSize ) throws IOException {
-        for (;;) {
-            int count = is.read( buffer, 0, bufferSize );
-            if ( count == -1 ) { break; }
-            os.write( buffer, 0, count );
+
+    public static void copyStream(
+            InputStream is,
+            OutputStream os,
+            byte[] buffer,
+            int bufferSize)
+            throws IOException
+    {
+        for (; ; ) {
+            int count = is.read(buffer, 0, bufferSize);
+            if (count == -1) {
+                break;
+            }
+            os.write(buffer, 0, count);
         }
     }
 }

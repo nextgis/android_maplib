@@ -23,21 +23,23 @@ package com.nextgis.maplib.display;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IRenderer;
-import com.nextgis.maplib.map.Layer;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 
-public abstract class Renderer implements IJSONStore, IRenderer {
+public abstract class Renderer
+        implements IJSONStore, IRenderer
+{
 
-    protected final ILayer mLayer;
-    protected static int mCPUTotalCount;
+    protected static int    mCPUTotalCount;
+    protected final  ILayer mLayer;
 
-    public Renderer(ILayer layer){
+
+    public Renderer(ILayer layer)
+    {
         mLayer = layer;
 
         mCPUTotalCount = Runtime.getRuntime().availableProcessors() * 8;
-        if(mCPUTotalCount < 1)
+        if (mCPUTotalCount < 1) {
             mCPUTotalCount = 1;
+        }
     }
 }

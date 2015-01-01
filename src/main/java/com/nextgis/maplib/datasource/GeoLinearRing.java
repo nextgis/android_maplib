@@ -22,12 +22,18 @@ package com.nextgis.maplib.datasource;
 
 import java.util.List;
 
-public class GeoLinearRing extends GeoLineString {
-    public GeoLinearRing() {
+
+public class GeoLinearRing
+        extends GeoLineString
+{
+    public GeoLinearRing()
+    {
         super();
     }
 
-    public boolean isClosed() {
+
+    public boolean isClosed()
+    {
         List<GeoPoint> points = getPoints();
         GeoPoint first = points.get(0);
         GeoPoint last = points.get(points.size() - 1);

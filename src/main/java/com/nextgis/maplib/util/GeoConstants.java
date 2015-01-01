@@ -20,7 +20,8 @@
  ****************************************************************************/
 package com.nextgis.maplib.util;
 
-public interface GeoConstants {
+public interface GeoConstants
+{
 
     /**
      * Mercator projection constants
@@ -30,16 +31,16 @@ public interface GeoConstants {
     /**
      * DataSource type
      */
-    public final static int DS_TYPE_ZIP = 1;
-    public final static int DS_TYPE_TMS = 2;
+    public final static int DS_TYPE_ZIP           = 1;
+    public final static int DS_TYPE_TMS           = 2;
     public final static int DS_TYPE_LOCAL_GEOJSON = 3;
-    public final static int DS_TYPE_LOCAL_NGFP = 4;
+    public final static int DS_TYPE_LOCAL_NGFP    = 4;
 
     /**
      * TMS type
      */
     public static final int TMSTYPE_NORMAL = 1;
-    public static final int TMSTYPE_OSM = 2;
+    public static final int TMSTYPE_OSM    = 2;
 
     public static final int DEFAULT_MAX_ZOOM = 25;
     public static final int DEFAULT_MIN_ZOOM = 0;
@@ -47,56 +48,55 @@ public interface GeoConstants {
     /**
      * geometry type
      */
-    public static final int GTPoint = 1;
-    public static final int GTLineString = 2;
-    public static final int GTPolygon = 3;
-    public static final int GTMultiPoint = 4;
-    public static final int GTMultiLineString = 5;
-    public static final int GTMultiPolygon = 6;
+    public static final int GTPoint              = 1;
+    public static final int GTLineString         = 2;
+    public static final int GTPolygon            = 3;
+    public static final int GTMultiPoint         = 4;
+    public static final int GTMultiLineString    = 5;
+    public static final int GTMultiPolygon       = 6;
     public static final int GTGeometryCollection = 7;
-    public static final int GTNone = 100;
+    public static final int GTNone               = 100;
 
     /**
-     * geojson
-     * see http://geojson.org/geojson-spec.html
+     * geojson see http://geojson.org/geojson-spec.html
      */
-    public static final String GEOJSON_TYPE = "type";
-    public static final String GEOJSON_ID = "ID";
-    public static final String GEOJSON_FEATURE_ID = "FEATURE_ID";
-    public static final String GEOJSON_CRS = "crs";
-    public static final String GEOJSON_NAME = "name";
-    public static final String GEOJSON_PROPERTIES = "properties";
-    public static final String GEOJSON_BBOX = "bbox";
-    public static final String GEOJSON_TYPE_FEATURES = "features";
-    public static final String GEOJSON_GEOMETRY = "geometry";
-    public static final String GEOJSON_GEOMETRIES = "geometries";
-    public static final String GEOJSON_COORDINATES = "coordinates";
-    public static final String GEOJSON_TYPE_Point = "Point";
-    public static final String GEOJSON_TYPE_MultiPoint = "MultiPoint";
-    public static final String GEOJSON_TYPE_LineString = "LineString";
-    public static final String GEOJSON_TYPE_MultiLineString = "MultiLineString";
-    public static final String GEOJSON_TYPE_Polygon = "Polygon";
-    public static final String GEOJSON_TYPE_MultiPolygon = "MultiPolygon";
+    public static final String GEOJSON_TYPE                    = "type";
+    public static final String GEOJSON_ID                      = "ID";
+    public static final String GEOJSON_FEATURE_ID              = "FEATURE_ID";
+    public static final String GEOJSON_CRS                     = "crs";
+    public static final String GEOJSON_NAME                    = "name";
+    public static final String GEOJSON_PROPERTIES              = "properties";
+    public static final String GEOJSON_BBOX                    = "bbox";
+    public static final String GEOJSON_TYPE_FEATURES           = "features";
+    public static final String GEOJSON_GEOMETRY                = "geometry";
+    public static final String GEOJSON_GEOMETRIES              = "geometries";
+    public static final String GEOJSON_COORDINATES             = "coordinates";
+    public static final String GEOJSON_TYPE_Point              = "Point";
+    public static final String GEOJSON_TYPE_MultiPoint         = "MultiPoint";
+    public static final String GEOJSON_TYPE_LineString         = "LineString";
+    public static final String GEOJSON_TYPE_MultiLineString    = "MultiLineString";
+    public static final String GEOJSON_TYPE_Polygon            = "Polygon";
+    public static final String GEOJSON_TYPE_MultiPolygon       = "MultiPolygon";
     public static final String GEOJSON_TYPE_GeometryCollection = "GeometryCollection";
-    public static final String GEOJSON_TYPE_Feature = "Feature";
-    public static final String GEOJSON_TYPE_FeatureCollection = "FeatureCollection";
+    public static final String GEOJSON_TYPE_Feature            = "Feature";
+    public static final String GEOJSON_TYPE_FeatureCollection  = "FeatureCollection";
 
     /**
      * field type
      */
-    public static final int FTInteger = 0;
+    public static final int FTInteger     = 0;
     public static final int FTIntegerList = 1;
-    public static final int FTReal = 2;
-    public static final int FTRealList = 3;
-    public static final int FTString = 4;
-    public static final int FTStringList = 5;
-    public static final int FTBinary = 8;
-    public static final int FTDateTime = 11;
+    public static final int FTReal        = 2;
+    public static final int FTRealList    = 3;
+    public static final int FTString      = 4;
+    public static final int FTStringList  = 5;
+    public static final int FTBinary      = 8;
+    public static final int FTDateTime    = 11;
 
     /**
      * CRS
      */
-    public static final int CRS_WGS84 = 4326;
+    public static final int CRS_WGS84        = 4326;
     public static final int CRS_WEB_MERCATOR = 3857;
 
 }

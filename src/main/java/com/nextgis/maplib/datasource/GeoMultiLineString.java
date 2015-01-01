@@ -23,12 +23,17 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 
-public class GeoMultiLineString extends GeoGeometryCollection {
+
+public class GeoMultiLineString
+        extends GeoGeometryCollection
+{
 
     @Override
-    public void add(GeoGeometry geometry) throws ClassCastException {
+    public void add(GeoGeometry geometry)
+            throws ClassCastException
+    {
         if (!(geometry instanceof GeoLineString)) {
             throw new ClassCastException("GeoMultiLineString: geometry is not GeoLineString type.");
         }
@@ -36,26 +41,35 @@ public class GeoMultiLineString extends GeoGeometryCollection {
         super.add(geometry);
     }
 
-    public void add(GeoLineString lineString) {
-        super.add(lineString);
-    }
 
     @Override
-    public GeoLineString get(int index) {
+    public GeoLineString get(int index)
+    {
         return (GeoLineString) mGeometries.get(index);
     }
 
+
     @Override
-    public int getType() {
+    public int getType()
+    {
         return GTMultiLineString;
     }
 
+
     @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
         for (int i = 0; i < coordinates.length(); ++i) {
             GeoLineString lineString = new GeoLineString();
             lineString.setCoordinatesFromJSON(coordinates.getJSONArray(i));
             add(lineString);
         }
+    }
+
+
+    public void add(GeoLineString lineString)
+    {
+        super.add(lineString);
     }
 }

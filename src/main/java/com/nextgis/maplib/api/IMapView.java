@@ -21,20 +21,31 @@
 package com.nextgis.maplib.api;
 
 import android.graphics.Bitmap;
-
 import com.nextgis.maplib.datasource.GeoPoint;
 
-public interface IMapView extends IRenderer {
+
+public interface IMapView
+        extends IRenderer
+{
     public Bitmap getView();
-    public void setViewSize(int w, int h);
+
+    public void setViewSize(
+            int w,
+            int h);
+
     public float getZoomLevel();
 
     /**
      * Set new map extent according zoom level and center
-     * @param zoom A zoom level
-     * @param center A map center coordinates
+     *
+     * @param zoom
+     *         A zoom level
+     * @param center
+     *         A map center coordinates
      */
-    public void setZoomAndCenter(float zoom, GeoPoint center);
+    public void setZoomAndCenter(
+            float zoom,
+            GeoPoint center);
 
     public GeoPoint getMapCenter();
 }

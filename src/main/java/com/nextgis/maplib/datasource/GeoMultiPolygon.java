@@ -23,12 +23,17 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 
-public class GeoMultiPolygon extends GeoGeometryCollection {
+
+public class GeoMultiPolygon
+        extends GeoGeometryCollection
+{
 
     @Override
-    public void add(GeoGeometry geometry) throws ClassCastException {
+    public void add(GeoGeometry geometry)
+            throws ClassCastException
+    {
         if (!(geometry instanceof GeoPolygon)) {
             throw new ClassCastException("GeoMultiPolygon: geometry is not GeoPolygon type.");
         }
@@ -36,26 +41,35 @@ public class GeoMultiPolygon extends GeoGeometryCollection {
         super.add(geometry);
     }
 
-    public void add(GeoPolygon lineString) {
-        super.add(lineString);
-    }
 
     @Override
-    public GeoPolygon get(int index) {
+    public GeoPolygon get(int index)
+    {
         return (GeoPolygon) mGeometries.get(index);
     }
 
+
     @Override
-    public int getType() {
+    public int getType()
+    {
         return GTMultiPolygon;
     }
 
+
     @Override
-    public void setCoordinatesFromJSON(JSONArray coordinates) throws JSONException {
+    public void setCoordinatesFromJSON(JSONArray coordinates)
+            throws JSONException
+    {
         for (int i = 0; i < coordinates.length(); ++i) {
             GeoPolygon polygon = new GeoPolygon();
             polygon.setCoordinatesFromJSON(coordinates.getJSONArray(i));
             add(polygon);
         }
+    }
+
+
+    public void add(GeoPolygon lineString)
+    {
+        super.add(lineString);
     }
 }

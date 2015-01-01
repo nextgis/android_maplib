@@ -25,34 +25,46 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
 
-public class NetworkUtil {
+
+public class NetworkUtil
+{
 
     protected final ConnectivityManager mConnectionManager;
-    protected final TelephonyManager mTelephonyManager;
+    protected final TelephonyManager    mTelephonyManager;
 
-    public NetworkUtil(Context context) {
-        mConnectionManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+    public NetworkUtil(Context context)
+    {
+        mConnectionManager =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
     }
 
-    public boolean isNetworkAvailable(){
-        if(mConnectionManager == null)
+
+    public boolean isNetworkAvailable()
+    {
+        if (mConnectionManager == null) {
             return false;
+        }
 
 
         NetworkInfo info = mConnectionManager.getActiveNetworkInfo();
-        if (info == null ) //|| !cm.getBackgroundDataSetting()
+        if (info == null) //|| !cm.getBackgroundDataSetting()
+        {
             return false;
+        }
 
         int netType = info.getType();
         if (netType == ConnectivityManager.TYPE_WIFI) {
             return info.isConnected();
-        }
-        else if (netType == ConnectivityManager.TYPE_MOBILE){ // netSubtype == TelephonyManager.NETWORK_TYPE_UMTS
-            if(mTelephonyManager == null)
+        } else if (netType ==
+                   ConnectivityManager.TYPE_MOBILE) { // netSubtype == TelephonyManager.NETWORK_TYPE_UMTS
+            if (mTelephonyManager == null) {
                 return false;
-            if(mTelephonyManager.isNetworkRoaming())
+            }
+            if (mTelephonyManager.isNetworkRoaming()) {
                 return info.isConnected();
+            }
         }
 
         return false;

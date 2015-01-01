@@ -27,7 +27,6 @@ import android.util.Log;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -46,14 +45,20 @@ import java.io.OutputStream;
 
 import static com.nextgis.maplib.util.Constants.*;
 
-public class RemoteTMSLayer extends TMSLayer {
-    protected String mURL;
-    protected DefaultHttpClient mHTTPClient;
-    protected NetworkUtil mNet;
 
+public class RemoteTMSLayer
+        extends TMSLayer
+{
     protected static final String JSON_URL_KEY = "url";
+    protected String            mURL;
+    protected DefaultHttpClient mHTTPClient;
+    protected NetworkUtil       mNet;
 
-    public RemoteTMSLayer(Context context, File path) {
+
+    public RemoteTMSLayer(
+            Context context,
+            File path)
+    {
         super(context, path);
 
         setupHttpClient();
@@ -61,31 +66,38 @@ public class RemoteTMSLayer extends TMSLayer {
         mNet = new NetworkUtil(context);
     }
 
-    protected void setupHttpClient(){
+
+    protected void setupHttpClient()
+    {
         /*HttpParams httpParameters = new BasicHttpParams();
         HttpConnectionParams.setConnectionTimeout(httpParameters, TIMEOUT_CONNECTION);
         // Set the default socket timeout (SO_TIMEOUT)
         // in milliseconds which is the timeout for waiting for data.
         HttpConnectionParams.setSoTimeout(httpParameters, TIMEOUT_SOKET);
         */
-        mHTTPClient = new  DefaultHttpClient();//httpParameters);
+        mHTTPClient = new DefaultHttpClient();//httpParameters);
         mHTTPClient.getParams().setParameter(CoreProtocolPNames.USER_AGENT, APP_USER_AGENT);
-        mHTTPClient.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
+        mHTTPClient.getParams()
+                   .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
         mHTTPClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
     }
 
+
     @Override
-    public Bitmap getBitmap(TileItem tile) {
+    public Bitmap getBitmap(TileItem tile)
+    {
         Bitmap ret;
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
-        if (tilePath.exists() && System.currentTimeMillis() - tilePath.lastModified() < DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
+        if (tilePath.exists() && System.currentTimeMillis() - tilePath.lastModified() <
+                                 DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-            if(ret != null)
+            if (ret != null) {
                 return ret;
+            }
         }
 
-        if(!mNet.isNetworkAvailable()) { //return tile from cache
+        if (!mNet.isNetworkAvailable()) { //return tile from cache
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             return ret;
         }
@@ -99,7 +111,9 @@ public class RemoteTMSLayer extends TMSLayer {
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading MapTile: " + tile.toString(mURL) + " HTTP response: " + line);
+                Log.d(TAG,
+                      "Problem downloading MapTile: " + tile.toString(mURL) + " HTTP response: " +
+                      line);
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
                 return ret;
             }
@@ -125,36 +139,49 @@ public class RemoteTMSLayer extends TMSLayer {
             return ret;
 
         } catch (IOException e) {
-            Log.d(TAG, "Problem downloading MapTile: " + tile.toString(mURL) + " Error: " + e.getLocalizedMessage());
+            Log.d(TAG, "Problem downloading MapTile: " + tile.toString(mURL) + " Error: " +
+                       e.getLocalizedMessage());
         }
 
         ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
         return ret;
     }
 
-    @Override
-    public int getType() {
-        return LAYERTYPE_REMOTE_TMS;
-    }
 
     @Override
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON()
+            throws JSONException
+    {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_URL_KEY, mURL);
         return rootConfig;
     }
 
+
     @Override
-    public void fromJSON(JSONObject jsonObject) throws JSONException {
+    public void fromJSON(JSONObject jsonObject)
+            throws JSONException
+    {
         super.fromJSON(jsonObject);
         mURL = jsonObject.getString(JSON_URL_KEY);
     }
 
-    public String getURL() {
+
+    @Override
+    public int getType()
+    {
+        return LAYERTYPE_REMOTE_TMS;
+    }
+
+
+    public String getURL()
+    {
         return mURL;
     }
 
-    public void setURL(String URL) {
+
+    public void setURL(String URL)
+    {
         mURL = URL;
     }
 }
