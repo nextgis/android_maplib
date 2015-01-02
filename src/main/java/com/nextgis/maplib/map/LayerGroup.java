@@ -232,7 +232,7 @@ public class LayerGroup
             String sPath = jsonLayer.getString(JSON_PATH_KEY);
             File inFile = new File(getPath(), sPath);
             if (inFile.exists()) {
-                ILayer layer = mLayerFactory.createLayer(inFile);
+                ILayer layer = mLayerFactory.createLayer(mContext, inFile);
                 if (layer.load()) {
                     addLayer(layer);
                 }

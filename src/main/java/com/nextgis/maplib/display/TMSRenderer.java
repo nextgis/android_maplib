@@ -50,7 +50,6 @@ public class TMSRenderer
     protected static final String JSON_TMSRENDERER_CONTRAST   = "contrast";
     protected static final String JSON_TMSRENDERER_BRIGHTNESS = "brightness";
     protected static final String JSON_TMSRENDERER_GRAYSCALE  = "greyscale";
-    protected static final int    HTTP_SEPARATE_THREADS       = 2;
     protected ThreadPoolExecutor mDrawThreadPool;
     protected Paint              mRasterPaint;
     protected boolean            mAntiAlias;
@@ -133,48 +132,16 @@ public class TMSRenderer
         ColorMatrix cm;
         if (bToGreyScale) {
             cm = new ColorMatrix(new float[] {
-                    contrast * 0.299f,
-                    0.587f,
-                    0.114f,
-                    0,
-                    brightness,
-                    0.299f,
-                    0.587f * contrast,
-                    0.114f,
-                    0,
-                    brightness,
-                    0.299f,
-                    0.587f,
-                    0.114f * contrast,
-                    0,
-                    brightness,
-                    0,
-                    0,
-                    0,
-                    1,
-                    0});
+                contrast * 0.299f, 0.587f, 0.114f, 0, brightness,
+                0.299f, 0.587f * contrast, 0.114f, 0, brightness,
+                0.299f, 0.587f, 0.114f * contrast, 0, brightness,
+                0, 0, 0, 1, 0});
         } else {
             cm = new ColorMatrix(new float[] {
-                    contrast,
-                    0,
-                    0,
-                    0,
-                    brightness,
-                    0,
-                    contrast,
-                    0,
-                    0,
-                    brightness,
-                    0,
-                    0,
-                    contrast,
-                    0,
-                    brightness,
-                    0,
-                    0,
-                    0,
-                    1,
-                    0});
+                contrast, 0, 0, 0, brightness,
+                0, contrast, 0, 0, brightness,
+                0, 0, contrast, 0, brightness,
+                0, 0, 0, 1, 0});
         }
         if (mRasterPaint != null) {
             mRasterPaint.setColorFilter(new ColorMatrixColorFilter(cm));
@@ -186,10 +153,6 @@ public class TMSRenderer
     public void runDraw(final GISDisplay display)
             throws NullPointerException
     {
-
-        //TODO: clear display cache
-        //display.clearLayer(0);
-
         final double zoom = display.getZoomLevel();
 
         GeoEnvelope env = display.getBounds();
@@ -197,7 +160,7 @@ public class TMSRenderer
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, env, zoom);
 
-        mDrawThreadPool = new ThreadPoolExecutor(1, HTTP_SEPARATE_THREADS, KEEP_ALIVE_TIME,
+        mDrawThreadPool = new ThreadPoolExecutor(1, tmsLayer.getMaxThreadCount(), KEEP_ALIVE_TIME,
                                                  KEEP_ALIVE_TIME_UNIT,
                                                  new LinkedBlockingQueue<Runnable>());
 
@@ -216,12 +179,12 @@ public class TMSRenderer
                         display.drawTile(bmp, tile.getPoint(), mRasterPaint);
                     }
 
-                    float percent = (float) (mDrawThreadPool.getCompletedTaskCount() + 2) /
+                    float percent = 100;
+                    if(mDrawThreadPool.getTaskCount() > 1)
+                        percent = (float) (mDrawThreadPool.getCompletedTaskCount() + 1) /
                                     mDrawThreadPool.getTaskCount();
                     tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
-                    Log.d(TAG, "percent: " + percent + " complete: " +
-                               mDrawThreadPool.getCompletedTaskCount() + " task count: " +
-                               mDrawThreadPool.getTaskCount());
+                    //Log.d(TAG, "percent: " + percent + " complete: " + mDrawThreadPool.getCompletedTaskCount() + " task count: " + mDrawThreadPool.getTaskCount());
                 }
             });
         }

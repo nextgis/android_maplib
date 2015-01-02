@@ -47,7 +47,9 @@ public abstract class LayerFactory
     }
 
 
-    public ILayer createLayer(File path)
+    public ILayer createLayer(
+            Context context,
+            File path)
     {
         File config_file = new File(path, LAYER_CONFIG);
         ILayer layer = null;
@@ -67,7 +69,7 @@ public abstract class LayerFactory
                 case LAYERTYPE_LOCAL_RASTER:
                     break;
                 case LAYERTYPE_REMOTE_TMS:
-                    //layer = new RemoteTMSLayer(this, path, rootObject);
+                    layer = new RemoteTMSLayer(context, path);
                     break;
                 case LAYERTYPE_NDW_VECTOR:
                     //layer = new NgwVectorLayer(this, path, rootObject);

@@ -43,7 +43,7 @@ public abstract class TMSLayer
     protected static final String JSON_RENDERERPROPS_KEY = "renderer_properties";
     protected static final String JSON_TMSTYPE_KEY       = "tms_type";
     protected int mTMSType;
-
+    protected static final int    HTTP_SEPARATE_THREADS       = 2;
 
     protected TMSLayer(
             Context contex,
@@ -201,5 +201,10 @@ public abstract class TMSLayer
                 jsonStore.fromJSON(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
             }
         }
+    }
+
+    public int getMaxThreadCount()
+    {
+        return HTTP_SEPARATE_THREADS;
     }
 }

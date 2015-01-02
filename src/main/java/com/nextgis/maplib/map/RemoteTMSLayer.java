@@ -24,6 +24,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
+import android.util.Pair;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -42,6 +43,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.sql.Struct;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -50,9 +54,11 @@ public class RemoteTMSLayer
         extends TMSLayer
 {
     protected static final String JSON_URL_KEY = "url";
-    protected String            mURL;
-    protected DefaultHttpClient mHTTPClient;
-    protected NetworkUtil       mNet;
+    protected String                      mURL;
+    protected DefaultHttpClient           mHTTPClient;
+    protected NetworkUtil                 mNet;
+    protected List<Pair<String, Integer>> mSubdomains;
+    protected String subDomainsMask;
 
 
     public RemoteTMSLayer(
@@ -102,8 +108,10 @@ public class RemoteTMSLayer
             return ret;
         }
         // try to get tile from remote
+        Pair<String, String> pair = getURLSubdomain();
         try {
-            final HttpUriRequest head = new HttpGet(tile.toString(mURL));
+
+            final HttpUriRequest head = new HttpGet(tile.toString(pair.first));
             final HttpResponse response;
 
             response = mHTTPClient.execute(head);
@@ -115,6 +123,7 @@ public class RemoteTMSLayer
                       "Problem downloading MapTile: " + tile.toString(mURL) + " HTTP response: " +
                       line);
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                returnSubdomain(pair.second);
                 return ret;
             }
 
@@ -122,6 +131,7 @@ public class RemoteTMSLayer
             if (entity == null) {
                 Log.d(TAG, "No content downloading MapTile: " + tile.toString(mURL));
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                returnSubdomain(pair.second);
                 return ret;
             }
 
@@ -136,6 +146,7 @@ public class RemoteTMSLayer
             output.close();
             input.close();
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+            returnSubdomain(pair.second);
             return ret;
 
         } catch (IOException e) {
@@ -144,6 +155,7 @@ public class RemoteTMSLayer
         }
 
         ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+        returnSubdomain(pair.second);
         return ret;
     }
 
@@ -164,6 +176,57 @@ public class RemoteTMSLayer
     {
         super.fromJSON(jsonObject);
         mURL = jsonObject.getString(JSON_URL_KEY);
+
+        mSubdomains = new ArrayList<>();
+        //analize url for subdomains
+        boolean begin_block = false;
+        String subdomain = "";
+        int beginSubDomains = NOT_FOUND;
+        int endSubDomains = NOT_FOUND;
+        for(int i = 0; i < mURL.length(); ++i)
+        {
+            if(begin_block)
+            {
+                if(mURL.charAt(i) == 'x' || mURL.charAt(i) == 'y' || mURL.charAt(i) == 'z')
+                {
+                    begin_block = false;
+                }
+                else if(mURL.charAt(i) == ',')
+                {
+                    subdomain = subdomain.trim();
+                    if(subdomain.length() > 0) {
+                        mSubdomains.add(new Pair<String, Integer>(subdomain, HTTP_SEPARATE_THREADS));
+                        subdomain = "";
+                    }
+                }
+                else if(mURL.charAt(i) == '}')
+                {
+                    subdomain = subdomain.trim();
+                    if(subdomain.length() > 0) {
+                        mSubdomains.add(new Pair<String, Integer>(subdomain, HTTP_SEPARATE_THREADS));
+                        subdomain = "";
+                    }
+                    endSubDomains = i;
+                    begin_block = false;
+                }
+                else
+                {
+                    subdomain += mURL.charAt(i);
+                }
+            }
+
+            if(mURL.charAt(i) == '{')
+            {
+                if(endSubDomains == NOT_FOUND)
+                    beginSubDomains = i;
+                begin_block = true;
+            }
+        }
+
+        if(endSubDomains > beginSubDomains)
+        {
+            subDomainsMask = mURL.substring(beginSubDomains, endSubDomains);
+        }
     }
 
 
@@ -183,5 +246,40 @@ public class RemoteTMSLayer
     public void setURL(String URL)
     {
         mURL = URL;
+    }
+
+    public int getMaxThreadCount()
+    {
+        return mSubdomains.size() * HTTP_SEPARATE_THREADS;
+    }
+
+    protected synchronized void returnSubdomain(String subdomain)
+    {
+        for (int i = 0; i < mSubdomains.size(); ++i)
+        {
+            Pair<String, Integer> pair = mSubdomains.get(i);
+            if(pair.first.equals(subdomain))
+            {
+                mSubdomains.set(i, new Pair<>(pair.first, pair.second + 1));
+                return;
+            }
+        }
+    }
+
+    protected synchronized Pair<String, String> getURLSubdomain()
+    {
+        if(mSubdomains.size() == 0 || subDomainsMask.length() == 0)
+            return new Pair<>(mURL, "");
+
+        for (int i = 0; i < mSubdomains.size(); ++i) {
+            Pair<String, Integer> pair = mSubdomains.get(i);
+            if (pair.second > 0) {
+                String newURL = mURL.replace(subDomainsMask, pair.first);
+                mSubdomains.set(i, new Pair<>(pair.first, pair.second - 1));
+
+                return new Pair<>(newURL, pair.first);
+            }
+        }
+        return new Pair<>(mURL, "");
     }
 }
