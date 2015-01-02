@@ -256,4 +256,10 @@ public class Layer
     {
         mParent = layer;
     }
+
+
+    public Context getContext()
+    {
+        return mContext;
+    }
 }

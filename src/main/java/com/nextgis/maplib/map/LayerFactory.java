@@ -100,6 +100,5 @@ public abstract class LayerFactory
 
 
     public abstract void createNewRemoteTMSLayer(
-            final Context context,
             final LayerGroup groupLayer);
 }
