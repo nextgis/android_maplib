@@ -69,7 +69,7 @@ public class GISDisplay
     {
         mBkBitmap = backgroundTile;
         //set max zoom
-        mMinZoomLevel = NOT_FOUND;
+        mMinZoomLevel = 0;
         mMaxZoomLevel = DEFAULT_MAX_ZOOM;
         mLimitType = MAP_LIMITS_Y;
 
@@ -80,12 +80,11 @@ public class GISDisplay
         mFullBounds = new GeoEnvelope(-MERCATOR_MAX, MERCATOR_MAX, -MERCATOR_MAX,
                                       MERCATOR_MAX); //set full Mercator bounds
         mGeoLimits = mFullBounds;
-
+        mCenter = mGeoLimits.getCenter();
         //default transform matrix
         mTransformMatrix = new Matrix();
         mInvertTransformMatrix = new Matrix();
         mMapTileSize = new GeoPoint();
-        mCenter = new GeoPoint();
 
         setSize(100, 100);
 
@@ -110,9 +109,7 @@ public class GISDisplay
         // calc min zoom for no limits scenario
         // we calc the zoom level for full cover the whole display with tiles
         // if the zoom level is already set - do nothing
-        if (mMinZoomLevel == NOT_FOUND) {
-            mMinZoomLevel = (float) Math.ceil((float) Math.min(w, h) / mTileSize);
-        }
+        mMinZoomLevel = (float) Math.ceil((float) Math.min(w, h) / mTileSize);
 
         mBackgroundBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mBackgroundCanvas = new Canvas(mBackgroundBitmap);
@@ -498,12 +495,12 @@ public class GISDisplay
         mLimits.adjust(mScreenBounds.width() / mScreenBounds.height());
 
         double scale = (float) (mScreenBounds.width()) / mLimits.width();
-        double zoom = Math.log(scale) / Math.log(2.0) + 2;
+        double zoom = Math.log(scale) / Math.log(2.0);
 
         mMinZoomLevel = (float) Math.ceil(getZoomLevel() + zoom);
         mCenter = mGeoLimits.getCenter();
         setZoomAndCenter(mMinZoomLevel, mCenter);
-        Log.d(TAG, "min zoom level: " + mMinZoomLevel);
+        Log.d(TAG, "min zoom level: " + mMinZoomLevel + ", center:" + mCenter.toString());
     }
 
 

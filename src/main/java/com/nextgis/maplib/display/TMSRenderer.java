@@ -34,7 +34,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -159,14 +163,13 @@ public class TMSRenderer
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, env, zoom);
-
-        mDrawThreadPool = new ThreadPoolExecutor(1, tmsLayer.getMaxThreadCount(), KEEP_ALIVE_TIME,
-                                                 KEEP_ALIVE_TIME_UNIT,
-                                                 new LinkedBlockingQueue<Runnable>());
+        int threadCount = tmsLayer.getMaxThreadCount();
+        mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
+                                                 KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>());
 
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);
-            mDrawThreadPool.submit(new Runnable()
+            mDrawThreadPool.execute(new Runnable()
             {
                 @Override
                 public void run()

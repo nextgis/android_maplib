@@ -21,6 +21,9 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import com.nextgis.maplib.api.IEventSource;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
@@ -36,7 +39,22 @@ public class MapEventSource
         implements IEventSource
 {
     protected List<MapEventListener> mListeners;
-    //protected Handler mHandler;
+    protected Handler                mHandler;
+
+    protected static final String BUNDLE_ID_KEY        = "id";
+    protected static final String BUNDLE_TYPE_KEY      = "type";
+    protected static final String BUNDLE_DONE_KEY      = "done";
+    protected static final String BUNDLE_ZOOM_KEY      = "zoom";
+    protected static final String BUNDLE_X_KEY      = "x";
+    protected static final String BUNDLE_Y_KEY      = "y";
+
+
+    protected final static int EVENT_onLayerAdded = 1;
+    protected final static int EVENT_onLayerDeleted = 2;
+    protected final static int EVENT_onLayerChanged = 3;
+    protected final static int EVENT_onExtentChanged = 4;
+    protected final static int EVENT_onLayersReordered = 5;
+    protected final static int EVENT_onLayerDrawFinished = 6;
 
 
     public MapEventSource(
@@ -45,9 +63,9 @@ public class MapEventSource
             LayerFactory layerFactory)
     {
         super(context, mapPath, layerFactory);
-        mListeners = new ArrayList<MapEventListener>();
+        mListeners = new ArrayList<>();
 
-        //createHandler();
+        createHandler();
     }
 
 
@@ -101,9 +119,14 @@ public class MapEventSource
         if (mListeners == null) {
             return;
         }
-        for (MapEventListener listener : mListeners) {
-            listener.onLayerAdded(layer);
-        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_ID_KEY, layer.getId());
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerAdded);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
     }
 
 
@@ -118,9 +141,14 @@ public class MapEventSource
         if (mListeners == null) {
             return;
         }
-        for (MapEventListener listener : mListeners) {
-            listener.onLayerChanged(layer);
-        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_ID_KEY, layer.getId());
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerChanged);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
     }
 
 
@@ -135,9 +163,14 @@ public class MapEventSource
         if (mListeners == null) {
             return;
         }
-        for (MapEventListener listener : mListeners) {
-            listener.onLayerDeleted(id);
-        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_ID_KEY, id);
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDeleted);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
     }
 
 
@@ -150,15 +183,23 @@ public class MapEventSource
      *         A map center coordinates
      */
     protected void onExtentChanged(
-            int zoom,
+            float zoom,
             GeoPoint center)
     {
         if (mListeners == null) {
             return;
         }
-        for (MapEventListener listener : mListeners) {
-            listener.onExtentChanged(zoom, center);
-        }
+
+        Bundle bundle = new Bundle();
+        bundle.putFloat(BUNDLE_ZOOM_KEY, zoom);
+        bundle.putDouble(BUNDLE_X_KEY, center.getX());
+        bundle.putDouble(BUNDLE_Y_KEY, center.getY());
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onExtentChanged);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+
     }
 
 
@@ -170,9 +211,13 @@ public class MapEventSource
         if (mListeners == null) {
             return;
         }
-        for (MapEventListener listener : mListeners) {
-            listener.onLayersReordered();
-        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayersReordered);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
     }
 
 
@@ -186,46 +231,50 @@ public class MapEventSource
         if (mListeners == null) {
             return;
         }
-        for (MapEventListener listener : mListeners) {
-            listener.onLayerDrawFinished(id, percent);
-        }
-    }
 
-    /*
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDrawFinished);
+        bundle.putInt(BUNDLE_ID_KEY, id);
+        bundle.putFloat(BUNDLE_DONE_KEY, percent);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+    }
 
     /**
      * Create handler for messages
-     *//*
+     */
     protected void createHandler(){
         mHandler = new Handler() {
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
 
                 Bundle resultData = msg.getData();
-                boolean bHasErr = resultData.getBoolean(BUNDLE_HASERROR_KEY);
-                if(bHasErr){
-                    reportError(resultData.getString(BUNDLE_MSG_KEY));
-                }
-                else{
-                    processMessage(resultData);
+
+                for (MapEventListener listener : mListeners) {
+                    switch(resultData.getInt(BUNDLE_TYPE_KEY)) {
+                        case EVENT_onLayerAdded:
+                            listener.onLayerAdded(resultData.getInt(BUNDLE_ID_KEY));
+                            break;
+                        case EVENT_onLayerDeleted:
+                            listener.onLayerDeleted(resultData.getInt(BUNDLE_ID_KEY));
+                            break;
+                        case EVENT_onLayerChanged:
+                            listener.onLayerChanged(resultData.getInt(BUNDLE_ID_KEY));
+                            break;
+                        case EVENT_onExtentChanged:
+                            listener.onExtentChanged(resultData.getFloat(BUNDLE_ZOOM_KEY), new GeoPoint(resultData.getDouble(BUNDLE_X_KEY), resultData.getDouble(BUNDLE_Y_KEY)));
+                            break;
+                        case EVENT_onLayerDrawFinished:
+                            listener.onLayerDrawFinished(resultData.getInt(BUNDLE_ID_KEY), resultData.getFloat(BUNDLE_DONE_KEY));
+                            break;
+                        case EVENT_onLayersReordered:
+                            listener.onLayersReordered();
+                            break;
+                    }
                 }
             }
         };
     }
-
-    /**
-     * Process message received by handler
-     *
-     * @param bundle A message payload
-     *//*
-    protected void processMessage(Bundle bundle){
-        switch (bundle.getInt(BUNDLE_TYPE_KEY)){
-            case MSGTYPE_DRAWING_DONE:
-                onLayerDrawFinished(bundle.getInt(BUNDLE_LAYERNO_KEY), bundle.getFloat(BUNDLE_DONE_KEY));
-                break;
-            default:
-                break;
-        }
-    }
-     */
 }

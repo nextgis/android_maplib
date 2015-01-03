@@ -89,9 +89,6 @@ public interface Constants
     //from 1 and higher
     //As more than more memory needed
     public static final float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
-    //display redraw timeout ms
-    public static final int   DISPLAY_REDRAW_TIMEOUT    = 550;
-
 
     public static final String MAP_CONFIG           = "map.json";
     public static final String LAYER_CONFIG         = "layer.json";
@@ -112,16 +109,6 @@ public interface Constants
     public final static int MSGTYPE_PANNING_DONE      = 501;
     public final static int MSGTYPE_ZOOMING_DONE      = 502;
     public final static int MSGTYPE_EDIT_DRAWING_DONE = 503;
-
-    /**
-     * Bundle keys
-     */
-    public static final String BUNDLE_MSG_KEY       = "msg";
-    public static final String BUNDLE_HASERROR_KEY  = "has_error";
-    public static final String BUNDLE_TYPE_KEY      = "type";
-    public static final String BUNDLE_PATH_KEY      = "path";
-    public static final String BUNDLE_DONE_KEY      = "done";
-    public static final String BUNDLE_DRAWSTATE_KEY = "draw_state";
 
     /**
      * JSON keys
@@ -201,7 +188,6 @@ public interface Constants
     public static final int FORM_TYPE_TEXT_LABEL = 0;
     public static final int FORM_TYPE_TEXT_EDIT  = 1;
 
-
     /**
      * Layer type
      */
@@ -215,7 +201,6 @@ public interface Constants
     public static final int LAYERTYPE_NDW_RASTER         = 8;
     public static final int LAYERTYPE_LOCAL_NGFP         = 9;
 
-
     /**
      * time constants
      */
@@ -226,16 +211,8 @@ public interface Constants
     public static final long     ONE_WEEK                        = ONE_DAY * 7;
     public static final long     DEFAULT_MAXIMUM_CACHED_FILE_AGE = ONE_WEEK;
     public static final long     ONE_YEAR                        = ONE_DAY * 365;
-    public static final int      KEEP_ALIVE_TIME                 = 1;
+    public static final int      KEEP_ALIVE_TIME                 = 65;
     public static final TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
-
-    public static final int DRAW_SATE_none              = 0;
-    public static final int DRAW_SATE_drawing           = 1;
-    public static final int DRAW_SATE_drawing_noclearbk = 2;
-    public static final int DRAW_SATE_panning           = 3;
-    public static final int DRAW_SATE_zooming           = 4;
-    public static final int DRAW_SATE_double_tap        = 5;
-    public static final int DRAW_SATE_edit_drawing      = 6;
 
     /**
      * Service constants

@@ -109,28 +109,6 @@ public class LayerGroup
     }
 
 
-    /**
-     * Delete layer
-     *
-     * @param layer
-     *         An layer
-     *
-     * @return true on success or false
-     */
-    public boolean deleteLayer(ILayer layer)
-    {
-        if (layer != null) {
-            short nId = layer.getId();
-            layer.delete();
-            if (mLayers.remove(layer)) {
-                onLayerDeleted(nId);
-                return true;
-            }
-        }
-        return false;
-    }
-
-
     @Override
     public void runDraw(GISDisplay display)
     {
@@ -270,6 +248,9 @@ public class LayerGroup
 
     protected void drawNext(final GISDisplay display)
     {
+        if(mLayers.size() == 0 || mLayers.size() <= mLayerDrawId)
+            return;
+
         ILayer layer = mLayers.get(mLayerDrawId);
         if (layer instanceof IRenderer) {
             IRenderer renderer = (IRenderer) layer;
@@ -299,6 +280,13 @@ public class LayerGroup
 
     protected void onLayerDeleted(int id)
     {
+        for(ILayer layer : mLayers) {
+            if (layer.getId() == id) {
+                mLayers.remove(layer);
+                break;
+            }
+        }
+
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
             group.onLayerDeleted(id);

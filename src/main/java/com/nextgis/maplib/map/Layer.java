@@ -88,11 +88,14 @@ public class Layer
         }
     }
 
-
     @Override
     public void setName(String newName)
     {
         this.mName = newName;
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            group.onLayerChanged(this);
+        }
     }
 
 
@@ -121,13 +124,22 @@ public class Layer
     public void setVisible(boolean visible)
     {
         mIsVisible = visible;
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            group.onLayerChanged(this);
+        }
     }
 
 
     @Override
     public boolean delete()
     {
-        return FileUtil.deleteRecursive(mPath);
+        FileUtil.deleteRecursive(mPath);
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            group.onLayerDeleted(mId);
+        }
+        return true;
     }
 
 

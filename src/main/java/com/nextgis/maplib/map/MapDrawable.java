@@ -22,19 +22,24 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IMapView;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
+import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class MapDrawable
         extends MapEventSource
         implements IMapView
 {
+
+    protected int mLimitsType;
 
     public MapDrawable(
             Bitmap backgroundTile,
@@ -46,18 +51,43 @@ public class MapDrawable
 
         //initialise display
         mDisplay = new GISDisplay(backgroundTile);
+
+        mLimitsType = MAP_LIMITS_Y;
     }
 
 
     @Override
-    public Bitmap getView()
+    public Bitmap getView(boolean clearBackground)
     {
         if (mDisplay != null) {
-            return mDisplay.getDisplay(true);
+            return mDisplay.getDisplay(clearBackground);
         }
         return null;
     }
 
+    @Override
+    public synchronized Bitmap getView(
+            float x,
+            float y,
+            boolean clearBackground)
+    {
+        if (mDisplay != null) {
+            return mDisplay.getDisplay(x, y, clearBackground);
+        }
+        return null;
+    }
+
+    @Override
+    public synchronized Bitmap getView(
+            float x,
+            float y,
+            float scale)
+    {
+        if (mDisplay != null) {
+            return mDisplay.getDisplay(x, y, scale);
+        }
+        return null;
+    }
 
     @Override
     public void setViewSize(
@@ -101,6 +131,8 @@ public class MapDrawable
             } else if (zoom > mDisplay.getMaxZoomLevel()) {
                 newZoom = mDisplay.getMaxZoomLevel();
             }
+
+            mDisplay.clearLayer();
             mDisplay.setZoomAndCenter(newZoom, center);
             onExtentChanged((int) newZoom, center);
         }
@@ -118,13 +150,91 @@ public class MapDrawable
 
 
     @Override
+    public GeoEnvelope getFullBounds()
+    {
+        if (mDisplay != null) {
+            return mDisplay.getScreenBounds();
+        }
+        return null;
+    }
+
+
+    @Override
+    public GeoEnvelope getCurrentBounds()
+    {
+        if (mDisplay != null) {
+            return mDisplay.getBounds();
+        }
+        return null;
+    }
+
+
+    @Override
+    public GeoEnvelope getLimits()
+    {
+        if (mDisplay != null) {
+            return mDisplay.getLimits();
+        }
+        return null;
+    }
+
+
+    @Override
+    public void setLimits(GeoEnvelope limits, int limitsType)
+    {
+        if (mDisplay != null) {
+            mDisplay.setGeoLimits(limits, limitsType);
+        }
+    }
+
+
+    @Override
+    public GeoPoint screenToMap(GeoPoint pt)
+    {
+        if (mDisplay != null) {
+            return mDisplay.screenToMap(pt);
+        }
+        return null;
+    }
+
+
+    @Override
+    public GeoPoint mapToScreen(GeoPoint pt)
+    {
+        if (mDisplay != null) {
+            return mDisplay.mapToScreen(pt);
+        }
+        return null;
+    }
+
+
+    @Override
+    public GeoEnvelope screenToMap(GeoEnvelope env)
+    {
+        if (mDisplay != null) {
+            return mDisplay.screenToMap(env);
+        }
+        return null;
+    }
+
+
+    @Override
     public void runDraw(final GISDisplay display)
     {
         cancelDraw();
-        mDisplay.clearBackground();
-        mDisplay.clearLayer();
 
-        drawNext(display);
+        if(display != null){
+            display.clearBackground();
+            display.clearLayer();
+
+            drawNext(display);
+        }
+        else {
+            mDisplay.clearBackground();
+            mDisplay.clearLayer();
+
+            drawNext(mDisplay);
+        }
     }
 
 
@@ -146,4 +256,5 @@ public class MapDrawable
         }
         return 0;
     }
+
 }

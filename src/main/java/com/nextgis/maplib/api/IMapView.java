@@ -21,17 +21,20 @@
 package com.nextgis.maplib.api;
 
 import android.graphics.Bitmap;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 
 
 public interface IMapView
         extends IRenderer
 {
-    public Bitmap getView();
+    public Bitmap getView(boolean clearBackground);
 
-    public void setViewSize(
-            int w,
-            int h);
+    public Bitmap getView(float x, float y, boolean clearBackground);
+
+    public Bitmap getView(float x, float y, float scale);
+
+    public void setViewSize(int w, int h);
 
     public float getZoomLevel();
 
@@ -43,9 +46,21 @@ public interface IMapView
      * @param center
      *         A map center coordinates
      */
-    public void setZoomAndCenter(
-            float zoom,
-            GeoPoint center);
+    public void setZoomAndCenter(float zoom, GeoPoint center);
 
     public GeoPoint getMapCenter();
+
+    public GeoEnvelope getFullBounds();
+
+    public GeoEnvelope getCurrentBounds();
+
+    public GeoEnvelope getLimits();
+
+    public void setLimits(GeoEnvelope limits, int limitsType);
+
+    public GeoPoint screenToMap(final GeoPoint pt);
+
+    public GeoPoint mapToScreen(final GeoPoint pt);
+
+    public GeoEnvelope screenToMap(final GeoEnvelope env);
 }

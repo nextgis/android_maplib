@@ -26,14 +26,14 @@ import com.nextgis.maplib.datasource.GeoPoint;
 
 public interface MapEventListener
 {
-    public abstract void onLayerAdded(ILayer layer);
+    public abstract void onLayerAdded(int id);
 
     public abstract void onLayerDeleted(int id);
 
-    public abstract void onLayerChanged(ILayer layer);
+    public abstract void onLayerChanged(int id);
 
     public abstract void onExtentChanged(
-            int zoom,
+            float zoom,
             GeoPoint center);
 
     public abstract void onLayersReordered();
