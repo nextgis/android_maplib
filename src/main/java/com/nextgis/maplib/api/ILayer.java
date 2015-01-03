@@ -46,4 +46,6 @@ public interface ILayer
     public GeoEnvelope getExtents();
 
     public void setParent(ILayer layer);
+
+    public void setId(short id);
 }

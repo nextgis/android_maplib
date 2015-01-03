@@ -183,7 +183,7 @@ public class Layer
     {
         try {
             FileUtil.createDir(getPath());
-            File config_file = new File(getPath(), LAYER_CONFIG);
+            File config_file = new File(getPath(), CONFIG);
             FileUtil.writeToFile(config_file, toJSON().toString());
         } catch (IOException e) {
             return false;
@@ -198,7 +198,8 @@ public class Layer
     public boolean load()
     {
         try {
-            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getPath()));
+            File config_file = new File(getPath(), CONFIG);
+            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(config_file));
             fromJSON(jsonObject);
         } catch (JSONException e) {
             return false;
@@ -267,6 +268,13 @@ public class Layer
     public void setParent(ILayer layer)
     {
         mParent = layer;
+    }
+
+
+    @Override
+    public void setId(short id)
+    {
+        mId = id;
     }
 
 

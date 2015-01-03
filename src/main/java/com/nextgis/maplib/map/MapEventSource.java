@@ -100,7 +100,7 @@ public class MapEventSource
 
 
     @Override
-    public void onDrawFinished(
+    public synchronized void onDrawFinished(
             int id,
             float percent)
     {
@@ -114,8 +114,10 @@ public class MapEventSource
      * @param layer
      *         A new layer
      */
+    @Override
     protected void onLayerAdded(ILayer layer)
     {
+        super.onLayerAdded(layer);
         if (mListeners == null) {
             return;
         }
@@ -136,8 +138,10 @@ public class MapEventSource
      * @param layer
      *         A changed layer
      */
+    @Override
     protected void onLayerChanged(ILayer layer)
     {
+        super.onLayerChanged(layer);
         if (mListeners == null) {
             return;
         }
@@ -158,8 +162,10 @@ public class MapEventSource
      * @param id
      *         A deleted layer identificator
      */
+    @Override
     protected void onLayerDeleted(int id)
     {
+        super.onLayerDeleted(id);
         if (mListeners == null) {
             return;
         }
@@ -182,10 +188,12 @@ public class MapEventSource
      * @param center
      *         A map center coordinates
      */
+    @Override
     protected void onExtentChanged(
             float zoom,
             GeoPoint center)
     {
+        super.onExtentChanged(zoom, center);
         if (mListeners == null) {
             return;
         }
@@ -206,8 +214,10 @@ public class MapEventSource
     /**
      * Send layers reordered event to all listeners
      */
+    @Override
     protected void onLayersReordered()
     {
+        super.onLayersReordered();
         if (mListeners == null) {
             return;
         }

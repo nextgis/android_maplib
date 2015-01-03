@@ -40,8 +40,8 @@ public class FileUtil
             Integer.parseInt(str);
             return true;
         } catch (NumberFormatException nfe) {
+            return false;
         }
-        return false;
     }
 
 
@@ -64,25 +64,23 @@ public class FileUtil
         String ret = "";
 
         FileInputStream inputStream = new FileInputStream(filePath);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        String receiveString;
+        StringBuilder stringBuilder = new StringBuilder();
 
-        if (inputStream != null) {
-            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-            String receiveString = "";
-            StringBuilder stringBuilder = new StringBuilder();
-
-            while ((receiveString = bufferedReader.readLine()) != null) {
-                stringBuilder.append(receiveString);
-            }
-
-            inputStream.close();
-            ret = stringBuilder.toString();
+        while ((receiveString = bufferedReader.readLine()) != null) {
+            stringBuilder.append(receiveString);
         }
+
+        inputStream.close();
+        ret = stringBuilder.toString();
+
         return ret;
     }
 
 
-    public static void createDir(File dir)
+    public static synchronized void createDir(File dir)
     {
         if (dir.exists()) {
             return;

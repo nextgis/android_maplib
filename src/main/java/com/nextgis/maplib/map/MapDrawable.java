@@ -22,7 +22,6 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -222,6 +221,7 @@ public class MapDrawable
     public void runDraw(final GISDisplay display)
     {
         cancelDraw();
+        mLayerDrawId = 0;
 
         if(display != null){
             display.clearBackground();

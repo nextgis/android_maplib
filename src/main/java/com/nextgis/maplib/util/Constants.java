@@ -90,10 +90,10 @@ public interface Constants
     //As more than more memory needed
     public static final float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
 
-    public static final String MAP_CONFIG           = "map.json";
-    public static final String LAYER_CONFIG         = "layer.json";
+    public static final String CONFIG               = "config.json";
     public static final String LAYER_PREFIX         = "layer_";
     public static final String TILE_EXT             = ".tile";
+    public static final String MAP_EXT             = ".ngm";
     public static final String DATA_GEOJSON         = "data.geojson";
     public static final String NGW_CONNECTIONS_JSON = "ngw_connections.json";
     public static final String FORM_DATA_GEOJSON    = "form_data.geojson";

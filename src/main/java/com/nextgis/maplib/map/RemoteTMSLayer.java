@@ -24,10 +24,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
-import android.util.Pair;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
-import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import org.apache.http.HttpEntity;
@@ -45,7 +43,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -109,10 +106,10 @@ public class RemoteTMSLayer
             }
         }
 
-        /*if (!mNet.isNetworkAvailable()) { //return tile from cache
+        if (!mNet.isNetworkAvailable()) { //return tile from cache
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             return ret;
-        }*/
+        }
         // try to get tile from remote
         String url = tile.toString(getURLSubdomain());
         Log.d(TAG, "url: " + url);
@@ -202,7 +199,7 @@ public class RemoteTMSLayer
         analizeURL(mURL);
     }
 
-    protected String getURLSubdomain()
+    protected synchronized String getURLSubdomain()
     {
         if(mSubdomains.size() == 0 || mSubDomainsMask.length() == 0)
             return mURL;
@@ -278,6 +275,6 @@ public class RemoteTMSLayer
     @Override
     public int getMaxThreadCount()
     {
-        return 3;
+        return mSubdomains.size() * HTTP_SEPARATE_THREADS;
     }
 }

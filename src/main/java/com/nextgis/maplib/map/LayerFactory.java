@@ -51,7 +51,7 @@ public abstract class LayerFactory
             Context context,
             File path)
     {
-        File config_file = new File(path, LAYER_CONFIG);
+        File config_file = new File(path, CONFIG);
         ILayer layer = null;
 
         try {

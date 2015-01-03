@@ -21,6 +21,7 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import com.nextgis.maplib.api.ILayer;
 
 import java.io.File;
 
@@ -51,4 +52,10 @@ public class MapBase
         return mNewId++;
     }
 
+    @Override
+    protected void onLayerAdded(ILayer layer)
+    {
+        layer.setId(getNewId());
+        super.onLayerAdded(layer);
+    }
 }

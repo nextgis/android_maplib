@@ -36,9 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
-import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
-import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MIN_ZOOM;
-
 
 public class LayerGroup
         extends Layer
@@ -166,18 +163,13 @@ public class LayerGroup
     public JSONObject toJSON()
             throws JSONException
     {
-        JSONObject rootConfig = new JSONObject();
-        rootConfig.put(JSON_NAME_KEY, getName());
-        rootConfig.put(JSON_TYPE_KEY, getType());
-        rootConfig.put(JSON_MAXLEVEL_KEY, getMaxZoom());
-        rootConfig.put(JSON_MINLEVEL_KEY, getMinZoom());
-        rootConfig.put(JSON_VISIBILITY_KEY, isVisible());
+        JSONObject rootConfig = super.toJSON();
 
         JSONArray jsonArray = new JSONArray();
         rootConfig.put(JSON_LAYERS_KEY, jsonArray);
         for (ILayer layer : mLayers) {
             JSONObject layerObject = new JSONObject();
-            layerObject.put(JSON_PATH_KEY, layer.getPath());
+            layerObject.put(JSON_PATH_KEY, layer.getPath().getName());
             jsonArray.put(layerObject);
         }
 
@@ -189,20 +181,7 @@ public class LayerGroup
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        mLayerType = jsonObject.getInt(JSON_TYPE_KEY);
-        mName = jsonObject.getString(JSON_NAME_KEY);
-        if (jsonObject.has(JSON_MAXLEVEL_KEY)) {
-            mMaxZoom = jsonObject.getInt(JSON_MAXLEVEL_KEY);
-        } else {
-            mMaxZoom = DEFAULT_MAX_ZOOM;
-        }
-        if (jsonObject.has(JSON_MINLEVEL_KEY)) {
-            mMinZoom = jsonObject.getInt(JSON_MINLEVEL_KEY);
-        } else {
-            mMinZoom = DEFAULT_MIN_ZOOM;
-        }
-
-        mIsVisible = jsonObject.getBoolean(JSON_VISIBILITY_KEY);
+        super.fromJSON(jsonObject);
 
         final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LAYERS_KEY);
         for (int i = 0; i < jsonArray.length(); i++) {
@@ -220,14 +199,14 @@ public class LayerGroup
 
 
     @Override
-    public void onDrawFinished(
+    public synchronized void onDrawFinished(
             int id,
             float percent)
     {
         if (mLayers.size() >= mLayerDrawId) {
             if (mParent != null && mParent instanceof ILayerView) {
-                ILayerView renderer = (ILayerView) mParent;
-                renderer.onDrawFinished(getId(), 100);
+                ILayerView layerView = (ILayerView) mParent;
+                layerView.onDrawFinished(getId(), 100);
             }
         } else {
             drawNext(mDisplay);
@@ -295,7 +274,7 @@ public class LayerGroup
 
 
     protected void onExtentChanged(
-            int zoom,
+            float zoom,
             GeoPoint center)
     {
         if (mParent != null && mParent instanceof LayerGroup) {
@@ -329,5 +308,15 @@ public class LayerGroup
     public LayerFactory getLayerFactory()
     {
         return mLayerFactory;
+    }
+
+
+    @Override
+    public boolean save()
+    {
+        for(ILayer layer : mLayers){
+            layer.save();
+        }
+        return super.save();
     }
 }
