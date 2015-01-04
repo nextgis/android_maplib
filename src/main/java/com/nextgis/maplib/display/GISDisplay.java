@@ -191,13 +191,13 @@ public class GISDisplay
         mLimits = mapToScreen(mGeoLimits);
         mLimits.fix();
         if (mLimitType == MAP_LIMITS_X || mLimitType == MAP_LIMITS_NO) {
-            mLimits.setMinY(mLimits.getMinY() - mMainBitmap.getHeight());
-            mLimits.setMaxY(mLimits.getMaxY() + mMainBitmap.getHeight());
+            mLimits.setMinY(mLimits.getMinY() - mMainBitmap.getHeight() * 2);
+            mLimits.setMaxY(mLimits.getMaxY() + mMainBitmap.getHeight() * 2);
         }
 
         if (mLimitType == MAP_LIMITS_Y || mLimitType == MAP_LIMITS_NO) {
-            mLimits.setMinX(mLimits.getMinX() - mMainBitmap.getWidth());
-            mLimits.setMaxX(mLimits.getMaxX() + mMainBitmap.getWidth());
+            mLimits.setMinX(mLimits.getMinX() - mMainBitmap.getWidth() * 2);
+            mLimits.setMaxX(mLimits.getMaxX() + mMainBitmap.getWidth() * 2);
         }
     }
 

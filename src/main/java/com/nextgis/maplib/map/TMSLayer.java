@@ -108,23 +108,31 @@ public abstract class TMSLayer
 
         for (int k = 1; k < center + 2; k++) {
             //1. top and bottom
-            if (k + centerX < endX + 1) {
-                int tileYBottom = centerY - k;
-                int tileYTop = centerY + k;
-                for (int i = centerX - k; i < centerX + k + 1; i++) {
-                    addItemToList(fullBounds, mapTileSize, i, tileYTop, nZoom, tilesInMap, list);
-                    addItemToList(fullBounds, mapTileSize, i, tileYBottom, nZoom, tilesInMap, list);
-                }
+            int tileBottom = centerY - k;
+            if(tileBottom < begY)
+                tileBottom = begY;
+            int tileTop = centerY + k;
+            if(tileTop > endY)
+                tileTop = endY;
+            for (int i = centerX - k; i < centerX + k + 1; i++) {
+                if(i < begX || i > endX)
+                    continue;
+                addItemToList(fullBounds, mapTileSize, i, tileTop, nZoom, tilesInMap, list);
+                addItemToList(fullBounds, mapTileSize, i, tileBottom, nZoom, tilesInMap, list);
             }
 
             //2. left and right
-            if (k + centerY < endY + 1) {
-                int tileLeft = centerX - k;
-                int tileRight = centerX + k;
-                for (int j = centerY - k + 1; j < centerY + k; j++) {
-                    addItemToList(fullBounds, mapTileSize, tileLeft, j, nZoom, tilesInMap, list);
-                    addItemToList(fullBounds, mapTileSize, tileRight, j, nZoom, tilesInMap, list);
-                }
+            int tileLeft = centerX - k;
+            if(tileLeft < begX)
+                tileLeft = begX;
+            int tileRight = centerX + k;
+            if(tileRight > endX)
+                tileRight = endX;
+            for (int j = centerY - k; j < centerY + k + 1; j++) {
+                if(j < begY || j > endY)
+                    continue;
+                addItemToList(fullBounds, mapTileSize, tileLeft, j, nZoom, tilesInMap, list);
+                addItemToList(fullBounds, mapTileSize, tileRight, j, nZoom, tilesInMap, list);
             }
         }
 
