@@ -99,7 +99,7 @@ public abstract class TMSLayer
         }
 
         //fill tiles from center
-
+/*
         int centerX = begX + (endX - begX) / 2;
         int centerY = begY + (endY - begY) / 2;
         int center = Math.max(centerX, centerY);
@@ -136,20 +136,34 @@ public abstract class TMSLayer
                 addItemToList(fullBounds, mapTileSize, tileRight, j, nZoom, tilesInMap, list);
             }
         }
-
-        /* normal fill from left bottom corner
+*/
+        // normal fill from left bottom corner
+        int realY;
+        int realX;
         for(int x = begX; x < endX; x++){
             for(int y = begY; y < endY; y++){
+
+                realX = x;
+                if (realX < 0) {
+                    realX += tilesInMap;
+                } else if (realX >= tilesInMap) {
+                    realX -= tilesInMap;
+                }
+
                 realY = y;
                 if(mTMSType == TMSTYPE_OSM){
                     realY = tilesInMap - y - 1;
                 }
 
+                if (realY < 0 || realY >= tilesInMap) {
+                    continue;
+                }
+
                 final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(), fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
-                TileItem item = new TileItem(x, realY, nZoom, pt);
+                TileItem item = new TileItem(realX, realY, nZoom, pt);
                 list.add(item);
             }
-        }*/
+        }
 
         return list;
     }
@@ -166,9 +180,11 @@ public abstract class TMSLayer
     {
         int realX = x;
         if (realX < 0) {
-            realX += tilesInMap;
+            //while(realX < 0)
+                realX += tilesInMap;
         } else if (realX >= tilesInMap) {
-            realX -= tilesInMap;
+            //while(realX >= tilesInMap)
+                realX -= tilesInMap;
         }
 
         final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(),

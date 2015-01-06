@@ -109,7 +109,11 @@ public class GISDisplay
         // calc min zoom for no limits scenario
         // we calc the zoom level for full cover the whole display with tiles
         // if the zoom level is already set - do nothing
-        mMinZoomLevel = (float) Math.ceil((float) Math.min(w, h) / mTileSize);
+        float zoom = (float) Math.max(w, h) / mTileSize;
+        mMinZoomLevel = (float) Math.ceil(Math.log(zoom) / Math.log(2.0));
+
+        if(mMinZoomLevel < 0)
+            mMinZoomLevel = 0;
 
         mBackgroundBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mBackgroundCanvas = new Canvas(mBackgroundBitmap);
