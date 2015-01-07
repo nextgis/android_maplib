@@ -108,7 +108,7 @@ public abstract class LayerFactory
     }
 
 
-    protected File cretateLayerStorage()
+    public File cretateLayerStorage()
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         String layerDir = LAYER_PREFIX + sdf.format(new Date());
