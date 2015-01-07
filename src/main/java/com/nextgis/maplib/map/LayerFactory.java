@@ -21,9 +21,12 @@
 
 package com.nextgis.maplib.map;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.util.FileUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -89,6 +92,19 @@ public abstract class LayerFactory
         }
 
         return layer;
+    }
+
+    public Connection getConnectionFromAccount(Context context, String accountName){
+        final AccountManager accountManager = AccountManager.get(context);
+        for(Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)){
+            if(account.name.equals(accountName)){
+                String url = accountManager.getUserData(account, "url");
+                String password = accountManager.getPassword(account);
+                String login = accountManager.getUserData(account, "login");
+                return new Connection(login, password, url);
+            }
+        }
+        return null;
     }
 
 

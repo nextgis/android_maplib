@@ -30,10 +30,15 @@ public interface Constants
     /**
      * HTTP parameters
      */
-    public static final String APP_USER_AGENT         = "NextGIS Mobile";
-    public static final int    TIMEOUT_CONNECTION     = 1500;
-    public static final int    TIMEOUT_SOKET          = 3000;
-    public static final int    IO_BUFFER_SIZE         = 1024;
+    public static final String APP_USER_AGENT     = "NextGIS Mobile";
+    public static final int    TIMEOUT_CONNECTION = 1500;
+    public static final int    TIMEOUT_SOKET      = 3000;
+    public static final int    IO_BUFFER_SIZE     = 1024;
+
+    /**
+     * NGW account type
+     */
+    public static final String NGW_ACCOUNT_TYPE = "nextgis.com";
 
     public static final String SERVICE_PREF = "preferences";
 
@@ -55,7 +60,7 @@ public interface Constants
     public static final String CONFIG               = "config.json";
     public static final String LAYER_PREFIX         = "layer_";
     public static final String TILE_EXT             = ".tile";
-    public static final String MAP_EXT             = ".ngm";
+    public static final String MAP_EXT              = ".ngm";
     public static final String DATA_GEOJSON         = "data.geojson";
     public static final String NGW_CONNECTIONS_JSON = "ngw_connections.json";
     public static final String FORM_DATA_GEOJSON    = "form_data.geojson";
