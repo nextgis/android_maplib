@@ -25,7 +25,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.auth.MalformedChallengeException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -47,7 +46,6 @@ public class ResourceGroup extends Resource
             Connection connection)
     {
         super(remoteId, connection);
-        mType = Connection.NGWResourceTypeResourceGroup;
         mChildren = new ArrayList<>();
         mChildrenLoaded = false;
     }
@@ -58,8 +56,8 @@ public class ResourceGroup extends Resource
             Connection connection)
     {
         super(json, connection);
-        mType = Connection.NGWResourceTypeResourceGroup;
         mChildren = new ArrayList<>();
+        mChildrenLoaded = false;
     }
 
     public void loadChildren()
@@ -95,9 +93,10 @@ public class ResourceGroup extends Resource
                 break;
             case Connection.NGWResourceTypePostgisLayer:
             case Connection.NGWResourceTypeVectorLayer:
-                break;
             case Connection.NGWResourceTypeRasterLayer:
-                //resource = new
+                LayerWithStyles layer = new LayerWithStyles(data, mConnection);
+                layer.fillStyles();
+                resource = layer;
                 break;
         }
 
@@ -166,6 +165,13 @@ public class ResourceGroup extends Resource
                             in.readParcelable(ResourceGroup.class.getClassLoader());
                     resourceGroup.setParent(this);
                     mChildren.add(resourceGroup);
+                    break;
+                case Connection.NGWResourceTypePostgisLayer:
+                case Connection.NGWResourceTypeRasterLayer:
+                case Connection.NGWResourceTypeVectorLayer:
+                    LayerWithStyles layer = in.readParcelable(LayerWithStyles.class.getClassLoader());
+                    layer.setParent(this);
+                    mChildren.add(layer);
                     break;
             }
         }

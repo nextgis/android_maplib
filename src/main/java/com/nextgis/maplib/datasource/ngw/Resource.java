@@ -70,9 +70,12 @@ public abstract class Resource implements INGWResource
 
             mName = JSONResource.getString("display_name");
             mRemoteId = JSONResource.getLong("id");
+            mType = mConnection.getType(JSONResource.getString("cls"));
+
             if (JSONResource.has("keyname"))
                 mKeyName = JSONResource.getString("keyname");
-            mOwnerId = JSONResource.getLong("owner_user");
+            if (JSONResource.has("owner_user"))
+                mOwnerId = JSONResource.getLong("owner_user");
         }
         catch (JSONException e){
             e.printStackTrace();
