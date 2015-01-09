@@ -33,7 +33,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -71,6 +73,8 @@ public class LayerGroup
      */
     public ILayer getLayerById(int id)
     {
+        if(mId == id)
+            return this;
         for (ILayer layer : mLayers) {
             if (layer.getId() == id) {
                 return layer;
@@ -82,6 +86,8 @@ public class LayerGroup
 
     public ILayer getLayerByName(String name)
     {
+        if(mName.equals(name))
+            return this;
         for (ILayer layer : mLayers) {
             if (layer.getName().equals(name)) {
                 return layer;
@@ -191,7 +197,7 @@ public class LayerGroup
             File inFile = new File(getPath(), sPath);
             if (inFile.exists()) {
                 ILayer layer = mLayerFactory.createLayer(mContext, inFile);
-                if (layer.load()) {
+                if (null != layer && layer.load()) {
                     addLayer(layer);
                 }
             }
@@ -319,5 +325,12 @@ public class LayerGroup
             layer.save();
         }
         return super.save();
+    }
+
+    public File cretateLayerStorage()
+    {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+        String layerDir = LAYER_PREFIX + sdf.format(new Date());
+        return new File(mPath, layerDir);
     }
 }

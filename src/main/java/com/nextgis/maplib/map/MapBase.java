@@ -26,11 +26,13 @@ import com.nextgis.maplib.api.ILayer;
 
 import java.io.File;
 
+import static com.nextgis.maplib.util.Constants.*;
 
 public class MapBase
         extends LayerGroup
 {
     protected short mNewId;
+    protected static MapBase mInstance = null;
 
 
     public MapBase(
@@ -40,6 +42,8 @@ public class MapBase
     {
         super(context, path, layerFactory);
         mNewId = 0;
+        mId = NOT_FOUND;
+        mInstance = this;
     }
 
 
@@ -59,4 +63,13 @@ public class MapBase
         layer.setId(getNewId());
         super.onLayerAdded(layer);
     }
+
+    public static MapBase getInstance()
+    {
+        if(mInstance == null)
+            throw new IllegalArgumentException("Impossible to get the instance. This class must be initialized before");
+        return mInstance;
+    }
+
+
 }

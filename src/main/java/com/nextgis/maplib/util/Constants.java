@@ -1,4 +1,3 @@
-
 /*
  * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android.
@@ -19,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.nextgis.maplib.util;
 
 import java.util.concurrent.TimeUnit;
@@ -27,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 
 public interface Constants
 {
+    public final static String TAG    = "nextgismobile";
+    public static final int NOT_FOUND = -1;
+
     /**
      * HTTP parameters
      */
@@ -40,17 +41,14 @@ public interface Constants
      */
     public static final String NGW_ACCOUNT_TYPE = "nextgis.com";
 
-    public static final String SERVICE_PREF = "preferences";
-
-    public final static String LOCATION_HINT = "ngm.location";
-    public final static String TAG           = "nextgismobile";
-
+    /**
+     * Map parameters
+     */
     public static final float MIN_SCROLL_STEP = 5.5f;
-
-    public static final int MAP_LIMITS_NO = 1; // no limits to scroll map
-    public static final int MAP_LIMITS_X  = 2;  // limit to scroll map by x axis
-    public static final int MAP_LIMITS_Y  = 3;  // limit to scroll map by y axis
-    public static final int MAP_LIMITS_XY = 4; // limit to scroll map by x & y axis
+    public static final int   MAP_LIMITS_NO   = 1; // no limits to scroll map
+    public static final int   MAP_LIMITS_X    = 2; // limit to scroll map by x axis
+    public static final int   MAP_LIMITS_Y    = 3; // limit to scroll map by y axis
+    public static final int   MAP_LIMITS_XY   = 4; // limit to scroll map by x & y axis
 
     //the additional size to off screen drawing
     //from 1 and higher
@@ -61,21 +59,6 @@ public interface Constants
     public static final String LAYER_PREFIX         = "layer_";
     public static final String TILE_EXT             = ".tile";
     public static final String MAP_EXT              = ".ngm";
-    public static final String DATA_GEOJSON         = "data.geojson";
-    public static final String NGW_CONNECTIONS_JSON = "ngw_connections.json";
-    public static final String FORM_DATA_GEOJSON    = "form_data.geojson";
-    public static final String FORM_XML             = "form.xml";
-    public static final String CONNECTION_JSON      = "connection.json";
-
-    /**
-     * message type
-     */
-    public final static int MSGTYPE_LAYER_ADDED       = 300;
-    public final static int MSGTYPE_EDIT_LAYER_ADDED  = 301;
-    public final static int MSGTYPE_DRAWING_DONE      = 500;
-    public final static int MSGTYPE_PANNING_DONE      = 501;
-    public final static int MSGTYPE_ZOOMING_DONE      = 502;
-    public final static int MSGTYPE_EDIT_DRAWING_DONE = 503;
 
     /**
      * JSON keys
@@ -108,65 +91,11 @@ public interface Constants
     public static final String JSON_FIELD_ALIAS_KEY     = "field_alias";
     public static final String JSON_FIELD_TYPE_KEY      = "field_type";
     public static final String JSON_GEOMETRY_TYPE_KEY   = "geometry_type";
-    public static final String JSON_NGW_CONNECTIONS_KEY = "ngw_connections";
-
-    public static final String JSON_RESOURCE_KEY     = "resource";
-    public static final String JSON_ID_KEY           = "id";
-    public static final String JSON_PARENT_KEY       = "parent";
-    public static final String JSON_CLS_KEY          = "cls";
-    public static final String JSON_DISPLAY_NAME_KEY = "display_name";
-
-    public static final String JSON_RESOURCE_GROUP_VALUE     = "resource_group";
-    public static final String JSON_POSTGIS_LAYER_VALUE      = "postgis_layer";
-    public static final String JSON_WMSSERVER_SERVICE_VALUE  = "wmsserver_service";
-    public static final String JSON_BASELAYERS_VALUE         = "baselayers";
-    public static final String JSON_POSTGIS_CONNECTION_VALUE = "postgis_connection";
-    public static final String JSON_WEBMAP_VALUE             = "webmap";
-    public static final String JSON_WFSSERVER_SERVICE_VALUE  = "wfsserver_service";
-    public static final String JSON_RASTER_LAYER_VALUE       = "raster_layer";
-    public static final String JSON_VECTOR_LAYER_VALUE       = "vector_layer";
-    public static final String JSON_VECTOR_STYLE_VALUE       = "vector_style";
-    public static final String JSON_RASTER_STYLE_VALUE       = "raster_style";
-    public static final String JSON_FILE_BUCKET_VALUE        = "file_bucket";
-
-    public static final String JSON_PARENT_RESOURCE_GROUP_VALUE = "parent_resource_group";
-    public static final String JSON_PARENT_DISPLAY_NAME_VALUE   = "..";
-    public static final String JSON_EMPTY_DISPLAY_NAME_VALUE    = "-----";
-
-    /**
-     * NGW JSON types
-     */
-    public static final int NGWTYPE_RESOURCE_GROUP     = 1;
-    public static final int NGWTYPE_POSTGIS_LAYER      = 2;
-    public static final int NGWTYPE_WMSSERVER_SERVICE  = 3;
-    public static final int NGWTYPE_BASELAYERS         = 4;
-    public static final int NGWTYPE_POSTGIS_CONNECTION = 5;
-    public static final int NGWTYPE_WEBMAP             = 6;
-    public static final int NGWTYPE_WFSSERVER_SERVICE  = 7;
-    public static final int NGWTYPE_VECTOR_LAYER       = 8;
-    public static final int NGWTYPE_RASTER_LAYER       = 9;
-    public static final int NGWTYPE_VECTOR_STYLE       = 10;
-    public static final int NGWTYPE_RASTER_STYLE       = 11;
-    public static final int NGWTYPE_FILE_BUCKET        = 12;
-
-    public static final int NGWTYPE_PARENT_RESOURCE_GROUP = 999;
-    public static final int NGWTYPE_UNKNOWN               = 1000;
-
-    public static final int FORM_TYPE_TEXT_LABEL = 0;
-    public static final int FORM_TYPE_TEXT_EDIT  = 1;
 
     /**
      * Layer type
      */
-    public static final int LAYERTYPE_LOCAL_TMS          = 1;
-    public static final int LAYERTYPE_LOCAL_RASTER       = 2;
-    public static final int LAYERTYPE_LOCAL_GEOJSON      = 3;
-    public static final int LAYERTYPE_REMOTE_TMS         = 4;
-    public static final int LAYERTYPE_NGW                = 5;
-    public static final int LAYERTYPE_LOCAL_EDIT_GEOJSON = 6;
-    public static final int LAYERTYPE_NDW_VECTOR         = 7;
-    public static final int LAYERTYPE_NDW_RASTER         = 8;
-    public static final int LAYERTYPE_LOCAL_NGFP         = 9;
+    public static final int LAYERTYPE_REMOTE_TMS         = 1;
 
     /**
      * time constants
@@ -180,15 +109,4 @@ public interface Constants
     public static final long     ONE_YEAR                        = ONE_DAY * 365;
     public static final int      KEEP_ALIVE_TIME                 = 65;
     public static final TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
-
-    /**
-     * Service constants
-     */
-    public static final String DATASEND_ACTION_START = "ngm.sendpos.action.START";
-    public static final String DATASEND_ACTION_STOP  = "ngm.sendpos.action.STOP";
-
-    /**
-     *
-     */
-    public static final int NOT_FOUND = -1;
 }

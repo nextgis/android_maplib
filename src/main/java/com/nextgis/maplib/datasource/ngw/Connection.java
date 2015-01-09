@@ -21,6 +21,8 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -46,8 +48,9 @@ import java.util.List;
 import static com.nextgis.maplib.util.Constants.*;
 
 
-public class Connection
+public class Connection implements INGWResource
 {
+    protected String        mName;
     protected String        mLogin;
     protected String        mPassword;
     protected String        mURL;
@@ -55,38 +58,48 @@ public class Connection
     protected String        mCookie;
     protected List<Integer> mSupportedTypes;
     protected ResourceGroup mRootResource;
+    protected int mId;
+    protected INGWResource mParent;
 
-    public final static int NGWResourceTypeNone = 0;
-    public final static int NGWResourceTypeResourceGroup = 1;
-    public final static int NGWResourceTypePostgisLayer = 2;
-    public final static int NGWResourceTypePostgisConnection = 3;
-    public final static int NGWResourceTypeWMSServerService = 4;
-    public final static int NGWResourceTypeBaseLayers = 5;
-    public final static int NGWResourceTypeWebMap = 6;
-    public final static int NGWResourceTypeWFSServerService = 7;
-    public final static int NGWResourceTypeVectorLayer = 8;
-    public final static int NGWResourceTypeRasterLayer = 9;
-    public final static int NGWResourceTypeVectorLayerStyle = 10;
-    public final static int NGWResourceTypeRasterLayerStyle = 11;
-    public final static int NGWResourceTypeFileSet = 12;
-
+    public final static int NGWResourceTypeNone              = 1<<0;
+    public final static int NGWResourceTypeResourceGroup     = 1<<1;
+    public final static int NGWResourceTypePostgisLayer      = 1<<2;
+    public final static int NGWResourceTypePostgisConnection = 1<<3;
+    public final static int NGWResourceTypeWMSServerService  = 1<<4;
+    public final static int NGWResourceTypeBaseLayers        = 1<<5;
+    public final static int NGWResourceTypeWebMap            = 1<<6;
+    public final static int NGWResourceTypeWFSServerService  = 1<<7;
+    public final static int NGWResourceTypeVectorLayer       = 1<<8;
+    public final static int NGWResourceTypeRasterLayer       = 1<<9;
+    public final static int NGWResourceTypeVectorLayerStyle  = 1<<10;
+    public final static int NGWResourceTypeRasterLayerStyle  = 1<<11;
+    public final static int NGWResourceTypeFileSet           = 1<<12;
+    public final static int NGWResourceTypeConnection        = 1<<13;
+    public final static int NGWResourceTypeConnections       = 1<<14;
 
     public Connection(
+            String name,
             String login,
             String password,
             String URL)
     {
+        mName = name;
         mLogin = login;
         mPassword = password;
-        mURL = URL;
+        if(URL.startsWith("http"))
+            mURL = URL;
+        else
+            mURL = "http://" + URL;
         mIsConnected = false;
+        mId = Connections.getNewId();
+        mSupportedTypes = new ArrayList<>();
     }
-
 
     public boolean connect()
     {
         try {
-            HttpPost httppost = new HttpPost(mURL);
+            String url = mURL + "/login";
+            HttpPost httppost = new HttpPost(url);
             List<NameValuePair> nameValuePairs = new ArrayList<>(2);
             nameValuePairs.add(new BasicNameValuePair("login", mLogin));
             nameValuePairs.add(new BasicNameValuePair("password", mPassword));
@@ -105,7 +118,7 @@ public class Connection
             fillCapabilities();
 
             mRootResource = new ResourceGroup(0, this);
-
+            mRootResource.setParent(this);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -208,4 +221,135 @@ public class Connection
     {
         return mRootResource;
     }
+
+
+    @Override
+    public String getName()
+    {
+        return mName;
+    }
+
+
+    @Override
+    public int getType()
+    {
+        return NGWResourceTypeConnection;
+    }
+
+
+    @Override
+    public int getId()
+    {
+        return mId;
+    }
+
+    @Override
+    public INGWResource getResourceById(int id)
+    {
+        if(id == mId)
+            return this;
+        return mRootResource.getResourceById(id);
+    }
+
+    @Override
+    public int getChildrenCount()
+    {
+        if(null == mRootResource)
+            return 0;
+        return mRootResource.getChildrenCount();
+    }
+
+
+    @Override
+    public INGWResource getChild(int i)
+    {
+        if(null == mRootResource)
+            return null;
+        return mRootResource.getChild(i);
+    }
+
+
+    @Override
+    public INGWResource getParent()
+    {
+        return mParent;
+    }
+
+    @Override
+    public void setParent(INGWResource resource)
+    {
+        mParent = resource;
+    }
+
+
+    public void loadChildren(){
+        if(null != mRootResource)
+            mRootResource.loadChildren();
+    }
+
+    @Override
+    public int describeContents()
+    {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(
+            Parcel parcel,
+            int i)
+    {
+        parcel.writeString(mName);
+        parcel.writeString(mLogin);
+        parcel.writeString(mPassword);
+        parcel.writeString(mURL);
+        parcel.writeByte(mIsConnected ? (byte) 1 : (byte) 0);
+        parcel.writeString(mCookie);
+        parcel.writeInt(mId);
+        parcel.writeInt(mSupportedTypes.size());
+        for(Integer type : mSupportedTypes)
+            parcel.writeInt(type);
+        parcel.writeParcelable(mRootResource, i);
+    }
+
+
+    public static final Parcelable.Creator<Connection> CREATOR =
+            new Parcelable.Creator<Connection>()
+            {
+                public Connection createFromParcel(Parcel in)
+                {
+                    return new Connection(in);
+                }
+
+
+                public Connection[] newArray(int size)
+                {
+                    return new Connection[size];
+                }
+            };
+
+
+    protected Connection(Parcel in)
+    {
+        mName = in.readString();
+        mLogin = in.readString();
+        mPassword = in.readString();
+        mURL = in.readString();
+        mIsConnected = in.readByte() == 1;
+        mCookie = in.readString();
+        mId = in.readInt();
+        int count = in.readInt();
+        mSupportedTypes = new ArrayList<>();
+        for(int i = 0; i < count; i++)
+            mSupportedTypes.add(in.readInt());
+        mRootResource = in.readParcelable(ResourceGroup.class.getClassLoader());
+        mRootResource.setConnection(this);
+        mRootResource.setParent(this);
+    }
+
+
+    public boolean isConnected()
+    {
+        return mIsConnected;
+    }
 }
+

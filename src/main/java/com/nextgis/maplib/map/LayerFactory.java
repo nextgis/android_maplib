@@ -64,27 +64,8 @@ public abstract class LayerFactory
             int nType = rootObject.getInt(JSON_TYPE_KEY);
 
             switch (nType) {
-                case LAYERTYPE_LOCAL_TMS:
-                    //layer = new LocalTMSLayer(this, path, rootObject);
-                    break;
-                case LAYERTYPE_LOCAL_GEOJSON:
-                    //layer = new LocalGeoJsonLayer(this, path, rootObject);
-                    break;
-                case LAYERTYPE_LOCAL_RASTER:
-                    break;
                 case LAYERTYPE_REMOTE_TMS:
                     layer = new RemoteTMSLayer(context, path);
-                    break;
-                case LAYERTYPE_NDW_VECTOR:
-                    //layer = new NgwVectorLayer(this, path, rootObject);
-                    break;
-                case LAYERTYPE_NDW_RASTER:
-                    //layer = new NgwRasterLayer(this, path, rootObject);
-                    break;
-                case LAYERTYPE_LOCAL_NGFP:
-                    //layer = new LocalNgfpLayer(this, path, rootObject);
-                    break;
-                case LAYERTYPE_NGW:
                     break;
             }
         } catch (IOException | JSONException e) {
@@ -101,22 +82,17 @@ public abstract class LayerFactory
                 String url = accountManager.getUserData(account, "url");
                 String password = accountManager.getPassword(account);
                 String login = accountManager.getUserData(account, "login");
-                return new Connection(login, password, url);
+                return new Connection(accountName, login, password, url);
             }
         }
         return null;
     }
 
-
-    public File cretateLayerStorage()
-    {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        String layerDir = LAYER_PREFIX + sdf.format(new Date());
-        return new File(mMapPath, layerDir);
-    }
-
-
     public abstract void createNewRemoteTMSLayer(
+            final Context context,
+            final LayerGroup groupLayer);
+
+    public abstract void createNewNGWLayer(
             final Context context,
             final LayerGroup groupLayer);
 }

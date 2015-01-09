@@ -21,8 +21,11 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.MalformedChallengeException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -37,7 +40,7 @@ import java.util.List;
 public class ResourceGroup extends Resource
 {
     protected List<Resource> mChildren;
-
+    protected boolean mChildrenLoaded;
 
     public ResourceGroup(
             long remoteId,
@@ -46,6 +49,7 @@ public class ResourceGroup extends Resource
         super(remoteId, connection);
         mType = Connection.NGWResourceTypeResourceGroup;
         mChildren = new ArrayList<>();
+        mChildrenLoaded = false;
     }
 
 
@@ -60,6 +64,8 @@ public class ResourceGroup extends Resource
 
     public void loadChildren()
     {
+        if(mChildrenLoaded)
+            return;
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
             HttpGet get = new HttpGet(sURL);
@@ -72,9 +78,9 @@ public class ResourceGroup extends Resource
             {
                 addResource(children.getJSONObject(i));
             }
-
+            mChildrenLoaded = true;
         }
-        catch (IOException| JSONException e ){
+        catch (IOException | JSONException e ){
             e.printStackTrace();
         }
     }
@@ -96,6 +102,7 @@ public class ResourceGroup extends Resource
         }
 
         if(null != resource) {
+            resource.setParent(this);
             resource.fillPermissions();
             mChildren.add(resource);
         }
@@ -110,5 +117,103 @@ public class ResourceGroup extends Resource
         catch (JSONException e){
             return Connection.NGWResourceTypeNone;
         }
+    }
+
+
+    @Override
+    public void writeToParcel(
+            Parcel parcel,
+            int i)
+    {
+        super.writeToParcel(parcel, i);
+        parcel.writeByte(mChildrenLoaded ? (byte)1 : (byte)0);
+        parcel.writeInt(mChildren.size());
+        for(Resource resource : mChildren){
+            parcel.writeInt(resource.getType());
+            parcel.writeParcelable(resource, i);
+        }
+    }
+
+
+    public static final Parcelable.Creator<ResourceGroup> CREATOR =
+            new Parcelable.Creator<ResourceGroup>()
+            {
+                public ResourceGroup createFromParcel(Parcel in)
+                {
+                    return new ResourceGroup(in);
+                }
+
+
+                public ResourceGroup[] newArray(int size)
+                {
+                    return new ResourceGroup[size];
+                }
+            };
+
+
+    protected ResourceGroup(
+            Parcel in)
+    {
+        super(in);
+        mChildrenLoaded = in.readByte() == 1;
+        int count = in.readInt();
+        mChildren = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            int type = in.readInt();
+            switch (type) {
+                case Connection.NGWResourceTypeResourceGroup:
+                    ResourceGroup resourceGroup =
+                            in.readParcelable(ResourceGroup.class.getClassLoader());
+                    resourceGroup.setParent(this);
+                    mChildren.add(resourceGroup);
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void setConnection(Connection connection)
+    {
+        super.setConnection(connection);
+        for(Resource resource : mChildren){
+            resource.setConnection(connection);
+        }
+    }
+
+    @Override
+    public INGWResource getResourceById(int id)
+    {
+        INGWResource ret = super.getResourceById(id);
+        if(null != ret)
+            return ret;
+        for(Resource resource : mChildren){
+            ret = resource.getResourceById(id);
+            if(null != ret)
+                return ret;
+        }
+        return super.getResourceById(id);
+    }
+
+    @Override
+    public int getChildrenCount()
+    {
+        if(null == mChildren)
+            return 0;
+        return mChildren.size();
+    }
+
+
+    @Override
+    public INGWResource getChild(int i)
+    {
+        if(null == mChildren)
+            return null;
+        return mChildren.get(i);
+    }
+
+
+    public boolean isChildrenLoaded()
+    {
+        return mChildrenLoaded;
     }
 }

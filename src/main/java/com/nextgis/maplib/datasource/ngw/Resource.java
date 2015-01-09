@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
+import android.os.Parcel;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -29,9 +30,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 
-public class Resource
+public abstract class Resource implements INGWResource
 {
     protected long mRemoteId;
     protected Connection mConnection;
@@ -42,6 +44,8 @@ public class Resource
     protected long mOwnerId;
     protected JSONObject mPermissions;
     protected int mType;
+    protected int mId;
+    protected INGWResource mParent;
 
     public Resource(
             long remoteId,
@@ -49,6 +53,7 @@ public class Resource
     {
         mRemoteId = remoteId;
         mConnection = connection;
+        mId = Connections.getNewId();
     }
 
     public Resource(JSONObject json,
@@ -72,6 +77,7 @@ public class Resource
         catch (JSONException e){
             e.printStackTrace();
         }
+        mId = Connections.getNewId();
     }
 
     public void fillPermissions()
@@ -87,5 +93,100 @@ public class Resource
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
+    }
+
+
+    @Override
+    public String getName()
+    {
+        return mName;
+    }
+
+
+    @Override
+    public int getType()
+    {
+        return mType;
+    }
+
+
+    @Override
+    public int getId()
+    {
+        return mId;
+    }
+
+
+    @Override
+    public INGWResource getResourceById(int id)
+    {
+        if(mId == id)
+            return this;
+        return null;
+    }
+
+
+    @Override
+    public int describeContents()
+    {
+        return 0;
+    }
+
+
+    @Override
+    public void writeToParcel(
+            Parcel parcel,
+            int i)
+    {
+        parcel.writeString(mName);
+        parcel.writeByte(mHasChildren ? (byte) 1 : (byte) 0);
+        parcel.writeString(mDescription);
+        parcel.writeString(mKeyName);
+        parcel.writeLong(mOwnerId);
+        parcel.writeString(mPermissions.toString());
+        parcel.writeInt(mType);
+        parcel.writeInt(mId);
+    }
+
+    protected Resource(
+            Parcel in)
+    {
+        mName = in.readString();
+        mHasChildren = in.readByte() == 1;
+        mDescription = in.readString();
+        mKeyName = in.readString();
+        mOwnerId = in.readLong();
+        try {
+            mPermissions = new JSONObject(in.readString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        mType = in.readInt();
+        mId = in.readInt();
+    }
+
+    public void setConnection(Connection connection)
+    {
+        mConnection = connection;
+    }
+
+
+    @Override
+    public INGWResource getParent()
+    {
+        return mParent;
+    }
+
+
+    @Override
+    public void setParent(INGWResource resource)
+    {
+        mParent = resource;
+    }
+
+
+    public long getRemoteId()
+    {
+        return mRemoteId;
     }
 }
