@@ -101,10 +101,11 @@ public class MapEventSource
 
 
     @Override
-    public synchronized void onDrawFinished(
+    public void onDrawFinished(
             int id,
             float percent)
     {
+        super.onDrawFinished(id, percent);
         onLayerDrawFinished(id, percent);
     }
 

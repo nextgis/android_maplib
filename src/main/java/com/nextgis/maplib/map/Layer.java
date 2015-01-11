@@ -247,13 +247,13 @@ public class Layer
 
 
     @Override
-    public synchronized void onDrawFinished(
+    public void onDrawFinished(
             int id,
             float percent)
     {
         if (mParent != null && mParent instanceof ILayerView) {
-            ILayerView renderer = (ILayerView) mParent;
-            renderer.onDrawFinished(id, percent);
+            ILayerView layerView = (ILayerView) mParent;
+            layerView.onDrawFinished(id, percent);
         }
     }
 

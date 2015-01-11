@@ -121,6 +121,15 @@ public class LayerGroup
         }
     }
 
+    public void moveLayer(int newPosition, ILayer layer)
+    {
+        if (layer != null) {
+            mLayers.remove(layer);
+            mLayers.add(newPosition, layer);
+            onLayersReordered();
+        }
+    }
+
     @Override
     public void runDraw(GISDisplay display)
     {
@@ -214,11 +223,13 @@ public class LayerGroup
 
 
     @Override
-    public synchronized void onDrawFinished(
+    public void onDrawFinished(
             int id,
             float percent)
     {
-        if (mLayers.size() >= mLayerDrawId) {
+        if(percent < 1)
+            return;
+        if (mLayers.size() <= mLayerDrawId) {
             if (mParent != null && mParent instanceof ILayerView) {
                 ILayerView layerView = (ILayerView) mParent;
                 layerView.onDrawFinished(getId(), 100);

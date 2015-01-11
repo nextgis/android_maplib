@@ -184,10 +184,12 @@ public class TMSRenderer
                     }
 
                     float percent = 100;
-                    if(mDrawThreadPool.getTaskCount() > 1)
-                        percent = (float) (mDrawThreadPool.getCompletedTaskCount() + 1) /
-                                    mDrawThreadPool.getTaskCount();
-                    tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                    synchronized (mLayer) {
+                        if (mDrawThreadPool.getTaskCount() > 1)
+                            percent = (float) (mDrawThreadPool.getCompletedTaskCount() + 1) /
+                                      mDrawThreadPool.getTaskCount();
+                        tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                    }
                     //Log.d(TAG, "percent: " + percent + " complete: " + mDrawThreadPool.getCompletedTaskCount() + " task count: " + mDrawThreadPool.getTaskCount());
                 }
             });

@@ -34,7 +34,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
 {
     protected String mAccount;
 
-    protected final static short MAX_THREAD_COUNT = 10;
+    protected final static short MAX_THREAD_COUNT = 8;
     protected static final String JSON_ACCOUNT_KEY = "account";
 
     public NGWRasterLayer(
