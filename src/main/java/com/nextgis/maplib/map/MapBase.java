@@ -71,5 +71,11 @@ public class MapBase
         return mInstance;
     }
 
+    public ILayer getLastLayer()
+    {
+        if(mLayers.size() == 0)
+            return null;
+        return mLayers.get(mLayers.size() - 1);
+    }
 
 }

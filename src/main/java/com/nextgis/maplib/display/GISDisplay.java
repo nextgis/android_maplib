@@ -286,10 +286,9 @@ public class GISDisplay
         if (clearBackground) {
             clearBackground();
         }
-        synchronized (mMainBitmap) {
-            mBackgroundCanvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX,
+
+        mBackgroundCanvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX,
                                          y - mMainBitmapOffsetY, null);
-        }
         return mBackgroundBitmap;
     }
 
@@ -365,14 +364,12 @@ public class GISDisplay
         matrix1.postScale(scale, scale);
         matrix.preConcat(matrix1);
 
-
-        synchronized (mMainBitmap) {
-            if (paint == null) {
-                mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
-            } else {
-                mMainCanvas.drawBitmap(bitmap, matrix, paint);
-            }
+        if (paint == null) {
+            mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
+        } else {
+            mMainCanvas.drawBitmap(bitmap, matrix, paint);
         }
+
     }
 
 
