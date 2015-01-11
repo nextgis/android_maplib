@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
@@ -32,7 +33,6 @@ import com.nextgis.maplib.util.NetworkUtil;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.CoreProtocolPNames;
@@ -55,12 +55,16 @@ public class RemoteTMSLayer
         extends TMSLayer
 {
     protected static final String JSON_URL_KEY = "url";
+    protected static final String JSON_LOGIN_KEY = "login";
+    protected static final String JSON_PASSWORD_KEY = "password";
+
     protected String                      mURL;
     protected NetworkUtil                 mNet;
     protected final List<String> mSubdomains;
     protected String mSubDomainsMask;
     protected int mCurrentSubdomain;
-
+    protected String mLogin;
+    protected String mPassword;
 
     public RemoteTMSLayer(
             Context context,
@@ -116,9 +120,17 @@ public class RemoteTMSLayer
         Log.d(TAG, "url: " + url);
         try {
 
-            final HttpUriRequest head = new HttpGet(url);
+            final HttpGet get = new HttpGet(url);
+
+            //basic auth
+            if(mLogin.length() > 0 && mPassword.length() > 0){
+                get.setHeader("Accept", "*/*");
+                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                get.setHeader("Authorization", basicAuth);
+            }
+
             final DefaultHttpClient HTTPClient = getHttpClient();
-            final HttpResponse response = HTTPClient.execute(head);
+            final HttpResponse response = HTTPClient.execute(get);
 
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
@@ -166,6 +178,8 @@ public class RemoteTMSLayer
     {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_URL_KEY, mURL);
+        rootConfig.put(JSON_LOGIN_KEY, mLogin);
+        rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         return rootConfig;
     }
 
@@ -176,6 +190,8 @@ public class RemoteTMSLayer
     {
         super.fromJSON(jsonObject);
         mURL = jsonObject.getString(JSON_URL_KEY);
+        mLogin = jsonObject.getString(JSON_LOGIN_KEY);
+        mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
 
         analizeURL(mURL);
     }
@@ -277,5 +293,17 @@ public class RemoteTMSLayer
     public int getMaxThreadCount()
     {
         return mSubdomains.size() * HTTP_SEPARATE_THREADS;
+    }
+
+
+    public void setLogin(String login)
+    {
+        mLogin = login;
+    }
+
+
+    public void setPassword(String password)
+    {
+        mPassword = password;
     }
 }

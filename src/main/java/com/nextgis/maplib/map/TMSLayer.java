@@ -46,7 +46,7 @@ public abstract class TMSLayer
     protected static final String JSON_TMSTYPE_KEY       = "tms_type";
     protected int mTMSType;
     protected static final int    HTTP_SEPARATE_THREADS       = 2;
-    protected List<String> checkDuplicates = new ArrayList<>();
+    //protected List<String> checkDuplicates = new ArrayList<>();
 
     protected TMSLayer(
             Context contex,
@@ -84,7 +84,6 @@ public abstract class TMSLayer
                 new GeoPoint(fullBounds.width() / tilesInMap, fullBounds.height() / tilesInMap);
 
         List<TileItem> list = new ArrayList<>();
-        checkDuplicates.clear();
 
         int begX = (int) (bounds.getMinX() / mapTileSize.getX() - .5 + halfTilesInMap);
         int begY = (int) (bounds.getMinY() / mapTileSize.getY() - .5 + halfTilesInMap);
@@ -100,6 +99,7 @@ public abstract class TMSLayer
 
         //fill tiles from center
 /*
+        checkDuplicates.clear();
         int centerX = begX + (endX - begX) / 2;
         int centerY = begY + (endY - begY) / 2;
         int center = Math.max(centerX, centerY);
@@ -168,7 +168,7 @@ public abstract class TMSLayer
         return list;
     }
 
-
+/*
     protected void addItemToList(
             final GeoEnvelope fullBounds,
             final GeoPoint mapTileSize,
@@ -205,7 +205,7 @@ public abstract class TMSLayer
         TileItem item = new TileItem(realX, realY, zoom, pt);
         list.add(item);
     }
-
+*/
 
     public abstract Bitmap getBitmap(TileItem tile);
 

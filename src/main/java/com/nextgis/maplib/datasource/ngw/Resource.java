@@ -146,7 +146,11 @@ public abstract class Resource implements INGWResource
         parcel.writeString(mDescription);
         parcel.writeString(mKeyName);
         parcel.writeLong(mOwnerId);
-        parcel.writeString(mPermissions.toString());
+        boolean hasPermissions = null != mPermissions;
+        parcel.writeByte(hasPermissions ? (byte)1 : (byte)0);
+        if(hasPermissions) {
+            parcel.writeString(mPermissions.toString());
+        }
         parcel.writeInt(mType);
         parcel.writeInt(mId);
     }
@@ -159,10 +163,13 @@ public abstract class Resource implements INGWResource
         mDescription = in.readString();
         mKeyName = in.readString();
         mOwnerId = in.readLong();
-        try {
-            mPermissions = new JSONObject(in.readString());
-        } catch (JSONException e) {
-            e.printStackTrace();
+        boolean hasPermissions = in.readByte() == 1;
+        if(hasPermissions) {
+            try {
+                mPermissions = new JSONObject(in.readString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
         mType = in.readInt();
         mId = in.readInt();
@@ -191,5 +198,11 @@ public abstract class Resource implements INGWResource
     public long getRemoteId()
     {
         return mRemoteId;
+    }
+
+
+    public Connection getConnection()
+    {
+        return mConnection;
     }
 }

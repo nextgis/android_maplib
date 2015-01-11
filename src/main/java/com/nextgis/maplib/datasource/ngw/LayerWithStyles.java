@@ -149,4 +149,14 @@ public class LayerWithStyles
     public long getStyleId(int i){
         return mStyles.get(i);
     }
+
+    public String getTMSUrl(int styleNo)
+    {
+        return mConnection.getURL() + "/resource/" + mStyles.get(styleNo) + "/tms?z={z}&x={x}&y={y}";
+    }
+
+    public String getGeoJSONUrl()
+    {
+        return mConnection.getURL() + "/resource/" + mRemoteId + "/geojson/";
+    }
 }

@@ -224,6 +224,7 @@ public class MapDrawable
         mLayerDrawId = 0;
 
         if(display != null){
+            //TODO: print current view to layer or background
             display.clearBackground();
             display.clearLayer();
 

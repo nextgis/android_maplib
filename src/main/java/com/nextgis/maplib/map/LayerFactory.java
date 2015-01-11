@@ -67,6 +67,9 @@ public abstract class LayerFactory
                 case LAYERTYPE_REMOTE_TMS:
                     layer = new RemoteTMSLayer(context, path);
                     break;
+                case LAYERTYPE_NGW_RASTER:
+                    layer = new NGWRasterLayer(context, path);
+                    break;
             }
         } catch (IOException | JSONException e) {
             Log.d(TAG, e.getLocalizedMessage());

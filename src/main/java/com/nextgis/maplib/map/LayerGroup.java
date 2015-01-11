@@ -238,13 +238,18 @@ public class LayerGroup
             return;
 
         ILayer layer = mLayers.get(mLayerDrawId);
-        if (layer instanceof IRenderer) {
-            IRenderer renderer = (IRenderer) layer;
-            renderer.runDraw(display);
-        }
         mLayerDrawId++;
+        if(layer instanceof ILayerView){
+            ILayerView layerView = (ILayerView)layer;
+            if(layerView.isVisible() && layer instanceof IRenderer) {
+                IRenderer renderer = (IRenderer) layer;
+                renderer.runDraw(display);
+            }
+            else {
+                drawNext(display);
+            }
+        }
     }
-
 
     protected void onLayerAdded(ILayer layer)
     {

@@ -95,7 +95,8 @@ public interface Constants
     /**
      * Layer type
      */
-    public static final int LAYERTYPE_REMOTE_TMS         = 1;
+    public static final int LAYERTYPE_REMOTE_TMS = 1;
+    public static final int LAYERTYPE_NGW_RASTER = 2;
 
     /**
      * time constants

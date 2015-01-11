@@ -248,6 +248,8 @@ public class Connection implements INGWResource
     {
         if(id == mId)
             return this;
+        if(null == mRootResource) //not connected
+            return null;
         return mRootResource.getResourceById(id);
     }
 
@@ -350,6 +352,18 @@ public class Connection implements INGWResource
     public boolean isConnected()
     {
         return mIsConnected;
+    }
+
+
+    public String getLogin()
+    {
+        return mLogin;
+    }
+
+
+    public String getPassword()
+    {
+        return mPassword;
     }
 }
 
