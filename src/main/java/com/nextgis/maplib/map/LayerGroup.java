@@ -112,6 +112,14 @@ public class LayerGroup
         }
     }
 
+    public void insertLayer(int index, ILayer layer)
+    {
+        if (layer != null) {
+            mLayers.add(index, layer);
+            layer.setParent(this);
+            onLayerAdded(layer);
+        }
+    }
 
     @Override
     public void runDraw(GISDisplay display)
