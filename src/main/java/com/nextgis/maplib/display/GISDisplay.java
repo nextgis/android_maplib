@@ -364,12 +364,13 @@ public class GISDisplay
         matrix1.postScale(scale, scale);
         matrix.preConcat(matrix1);
 
-        if (paint == null) {
-            mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
-        } else {
-            mMainCanvas.drawBitmap(bitmap, matrix, paint);
+        synchronized (mMainCanvas) {
+            if (paint == null) {
+                mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
+            } else {
+                mMainCanvas.drawBitmap(bitmap, matrix, paint);
+            }
         }
-
     }
 
 

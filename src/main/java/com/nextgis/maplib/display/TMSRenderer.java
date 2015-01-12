@@ -39,6 +39,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -80,6 +81,36 @@ public class TMSRenderer
         mRasterPaint.setAntiAlias(mAntiAlias);
         mRasterPaint.setFilterBitmap(mFilterBitmap);
         mRasterPaint.setDither(mDither);
+
+
+    }
+
+    protected void createPoolExecutor(TMSLayer tmsLayer)
+    {
+        if(null == tmsLayer)
+            return;
+
+        synchronized (this) {
+            int threadCount = tmsLayer.getMaxThreadCount();
+            if (threadCount > 0)
+                mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
+                                                         KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
+                                                         new RejectedExecutionHandler()
+                                                         {
+                                                             @Override
+                                                             public void rejectedExecution(
+                                                                     Runnable r,
+                                                                     ThreadPoolExecutor executor)
+                                                             {
+                                                                 try {
+                                                                     executor.getQueue().put(r);
+                                                                 } catch (InterruptedException e) {
+                                                                     e.printStackTrace();
+                                                                     //throw new RuntimeException("Interrupted while submitting task", e);
+                                                                 }
+                                                             }
+                                                         });
+        }
     }
 
 
@@ -164,9 +195,8 @@ public class TMSRenderer
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, env, zoom);
-        int threadCount = tmsLayer.getMaxThreadCount();
-        mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
-                                                 KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>());
+
+        createPoolExecutor(tmsLayer);
 
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);
@@ -175,8 +205,7 @@ public class TMSRenderer
                 @Override
                 public void run()
                 {
-                    android.os.Process.setThreadPriority(
-                            android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
                     final Bitmap bmp = tmsLayer.getBitmap(tile);
                     if (bmp != null) {
@@ -200,8 +229,10 @@ public class TMSRenderer
     @Override
     public void cancelDraw()
     {
-        if (mDrawThreadPool != null) {
-            mDrawThreadPool.shutdownNow();
+        synchronized (this) {
+            if (mDrawThreadPool != null) {
+                mDrawThreadPool.shutdownNow();
+            }
         }
     }
 }
