@@ -25,7 +25,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import com.nextgis.maplib.api.IEventSource;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -37,25 +36,21 @@ import java.util.List;
 
 public class MapEventSource
         extends MapBase
-        implements IEventSource
 {
-    protected List<MapEventListener> mListeners;
-    protected Handler                mHandler;
-
     protected static final String BUNDLE_ID_KEY        = "id";
     protected static final String BUNDLE_TYPE_KEY      = "type";
     protected static final String BUNDLE_DONE_KEY      = "done";
     protected static final String BUNDLE_ZOOM_KEY      = "zoom";
     protected static final String BUNDLE_X_KEY      = "x";
     protected static final String BUNDLE_Y_KEY      = "y";
-
-
     protected final static int EVENT_onLayerAdded = 1;
     protected final static int EVENT_onLayerDeleted = 2;
     protected final static int EVENT_onLayerChanged = 3;
     protected final static int EVENT_onExtentChanged = 4;
     protected final static int EVENT_onLayersReordered = 5;
     protected final static int EVENT_onLayerDrawFinished = 6;
+    protected List<MapEventListener> mListeners;
+    protected Handler                mHandler;
 
 
     public MapEventSource(
@@ -76,7 +71,6 @@ public class MapEventSource
      * @param listener
      *         A listener class implements MapEventListener adding to listeners array
      */
-    @Override
     public void addListener(MapEventListener listener)
     {
         if (mListeners != null && !mListeners.contains(listener)) {
@@ -91,7 +85,6 @@ public class MapEventSource
      * @param listener
      *         A listener class implements MapEventListener removing from listeners array
      */
-    @Override
     public void removeListener(MapEventListener listener)
     {
         if (mListeners != null) {
