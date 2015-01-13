@@ -354,7 +354,7 @@ public class LayerGroup
     public File cretateLayerStorage()
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        String layerDir = LAYER_PREFIX + sdf.format(new Date());
+        String layerDir = LAYER_PREFIX + sdf.format(new Date()) + getLayerCount();
         return new File(mPath, layerDir);
     }
 }
