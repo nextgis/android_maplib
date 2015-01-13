@@ -123,7 +123,7 @@ public class RemoteTMSLayer
             final HttpGet get = new HttpGet(url);
 
             //basic auth
-            if(mLogin.length() > 0 && mPassword.length() > 0){
+            if(null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
                 get.setHeader("Accept", "*/*");
                 final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
                 get.setHeader("Authorization", basicAuth);
@@ -190,8 +190,10 @@ public class RemoteTMSLayer
     {
         super.fromJSON(jsonObject);
         mURL = jsonObject.getString(JSON_URL_KEY);
-        mLogin = jsonObject.getString(JSON_LOGIN_KEY);
-        mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
+        if(jsonObject.has(JSON_LOGIN_KEY))
+            mLogin = jsonObject.getString(JSON_LOGIN_KEY);
+        if(jsonObject.has(JSON_PASSWORD_KEY))
+            mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
 
         analizeURL(mURL);
     }

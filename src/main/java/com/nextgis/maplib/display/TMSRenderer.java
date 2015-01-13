@@ -85,35 +85,6 @@ public class TMSRenderer
 
     }
 
-    protected void createPoolExecutor(TMSLayer tmsLayer)
-    {
-        if(null == tmsLayer)
-            return;
-
-        synchronized (this) {
-            int threadCount = tmsLayer.getMaxThreadCount();
-            if (threadCount > 0)
-                mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
-                                                         KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
-                                                         new RejectedExecutionHandler()
-                                                         {
-                                                             @Override
-                                                             public void rejectedExecution(
-                                                                     Runnable r,
-                                                                     ThreadPoolExecutor executor)
-                                                             {
-                                                                 try {
-                                                                     executor.getQueue().put(r);
-                                                                 } catch (InterruptedException e) {
-                                                                     e.printStackTrace();
-                                                                     //throw new RuntimeException("Interrupted while submitting task", e);
-                                                                 }
-                                                             }
-                                                         });
-        }
-    }
-
-
     @Override
     public JSONObject toJSON()
             throws JSONException
@@ -196,7 +167,28 @@ public class TMSRenderer
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, env, zoom);
 
-        createPoolExecutor(tmsLayer);
+        int threadCount = tmsLayer.getMaxThreadCount();
+        if (threadCount > 0)
+            mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
+                                                     KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
+                                                     new RejectedExecutionHandler()
+                                                     {
+                                                         @Override
+                                                         public void rejectedExecution(
+                                                                 Runnable r,
+                                                                 ThreadPoolExecutor executor)
+                                                         {
+                                                             try {
+                                                                 executor.getQueue().put(r);
+                                                             } catch (InterruptedException e) {
+                                                                 e.printStackTrace();
+                                                                 //throw new RuntimeException("Interrupted while submitting task", e);
+                                                             }
+                                                         }
+                                                     });
+
+        if (null == mDrawThreadPool)
+            return;
 
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);
@@ -229,10 +221,8 @@ public class TMSRenderer
     @Override
     public void cancelDraw()
     {
-        synchronized (this) {
-            if (mDrawThreadPool != null) {
+        if (mDrawThreadPool != null) {
                 mDrawThreadPool.shutdownNow();
-            }
         }
     }
 }

@@ -364,7 +364,7 @@ public class GISDisplay
         matrix1.postScale(scale, scale);
         matrix.preConcat(matrix1);
 
-        synchronized (mMainCanvas) {
+        synchronized (mMainBitmap) {
             if (paint == null) {
                 mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
             } else {
