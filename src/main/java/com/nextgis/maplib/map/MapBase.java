@@ -23,8 +23,14 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.util.FileUtil;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -33,6 +39,7 @@ public class MapBase
 {
     protected short mNewId;
     protected static MapBase mInstance = null;
+    protected String mFileName;
 
 
     public MapBase(
@@ -40,10 +47,11 @@ public class MapBase
             File path,
             LayerFactory layerFactory)
     {
-        super(context, path, layerFactory);
+        super(context, path.getParentFile(), layerFactory);
         mNewId = 0;
         mId = NOT_FOUND;
         mInstance = this;
+        mFileName = path.getName();
     }
 
 
@@ -78,4 +86,16 @@ public class MapBase
         return mLayers.get(mLayers.size() - 1);
     }
 
+    @Override
+    public boolean delete()
+    {
+        return FileUtil.deleteRecursive(getFileName());
+    }
+
+
+    @Override
+    protected File getFileName()
+    {
+        return new File(getPath(), mFileName);
+    }
 }

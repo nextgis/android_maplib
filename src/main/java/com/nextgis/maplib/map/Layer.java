@@ -178,14 +178,18 @@ public class Layer
         return mPath;
     }
 
+    protected File getFileName()
+    {
+        FileUtil.createDir(getPath());
+        return new File(getPath(), CONFIG);
+    }
+
 
     @Override
     public boolean save()
     {
         try {
-            FileUtil.createDir(getPath());
-            File config_file = new File(getPath(), CONFIG);
-            FileUtil.writeToFile(config_file, toJSON().toString());
+            FileUtil.writeToFile(getFileName(), toJSON().toString());
         } catch (IOException e) {
             return false;
         } catch (JSONException e) {
@@ -199,8 +203,7 @@ public class Layer
     public boolean load()
     {
         try {
-            File config_file = new File(getPath(), CONFIG);
-            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(config_file));
+            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
             fromJSON(jsonObject);
         } catch (JSONException e) {
             return false;
