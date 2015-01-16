@@ -31,14 +31,6 @@ public interface GeoConstants
     public static final double MERCATOR_MAX = 20037508.34;
 
     /**
-     * DataSource type
-     */
-    public final static int DS_TYPE_ZIP           = 1;
-    public final static int DS_TYPE_TMS           = 2;
-    public final static int DS_TYPE_LOCAL_GEOJSON = 3;
-    public final static int DS_TYPE_LOCAL_NGFP    = 4;
-
-    /**
      * TMS type
      */
     public static final int TMSTYPE_NORMAL = 1;
@@ -63,7 +55,7 @@ public interface GeoConstants
      * geojson see http://geojson.org/geojson-spec.html
      */
     public static final String GEOJSON_TYPE                    = "type";
-    public static final String GEOJSON_ID                      = "ID";
+    public static final String GEOJSON_ID                      = "id";
     public static final String GEOJSON_FEATURE_ID              = "FEATURE_ID";
     public static final String GEOJSON_CRS                     = "crs";
     public static final String GEOJSON_NAME                    = "name";

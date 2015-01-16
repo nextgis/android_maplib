@@ -78,25 +78,6 @@ public class RemoteTMSLayer
     }
 
 
-    protected DefaultHttpClient getHttpClient()
-    {
-        /*HttpParams httpParameters = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(httpParameters, TIMEOUT_CONNECTION);
-        // Set the default socket timeout (SO_TIMEOUT)
-        // in milliseconds which is the timeout for waiting for data.
-        HttpConnectionParams.setSoTimeout(httpParameters, TIMEOUT_SOKET);
-        */
-        DefaultHttpClient HTTPClient = new DefaultHttpClient();//httpParameters);
-        HTTPClient.getParams().setParameter(CoreProtocolPNames.USER_AGENT, APP_USER_AGENT);
-        HTTPClient.getParams()
-                   .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
-        HTTPClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
-
-        return HTTPClient;
-    }
-
-
-
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
@@ -129,7 +110,7 @@ public class RemoteTMSLayer
                 get.setHeader("Authorization", basicAuth);
             }
 
-            final DefaultHttpClient HTTPClient = getHttpClient();
+            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             final HttpResponse response = HTTPClient.execute(get);
 
             // Check to see if we got success

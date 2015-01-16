@@ -21,4 +21,8 @@
 
 <resources>
     <string name="app_name">Map Library</string>
+    <string name="error_crs_unsuported">Unsuported spatial reference</string>
+    <string name="error_empty_dataset">Dataset is empty</string>
+    <string name="error_network_unavailable">The network is unavailable</string>
+    <string name="error_download_data">Download data failed</string>
 </resources>

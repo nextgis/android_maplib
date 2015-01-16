@@ -24,10 +24,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
 import static com.nextgis.maplib.util.GeoConstants.*;
 
 
-public abstract class GeoGeometry
+public abstract class GeoGeometry implements Serializable
 {
 
     protected int mCRS;
@@ -88,8 +95,8 @@ public abstract class GeoGeometry
             case GTMultiPolygon:
                 output = new GeoMultiPolygon();
                 break;
-
             case GTGeometryCollection:
+                output = new GeoGeometryCollection();
             case GTNone:
             default:
                 break;
@@ -105,20 +112,10 @@ public abstract class GeoGeometry
                 JSONArray coordinates = jsonObject.getJSONArray(GEOJSON_COORDINATES);
                 output.setCoordinatesFromJSON(coordinates);
                 break;
-
             case GTGeometryCollection:
-                GeoGeometryCollection geometryCollection = new GeoGeometryCollection();
                 JSONArray jsonGeometries = jsonObject.getJSONArray(GEOJSON_GEOMETRIES);
-
-                for (int i = 0; i < jsonGeometries.length(); ++i) {
-                    JSONObject jsonGeometry = jsonGeometries.getJSONObject(i);
-                    GeoGeometry geometry = GeoGeometry.fromJson(jsonGeometry);
-                    geometryCollection.add(geometry);
-                }
-
-                output = geometryCollection;
+                output.setCoordinatesFromJSON(jsonGeometries);
                 break;
-
             case GTNone:
             default:
                 break;
@@ -191,4 +188,24 @@ public abstract class GeoGeometry
 
     public abstract void setCoordinatesFromJSON(JSONArray coordinates)
             throws JSONException;
+
+    public byte[] toBlob()
+            throws IOException
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ObjectOutputStream os = new ObjectOutputStream(out);
+        os.writeObject(this);
+        return out.toByteArray();
+    }
+
+    public GeoGeometry fromBlob(byte[] raw)
+            throws IOException, ClassNotFoundException
+    {
+        ByteArrayInputStream in = new ByteArrayInputStream(raw);
+        ObjectInputStream is = new ObjectInputStream(in);
+        return (GeoGeometry) is.readObject();
+    }
+
+    //public abstract String toWKT();
+
 }

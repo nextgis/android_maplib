@@ -35,7 +35,7 @@ import java.util.List;
 
 
 public class MapEventSource
-        extends MapBase
+        extends MapContentProviderHelper
 {
     protected static final String BUNDLE_ID_KEY        = "id";
     protected static final String BUNDLE_TYPE_KEY      = "type";

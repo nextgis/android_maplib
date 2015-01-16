@@ -28,6 +28,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.map.MapBase;
+import com.nextgis.maplib.map.MapContentProviderHelper;
 
 import java.io.File;
 
@@ -35,36 +38,17 @@ import static com.nextgis.maplib.util.SettingsConstants.*;
 
 public class NGWLayerContentProvider  extends ContentProvider
 {
-    protected DatabaseHelper mDatabaseHelper;
-    private   SQLiteDatabase mDatabase;
-
-    protected static final String DBNAME = "layers";
-    protected static final int DATABASE_VERSION = 1;
-
+    protected MapContentProviderHelper mMap;
 
     @Override
     public boolean onCreate()
     {
-        File dbFullName;
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-        File defaultPath = getContext().getExternalFilesDir(KEY_PREF_MAP);
-        if (defaultPath != null) {
-            String mapPath = sharedPreferences.getString(KEY_PREF_MAP_PATH, defaultPath.getPath());
-            dbFullName = new File(mapPath, DBNAME);
+        if(getContext() instanceof IGISApplication) {
+            IGISApplication app = (IGISApplication)getContext();
+            mMap = (MapContentProviderHelper) app.getMap();
+            return null != mMap;
         }
-        else {
-            dbFullName = getContext().getDatabasePath(DBNAME);
-        }
-
-        mDatabaseHelper = new DatabaseHelper(
-                getContext(),        // the application context
-                dbFullName,          // the name of the database
-                null,                // uses the default SQLite cursor
-                DATABASE_VERSION     // the version number
-        );
-
-        return true;
-
+        return false;
     }
 
 

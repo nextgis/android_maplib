@@ -37,12 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
-
+import static com.nextgis.maplib.util.Constants.*;
 
 public abstract class TMSLayer
         extends Layer
 {
-    protected static final String JSON_RENDERERPROPS_KEY = "renderer_properties";
     protected static final String JSON_TMSTYPE_KEY       = "tms_type";
     protected int mTMSType;
     protected static final int    HTTP_SEPARATE_THREADS       = 2;

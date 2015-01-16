@@ -68,35 +68,25 @@ public interface Constants
     public static final String JSON_LEVELS_KEY          = "levels";
     public static final String JSON_LEVEL_KEY           = "level";
     public static final String JSON_TYPE_KEY            = "type";
-    public static final String JSON_MAXX_KEY            = "maxx";
-    public static final String JSON_MINX_KEY            = "minx";
-    public static final String JSON_MAXY_KEY            = "maxy";
-    public static final String JSON_MINY_KEY            = "miny";
     public static final String JSON_MAXLEVEL_KEY        = "max_level";
     public static final String JSON_MINLEVEL_KEY        = "min_level";
     public static final String JSON_LAYERS_KEY          = "layers";
     public static final String JSON_LAYER_KEY           = "layer";
     public static final String JSON_PATH_KEY            = "path";
-    public static final String JSON_MAP_KEY             = "map";
-    public static final String JSON_CONNECTION_ID_KEY   = "connection_id";
-    public static final String JSON_LOGIN_KEY           = "login";
-    public static final String JSON_PASSWORD_KEY        = "password";
-    public static final String JSON_BBOX_KEY            = "bbox";
     public static final String JSON_BBOX_MINX_KEY       = "bbox_minx";
     public static final String JSON_BBOX_MINY_KEY       = "bbox_miny";
     public static final String JSON_BBOX_MAXX_KEY       = "bbox_maxx";
     public static final String JSON_BBOX_MAXY_KEY       = "bbox_maxy";
-    public static final String JSON_FIELDS_KEY          = "fields";
-    public static final String JSON_FIELD_NAME_KEY      = "field_name";
-    public static final String JSON_FIELD_ALIAS_KEY     = "field_alias";
-    public static final String JSON_FIELD_TYPE_KEY      = "field_type";
-    public static final String JSON_GEOMETRY_TYPE_KEY   = "geometry_type";
+    public static final String JSON_RENDERERPROPS_KEY   = "renderer_properties";
+    public static final String JSON_WIDTH_KEY   = "width";
+    public static final String JSON_COLOR_KEY   = "color";
 
     /**
      * Layer type
      */
     public static final int LAYERTYPE_REMOTE_TMS = 1;
     public static final int LAYERTYPE_NGW_RASTER = 2;
+    public static final int LAYERTYPE_NGW_VECTOR = 3;
 
     /**
      * time constants

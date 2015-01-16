@@ -34,12 +34,12 @@ public class GeoGeometryCollection
         extends GeoGeometry
 {
 
-    List<GeoGeometry> mGeometries;
+    protected List<GeoGeometry> mGeometries;
 
 
     public GeoGeometryCollection()
     {
-        mGeometries = new ArrayList<GeoGeometry>();
+        mGeometries = new ArrayList<>();
     }
 
 
@@ -128,7 +128,11 @@ public class GeoGeometryCollection
     public void setCoordinatesFromJSON(JSONArray coordinates)
             throws JSONException
     {
-        //if (getType() == GTGeometryCollection) return;
+        for (int i = 0; i < coordinates.length(); ++i) {
+            JSONObject jsonGeometry = coordinates.getJSONObject(i);
+            GeoGeometry geometry = GeoGeometry.fromJson(jsonGeometry);
+            add(geometry);
+        }
     }
 
 

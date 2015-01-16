@@ -26,6 +26,13 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.params.CoreProtocolPNames;
+
+import static com.nextgis.maplib.util.Constants.APP_USER_AGENT;
+import static com.nextgis.maplib.util.Constants.TIMEOUT_CONNECTION;
+import static com.nextgis.maplib.util.Constants.TIMEOUT_SOKET;
 
 
 public class NetworkUtil
@@ -70,5 +77,22 @@ public class NetworkUtil
         }
 
         return false;
+    }
+
+    public DefaultHttpClient getHttpClient()
+    {
+        /*HttpParams httpParameters = new BasicHttpParams();
+        HttpConnectionParams.setConnectionTimeout(httpParameters, TIMEOUT_CONNECTION);
+        // Set the default socket timeout (SO_TIMEOUT)
+        // in milliseconds which is the timeout for waiting for data.
+        HttpConnectionParams.setSoTimeout(httpParameters, TIMEOUT_SOKET);
+        */
+        DefaultHttpClient HTTPClient = new DefaultHttpClient();//httpParameters);
+        HTTPClient.getParams().setParameter(CoreProtocolPNames.USER_AGENT, APP_USER_AGENT);
+        HTTPClient.getParams()
+                  .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
+        HTTPClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
+
+        return HTTPClient;
     }
 }
