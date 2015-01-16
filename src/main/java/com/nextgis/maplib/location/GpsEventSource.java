@@ -68,10 +68,17 @@ public class GpsEventSource
             mListeners.add(listener);
 
             if (mListeners.size() == 1) {
-                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
-                                                        mGpsLocationListener);
-                mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
-                                                        mGpsLocationListener);
+
+                if (mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
+                    mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
+                                                            mGpsLocationListener);
+                }
+
+                if (mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
+                    mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
+                                                            mGpsLocationListener);
+                }
+
                 mLocationManager.addGpsStatusListener(mGpsStatusListener);
             }
         }
