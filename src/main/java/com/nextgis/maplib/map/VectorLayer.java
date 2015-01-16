@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.util.Log;
@@ -171,8 +172,8 @@ public class VectorLayer extends Layer
                 features.add(feature);
             }
 
-            String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " (" + //table name is the same as the folder of the layer
-                                 "_ID1 INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
+                                 "_ID INTEGER PRIMARY KEY, " +
                                  "GEOM BLOB";
             for(int i = 0; i < fields.size(); ++i)
             {
@@ -195,7 +196,7 @@ public class VectorLayer extends Layer
                         break;
                 }
             }
-            tableCreate += ");";
+            tableCreate += " );";
 
             int counter = 0;
             GeoEnvelope extents = new GeoEnvelope();
@@ -217,6 +218,8 @@ public class VectorLayer extends Layer
                     e.printStackTrace();
                 }
                 for(int i = 0; i < fields.size(); ++i){
+                    if(!feature.isValuePresent(i))
+                        continue;
                     switch (fields.get(i).second)
                     {
                         case FTString:
@@ -232,7 +235,6 @@ public class VectorLayer extends Layer
                             values.put(fields.get(i).first, feature.getFieldValueAsString(i));
                             break;
                     }
-
                 }
                 db.insert(mPath.getName(), "", values);
             }
@@ -240,6 +242,7 @@ public class VectorLayer extends Layer
             //2. save the layer properties to config.json
             mGeometryType = geometryType;
             mExtents = extents;
+            mIsInitialized = true;
             setDefaultRenderer();
 
             save();
@@ -250,7 +253,6 @@ public class VectorLayer extends Layer
                 mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
             }
 
-            mIsInitialized = true;
 
             if(null != mParent){ //notify the load is over
                 LayerGroup layerGroup = (LayerGroup)mParent;
@@ -320,5 +322,40 @@ public class VectorLayer extends Layer
                 jsonStore.fromJSON(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
             }
         }
+
+        if(mIsInitialized)
+        {
+            //load vector cache
+            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+            SQLiteDatabase db = map.getDatabase(false);
+            String[] columns = new String[]{"_ID", "GEOM"};
+            Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
+            if(null != cursor && cursor.moveToFirst()) {
+                mVectorCacheItems = new ArrayList<>();
+                do{
+                    try {
+                        GeoGeometry geoGeometry = GeoGeometry.fromBlob(cursor.getBlob(1));
+                        int nId = cursor.getInt(0);
+                        mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+                while (cursor.moveToNext());
+            }
+        }
+    }
+
+
+    @Override
+    public boolean delete()
+    {
+        //drop table
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+        String tableDrop = "DROP TABLE IF EXISTS " + mPath.getName();
+        db.execSQL(tableDrop);
+
+        return super.delete();
     }
 }

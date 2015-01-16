@@ -86,6 +86,11 @@ public class Feature implements IJSONStore
         return setFieldValue(index, value);
     }
 
+    public boolean isValuePresent(int index)
+    {
+        return getFieldValue(index) != null;
+    }
+
     public Object getFieldValue(int index) {
         if (index < 0 || index >= mFieldKeys.size() || index >= mFieldValues.size())
             return null;

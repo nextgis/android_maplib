@@ -198,7 +198,7 @@ public abstract class GeoGeometry implements Serializable
         return out.toByteArray();
     }
 
-    public GeoGeometry fromBlob(byte[] raw)
+    public static GeoGeometry fromBlob(byte[] raw)
             throws IOException, ClassNotFoundException
     {
         ByteArrayInputStream in = new ByteArrayInputStream(raw);

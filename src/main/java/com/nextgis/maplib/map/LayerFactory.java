@@ -70,6 +70,9 @@ public abstract class LayerFactory
                 case LAYERTYPE_NGW_RASTER:
                     layer = new NGWRasterLayer(context, path);
                     break;
+                case LAYERTYPE_NGW_VECTOR:
+                    layer = new NGWVectorLayer(context, path);
+                    break;
             }
         } catch (IOException | JSONException e) {
             Log.d(TAG, e.getLocalizedMessage());
