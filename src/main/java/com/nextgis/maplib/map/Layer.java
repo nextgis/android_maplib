@@ -286,4 +286,10 @@ public class Layer
     {
         return mContext;
     }
+
+    @Override
+    public boolean isValid()
+    {
+        return true;
+    }
 }

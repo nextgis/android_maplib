@@ -187,8 +187,15 @@ public class TMSRenderer
                                                          }
                                                      });
 
-        if (null == mDrawThreadPool)
+        if (null == mDrawThreadPool) {
+            tmsLayer.onDrawFinished(tmsLayer.getId(), 1);
             return;
+        }
+
+        if(tiles.size() == 0){
+            tmsLayer.onDrawFinished(tmsLayer.getId(), 1);
+            return;
+        }
 
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);
@@ -204,7 +211,7 @@ public class TMSRenderer
                         display.drawTile(bmp, tile.getPoint(), mRasterPaint);
                     }
 
-                    float percent = 100;
+                    float percent = 1;
                     synchronized (mLayer) {
                         if (mDrawThreadPool.getTaskCount() > 1)
                             percent = (float) (mDrawThreadPool.getCompletedTaskCount() + 1) /

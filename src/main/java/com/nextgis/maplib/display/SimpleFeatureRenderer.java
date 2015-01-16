@@ -21,57 +21,113 @@
 
 package com.nextgis.maplib.display;
 
+import android.graphics.Bitmap;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 
+import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
+import com.nextgis.maplib.map.TMSLayer;
+import com.nextgis.maplib.map.VectorLayer;
+import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.nextgis.maplib.util.Constants.*;
 
 public class SimpleFeatureRenderer extends Renderer{
 
-    protected Style mStyle;
+    protected Style              mStyle;
+    protected ThreadPoolExecutor mDrawThreadPool;
 
     public static final String JSON_STYLE_KEY = "style";
 
-    public SimpleFeatureRenderer(Layer layer, Style style) {
+
+    public SimpleFeatureRenderer(
+            Layer layer,
+            Style style)
+    {
         super(layer);
         mStyle = style;
     }
 
+
     @Override
-    public void runDraw(GISDisplay display)
+    public void runDraw(final GISDisplay display)
     {
         GeoEnvelope env = display.getBounds();
+        final VectorLayer vectorLayer = (VectorLayer) mLayer;
+        GeoEnvelope layerEnv = vectorLayer.getExtents();
 
-        //TODO: add drawing routine
+        if (!env.intersects(layerEnv)) {
+            vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
+            return;
+        }
 
-        /*final List<Feature> features = mGeoJsonLayer.getFeatures(env);
-        for(int i = 0; i < features.size(); i++){
-            Feature feature = features.get(i);
-            GeoGeometry geometry = feature.getGeometry();
+        //add drawing routine
+        final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
 
-            mStyle.onDraw(geometry, display);
+        //TODO: more than one thread for drawing (divide the geometry cache array on several parts)
+        //TODO: think about display syncronization in drawing points/lines/polygons
 
-            if(handler != null){
-                Bundle bundle = new Bundle();
-                bundle.putBoolean(BUNDLE_HASERROR_KEY, false);
-                bundle.putInt(BUNDLE_TYPE_KEY, msgtype);
-                bundle.putInt(BUNDLE_LAYERNO_KEY, mLayer.getId());
-                bundle.putFloat(BUNDLE_DONE_KEY, (float) i / features.size());
+        mDrawThreadPool = new ThreadPoolExecutor(1, 1, KEEP_ALIVE_TIME,
+                                                 KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
+                                                 new RejectedExecutionHandler()
+                                                 {
+                                                     @Override
+                                                     public void rejectedExecution(
+                                                             Runnable r,
+                                                             ThreadPoolExecutor executor)
+                                                     {
+                                                         try {
+                                                             executor.getQueue().put(r);
+                                                         } catch (InterruptedException e) {
+                                                             e.printStackTrace();
+                                                             //throw new RuntimeException("Interrupted while submitting task", e);
+                                                         }
+                                                     }
+                                                 });
 
-                Message msg = new Message();
-                msg.setData(bundle);
-                handler.sendMessage(msg);
+        if(cache.size() == 0){
+            vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
+            return;
+        }
+
+        mDrawThreadPool.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+
+                for(int i = 0; i < cache.size(); i++){
+                    VectorCacheItem item = cache.get(i);
+
+                    GeoGeometry geometry = item.getGeoGeometry();
+                    mStyle.onDraw(geometry, display);
+
+                    synchronized (mLayer) {
+                        float percent = (float) i / cache.size();
+                        vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
+                    }
+
+                    vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
+                    //Log.d(TAG, "percent: " + percent + " complete: " + mDrawThreadPool.getCompletedTaskCount() + " task count: " + mDrawThreadPool.getTaskCount());
+                }
             }
-        }*/
+        });
     }
 
 
     @Override
     public void cancelDraw(){
-
+        if (mDrawThreadPool != null) {
+            mDrawThreadPool.shutdownNow();
+        }
     }
 
     public Style getStyle() {

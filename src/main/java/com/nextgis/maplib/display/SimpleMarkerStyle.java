@@ -23,6 +23,7 @@ package com.nextgis.maplib.display;
 import android.graphics.Paint;
 
 import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoPoint;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,6 +31,7 @@ import org.json.JSONObject;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_TYPE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
+import static com.nextgis.maplib.util.GeoConstants.*;
 
 
 public class SimpleMarkerStyle extends Style{
@@ -62,9 +64,11 @@ public class SimpleMarkerStyle extends Style{
         mWidth = 1;
     }
 
-    @Override
-    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
-        GeoPoint pt = (GeoPoint) geoGeometry;
+    protected void onDraw(GeoPoint pt, GISDisplay display)
+    {
+        if(null == pt)
+            return;
+
         switch (mType){
             case MarkerStylePoint:
                 Paint ptPaint = new Paint();
@@ -98,6 +102,26 @@ public class SimpleMarkerStyle extends Style{
                 break;
             case MarkerStyleBox:
                 break;
+        }
+    }
+
+    @Override
+    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
+        switch (geoGeometry.getType())
+        {
+            case GTPoint:
+                GeoPoint pt = (GeoPoint) geoGeometry;
+                onDraw(pt, display);
+                break;
+            case GTMultiPoint:
+                GeoMultiPoint multiPoint = (GeoMultiPoint) geoGeometry;
+                for(int i = 0; i < multiPoint.size(); i++)
+                {
+                    onDraw(multiPoint.get(i), display);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("The input geometry type is not support by this style");
         }
     }
 

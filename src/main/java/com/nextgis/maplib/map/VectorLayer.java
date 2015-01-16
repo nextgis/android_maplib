@@ -198,7 +198,6 @@ public class VectorLayer extends Layer
             }
             tableCreate += " );";
 
-            int counter = 0;
             GeoEnvelope extents = new GeoEnvelope();
             for (Feature feature : features) {
                 //update bbox
@@ -325,6 +324,8 @@ public class VectorLayer extends Layer
 
         if(mIsInitialized)
         {
+            mExtents = new GeoEnvelope();
+
             //load vector cache
             MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
             SQLiteDatabase db = map.getDatabase(false);
@@ -336,6 +337,7 @@ public class VectorLayer extends Layer
                     try {
                         GeoGeometry geoGeometry = GeoGeometry.fromBlob(cursor.getBlob(1));
                         int nId = cursor.getInt(0);
+                        mExtents.merge(geoGeometry.getEnvelope());
                         mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
@@ -357,5 +359,17 @@ public class VectorLayer extends Layer
         db.execSQL(tableDrop);
 
         return super.delete();
+    }
+
+
+    public List<VectorCacheItem> getVectorCache()
+    {
+        return mVectorCacheItems;
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return mIsInitialized;
     }
 }

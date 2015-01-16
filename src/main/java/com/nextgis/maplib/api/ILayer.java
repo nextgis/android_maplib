@@ -49,4 +49,6 @@ public interface ILayer
     public void setParent(ILayer layer);
 
     public void setId(short id);
+
+    public boolean isValid();
 }

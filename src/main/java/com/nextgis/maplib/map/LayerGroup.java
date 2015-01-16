@@ -258,7 +258,7 @@ public class LayerGroup
 
         ILayer layer = mLayers.get(mLayerDrawId);
         mLayerDrawId++;
-        if(layer instanceof ILayerView){
+        if(layer.isValid() && layer instanceof ILayerView){
             ILayerView layerView = (ILayerView)layer;
             if(layerView.isVisible() && layer instanceof IRenderer) {
                 IRenderer renderer = (IRenderer) layer;
