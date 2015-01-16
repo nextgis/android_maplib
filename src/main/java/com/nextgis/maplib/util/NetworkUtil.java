@@ -68,10 +68,7 @@ public class NetworkUtil
             return info.isConnected();
         } else if (netType ==
                    ConnectivityManager.TYPE_MOBILE) { // netSubtype == TelephonyManager.NETWORK_TYPE_UMTS
-            if (mTelephonyManager == null) {
-                return false;
-            }
-            if (mTelephonyManager.isNetworkRoaming()) {
+            if (mTelephonyManager != null && !mTelephonyManager.isNetworkRoaming()) {
                 return info.isConnected();
             }
         }
