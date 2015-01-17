@@ -74,7 +74,7 @@ public class MapContentProviderHelper extends MapBase
             return mDatabaseHelper.getWritableDatabase();
     }
 
-    public static NGWVectorLayer getLayerByPath(LayerGroup layerGroup, String path)
+    public static VectorLayer getLayerByPath(LayerGroup layerGroup, String path)
     {
         for(int i = 0; i < layerGroup.getLayerCount(); i++)
         {
@@ -82,15 +82,15 @@ public class MapContentProviderHelper extends MapBase
             if(layer instanceof LayerGroup)
             {
                 LayerGroup inLayerGroup = (LayerGroup)layer;
-                NGWVectorLayer out = getLayerByPath(inLayerGroup, path);
+                VectorLayer out = getLayerByPath(inLayerGroup, path);
                 if(null != out)
                     return out;
             }
-            else if(layer instanceof NGWVectorLayer)
+            else if(layer instanceof VectorLayer)
             {
-                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer)layer;
-                if(ngwVectorLayer.getPath().getName().equals(path))
-                    return ngwVectorLayer;
+                VectorLayer vectorLayer = (VectorLayer)layer;
+                if(vectorLayer.getPath().getName().equals(path))
+                    return vectorLayer;
             }
         }
         return null;

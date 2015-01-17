@@ -25,14 +25,20 @@ import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.CancellationSignal;
+import android.os.ParcelFileDescriptor;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.NGWVectorLayer;
+import com.nextgis.maplib.map.VectorLayer;
 
+
+import java.io.FileNotFoundException;
 
 import static com.nextgis.maplib.util.Constants.*;
 
-public class NGWLayerContentProvider extends ContentProvider
+public class LayerContentProvider
+        extends ContentProvider
 {
     protected MapContentProviderHelper mMap;
 
@@ -48,7 +54,7 @@ public class NGWLayerContentProvider extends ContentProvider
         return false;
     }
 
-    protected NGWVectorLayer getLayerByUri(Uri uri)
+    protected VectorLayer getLayerByUri(Uri uri)
     {
         String path = uri.getPath();
         int nPos = path.indexOf('/');
@@ -66,22 +72,22 @@ public class NGWLayerContentProvider extends ContentProvider
     @Override
     public Cursor query(
             Uri uri,
-            String[] strings,
-            String s,
-            String[] strings2,
-            String s2)
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder)
     {
-        NGWVectorLayer layer = getLayerByUri(uri);
+        VectorLayer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
-        return layer.query(uri, strings, s, strings2, s2);
+        return layer.query(uri, projection, selection, selectionArgs, sortOrder);
     }
 
 
     @Override
     public String getType(Uri uri)
     {
-        NGWVectorLayer layer = getLayerByUri(uri);
+        VectorLayer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
         return layer.getType(uri);
@@ -93,10 +99,23 @@ public class NGWLayerContentProvider extends ContentProvider
             Uri uri,
             String mimeTypeFilter)
     {
-        NGWVectorLayer layer = getLayerByUri(uri);
+        VectorLayer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
         return layer.getStreamTypes(uri, mimeTypeFilter);
+    }
+
+
+    @Override
+    public ParcelFileDescriptor openFile(
+            Uri uri,
+            String mode)
+            throws FileNotFoundException
+    {
+        VectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return null;
+        return layer.openFile(uri, mode);
     }
 
 
@@ -105,7 +124,7 @@ public class NGWLayerContentProvider extends ContentProvider
             Uri uri,
             ContentValues contentValues)
     {
-        NGWVectorLayer layer = getLayerByUri(uri);
+        VectorLayer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
         return layer.insert(uri, contentValues);
@@ -118,7 +137,7 @@ public class NGWLayerContentProvider extends ContentProvider
             String s,
             String[] strings)
     {
-        NGWVectorLayer layer = getLayerByUri(uri);
+        VectorLayer layer = getLayerByUri(uri);
         if(null == layer)
             return 0;
         return layer.delete(uri, s, strings);
@@ -132,7 +151,7 @@ public class NGWLayerContentProvider extends ContentProvider
             String s,
             String[] strings)
     {
-        NGWVectorLayer layer = getLayerByUri(uri);
+        VectorLayer layer = getLayerByUri(uri);
         if(null == layer)
             return 0;
         return layer.update(uri, contentValues, s, strings);
