@@ -115,9 +115,11 @@ public class SimpleFeatureRenderer extends Renderer{
                         vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
                     }
 
-                    vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
-                    //Log.d(TAG, "percent: " + percent + " complete: " + mDrawThreadPool.getCompletedTaskCount() + " task count: " + mDrawThreadPool.getTaskCount());
+
                 }
+
+                vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
+                //Log.d(TAG, "percent: " + percent + " complete: " + mDrawThreadPool.getCompletedTaskCount() + " task count: " + mDrawThreadPool.getTaskCount());
             }
         });
     }

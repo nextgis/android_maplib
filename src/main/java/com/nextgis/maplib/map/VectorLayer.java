@@ -63,6 +63,11 @@ public class VectorLayer extends Layer
     protected static final String JSON_GEOMETRY_TYPE_KEY   = "geometry_type";
     protected static final String JSON_IS_INITIALIZED_KEY   = "is_inited";
 
+    protected static final String ID_FIELD   = "_ID";
+    protected static final String GEOM_FIELD   = "_GEOM";
+
+    protected int mLastId;
+
     public VectorLayer(
             Context context,
             File path)
@@ -71,6 +76,8 @@ public class VectorLayer extends Layer
 
         mIsInitialized = false;
         mGeometryType = GTNone;
+
+        mLastId = 0;
     }
 
     public String createFromGeoJSON(JSONObject geoJSONObject)
@@ -173,8 +180,8 @@ public class VectorLayer extends Layer
             }
 
             String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
-                                 "_ID INTEGER PRIMARY KEY, " +
-                                 "GEOM BLOB";
+                                 ID_FIELD + " INTEGER PRIMARY KEY, " +
+                                 GEOM_FIELD + " BLOB";
             for(int i = 0; i < fields.size(); ++i)
             {
                 Pair<String, Integer> field = fields.get(i);
@@ -210,9 +217,9 @@ public class VectorLayer extends Layer
             db.execSQL(tableCreate);
             for(Feature feature : features) {
                 ContentValues values = new ContentValues();
-                values.put("_ID", feature.getId());
+                values.put(ID_FIELD, feature.getId());
                 try {
-                    values.put("GEOM", feature.getGeometry().toBlob());
+                    values.put(GEOM_FIELD, feature.getGeometry().toBlob());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -329,7 +336,7 @@ public class VectorLayer extends Layer
             //load vector cache
             MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
             SQLiteDatabase db = map.getDatabase(false);
-            String[] columns = new String[]{"_ID", "GEOM"};
+            String[] columns = new String[]{ID_FIELD, GEOM_FIELD};
             Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
             if(null != cursor && cursor.moveToFirst()) {
                 mVectorCacheItems = new ArrayList<>();
@@ -337,6 +344,10 @@ public class VectorLayer extends Layer
                     try {
                         GeoGeometry geoGeometry = GeoGeometry.fromBlob(cursor.getBlob(1));
                         int nId = cursor.getInt(0);
+
+                        if(mLastId <= nId)
+                            mLastId = nId + 1;
+
                         mExtents.merge(geoGeometry.getEnvelope());
                         mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
                     } catch (IOException | ClassNotFoundException e) {
