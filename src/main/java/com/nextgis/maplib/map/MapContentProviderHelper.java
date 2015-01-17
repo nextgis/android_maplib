@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
+import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
 
 import java.io.File;
@@ -71,5 +72,27 @@ public class MapContentProviderHelper extends MapBase
             return mDatabaseHelper.getReadableDatabase();
         else
             return mDatabaseHelper.getWritableDatabase();
+    }
+
+    public static NGWVectorLayer getLayerByPath(LayerGroup layerGroup, String path)
+    {
+        for(int i = 0; i < layerGroup.getLayerCount(); i++)
+        {
+            ILayer layer = layerGroup.getLayer(i);
+            if(layer instanceof LayerGroup)
+            {
+                LayerGroup inLayerGroup = (LayerGroup)layer;
+                NGWVectorLayer out = getLayerByPath(inLayerGroup, path);
+                if(null != out)
+                    return out;
+            }
+            else if(layer instanceof NGWVectorLayer)
+            {
+                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer)layer;
+                if(ngwVectorLayer.getPath().getName().equals(path))
+                    return ngwVectorLayer;
+            }
+        }
+        return null;
     }
 }

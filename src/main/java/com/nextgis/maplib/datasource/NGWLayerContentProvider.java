@@ -23,32 +23,43 @@ package com.nextgis.maplib.datasource;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
-import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.IGISApplication;
-import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
+import com.nextgis.maplib.map.NGWVectorLayer;
 
-import java.io.File;
 
-import static com.nextgis.maplib.util.SettingsConstants.*;
+import static com.nextgis.maplib.util.Constants.*;
 
-public class NGWLayerContentProvider  extends ContentProvider
+public class NGWLayerContentProvider extends ContentProvider
 {
     protected MapContentProviderHelper mMap;
 
     @Override
     public boolean onCreate()
     {
+
         if(getContext() instanceof IGISApplication) {
             IGISApplication app = (IGISApplication)getContext();
             mMap = (MapContentProviderHelper) app.getMap();
             return null != mMap;
         }
         return false;
+    }
+
+    protected NGWVectorLayer getLayerByUri(Uri uri)
+    {
+        String path = uri.getPath();
+        int nPos = path.indexOf('/');
+        String layerPath;
+        if(nPos != NOT_FOUND){
+            layerPath = path.substring(0, nPos);
+        }
+        else {
+            layerPath = path;
+        }
+        return MapContentProviderHelper.getLayerByPath(mMap, layerPath);
     }
 
 
@@ -60,14 +71,32 @@ public class NGWLayerContentProvider  extends ContentProvider
             String[] strings2,
             String s2)
     {
-        return null;
+        NGWVectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return null;
+        return layer.query(uri, strings, s, strings2, s2);
     }
 
 
     @Override
     public String getType(Uri uri)
     {
-        return null;
+        NGWVectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return null;
+        return layer.getType(uri);
+    }
+
+
+    @Override
+    public String[] getStreamTypes(
+            Uri uri,
+            String mimeTypeFilter)
+    {
+        NGWVectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return null;
+        return layer.getStreamTypes(uri, mimeTypeFilter);
     }
 
 
@@ -76,9 +105,10 @@ public class NGWLayerContentProvider  extends ContentProvider
             Uri uri,
             ContentValues contentValues)
     {
-        //mDatabase = mDatabaseHelper.getWritableDatabase();
-
-        return null;
+        NGWVectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return null;
+        return layer.insert(uri, contentValues);
     }
 
 
@@ -88,7 +118,10 @@ public class NGWLayerContentProvider  extends ContentProvider
             String s,
             String[] strings)
     {
-        return 0;
+        NGWVectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return 0;
+        return layer.delete(uri, s, strings);
     }
 
 
@@ -99,6 +132,9 @@ public class NGWLayerContentProvider  extends ContentProvider
             String s,
             String[] strings)
     {
-        return 0;
+        NGWVectorLayer layer = getLayerByUri(uri);
+        if(null == layer)
+            return 0;
+        return layer.update(uri, contentValues, s, strings);
     }
 }

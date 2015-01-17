@@ -32,4 +32,5 @@ import com.nextgis.maplib.map.MapBase;
 public interface IGISApplication
 {
     public MapBase getMap();
+    public String getAuthority();
 }
