@@ -614,13 +614,35 @@ public class VectorLayer extends Layer
                 }
                 return null;
             case TYPE_PHOTO:
+                List<String> pathSegments = uri.getPathSegments();
+                String featureId = pathSegments.get(pathSegments.size() - 2);
+                //get photo path
+                File photoFolder = new File(mPath, featureId);
+                long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
+                for(File file : photoFolder.listFiles()){
+                    long val = Long.parseLong(file.getName().replace(".jpg", ""));
+                    if(val >= maxId)
+                        maxId = val + 1;
+                }
+                String fileName = maxId + ".jpg";
+                File photo = new File(photoFolder, fileName);
+                try {
+                    if(photo.createNewFile()) {
+                        addChange(featureId, fileName, ChangeFeatureItem.TYPE_NEW);
+                        Uri resultUri = ContentUris.withAppendedId(uri, maxId);
+                        getContext().getContentResolver().notifyChange(resultUri, null);
+                        return resultUri;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return null;
             case TYPE_FEATURE:
             case TYPE_PHOTO_ID:
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
     }
-
 
     public int delete(Uri uri, String selection, String[] selectionArgs)
     {
@@ -683,7 +705,7 @@ public class VectorLayer extends Layer
                     }
                 }
                 if(result > 0){
-                    addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_PHOTO_DELETE);
+                    addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                 }
                 return result;
             case TYPE_PHOTO_ID:
@@ -696,7 +718,7 @@ public class VectorLayer extends Layer
                 //get photo path
                 File photoFile = new File(mPath, featureId + "/" + photoName); //the photos store in id folder in layer folder
                 if(photoFile.delete()){
-                    addChange(featureId, photoName, ChangeFeatureItem.TYPE_PHOTO_DELETE);
+                    addChange(featureId, photoName, ChangeFeatureItem.TYPE_DELETE);
                     return 1;
                 }
                 return 0;
@@ -750,40 +772,11 @@ public class VectorLayer extends Layer
                             break;
                         }
                     }
-                    addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
+                    addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
                 }
                 return result;
             case TYPE_PHOTO:
-                pathSegments = uri.getPathSegments();
-                featureId = pathSegments.get(pathSegments.size() - 2);
-                result = 0;
-                //get photo path
-                File photoFolder = new File(mPath, featureId); //the photos store in id folder in layer folder
-                for (File photoFile : photoFolder.listFiles()) {
-                    if(photoFile.getName().endsWith("jpg")){
-                        if(photoFile.delete()){
-                            result++;
-                        }
-                    }
-                }
-                if(result > 0){
-                    addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_PHOTO_DELETE);
-                }
-                return result;
             case TYPE_PHOTO_ID:
-                pathSegments = uri.getPathSegments();
-                featureId = pathSegments.get(pathSegments.size() - 3);
-                photoName = uri.getLastPathSegment();
-
-                if(!photoName.endsWith("jpg"))
-                    photoName += ".jpg";
-                //get photo path
-                File photoFile = new File(mPath, featureId + "/" + photoName); //the photos store in id folder in layer folder
-                if(photoFile.delete()){
-                    addChange(featureId, photoName, ChangeFeatureItem.TYPE_PHOTO_DELETE);
-                    return 1;
-                }
-                return 0;
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
@@ -799,7 +792,24 @@ public class VectorLayer extends Layer
                 String photoName = uri.getLastPathSegment();
                 if(!photoName.endsWith("jpg"))
                     photoName += ".jpg";
-                return ParcelFileDescriptor.open(new File(mPath, featureId + "/" + photoName), ParcelFileDescriptor.MODE_READ_ONLY);
+                int nMode = ParcelFileDescriptor.MODE_READ_ONLY;
+                //mode 	May be "w", "wa", "rw", or "rwt".
+                switch (mode) {
+                    case "w":
+                    case "rw":
+                        nMode = ParcelFileDescriptor.MODE_READ_WRITE;
+                        break;
+                    case "wa":
+                        nMode = ParcelFileDescriptor.MODE_READ_WRITE |
+                                ParcelFileDescriptor.MODE_APPEND;
+                        break;
+                    case "rwt":
+                        nMode = ParcelFileDescriptor.MODE_READ_WRITE |
+                                ParcelFileDescriptor.MODE_TRUNCATE;
+                        break;
+                }
+
+                return ParcelFileDescriptor.open(new File(mPath, featureId + "/" + photoName), nMode);
             default:
                 throw new FileNotFoundException();
         }

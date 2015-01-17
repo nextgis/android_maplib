@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 
@@ -240,12 +241,63 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     @Override
     protected void addChange(String featureId, int operation)
     {
-        //mChanges.add(new ChangeFeatureItem(-1, ChangeFeatureItem.TYPE_DELETE));
+        //1. if featureId == NOT_FOUND remove all changes and add this one
+        if(featureId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
+            mChanges.clear();
+            mChanges.add(new ChangeFeatureItem(NOT_FOUND, operation));
+        }
+        else {
+            int id = Integer.parseInt(featureId);
+            for(int i = 0; i < mChanges.size(); i++) {
+                ChangeFeatureItem item = mChanges.get(i);
+                if(item.getFeatureId() == id){
+                    //2. if featureId == some id and op is delete - remove and other operations
+                    if(operation == ChangeFeatureItem.TYPE_DELETE) {
+                        if(item.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                            return;
+                        }
+                        mChanges.remove(i);
+                        i--;
+                    }
+                    //3. if featureId == some id and op is update and previous op was add or update - skip
+                    else if(operation == ChangeFeatureItem.TYPE_CHANGED){
+                        if(item.getOperation() == ChangeFeatureItem.TYPE_CHANGED || item.getOperation() == ChangeFeatureItem.TYPE_NEW){
+                            return;
+                        }
+                        else{
+                            item.setOperation(operation);
+                            return;
+                        }
+                    }
+                    //4. if featureId == some id and op is add and value present - warning
+                    else if(operation == ChangeFeatureItem.TYPE_NEW){
+                        Log.w(TAG, "Something wrong. Should nether get here");
+                        return;
+                    }
+                }
+            }
+            mChanges.add(new ChangeFeatureItem(id, operation));
+        }
     }
 
     @Override
     protected void addChange(String featureId, String photoName, int operation)
     {
-        //mChanges.add(new ChangeFeatureItem(-1, ChangeFeatureItem.TYPE_DELETE));
+        int id = Integer.parseInt(featureId);
+        for(int i = 0; i < mChanges.size(); i++){
+            ChangeFeatureItem item = mChanges.get(i);
+            if(item.getFeatureId() == id){
+                if(item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
+                    return;
+                }
+                else{
+                    item.addPhotoChange(photoName, operation);
+                    return;
+                }
+            }
+        }
+        ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_PHOTO);
+        item.addPhotoChange(photoName, operation);
+        mChanges.add(item);
     }
 }
