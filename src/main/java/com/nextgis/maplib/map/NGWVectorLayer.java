@@ -47,7 +47,7 @@ import java.util.List;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
-
+import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
 
 public class NGWVectorLayer extends VectorLayer implements INGWLayer
 {
@@ -63,7 +63,6 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected static final String JSON_URL_KEY      = "url";
     protected static final String JSON_LOGIN_KEY    = "login";
     protected static final String JSON_PASSWORD_KEY = "password";
-    protected static final String JSON_CHANGES_KEY  = "changes";
 
     public NGWVectorLayer(
             Context context,

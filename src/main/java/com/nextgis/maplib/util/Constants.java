@@ -63,6 +63,7 @@ public interface Constants
     /**
      * JSON keys
      */
+    public static final String JSON_ID_KEY              = "id";
     public static final String JSON_NAME_KEY            = "name";
     public static final String JSON_VISIBILITY_KEY      = "visible";
     public static final String JSON_LEVELS_KEY          = "levels";
@@ -80,6 +81,7 @@ public interface Constants
     public static final String JSON_RENDERERPROPS_KEY   = "renderer_properties";
     public static final String JSON_WIDTH_KEY   = "width";
     public static final String JSON_COLOR_KEY   = "color";
+    public static final String JSON_CHANGES_KEY  = "changes";
 
     /**
      * Layer type

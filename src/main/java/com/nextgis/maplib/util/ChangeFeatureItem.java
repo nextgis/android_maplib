@@ -23,6 +23,7 @@ package com.nextgis.maplib.util;
 
 import android.util.Log;
 import com.nextgis.maplib.api.IJSONStore;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -31,7 +32,8 @@ import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
-
+import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
 
 /**
  * A class to store changes in feature of vector layer
@@ -42,6 +44,8 @@ public class ChangeFeatureItem implements IJSONStore
     public static final int TYPE_CHANGED = 2;
     public static final int TYPE_DELETE = 3;
     public static final int TYPE_PHOTO = 4;
+
+    protected static final String JSON_OPERATION_KEY  = "operation";
 
     protected int mFeatureId;
     protected int mOperation;
@@ -82,7 +86,10 @@ public class ChangeFeatureItem implements IJSONStore
         public JSONObject toJSON()
                 throws JSONException
         {
-            return null;
+            JSONObject rootObject = new JSONObject();
+            rootObject.put(JSON_ID_KEY, mPhotoId);
+            rootObject.put(JSON_OPERATION_KEY, mOperation);
+            return rootObject;
         }
 
 
@@ -90,7 +97,8 @@ public class ChangeFeatureItem implements IJSONStore
         public void fromJSON(JSONObject jsonObject)
                 throws JSONException
         {
-
+            mPhotoId = jsonObject.getInt(JSON_ID_KEY);
+            mOperation = jsonObject.getInt(JSON_OPERATION_KEY);
         }
     }
 
@@ -130,7 +138,15 @@ public class ChangeFeatureItem implements IJSONStore
     public JSONObject toJSON()
             throws JSONException
     {
-        return null;
+        JSONObject rootObject = new JSONObject();
+        rootObject.put(JSON_ID_KEY, mFeatureId);
+        rootObject.put(JSON_OPERATION_KEY, mOperation);
+        JSONArray changes = new JSONArray();
+        for(ChangePhotoItem photoItem : mPhotoItems){
+            changes.put(photoItem.toJSON());
+        }
+        rootObject.put(JSON_CHANGES_KEY, changes);
+        return rootObject;
     }
 
 
@@ -138,7 +154,18 @@ public class ChangeFeatureItem implements IJSONStore
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
+        mFeatureId = jsonObject.getInt(JSON_ID_KEY);
+        mOperation = jsonObject.getInt(JSON_OPERATION_KEY);
 
+        if(jsonObject.has(JSON_CHANGES_KEY)){
+            JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
+            for(int i =0; i < array.length(); i++){
+                JSONObject change = array.getJSONObject(i);
+                ChangePhotoItem item = new ChangePhotoItem(0 ,0);
+                item.fromJSON(change);
+                mPhotoItems.add(item);
+            }
+        }
     }
 
 
