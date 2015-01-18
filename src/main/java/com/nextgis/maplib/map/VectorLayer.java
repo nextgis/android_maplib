@@ -488,7 +488,7 @@ public class VectorLayer extends Layer
                             } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.SIZE) == 0) {
                                 row[i] = photoFile.length();
                             } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATA) == 0) {
-                                row[i] = photoFile;
+                                row[i] = photoFile.getPath();
                             } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.MIME_TYPE)==0) {
                                 row[i] = CONTENT_PHOTO_TYPE;
                             } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_ADDED)==0 ||
@@ -529,7 +529,7 @@ public class VectorLayer extends Layer
                     } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.SIZE) == 0) {
                         row[i] = photoFile.length();
                     } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATA) == 0) {
-                        row[i] = photoFile;
+                        row[i] = photoFile.getPath();
                     } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.MIME_TYPE)==0) {
                         row[i] = CONTENT_PHOTO_TYPE;
                     } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_ADDED)==0 ||
@@ -814,6 +814,64 @@ public class VectorLayer extends Layer
                 throw new FileNotFoundException();
         }
     }
+
+    /*
+    To put image to the feature
+    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/photos
+    Uri uri = getContentResolver().insert(newUri, null);
+    try {
+        OutputStream outStream = getContentResolver().openOutputStream(uri);
+        sourceBitmap.compress(Bitmap.CompressFormat.JPEG, 50, outStream);
+        outStream.close();
+    } catch (Exception e) {
+        Log.e(TAG, "exception while writing image", e);
+    }
+
+    private Bitmap getBitmapFromUri(Uri uri) throws IOException {
+        ParcelFileDescriptor parcelFileDescriptor =
+                getContentResolver().openFileDescriptor(uri, "r");
+        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+        Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+        parcelFileDescriptor.close();
+        return image;
+    }
+
+    To get image using uri
+
+    Uri featureUri = content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1
+    Uri thisPhotoUri =
+          ContentUris.withAppendedId(featureUri, photoId);
+    InputStream inStream = null;
+    try {
+       inStream = resolver.openInputStream(thisPhotoUri);
+
+       // what to do with the stream is up to you
+       // I simply create a bitmap to display it
+       Bitmap bm = BitmapFactory.decodeStream(inStream);
+       FrameLayout frame =
+             (FrameLayout)findViewById(R.id.picture_frame);
+       ImageView view = new ImageView(getApplicationContext());
+       view.setImageBitmap(bm);
+       frame.addView(view);
+    } catch (FileNotFoundException e) {
+       Log.e(TAG, "file not found " + thisPhotoUri, e);
+    }
+    finally {
+       if (inStream != null) {
+          try {
+             inStream.close();
+          } catch (IOException e) {
+             Log.e(TAG, "could not close stream", e);
+          }
+       }
+    }
+
+    also it can be used
+    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/photos
+    Cursor cursor = resolver.query(newUri, {MediaStore.MediaColumns.DATA}, null....)
+    File bitmapFile = new File(cursor.getString(MediaStore.MediaColumns.DATA))
+    and open using real path
+    */
 
     protected void addChange(String featureId, int operation)
     {
