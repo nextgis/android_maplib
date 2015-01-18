@@ -26,12 +26,17 @@ import android.annotation.TargetApi;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.SyncResult;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
+import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.SettingsConstants;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 /*
@@ -51,6 +56,9 @@ https://books.google.ru/books?id=SXlMAQAAQBAJ&pg=PA158&lpg=PA158&dq=android:sync
 public class SyncAdapter
         extends AbstractThreadedSyncAdapter
 {
+    public static final String SYNC_START = "com.nextgis.maplib.sync_start";
+    public static final String SYNC_FINISH = "com.nextgis.maplib.sync_finish";
+
     public SyncAdapter(
             Context context,
             boolean autoInitialize)
@@ -78,9 +86,23 @@ public class SyncAdapter
             SyncResult syncResult)
     {
         Log.d(TAG, "onPerformSync");
-        //1. get remote changes
 
-        //2. send current changes
-        //MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        getContext().sendBroadcast(new Intent(SYNC_START));
+
+        IGISApplication application = (IGISApplication)getContext();
+        MapContentProviderHelper mapContentProviderHelper = (MapContentProviderHelper) application.getMap();
+        if(null != mapContentProviderHelper){
+            //1. get remote changes
+
+            //2. send current changes
+        }
+
+        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES,
+                                                                       Context.MODE_MULTI_PROCESS);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
+        editor.commit();
+
+        getContext().sendBroadcast(new Intent(SYNC_FINISH));
     }
 }

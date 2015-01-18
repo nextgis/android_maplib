@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 public interface Constants
 {
     public final static String TAG    = "nextgismobile";
+    public final static String PREFERENCES = "nextgismobile";
     public static final int NOT_FOUND = -1;
 
     /**
