@@ -21,7 +21,6 @@
 
 package com.nextgis.maplib.map;
 
-
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -65,11 +64,12 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 
 public class VectorLayer extends Layer
 {
-    protected        boolean               mIsInitialized;
-    protected        int                   mGeometryType;
-    protected        List<VectorCacheItem> mVectorCacheItems;
-    protected static Uri                   mContentUri;
-    protected static UriMatcher            mUriMatcher;
+    protected boolean               mIsInitialized;
+    protected int                   mGeometryType;
+    protected List<VectorCacheItem> mVectorCacheItems;
+    protected Uri                   mContentUri;
+    protected UriMatcher            mUriMatcher;
+    protected String                mAuthority;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
@@ -82,6 +82,7 @@ public class VectorLayer extends Layer
 
     protected static final String CONTENT_PHOTO_TYPE  = "image/jpeg";
     protected static final String CONTENT_PHOTOS_TYPE = "vnd.android.cursor.dir/image";
+    protected static final String NO_SYNC = "no_sync";
 
     protected static final int TYPE_TABLE    = 1;
     protected static final int TYPE_FEATURE  = 2;
@@ -103,17 +104,14 @@ public class VectorLayer extends Layer
                     "The context should be the instance of IGISApplication");
 
         IGISApplication application = (IGISApplication) context;
-        mContentUri = Uri.parse("content://" + application.getAuthority() + "/" + mPath.getName());
+        mAuthority = application.getAuthority();
+        mContentUri = Uri.parse("content://" + mAuthority + "/" + mPath.getName());
         mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
-        mUriMatcher.addURI(application.getAuthority(), mPath.getName(),
-                           TYPE_TABLE);              //get all rows
-        mUriMatcher.addURI(application.getAuthority(), mPath.getName() + "/#",
-                           TYPE_FEATURE);     //get single row
-        mUriMatcher.addURI(application.getAuthority(), mPath.getName() + "/#/photos",
-                           TYPE_PHOTO); //get photos for row
-        mUriMatcher.addURI(application.getAuthority(), mPath.getName() + "/#/photos/#",
-                           TYPE_PHOTO_ID); //get photo by name
+        mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos", TYPE_PHOTO);      //get photos for row
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos/#", TYPE_PHOTO_ID); //get photo by name
 
 
         CONTENT_TYPE =
@@ -607,9 +605,16 @@ public class VectorLayer extends Layer
                             e.printStackTrace();
                         }
                     }
-                    addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
+
                     Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
-                    getContext().getContentResolver().notifyChange(resultUri, null);
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(resultUri, null, false);
+                    }
+                    else {
+                        addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
+                        getContext().getContentResolver().notifyChange(resultUri, null, true);
+                    }
                     return resultUri;
                 }
                 return null;
@@ -628,9 +633,16 @@ public class VectorLayer extends Layer
                 File photo = new File(photoFolder, fileName);
                 try {
                     if(photo.createNewFile()) {
-                        addChange(featureId, fileName, ChangeFeatureItem.TYPE_NEW);
                         Uri resultUri = ContentUris.withAppendedId(uri, maxId);
-                        getContext().getContentResolver().notifyChange(resultUri, null);
+                        boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                        if(bFromNetwork) {
+                            getContext().getContentResolver().notifyChange(resultUri, null, false);
+                        }
+                        else {
+                            addChange(featureId, fileName, ChangeFeatureItem.TYPE_NEW);
+                            getContext().getContentResolver().notifyChange(resultUri, null, true);
+                        }
+
                         return resultUri;
                     }
                 } catch (IOException e) {
@@ -662,9 +674,17 @@ public class VectorLayer extends Layer
             case TYPE_TABLE:
                 db = map.getDatabase(false);
                 result = db.delete(mPath.getName(), selection, selectionArgs);
-                getContext().getContentResolver().notifyChange(uri, null);
+
                 if(result > 0){
-                    addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    }
+                    else {
+                        addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
+                        getContext().getContentResolver().notifyChange(uri, null, true);
+                    }
+
                     //clear cache
                     mVectorCacheItems.clear();
                 }
@@ -678,7 +698,7 @@ public class VectorLayer extends Layer
                 }
                 db = map.getDatabase(false);
                 result = db.delete(mPath.getName(), selection, selectionArgs);
-                getContext().getContentResolver().notifyChange(uri, null);
+
                 if(result > 0){
                     //remove cached item
                     int id = Integer.parseInt(featureId);
@@ -688,7 +708,15 @@ public class VectorLayer extends Layer
                             break;
                         }
                     }
-                    addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
+
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    }
+                    else {
+                        addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
+                        getContext().getContentResolver().notifyChange(uri, null, true);
+                    }
                 }
                 return result;
             case TYPE_PHOTO:
@@ -705,7 +733,14 @@ public class VectorLayer extends Layer
                     }
                 }
                 if(result > 0){
-                    addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    }
+                    else {
+                        addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
                 }
                 return result;
             case TYPE_PHOTO_ID:
@@ -718,7 +753,14 @@ public class VectorLayer extends Layer
                 //get photo path
                 File photoFile = new File(mPath, featureId + "/" + photoName); //the photos store in id folder in layer folder
                 if(photoFile.delete()){
-                    addChange(featureId, photoName, ChangeFeatureItem.TYPE_DELETE);
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    }
+                    else {
+                        addChange(featureId, photoName, ChangeFeatureItem.TYPE_DELETE);
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
                     return 1;
                 }
                 return 0;
@@ -746,9 +788,17 @@ public class VectorLayer extends Layer
             case TYPE_TABLE:
                 db = map.getDatabase(false);
                 result = db.update(mPath.getName(), values, selection, selectionArgs);
-                getContext().getContentResolver().notifyChange(uri, null);
+
                 if(result > 0){
-                    addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    }
+                    else {
+                        addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
+
                     //clear cache
                     mVectorCacheItems.clear();
                 }
@@ -762,7 +812,7 @@ public class VectorLayer extends Layer
                 }
                 db = map.getDatabase(false);
                 result = db.delete(mPath.getName(), selection, selectionArgs);
-                getContext().getContentResolver().notifyChange(uri, null);
+
                 if(result > 0){
                     //remove cached item
                     int id = Integer.parseInt(featureId);
@@ -772,7 +822,14 @@ public class VectorLayer extends Layer
                             break;
                         }
                     }
-                    addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
+                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    if(bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    }
+                    else {
+                        addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
                 }
                 return result;
             case TYPE_PHOTO:

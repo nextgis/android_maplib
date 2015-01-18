@@ -81,15 +81,24 @@ public abstract class LayerFactory
         return layer;
     }
 
-    public Connection getConnectionFromAccount(Context context, String accountName){
+    public static Account getAccountByName(Context context, String accountName){
         final AccountManager accountManager = AccountManager.get(context);
         for(Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)){
             if(account.name.equals(accountName)){
-                String url = accountManager.getUserData(account, "url");
-                String password = accountManager.getPassword(account);
-                String login = accountManager.getUserData(account, "login");
-                return new Connection(accountName, login, password, url);
+                return account;
             }
+        }
+        return null;
+    }
+
+    public static Connection getConnectionFromAccount(Context context, String accountName){
+        final AccountManager accountManager = AccountManager.get(context);
+        Account account = getAccountByName(context, accountName);
+        if(null != account){
+            String url = accountManager.getUserData(account, "url");
+            String password = accountManager.getPassword(account);
+            String login = accountManager.getUserData(account, "login");
+            return new Connection(accountName, login, password, url);
         }
         return null;
     }

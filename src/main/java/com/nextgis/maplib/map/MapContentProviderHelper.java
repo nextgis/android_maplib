@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
@@ -94,5 +95,22 @@ public class MapContentProviderHelper extends MapBase
             }
         }
         return null;
+    }
+
+    public static void setSyncPeriod(LayerGroup layerGroup, Bundle extras, long pollFrequency){
+        for(int i = 0; i < layerGroup.getLayerCount(); i++)
+        {
+            ILayer layer = layerGroup.getLayer(i);
+            if(layer instanceof LayerGroup)
+            {
+                LayerGroup inLayerGroup = (LayerGroup)layer;
+                setSyncPeriod(inLayerGroup, extras, pollFrequency);
+            }
+            else if(layer instanceof NGWVectorLayer)
+            {
+                NGWVectorLayer vectorLayer = (NGWVectorLayer)layer;
+                vectorLayer.setSyncPeriod(extras, pollFrequency);
+            }
+        }
     }
 }

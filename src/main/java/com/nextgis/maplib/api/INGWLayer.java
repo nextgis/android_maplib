@@ -23,7 +23,7 @@ package com.nextgis.maplib.api;
 
 public interface INGWLayer
 {
-    public String getAccount();
+    public String getAccountName();
 
-    public void setAccount(String account);
+    public void setAccountName(String account);
 }

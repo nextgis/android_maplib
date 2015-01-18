@@ -79,14 +79,14 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
 
 
     @Override
-    public String getAccount()
+    public String getAccountName()
     {
         return mAccount;
     }
 
 
     @Override
-    public void setAccount(String account)
+    public void setAccountName(String account)
     {
         mAccount = account;
     }

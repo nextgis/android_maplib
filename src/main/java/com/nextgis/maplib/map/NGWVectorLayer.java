@@ -21,8 +21,11 @@
 
 package com.nextgis.maplib.map;
 
+import android.accounts.Account;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
@@ -51,11 +54,12 @@ import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
 
 public class NGWVectorLayer extends VectorLayer implements INGWLayer
 {
-    protected String      mAccount;
+    protected String      mAccountName;
     protected String      mURL;
     protected NetworkUtil mNet;
     protected String      mLogin;
     protected String      mPassword;
+    protected Account     mAccount;
 
     protected List<ChangeFeatureItem> mChanges;
 
@@ -63,6 +67,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected static final String JSON_URL_KEY      = "url";
     protected static final String JSON_LOGIN_KEY    = "login";
     protected static final String JSON_PASSWORD_KEY = "password";
+
 
     public NGWVectorLayer(
             Context context,
@@ -77,9 +82,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
 
     @Override
-    public void setAccount(String account)
+    public void setAccountName(String accountName)
     {
-        mAccount = account;
+        mAccountName = accountName;
     }
 
 
@@ -113,12 +118,12 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_ACCOUNT_KEY, mAccount);
+        rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
         rootConfig.put(JSON_URL_KEY, mURL);
         rootConfig.put(JSON_LOGIN_KEY, mLogin);
         rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         JSONArray changes = new JSONArray();
-        for(ChangeFeatureItem change : mChanges){
+        for (ChangeFeatureItem change : mChanges) {
             changes.put(change.toJSON());
         }
         rootConfig.put(JSON_CHANGES_KEY, changes);
@@ -131,17 +136,18 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        mAccount = jsonObject.getString(JSON_ACCOUNT_KEY);
+        mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
+        mAccount = LayerFactory.getAccountByName(getContext(), mAccountName);
         mURL = jsonObject.getString(JSON_URL_KEY);
         if (jsonObject.has(JSON_LOGIN_KEY))
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
         if (jsonObject.has(JSON_PASSWORD_KEY))
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
-        if(jsonObject.has(JSON_CHANGES_KEY)){
+        if (jsonObject.has(JSON_CHANGES_KEY)) {
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
-            for(int i =0; i < array.length(); i++){
+            for (int i = 0; i < array.length(); i++) {
                 JSONObject change = array.getJSONObject(i);
-                ChangeFeatureItem item = new ChangeFeatureItem(0 ,0);
+                ChangeFeatureItem item = new ChangeFeatureItem(0, 0);
                 item.fromJSON(change);
                 mChanges.add(item);
             }
@@ -155,9 +161,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
 
     @Override
-    public String getAccount()
+    public String getAccountName()
     {
-        return mAccount;
+        return mAccountName;
     }
 
 
@@ -298,5 +304,13 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_PHOTO);
         item.addPhotoChange(photoName, operation);
         mChanges.add(item);
+    }
+
+    protected void requestSync(){
+        ContentResolver.requestSync(mAccount, mAuthority, null);
+    }
+
+    public void setSyncPeriod(Bundle extras, long pollFrequency){
+        ContentResolver.addPeriodicSync(mAccount, mAuthority, extras, pollFrequency);
     }
 }
