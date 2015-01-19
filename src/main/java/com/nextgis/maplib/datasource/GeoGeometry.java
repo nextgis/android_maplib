@@ -36,7 +36,7 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 
 public abstract class GeoGeometry implements Serializable
 {
-
+    protected static final long serialVersionUID =-1241179697270831761L;
     protected int mCRS;
 
     public boolean project(int toCrs)
@@ -46,7 +46,11 @@ public abstract class GeoGeometry implements Serializable
     }
 
 
-    protected abstract boolean rawProject(int toCrs);
+    protected boolean rawProject(int toCrs)
+    {
+        mCRS = toCrs;
+        return true;
+    }
 
 
     public abstract GeoEnvelope getEnvelope();

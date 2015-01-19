@@ -35,6 +35,7 @@ import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.util.ChangeFeatureItem;
+import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import org.apache.http.HttpEntity;
@@ -632,15 +633,18 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 continue;
             JSONObject valueObject = new JSONObject();
 
-            switch (cursor.getType(i)) {
-                case Cursor.FIELD_TYPE_FLOAT:
+            switch (mFields.get(cursor.getColumnName(i))) {
+                case GeoConstants.FTReal:
                     valueObject.put(name, cursor.getFloat(i));
                     break;
-                case Cursor.FIELD_TYPE_INTEGER:
+                case GeoConstants.FTInteger:
                     valueObject.put(name, cursor.getInt(i));
                     break;
-                case Cursor.FIELD_TYPE_STRING:
+                case GeoConstants.FTString:
                     valueObject.put(name, cursor.getString(i));
+                    break;
+                case GeoConstants.FTDateTime:
+                    valueObject.put(name, cursor.getLong(i));
                     break;
                 default:
                     continue;

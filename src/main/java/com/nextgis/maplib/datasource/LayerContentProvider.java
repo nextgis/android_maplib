@@ -57,15 +57,7 @@ public class LayerContentProvider
     protected VectorLayer getLayerByUri(Uri uri)
     {
         String path = uri.getPath();
-        int nPos = path.indexOf('/');
-        String layerPath;
-        if(nPos != NOT_FOUND){
-            layerPath = path.substring(0, nPos);
-        }
-        else {
-            layerPath = path;
-        }
-        return MapContentProviderHelper.getLayerByPath(mMap, layerPath);
+        return MapContentProviderHelper.getVectorLayerByPath(mMap, path);
     }
 
 

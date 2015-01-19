@@ -63,7 +63,7 @@ public class SimpleFeatureRenderer extends Renderer{
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
         GeoEnvelope layerEnv = vectorLayer.getExtents();
 
-        if (!env.intersects(layerEnv)) {
+        if (null == env || null == layerEnv || !env.intersects(layerEnv)) {
             vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
             return;
         }

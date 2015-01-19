@@ -57,8 +57,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
@@ -71,12 +73,14 @@ public class VectorLayer extends Layer
     protected Uri                   mContentUri;
     protected UriMatcher            mUriMatcher;
     protected String                mAuthority;
+    protected Map<String, Integer>  mFields;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
 
     protected static final String JSON_GEOMETRY_TYPE_KEY  = "geometry_type";
     protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
+    protected static final String JSON_FIELDS_KEY = "fields";
 
     public static final String FIELD_ID   = "_ID";
     public static final String FIELD_GEOM = "_GEOM";
@@ -91,20 +95,20 @@ public class VectorLayer extends Layer
     protected static final int TYPE_PHOTO_ID = 4;
 
 
-
-
     public VectorLayer(
             Context context,
             File path)
     {
         super(context, path);
 
-        mIsInitialized = false;
-        mGeometryType = GTNone;
 
         if (!(context instanceof IGISApplication))
             throw new IllegalArgumentException(
                     "The context should be the instance of IGISApplication");
+
+
+        mIsInitialized = false;
+        mGeometryType = GTNone;
 
         IGISApplication application = (IGISApplication) context;
         mAuthority = application.getAuthority();
@@ -296,7 +300,11 @@ public class VectorLayer extends Layer
             mExtents = extents;
             mIsInitialized = true;
             setDefaultRenderer();
+            mFields = new HashMap<>();
 
+            for (Pair<String, Integer> field : fields){
+                mFields.put(field.first, field.second);
+            }
             save();
 
             //3. fill the geometry and labels array
@@ -351,6 +359,18 @@ public class VectorLayer extends Layer
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_GEOMETRY_TYPE_KEY, mGeometryType);
         rootConfig.put(JSON_IS_INITIALIZED_KEY, mIsInitialized);
+
+        if(null != mFields) {
+            JSONObject fields = new JSONObject();
+            for (Map.Entry<String, Integer> field : mFields.entrySet()) {
+                String key = field.getKey();
+                Integer value = field.getValue();
+                fields.put(key, value);
+            }
+
+            rootConfig.put(JSON_FIELDS_KEY, fields);
+        }
+
         if (null != mRenderer && mRenderer instanceof IJSONStore) {
             IJSONStore jsonStore = (IJSONStore) mRenderer;
             rootConfig.put(JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
@@ -366,6 +386,18 @@ public class VectorLayer extends Layer
         super.fromJSON(jsonObject);
         mGeometryType = jsonObject.getInt(JSON_GEOMETRY_TYPE_KEY);
         mIsInitialized = jsonObject.getBoolean(JSON_IS_INITIALIZED_KEY);
+
+        if(jsonObject.has(JSON_FIELDS_KEY)) {
+            mFields = new HashMap<>();
+            JSONObject fields = jsonObject.getJSONObject(JSON_FIELDS_KEY);
+            Iterator<?> keys = fields.keys();
+            while (keys.hasNext()) {
+                String key = (String) keys.next();
+                int type = fields.getInt(key);
+                mFields.put(key, type);
+            }
+        }
+
         if (jsonObject.has(JSON_RENDERERPROPS_KEY)) {
             setDefaultRenderer();
 
@@ -379,28 +411,32 @@ public class VectorLayer extends Layer
         {
             mExtents = new GeoEnvelope();
 
-            //load vector cache
-            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-            SQLiteDatabase db = map.getDatabase(false);
-            String[] columns = new String[]{FIELD_ID, FIELD_GEOM};
-            Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
-            if(null != cursor && cursor.moveToFirst()) {
-                mVectorCacheItems = new ArrayList<>();
-                do{
-                    try {
-                        GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                        int nId = cursor.getInt(0);
-                        mExtents.merge(geoGeometry.getEnvelope());
-                        mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
-                    } catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
-                while (cursor.moveToNext());
-            }
+            reloadCache();
         }
     }
 
+    protected void reloadCache()
+    {
+        //load vector cache
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
+        String[] columns = new String[]{FIELD_ID, FIELD_GEOM};
+        Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
+        if(null != cursor && cursor.moveToFirst()) {
+            mVectorCacheItems = new ArrayList<>();
+            do{
+                try {
+                    GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                    int nId = cursor.getInt(0);
+                    mExtents.merge(geoGeometry.getEnvelope());
+                    mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+            while (cursor.moveToNext());
+        }
+    }
 
     @Override
     public boolean delete()
@@ -605,21 +641,23 @@ public class VectorLayer extends Layer
                             GeoGeometry geom = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(
                                     FIELD_GEOM));
                             mVectorCacheItems.add(new VectorCacheItem(geom, (int)rowID));
-                        } catch (IOException e) {
+                        } catch (IOException | ClassNotFoundException e) {
                             e.printStackTrace();
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
+                            return null;
                         }
                     }
 
                     Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(resultUri, null, false);
+                        notifyLayerChanged();
                     }
                     else {
                         addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
+                        notifyLayerChanged();
                     }
                     return resultUri;
                 }
@@ -640,7 +678,8 @@ public class VectorLayer extends Layer
                 try {
                     if(photo.createNewFile()) {
                         Uri resultUri = ContentUris.withAppendedId(uri, maxId);
-                        boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                        String fragment = uri.getFragment();
+                        boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                         if(bFromNetwork) {
                             getContext().getContentResolver().notifyChange(resultUri, null, false);
                         }
@@ -682,13 +721,16 @@ public class VectorLayer extends Layer
                 result = db.delete(mPath.getName(), selection, selectionArgs);
 
                 if(result > 0){
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
+                        notifyLayerChanged();
                     }
                     else {
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
+                        notifyLayerChanged();
                     }
 
                     //clear cache
@@ -715,13 +757,16 @@ public class VectorLayer extends Layer
                         }
                     }
 
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
+                        notifyLayerChanged();
                     }
                     else {
                         addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
+                        notifyLayerChanged();
                     }
                 }
                 return result;
@@ -739,7 +784,8 @@ public class VectorLayer extends Layer
                     }
                 }
                 if(result > 0){
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     }
@@ -759,7 +805,8 @@ public class VectorLayer extends Layer
                 //get photo path
                 File photoFile = new File(mPath, featureId + "/" + photoName); //the photos store in id folder in layer folder
                 if(photoFile.delete()){
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     }
@@ -784,8 +831,6 @@ public class VectorLayer extends Layer
 
         SQLiteDatabase db;
         String featureId;
-        String photoName;
-        List<String> pathSegments;
         int result;
 
         int uriType = mUriMatcher.match(uri);
@@ -796,18 +841,20 @@ public class VectorLayer extends Layer
                 result = db.update(mPath.getName(), values, selection, selectionArgs);
 
                 if(result > 0){
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
+                        notifyLayerChanged();
                     }
                     else {
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
+                        notifyLayerChanged();
                     }
-
-                    //clear cache
-                    mVectorCacheItems.clear();
                 }
+                if(values.containsKey(FIELD_GEOM))
+                    reloadCache();
                 return result;
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
@@ -817,24 +864,34 @@ public class VectorLayer extends Layer
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
                 db = map.getDatabase(false);
-                result = db.delete(mPath.getName(), selection, selectionArgs);
+                result = db.update(mPath.getName(), values, selection, selectionArgs);
 
                 if(result > 0){
-                    //remove cached item
-                    int id = Integer.parseInt(featureId);
-                    for(VectorCacheItem item : mVectorCacheItems){
-                        if(item.getId() == id){
-                            mVectorCacheItems.remove(item);
-                            break;
+                    //change cached item
+                    if(values.containsKey(FIELD_GEOM)) {
+                        int id = Integer.parseInt(featureId);
+                        for (VectorCacheItem item : mVectorCacheItems) {
+                            if (item.getId() == id) {
+                                try {
+                                    item.setGeoGeometry(GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM)));
+
+                                } catch (IOException | ClassNotFoundException e) {
+                                    e.printStackTrace();
+                                }
+                                break;
+                            }
                         }
                     }
-                    boolean bFromNetwork = uri.getFragment().equals(NO_SYNC);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
+                        notifyLayerChanged();
                     }
                     else {
                         addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
+                        notifyLayerChanged();
                     }
                 }
                 return result;

@@ -101,10 +101,10 @@ public class GeoPoint
         switch (toCrs) {
             case CRS_WEB_MERCATOR:
                 Geo.wgs84ToMercatorSphere(this);
-                return true;
+                return super.rawProject(toCrs);
             case CRS_WGS84:
                 Geo.mercatorToWgs84Sphere(this);
-                return true;
+                return super.rawProject(toCrs);
             default:
                 return false;
         }

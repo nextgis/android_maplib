@@ -93,10 +93,7 @@ public class Layer
     public void setName(String newName)
     {
         this.mName = newName;
-        if (mParent != null && mParent instanceof LayerGroup) {
-            LayerGroup group = (LayerGroup) mParent;
-            group.onLayerChanged(this);
-        }
+        notifyLayerChanged();
     }
 
 
@@ -125,10 +122,7 @@ public class Layer
     public void setVisible(boolean visible)
     {
         mIsVisible = visible;
-        if (mParent != null && mParent instanceof LayerGroup) {
-            LayerGroup group = (LayerGroup) mParent;
-            group.onLayerChanged(this);
-        }
+        notifyLayerChanged();
     }
 
 
@@ -141,6 +135,13 @@ public class Layer
             group.onLayerDeleted(mId);
         }
         return true;
+    }
+
+    protected void notifyLayerChanged(){
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            group.onLayerChanged(this);
+        }
     }
 
 

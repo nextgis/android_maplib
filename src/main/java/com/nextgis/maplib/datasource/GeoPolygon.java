@@ -59,7 +59,17 @@ public class GeoPolygon
     @Override
     protected boolean rawProject(int toCrs)
     {
-        return mOuterRing.rawProject(toCrs);
+        if( mOuterRing.rawProject(toCrs) )
+        {
+            boolean isOk = true;
+            for(GeoGeometry geometry : mInnerRings){
+                isOk = isOk && geometry.rawProject(toCrs);
+            }
+            if(isOk)
+                super.rawProject(toCrs);
+            return isOk;
+        }
+        return false;
     }
 
 

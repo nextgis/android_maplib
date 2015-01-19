@@ -61,6 +61,8 @@ public class GeoLineString
         for (GeoPoint point : mPoints) {
             isOk = isOk && point.rawProject(toCrs);
         }
+        if(isOk)
+            super.rawProject(toCrs);
         return isOk;
     }
 

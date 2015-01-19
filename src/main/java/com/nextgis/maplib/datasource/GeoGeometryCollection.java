@@ -86,6 +86,8 @@ public class GeoGeometryCollection
         for (GeoGeometry geometry : mGeometries) {
             isOk = isOk && geometry.rawProject(toCrs);
         }
+        if(isOk)
+            super.rawProject(toCrs);
         return isOk;
     }
 
