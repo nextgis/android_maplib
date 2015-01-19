@@ -21,22 +21,32 @@
 
 package com.nextgis.maplib.map;
 
-import android.accounts.Account;
-import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
+import android.content.SyncResult;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
+import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.util.ChangeFeatureItem;
+import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,19 +57,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
+import static com.nextgis.maplib.util.Constants.*;
+
 
 public class NGWVectorLayer extends VectorLayer implements INGWLayer
 {
     protected String      mAccountName;
     protected String      mURL;
+    protected long        mRemoteId;
     protected NetworkUtil mNet;
     protected String      mLogin;
     protected String      mPassword;
-    protected Account     mAccount;
+    protected int mSyncType; //0 - no sync, 1 - data, 2 - photo
+    //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
+    //check where to sync on GSM/WI-FI for data/photo
 
     protected List<ChangeFeatureItem> mChanges;
 
@@ -67,6 +78,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected static final String JSON_URL_KEY      = "url";
     protected static final String JSON_LOGIN_KEY    = "login";
     protected static final String JSON_PASSWORD_KEY = "password";
+    protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
 
 
     public NGWVectorLayer(
@@ -78,6 +90,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         mNet = new NetworkUtil(context);
 
         mChanges = new ArrayList<>();
+        mSyncType = SYNC_NONE;
     }
 
 
@@ -93,6 +106,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         mURL = URL;
     }
 
+
+    public void setRemoteId(long remoteId)
+    {
+        mRemoteId = remoteId;
+    }
 
     public void setLogin(String login)
     {
@@ -119,9 +137,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
+        rootConfig.put(JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_URL_KEY, mURL);
         rootConfig.put(JSON_LOGIN_KEY, mLogin);
         rootConfig.put(JSON_PASSWORD_KEY, mPassword);
+        rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
         JSONArray changes = new JSONArray();
         for (ChangeFeatureItem change : mChanges) {
             changes.put(change.toJSON());
@@ -137,12 +157,14 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     {
         super.fromJSON(jsonObject);
         mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
-        mAccount = LayerFactory.getAccountByName(getContext(), mAccountName);
         mURL = jsonObject.getString(JSON_URL_KEY);
+        mRemoteId = jsonObject.getLong(JSON_ID_KEY);
         if (jsonObject.has(JSON_LOGIN_KEY))
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
         if (jsonObject.has(JSON_PASSWORD_KEY))
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
+        if(jsonObject.has(JSON_SYNC_TYPE_KEY))
+            mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
         if (jsonObject.has(JSON_CHANGES_KEY)) {
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
@@ -173,6 +195,10 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     }
 
 
+    /**
+     * download and create new NGW layer from GeoJSON data
+     * @return the error message or empty string if everything is ok
+     */
     public String download()
     {
         if (!mNet.isNetworkAvailable()) { //return tile from cache
@@ -181,7 +207,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
         try {
 
-            final HttpGet get = new HttpGet(mURL);
+            final HttpGet get = new HttpGet(NGWUtil.getGeoJSONUrl(mURL, mRemoteId)); //get as GeoJSON
             //basic auth
             if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
                 get.setHeader("Accept", "*/*");
@@ -306,11 +332,340 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         mChanges.add(item);
     }
 
-    protected void requestSync(){
-        ContentResolver.requestSync(mAccount, mAuthority, null);
+
+    /**
+     * Synchronize changes with NGW. Should be run from non UI thread.
+     * @param syncResult - report some errors via this parameter
+     */
+    public void sync(SyncResult syncResult)
+    {
+        if(0 != (mSyncType & SYNC_NONE)) {
+            return;
+        }
+
+        //1. get remote changes
+        getChangesFromServer(syncResult);
+
+        //2. send current changes
+        sendLocalChanges(syncResult);
     }
 
-    public void setSyncPeriod(Bundle extras, long pollFrequency){
-        ContentResolver.addPeriodicSync(mAccount, mAuthority, extras, pollFrequency);
+    protected void sendLocalChanges(SyncResult syncResult)
+    {
+        for (int i = 0; i < mChanges.size(); i++) {
+            ChangeFeatureItem change = mChanges.get(i);
+            switch (change.getOperation()){
+                case ChangeFeatureItem.TYPE_NEW:
+                    if(addFeatureOnServer(change.getFeatureId(), syncResult))
+                    {
+                        mChanges.remove(i);
+                        i--;
+                    }
+                    break;
+                case ChangeFeatureItem.TYPE_CHANGED:
+                    if(changeFeatureOnServer(change.getFeatureId(), syncResult))
+                    {
+                        mChanges.remove(i);
+                        i--;
+                    }
+                    break;
+                case ChangeFeatureItem.TYPE_DELETE:
+                    if(deleteFeatureOnServer(change.getFeatureId(), syncResult))
+                    {
+                        mChanges.remove(i);
+                        i--;
+                    }
+                    break;
+                case ChangeFeatureItem.TYPE_PHOTO:
+                    if(sendPhotosOnServer(change.getFeatureId(), syncResult))
+                    {
+                        mChanges.remove(i);
+                        i--;
+                    }
+                    break;
+            }
+        }
+    }
+
+
+    protected void getChangesFromServer(SyncResult syncResult)
+    {
+        if(!mNet.isNetworkAvailable()){
+            return;
+        }
+
+        try {
+            final HttpGet get = new HttpGet(NGWUtil.getVectorDataUrl(mURL, mRemoteId));
+            //basic auth
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
+                get.setHeader("Accept", "*/*");
+                final String basicAuth = "Basic " + Base64.encodeToString(
+                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                get.setHeader("Authorization", basicAuth);
+            }
+
+            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
+            final HttpResponse response = HTTPClient.execute(get);
+
+            // Check to see if we got success
+            final org.apache.http.StatusLine line = response.getStatusLine();
+            if (line.getStatusCode() != 200) {
+                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                           line);
+                syncResult.stats.numIoExceptions++;
+                return;
+            }
+
+            final HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
+                syncResult.stats.numIoExceptions++;
+                return;
+            }
+
+            String data = EntityUtils.toString(entity);
+            JSONArray remoteLayerContents = new JSONArray(data);
+
+            //compare
+
+        } catch (IOException e) {
+            Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
+                       e.getLocalizedMessage());
+            syncResult.stats.numIoExceptions++;
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+            syncResult.stats.numParseExceptions++;
+        }
+    }
+
+    protected boolean addFeatureOnServer(long featureId, SyncResult syncResult)
+    {
+        if(!mNet.isNetworkAvailable()){
+            return false;
+        }
+        Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
+        uri = uri.buildUpon().fragment(NO_SYNC).build();
+
+        Cursor cursor = query(uri, null, null, null, null);
+        if(!cursor.moveToFirst())
+            return false;
+
+        try {
+            String payload = cursorToJson(cursor);
+
+            final HttpPost post = new HttpPost(NGWUtil.getVectorDataUrl(mURL, mRemoteId));
+            //basic auth
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
+                mPassword.length() > 0) {
+                post.setHeader("Accept", "*/*");
+                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                post.setHeader("Authorization", basicAuth);
+            }
+
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+            nameValuePairs.add(new BasicNameValuePair("json", payload));
+            post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+
+            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
+            final HttpResponse response = HTTPClient.execute(post);
+
+            // Check to see if we got success
+            final org.apache.http.StatusLine line = response.getStatusLine();
+            if (line.getStatusCode() != 200) {
+                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                           line);
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            final HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            String data = EntityUtils.toString(entity);
+            //TODO: set new id from server!
+
+
+            return true;
+        }
+        catch (ClassNotFoundException | JSONException | IOException e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    protected boolean deleteFeatureOnServer(long featureId, SyncResult syncResult)
+    {
+        if(!mNet.isNetworkAvailable()){
+            return false;
+        }
+
+        try {
+
+            final HttpDelete delete = new HttpDelete(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
+            //basic auth
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
+                mPassword.length() > 0) {
+                delete.setHeader("Accept", "*/*");
+                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                delete.setHeader("Authorization", basicAuth);
+            }
+
+            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
+            final HttpResponse response = HTTPClient.execute(delete);
+
+            // Check to see if we got success
+            final org.apache.http.StatusLine line = response.getStatusLine();
+            if (line.getStatusCode() != 200) {
+                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                           line);
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            final HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            String data = EntityUtils.toString(entity);
+
+
+            return true;
+        }
+        catch (IOException e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    protected boolean changeFeatureOnServer(long featureId, SyncResult syncResult)
+    {
+        if (!mNet.isNetworkAvailable()) {
+            return false;
+        }
+        Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
+        uri = uri.buildUpon().fragment(NO_SYNC).build();
+
+        Cursor cursor = query(uri, null, null, null, null);
+        if (!cursor.moveToFirst())
+            return false;
+
+        try {
+            String payload = cursorToJson(cursor);
+
+            final HttpPut put = new HttpPut(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
+            //basic auth
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
+                mPassword.length() > 0) {
+                put.setHeader("Accept", "*/*");
+                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                put.setHeader("Authorization", basicAuth);
+            }
+
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+            nameValuePairs.add(new BasicNameValuePair("json", payload));
+            put.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+
+            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
+            final HttpResponse response = HTTPClient.execute(put);
+
+            // Check to see if we got success
+            final org.apache.http.StatusLine line = response.getStatusLine();
+            if (line.getStatusCode() != 200) {
+                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                           line);
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            final HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            String data = EntityUtils.toString(entity);
+            //TODO: set new id from server!
+
+
+            return true;
+        } catch (JSONException | ClassNotFoundException | IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    protected boolean sendPhotosOnServer(long featureId, SyncResult syncResult)
+    {
+        if(!mNet.isNetworkAvailable()){
+            return false;
+        }
+
+        //TODO:
+
+        return true;
+    }
+
+    protected String cursorToJson(Cursor cursor)
+            throws JSONException, IOException, ClassNotFoundException
+    {
+        JSONObject rootObject = new JSONObject();
+        for(int i = 0; i < cursor.getColumnCount(); i++){
+            String name = cursor.getColumnName(i);
+            if(name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
+                continue;
+            JSONObject valueObject = new JSONObject();
+            switch (cursor.getType(i)) {
+                case Cursor.FIELD_TYPE_FLOAT:
+                    valueObject.put(name, cursor.getFloat(i));
+                    break;
+                case Cursor.FIELD_TYPE_INTEGER:
+                    valueObject.put(name, cursor.getInt(i));
+                    break;
+                case Cursor.FIELD_TYPE_STRING:
+                    valueObject.put(name, cursor.getString(i));
+                    break;
+                default:
+                    continue;
+            }
+            rootObject.put("fields", valueObject);
+        }
+
+        //may be found geometry in cache by id is faster
+        GeoGeometry geometry = GeoGeometryFactory.fromBlob(
+                cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
+
+        rootObject.put("geom", geometry.toWKT(true));
+
+        return rootObject.toString();
+    }
+
+    /**
+     * get synchronization type
+     * @return the synchronization type - the OR of this values:
+     * SYNC_NONE - no synchronization
+     * SYNC_DATA - synchronize only data
+     * SYNC_PHOTO - synchronize only photo
+     * SYNC_ALL - synchronize everything
+     */
+    public int getSyncType()
+    {
+        return mSyncType;
+    }
+
+
+    public void setSyncType(int syncType)
+    {
+        mSyncType = syncType;
     }
 }

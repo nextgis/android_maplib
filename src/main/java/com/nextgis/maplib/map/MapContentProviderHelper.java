@@ -30,6 +30,7 @@ import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
 
 import java.io.File;
+import java.util.List;
 
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
@@ -97,19 +98,20 @@ public class MapContentProviderHelper extends MapBase
         return null;
     }
 
-    public static void setSyncPeriod(LayerGroup layerGroup, Bundle extras, long pollFrequency){
+    public static void getLayersByAccount(LayerGroup layerGroup, String account, List<NGWVectorLayer> layerList)
+    {
         for(int i = 0; i < layerGroup.getLayerCount(); i++)
         {
             ILayer layer = layerGroup.getLayer(i);
             if(layer instanceof LayerGroup)
             {
-                LayerGroup inLayerGroup = (LayerGroup)layer;
-                setSyncPeriod(inLayerGroup, extras, pollFrequency);
+                getLayersByAccount((LayerGroup)layer, account, layerList);
             }
             else if(layer instanceof NGWVectorLayer)
             {
-                NGWVectorLayer vectorLayer = (NGWVectorLayer)layer;
-                vectorLayer.setSyncPeriod(extras, pollFrequency);
+                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer) layer;
+                if(ngwVectorLayer.getAccountName().equals(account))
+                    layerList.add(ngwVectorLayer);
             }
         }
     }

@@ -72,4 +72,25 @@ public class GeoMultiPoint
     {
         super.add(point);
     }
+
+    @Override
+    public String toWKT(boolean full)
+    {
+        StringBuilder buf = new StringBuilder();
+        if(full)
+            buf.append("MULTIPOINT ");
+        if (mGeometries.size() == 0)
+            buf.append(" EMPTY");
+        else {
+            buf.append("(");
+            for (int i = 0; i < mGeometries.size(); i++) {
+                if(i > 0)
+                    buf.append(", ");
+                GeoPoint pt = (GeoPoint) mGeometries.get(i);
+                buf.append(pt.toWKT(false));
+            }
+            buf.append(")");
+        }
+        return buf.toString();
+    }
 }

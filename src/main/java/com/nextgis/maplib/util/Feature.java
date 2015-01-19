@@ -24,6 +24,7 @@ package com.nextgis.maplib.util;
 import android.util.Pair;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -154,7 +155,7 @@ public class Feature implements IJSONStore
             throw new JSONException("not valid geojson feature");
         mId = jsonObject.getInt(GEOJSON_FEATURE_ID);
         JSONObject oJSONGeom = jsonObject.getJSONObject(GEOJSON_GEOMETRY);
-        mGeometry = GeoGeometry.fromJson(oJSONGeom);
+        mGeometry = GeoGeometryFactory.fromJson(oJSONGeom);
         JSONObject jsonAttributes = jsonObject.getJSONObject(GEOJSON_PROPERTIES);
         Iterator<String> iter = jsonAttributes.keys();
         while (iter.hasNext()) {

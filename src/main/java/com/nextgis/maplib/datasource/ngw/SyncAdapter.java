@@ -22,9 +22,11 @@
 package com.nextgis.maplib.datasource.ngw;
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -33,11 +35,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.map.LayerGroup;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
+import com.nextgis.maplib.map.NGWVectorLayer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.SettingsConstants;
 
+import static com.nextgis.maplib.util.Constants.NGW_ACCOUNT_TYPE;
 import static com.nextgis.maplib.util.Constants.TAG;
 /*
 https://udinic.wordpress.com/2013/07/24/write-your-own-android-sync-adapter/#more-507
@@ -81,7 +87,7 @@ public class SyncAdapter
     public void onPerformSync(
             Account account,
             Bundle bundle,
-            String s,
+            String authority,
             ContentProviderClient contentProviderClient,
             SyncResult syncResult)
     {
@@ -92,17 +98,38 @@ public class SyncAdapter
         IGISApplication application = (IGISApplication)getContext();
         MapContentProviderHelper mapContentProviderHelper = (MapContentProviderHelper) application.getMap();
         if(null != mapContentProviderHelper){
-            //1. get remote changes
-
-            //2. send current changes
+            sync(mapContentProviderHelper, syncResult);
         }
 
-        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES,
+        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES, Context.MODE_PRIVATE |
                                                                        Context.MODE_MULTI_PROCESS);
         SharedPreferences.Editor editor = settings.edit();
         editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
         editor.commit();
 
         getContext().sendBroadcast(new Intent(SYNC_FINISH));
+    }
+
+    protected void sync(LayerGroup layerGroup, SyncResult syncResult)
+    {
+        for(int i = 0; i < layerGroup.getLayerCount(); i++){
+            ILayer layer = layerGroup.getLayer(i);
+            if(layer instanceof LayerGroup){
+                sync((LayerGroup) layer, syncResult);
+            }
+            else if(layer instanceof NGWVectorLayer){
+                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer)layer;
+                ngwVectorLayer.sync(syncResult);
+            }
+        }
+    }
+
+    public static void setSyncPeriod(IGISApplication application, Bundle extras, long pollFrequency)
+    {
+        final AccountManager accountManager = AccountManager.get((Context) application);
+        for(Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)){
+            ContentResolver.addPeriodicSync(account, application.getAuthority(), extras,
+                                            pollFrequency);
+        }
     }
 }

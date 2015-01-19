@@ -125,4 +125,26 @@ public class GeoLineString
 
         mPoints.add(point);
     }
+
+
+    @Override
+    public String toWKT(boolean full)
+    {
+        StringBuilder buf = new StringBuilder();
+        if(full)
+            buf.append("LINESTRING ");
+        if (mPoints.size() == 0)
+            buf.append(" EMPTY");
+        else {
+            buf.append("(");
+            for (int i = 0; i < mPoints.size(); i++) {
+                if (i > 0)
+                    buf.append(", ");
+                GeoPoint pt = mPoints.get(i);
+                buf.append(pt.toWKT(false));
+            }
+            buf.append(")");
+        }
+        return buf.toString();
+    }
 }

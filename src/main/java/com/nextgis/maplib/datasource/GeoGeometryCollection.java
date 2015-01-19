@@ -130,7 +130,7 @@ public class GeoGeometryCollection
     {
         for (int i = 0; i < coordinates.length(); ++i) {
             JSONObject jsonGeometry = coordinates.getJSONObject(i);
-            GeoGeometry geometry = GeoGeometry.fromJson(jsonGeometry);
+            GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
             add(geometry);
         }
     }
@@ -147,5 +147,12 @@ public class GeoGeometryCollection
         }
 
         return coordinates;
+    }
+
+
+    @Override
+    public String toWKT(boolean full)
+    {
+        return null;
     }
 }

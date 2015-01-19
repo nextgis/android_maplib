@@ -23,6 +23,9 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
@@ -31,11 +34,13 @@ public class GeoPolygon
 {
 
     protected GeoLinearRing mOuterRing;
+    protected List<GeoLinearRing> mInnerRings;
 
 
     public GeoPolygon()
     {
         mOuterRing = new GeoLinearRing();
+        mInnerRings = new ArrayList<>();
     }
 
 
@@ -71,7 +76,7 @@ public class GeoPolygon
     {
         JSONArray coordinates = new JSONArray();
         coordinates.put(mOuterRing.coordinatesToJSON());
-
+//TODO: add inner rings
         return coordinates;
     }
 
@@ -100,11 +105,37 @@ public class GeoPolygon
             throw new JSONException(
                     "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. The first and last positions of LinearRing must be equivalent (they represent equivalent points).");
         }
+
+        //TODO: inner rings
     }
 
 
     public GeoLinearRing getOuterRing()
     {
         return mOuterRing;
+    }
+
+
+    @Override
+    public String toWKT(boolean full)
+    {
+        StringBuilder buf = new StringBuilder();
+        if(full)
+            buf.append("POLYGON ");
+        if (mOuterRing.getPoints().size() == 0)
+            buf.append(" EMPTY");
+        else {
+            buf.append("(");
+            buf.append(mOuterRing.toWKT(false));
+            if(mInnerRings.size() > 0) {
+                buf.append(", ");
+                for (int i = 0; i < mInnerRings.size(); i++) {
+                    GeoLinearRing ring = mInnerRings.get(i);
+                    buf.append(ring.toWKT(false));
+                }
+            }
+            buf.append(")");
+        }
+        return buf.toString();
     }
 }

@@ -41,6 +41,7 @@ import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
@@ -77,12 +78,12 @@ public class VectorLayer extends Layer
     protected static final String JSON_GEOMETRY_TYPE_KEY  = "geometry_type";
     protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
 
-    protected static final String ID_FIELD   = "_ID";
-    protected static final String GEOM_FIELD = "_GEOM";
+    protected static final String FIELD_ID   = "_ID";
+    protected static final String FIELD_GEOM = "_GEOM";
 
     protected static final String CONTENT_PHOTO_TYPE  = "image/jpeg";
     protected static final String CONTENT_PHOTOS_TYPE = "vnd.android.cursor.dir/image";
-    protected static final String NO_SYNC = "no_sync";
+    protected static final String NO_SYNC             = "no_sync";
 
     protected static final int TYPE_TABLE    = 1;
     protected static final int TYPE_FEATURE  = 2;
@@ -110,8 +111,10 @@ public class VectorLayer extends Layer
 
         mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
         mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos", TYPE_PHOTO);      //get photos for row
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos/#", TYPE_PHOTO_ID); //get photo by name
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos",
+                           TYPE_PHOTO);      //get photos for row
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos/#",
+                           TYPE_PHOTO_ID); //get photo by name
 
 
         CONTENT_TYPE =
@@ -159,7 +162,7 @@ public class VectorLayer extends Layer
                 JSONObject jsonFeature = geoJSONFeatures.getJSONObject(i);
                 //get geometry
                 JSONObject jsonGeometry = jsonFeature.getJSONObject(GEOJSON_GEOMETRY);
-                GeoGeometry geometry = GeoGeometry.fromJson(jsonGeometry);
+                GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
                 if (geometryType == GTNone) {
                     geometryType = geometry.getType();
                 } else if (!Geo.isGeometryTypeSame(geometryType, geometry.getType())) {
@@ -221,8 +224,8 @@ public class VectorLayer extends Layer
             }
 
             String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
-                                 ID_FIELD + " INTEGER PRIMARY KEY, " +
-                                 GEOM_FIELD + " BLOB";
+                                 FIELD_ID + " INTEGER PRIMARY KEY, " +
+                                 FIELD_GEOM + " BLOB";
             for(int i = 0; i < fields.size(); ++i)
             {
                 Pair<String, Integer> field = fields.get(i);
@@ -258,9 +261,9 @@ public class VectorLayer extends Layer
             db.execSQL(tableCreate);
             for(Feature feature : features) {
                 ContentValues values = new ContentValues();
-                values.put(ID_FIELD, feature.getId());
+                values.put(FIELD_ID, feature.getId());
                 try {
-                    values.put(GEOM_FIELD, feature.getGeometry().toBlob());
+                    values.put(FIELD_GEOM, feature.getGeometry().toBlob());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -377,13 +380,13 @@ public class VectorLayer extends Layer
             //load vector cache
             MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
             SQLiteDatabase db = map.getDatabase(false);
-            String[] columns = new String[]{ID_FIELD, GEOM_FIELD};
+            String[] columns = new String[]{FIELD_ID, FIELD_GEOM};
             Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
             if(null != cursor && cursor.moveToFirst()) {
                 mVectorCacheItems = new ArrayList<>();
                 do{
                     try {
-                        GeoGeometry geoGeometry = GeoGeometry.fromBlob(cursor.getBlob(1));
+                        GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
                         int nId = cursor.getInt(0);
                         mExtents.merge(geoGeometry.getEnvelope());
                         mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
@@ -445,7 +448,7 @@ public class VectorLayer extends Layer
         {
             case TYPE_TABLE:
                 if (TextUtils.isEmpty(sortOrder)) {
-                    sortOrder = ID_FIELD + " ASC";
+                    sortOrder = FIELD_ID + " ASC";
                 }
                 db = map.getDatabase(true);
                 cursor = db.query(mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
@@ -454,9 +457,9 @@ public class VectorLayer extends Layer
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
                 if (TextUtils.isEmpty(selection)) {
-                    selection = ID_FIELD + " = " + featureId;
+                    selection = FIELD_ID + " = " + featureId;
                 } else {
-                    selection = selection + " AND " + ID_FIELD + " = " + featureId;
+                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
                 db = map.getDatabase(true);
                 cursor = db.query(mPath.getName(), projection, selection, selectionArgs, null, null,
@@ -595,9 +598,10 @@ public class VectorLayer extends Layer
                 db = map.getDatabase(false);
                 long rowID = db.insert(mPath.getName(), null, contentValues);
                 if(rowID != NOT_FOUND) {
-                    if(contentValues.containsKey(GEOM_FIELD)){
+                    if(contentValues.containsKey(FIELD_GEOM)){
                         try {
-                            GeoGeometry geom = GeoGeometry.fromBlob(contentValues.getAsByteArray(GEOM_FIELD));
+                            GeoGeometry geom = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(
+                                    FIELD_GEOM));
                             mVectorCacheItems.add(new VectorCacheItem(geom, (int)rowID));
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -692,9 +696,9 @@ public class VectorLayer extends Layer
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
                 if (TextUtils.isEmpty(selection)) {
-                    selection = ID_FIELD + " = " + featureId;
+                    selection = FIELD_ID + " = " + featureId;
                 } else {
-                    selection = selection + " AND " + ID_FIELD + " = " + featureId;
+                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
                 db = map.getDatabase(false);
                 result = db.delete(mPath.getName(), selection, selectionArgs);
@@ -806,9 +810,9 @@ public class VectorLayer extends Layer
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
                 if (TextUtils.isEmpty(selection)) {
-                    selection = ID_FIELD + " = " + featureId;
+                    selection = FIELD_ID + " = " + featureId;
                 } else {
-                    selection = selection + " AND " + ID_FIELD + " = " + featureId;
+                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
                 db = map.getDatabase(false);
                 result = db.delete(mPath.getName(), selection, selectionArgs);

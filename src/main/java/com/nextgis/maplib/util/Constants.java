@@ -103,4 +103,9 @@ public interface Constants
     public static final long     ONE_YEAR                        = ONE_DAY * 365;
     public static final int      KEEP_ALIVE_TIME                 = 65;
     public static final TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
+
+    public static final int SYNC_NONE = 1<<0;
+    public static final int SYNC_DATA = 1<<1;
+    public static final int SYNC_PHOTO = 1<<2;
+    public static final int SYNC_ALL = SYNC_DATA | SYNC_PHOTO;
 }

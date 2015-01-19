@@ -22,7 +22,6 @@ package com.nextgis.maplib.datasource;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
@@ -152,4 +151,13 @@ public class GeoPoint
         return "X: " + mX + ", Y: " + mY;
     }
 
+
+    @Override
+    public String toWKT(boolean full)
+    {
+        if(full)
+            return "POINT ( " + mX + " " + mY + " )";
+        else
+            return mX + " " + mY;
+    }
 }

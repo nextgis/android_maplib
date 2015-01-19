@@ -23,6 +23,7 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import com.nextgis.maplib.util.NGWUtil;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -152,11 +153,16 @@ public class LayerWithStyles
 
     public String getTMSUrl(int styleNo)
     {
-        return mConnection.getURL() + "/resource/" + mStyles.get(styleNo) + "/tms?z={z}&x={x}&y={y}";
+        return NGWUtil.getTMSUrl(mConnection.getURL(), mStyles.get(styleNo));
     }
 
     public String getGeoJSONUrl()
     {
-        return mConnection.getURL() + "/resource/" + mRemoteId + "/geojson/";
+        return NGWUtil.getGeoJSONUrl(mConnection.getURL(), mRemoteId);
+    }
+
+    public String getResourceUrl()
+    {
+        return mConnection.getURL() + "/resource/" + mRemoteId;
     }
 }
