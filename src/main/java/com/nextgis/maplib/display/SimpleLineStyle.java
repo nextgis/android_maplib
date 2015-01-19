@@ -24,6 +24,7 @@ import android.graphics.Paint;
 
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoLineString;
+import com.nextgis.maplib.datasource.GeoMultiLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,6 +32,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.*;
 
 public class SimpleLineStyle  extends Style{
     protected float mWidth;
@@ -45,25 +47,53 @@ public class SimpleLineStyle  extends Style{
         mWidth = 3;
     }
 
-    @Override
-    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
-        GeoLineString line = (GeoLineString) geoGeometry;
+
+    public void onDraw(
+            GeoLineString lineString,
+            GISDisplay display)
+    {
         Paint lnPaint = new Paint();
         lnPaint.setColor(mColor);
         lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
         lnPaint.setStrokeCap(Paint.Cap.ROUND);
         lnPaint.setAntiAlias(true);
 
-        List<GeoPoint> points = line.getPoints();
-        float [] pts = new float[points.size() * 2];
+        List<GeoPoint> points = lineString.getPoints();
+        float[] pts = new float[points.size() * 2];
 
         int counter = 0;
-        for(GeoPoint pt : points){
-            pts[counter++] = (float)pt.getX();
-            pts[counter++] = (float)pt.getY();
+        for (GeoPoint pt : points) {
+            pts[counter++] = (float) pt.getX();
+            pts[counter++] = (float) pt.getY();
         }
 
         display.drawLines(pts, lnPaint);
+    }
+
+
+    @Override
+    public void onDraw(
+            GeoGeometry geoGeometry,
+            GISDisplay display)
+    {
+
+        switch (geoGeometry.getType()) {
+            case GTLineString:
+                onDraw((GeoLineString) geoGeometry, display);
+                break;
+
+            case GTMultiLineString:
+                GeoMultiLineString multiLineString = (GeoMultiLineString) geoGeometry;
+                for (int i = 0; i < multiLineString.size(); i++) {
+                    onDraw(multiLineString.get(i), display);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "The input geometry type is not support by this style");
+        }
+
+
     }
 
 
