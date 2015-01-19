@@ -272,6 +272,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     @Override
     protected void addChange(String featureId, int operation)
     {
+        if(0 == (mSyncType & SYNC_DATA))
+            return;
+
         //1. if featureId == NOT_FOUND remove all changes and add this one
         if(featureId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
             mChanges.clear();
@@ -314,6 +317,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     @Override
     protected void addChange(String featureId, String photoName, int operation)
     {
+        if(0 == (mSyncType & SYNC_PHOTO))
+            return;
+
         int id = Integer.parseInt(featureId);
         for(int i = 0; i < mChanges.size(); i++){
             ChangeFeatureItem item = mChanges.get(i);
@@ -625,6 +631,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             if(name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
                 continue;
             JSONObject valueObject = new JSONObject();
+
             switch (cursor.getType(i)) {
                 case Cursor.FIELD_TYPE_FLOAT:
                     valueObject.put(name, cursor.getFloat(i));
