@@ -164,8 +164,10 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
         if (jsonObject.has(JSON_PASSWORD_KEY))
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
-        if(jsonObject.has(JSON_SYNC_TYPE_KEY))
-            mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
+        //DEBUG:
+        //if(jsonObject.has(JSON_SYNC_TYPE_KEY))
+        //    mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
+        mSyncType = SYNC_ALL;
         if (jsonObject.has(JSON_CHANGES_KEY)) {
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
@@ -292,6 +294,10 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                             return;
                         }
                         mChanges.remove(i);
+                        if(item.getOperation() == ChangeFeatureItem.TYPE_NEW){
+                            save();
+                            return;
+                        }
                         i--;
                     }
                     //3. if featureId == some id and op is update and previous op was add or update - skip
@@ -301,6 +307,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                         }
                         else{
                             item.setOperation(operation);
+                            save();
                             return;
                         }
                     }
@@ -313,6 +320,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
             mChanges.add(new ChangeFeatureItem(id, operation));
         }
+        save();
     }
 
     @Override
@@ -330,6 +338,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 }
                 else{
                     item.addPhotoChange(photoName, operation);
+                    save();
                     return;
                 }
             }
@@ -337,6 +346,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_PHOTO);
         item.addPhotoChange(photoName, operation);
         mChanges.add(item);
+        save();
     }
 
 
@@ -495,6 +505,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
 
             String data = EntityUtils.toString(entity);
+            Log.d(TAG, data);
             //TODO: set new id from server!
 
 
@@ -543,7 +554,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
 
             String data = EntityUtils.toString(entity);
-
+            Log.d(TAG, data);
 
             return true;
         }
@@ -602,6 +613,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
 
             String data = EntityUtils.toString(entity);
+            Log.d(TAG, data);
             //TODO: set new id from server!
 
 

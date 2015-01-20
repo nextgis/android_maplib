@@ -30,16 +30,15 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.CoreProtocolPNames;
 
-import static com.nextgis.maplib.util.Constants.APP_USER_AGENT;
-import static com.nextgis.maplib.util.Constants.TIMEOUT_CONNECTION;
-import static com.nextgis.maplib.util.Constants.TIMEOUT_SOKET;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class NetworkUtil
 {
-
     protected final ConnectivityManager mConnectionManager;
     protected final TelephonyManager    mTelephonyManager;
+    protected long mLastCheckTime;
+    protected boolean mLastState;
 
 
     public NetworkUtil(Context context)
@@ -47,11 +46,18 @@ public class NetworkUtil
         mConnectionManager =
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        mLastCheckTime = Constants.NOT_FOUND;
     }
 
 
     public boolean isNetworkAvailable()
     {
+        if(System.currentTimeMillis() - mLastCheckTime < ONE_SECOND * 5)     //check every 5 sec.
+            return mLastState;
+
+        mLastCheckTime = System.currentTimeMillis();
+        mLastState = false;
+
         if (mConnectionManager == null) {
             return false;
         }
@@ -65,15 +71,15 @@ public class NetworkUtil
 
         int netType = info.getType();
         if (netType == ConnectivityManager.TYPE_WIFI) {
-            return info.isConnected();
+            mLastState = info.isConnected();
         } else if (netType ==
                    ConnectivityManager.TYPE_MOBILE) { // netSubtype == TelephonyManager.NETWORK_TYPE_UMTS
             if (mTelephonyManager != null && !mTelephonyManager.isNetworkRoaming()) {
-                return info.isConnected();
+                mLastState = info.isConnected();
             }
         }
 
-        return false;
+        return mLastState;
     }
 
     public DefaultHttpClient getHttpClient()
