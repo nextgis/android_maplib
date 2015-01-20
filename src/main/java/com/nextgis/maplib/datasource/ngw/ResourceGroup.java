@@ -98,6 +98,10 @@ public class ResourceGroup extends Resource
                 layer.fillStyles();
                 resource = layer;
                 break;
+            case Connection.NGWResourceTypeWMSClient:
+                LayerWithStyles WMSlayer = new LayerWithStyles(data, mConnection);
+                resource = WMSlayer;
+                break;
         }
 
         if(null != resource) {
@@ -169,6 +173,7 @@ public class ResourceGroup extends Resource
                 case Connection.NGWResourceTypePostgisLayer:
                 case Connection.NGWResourceTypeRasterLayer:
                 case Connection.NGWResourceTypeVectorLayer:
+                case Connection.NGWResourceTypeWMSClient:
                     LayerWithStyles layer = in.readParcelable(LayerWithStyles.class.getClassLoader());
                     layer.setParent(this);
                     mChildren.add(layer);

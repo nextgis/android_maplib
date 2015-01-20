@@ -76,6 +76,7 @@ public class Connection implements INGWResource
     public final static int NGWResourceTypeFileSet           = 1<<12;
     public final static int NGWResourceTypeConnection        = 1<<13;
     public final static int NGWResourceTypeConnections       = 1<<14;
+    public final static int NGWResourceTypeWMSClient         = 1<<15;
 
     public Connection(
             String name,
@@ -211,6 +212,8 @@ public class Connection implements INGWResource
                 return NGWResourceTypeRasterLayer;
             case "file_bucket":
                 return NGWResourceTypeFileSet;
+            case "wmsclient_layer":
+                return NGWResourceTypeWMSClient;
             default:
                 return NGWResourceTypeNone;
         }

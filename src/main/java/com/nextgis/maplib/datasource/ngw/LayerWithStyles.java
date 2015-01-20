@@ -153,7 +153,13 @@ public class LayerWithStyles
 
     public String getTMSUrl(int styleNo)
     {
-        return NGWUtil.getTMSUrl(mConnection.getURL(), mStyles.get(styleNo));
+        if(getType() == Connection.NGWResourceTypeRasterLayer)
+            return NGWUtil.getTMSUrl(mConnection.getURL(), mStyles.get(styleNo));
+
+        if(getType() == Connection.NGWResourceTypeWMSClient)
+            return NGWUtil.getTMSUrl(mConnection.getURL(), mRemoteId);
+
+        return null;
     }
 
     public String getGeoJSONUrl()
