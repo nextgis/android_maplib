@@ -427,6 +427,8 @@ public class VectorLayer extends Layer
             do{
                 try {
                     GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                    String str = geoGeometry.toWKT(true);
+                    Log.d(TAG, "geom type:" + str);
                     int nId = cursor.getInt(0);
                     mExtents.merge(geoGeometry.getEnvelope());
                     mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));

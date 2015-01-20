@@ -94,29 +94,30 @@ public class GeoGeometryFactory
 
     public static int typeFromJSON(String jsonType)
     {
-        if (jsonType.equals(GEOJSON_TYPE_Point)) {
-            return GTPoint;
+        switch (jsonType) {
+            case GEOJSON_TYPE_Point:
+                return GTPoint;
 
-        } else if (jsonType.equals(GEOJSON_TYPE_LineString)) {
-            return GTLineString;
+            case GEOJSON_TYPE_LineString:
+                return GTLineString;
 
-        } else if (jsonType.equals(GEOJSON_TYPE_Polygon)) {
-            return GTPolygon;
+            case GEOJSON_TYPE_Polygon:
+                return GTPolygon;
 
-        } else if (jsonType.equals(GEOJSON_TYPE_MultiPoint)) {
-            return GTMultiPoint;
+            case GEOJSON_TYPE_MultiPoint:
+                return GTMultiPoint;
 
-        } else if (jsonType.equals(GEOJSON_TYPE_MultiLineString)) {
-            return GTMultiLineString;
+            case GEOJSON_TYPE_MultiLineString:
+                return GTMultiLineString;
 
-        } else if (jsonType.equals(GEOJSON_TYPE_MultiPolygon)) {
-            return GTMultiPolygon;
+            case GEOJSON_TYPE_MultiPolygon:
+                return GTMultiPolygon;
 
-        } else if (jsonType.equals(GEOJSON_TYPE_GeometryCollection)) {
-            return GTGeometryCollection;
+            case GEOJSON_TYPE_GeometryCollection:
+                return GTGeometryCollection;
 
-        } else {
-            return GTNone;
+            default:
+                return GTNone;
         }
     }
 

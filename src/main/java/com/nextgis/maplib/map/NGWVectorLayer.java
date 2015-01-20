@@ -484,6 +484,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             nameValuePairs.add(new BasicNameValuePair("json", payload));
             post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
+            Log.d(TAG, "payload: " + payload);
+
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             final HttpResponse response = HTTPClient.execute(post);
@@ -639,11 +641,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             throws JSONException, IOException, ClassNotFoundException
     {
         JSONObject rootObject = new JSONObject();
+        JSONObject valueObject = new JSONObject();
         for(int i = 0; i < cursor.getColumnCount(); i++){
             String name = cursor.getColumnName(i);
             if(name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
                 continue;
-            JSONObject valueObject = new JSONObject();
 
             switch (mFields.get(cursor.getColumnName(i))) {
                 case GeoConstants.FTReal:
@@ -661,8 +663,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 default:
                     continue;
             }
-            rootObject.put("fields", valueObject);
         }
+        rootObject.put("fields", valueObject);
 
         //may be found geometry in cache by id is faster
         GeoGeometry geometry = GeoGeometryFactory.fromBlob(
