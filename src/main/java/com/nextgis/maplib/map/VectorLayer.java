@@ -238,6 +238,7 @@ public class VectorLayer extends Layer
 
     protected String initialize(List<Feature> features)
     {
+        Log.d(TAG, "init layer " + getName());
         if(features.isEmpty())
             return null;
 
@@ -270,6 +271,8 @@ public class VectorLayer extends Layer
         }
         tableCreate += " );";
 
+        Log.d(TAG, "create layer table: " + tableCreate);
+
         //1. create table and populate with values
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
@@ -294,15 +297,19 @@ public class VectorLayer extends Layer
                         Object intVal = feature.getFieldValue(i);
                         if(intVal instanceof Integer)
                             values.put(fields.get(i).getName(), (int)intVal);
+                        else if(intVal instanceof Long)
+                            values.put(fields.get(i).getName(), (long)intVal);
                         else
-                            values.put(fields.get(i).getName(), 0);
+                            Log.d(TAG, "skip value: " + intVal.toString());
                         break;
                     case FTReal:
-                        Object doubleVal = feature.getFieldValue(i);
-                        if(doubleVal instanceof Double)
-                            values.put(fields.get(i).getName(), (double)doubleVal);
+                        Object realVal = feature.getFieldValue(i);
+                        if(realVal instanceof Double)
+                            values.put(fields.get(i).getName(), (double)realVal);
+                        else if(realVal instanceof Float)
+                            values.put(fields.get(i).getName(), (float)realVal);
                         else
-                            values.put(fields.get(i).getName(), 0.0);
+                            Log.d(TAG, "skip value: " + realVal.toString());
                         break;
                     case FTDateTime:
                         values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));

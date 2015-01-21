@@ -214,6 +214,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
 
         try {
+            Log.d(TAG, "download layer " + getName());
 
             //get layer definition
             HttpGet get = new HttpGet(NGWUtil.getResourceMetaUrl(mURL, mRemoteId));

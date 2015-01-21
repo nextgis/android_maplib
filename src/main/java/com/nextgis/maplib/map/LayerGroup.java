@@ -37,6 +37,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -355,6 +356,8 @@ public class LayerGroup
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         String layerDir = LAYER_PREFIX + sdf.format(new Date()) + getLayerCount();
+        final Random r = new Random();
+        layerDir += r.nextInt(99);
         return new File(mPath, layerDir);
     }
 }
