@@ -118,6 +118,23 @@ public class GeoLineString
     }
 
 
+    @Override
+    public void setCoordinatesFromWKT(String wkt)
+    {
+        if(wkt.contains("EMPTY"))
+            return;
+
+        if(wkt.startsWith("("))
+            wkt = wkt.substring(1, wkt.length() - 1);
+
+        for (String token : wkt.split(",")) {
+            GeoPoint point = new GeoPoint();
+            point.setCoordinatesFromWKT(token.trim());
+            add(point);
+        }
+    }
+
+
     public void add(GeoPoint point)
             throws IllegalArgumentException
     {

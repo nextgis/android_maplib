@@ -139,6 +139,13 @@ public class GeoGeometryCollection
 
 
     @Override
+    public void setCoordinatesFromWKT(String wkt)
+    {
+        //TODO: implement this
+    }
+
+
+    @Override
     public JSONArray coordinatesToJSON()
             throws JSONException, ClassCastException
     {
@@ -155,6 +162,20 @@ public class GeoGeometryCollection
     @Override
     public String toWKT(boolean full)
     {
-        return null;
+        StringBuilder buf = new StringBuilder();
+        buf.append("GEOMETRYCOLLECTION ");
+        if (mGeometries.size() == 0)
+            buf.append(" EMPTY");
+        else {
+            buf.append("(");
+            for (int i = 0; i < mGeometries.size(); i++) {
+                if (i > 0)
+                    buf.append(", ");
+                GeoGeometry geometry = mGeometries.get(i);
+                buf.append(geometry.toWKT(false));
+            }
+            buf.append(")");
+        }
+        return buf.toString();
     }
 }

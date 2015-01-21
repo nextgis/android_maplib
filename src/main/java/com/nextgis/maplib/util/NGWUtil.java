@@ -28,6 +28,12 @@ public class NGWUtil
      */
 
 
+    /**
+     * GeoJSON URL. Get data as GeoJSON
+     * @param server URL
+     * @param remoteId Vector layer resource id
+     * @return URL
+     */
     public static String getGeoJSONUrl(
             String server,
             long remoteId)
@@ -38,6 +44,12 @@ public class NGWUtil
     }
 
 
+    /**
+     * Get vector layer data as JSON (NOT GeoJSON!)
+     * @param server URL
+     * @param remoteId Vector layer resource id
+     * @return URL
+     */
     public static String getVectorDataUrl(
             String server,
             long remoteId)
@@ -48,6 +60,12 @@ public class NGWUtil
     }
 
 
+    /**
+     * TMS URL for raster layer
+     * @param server URL
+     * @param styleId Raster style id
+     * @return URL to TMS for TMSLayer
+     */
     public static String getTMSUrl(
         String server,
         long styleId)
@@ -57,6 +75,13 @@ public class NGWUtil
         return server + "/resource/" + styleId + "//tms?z={z}&x={x}&y={y}";
     }
 
+
+    /**
+     * Resource URL
+     * @param server URL
+     * @param remoteId resource id
+     * @return URL to resource
+     */
     public static String getResourceUrl(
             String server,
             long remoteId)
@@ -66,6 +91,30 @@ public class NGWUtil
         return server + "/resource/" + remoteId;
     }
 
+
+    /**
+     * The resource metadata (fields, geometry type, SRS, etc.)
+     * @param server URL
+     * @param remoteId resource id
+     * @return URL to resource meta
+     */
+    public static String getResourceMetaUrl(
+            String server,
+            long remoteId)
+    {
+        if (!server.startsWith("http"))
+            server = "http://" + server;
+        return server + "/api/resource/" + remoteId;
+    }
+
+
+    /**
+     * Get one row from vector layer
+     * @param server URL
+     * @param remoteId resource id
+     * @param featureId row id
+     * @return URL to row
+     */
     public static String getFeatureUrl(
             String server,
             long remoteId,
@@ -74,5 +123,21 @@ public class NGWUtil
         if (!server.startsWith("http"))
             server = "http://" + server;
         return server + "/api/resource/" + remoteId + "/feature/" + featureId;
+    }
+
+
+    /**
+     * Get the url to JSONArray of features
+     * @param server URL
+     * @param remoteId vector layer id
+     * @return URL
+     */
+    public static String getFeaturesUrl(
+            String server,
+            long remoteId)
+    {
+        if (!server.startsWith("http"))
+            server = "http://" + server;
+        return server + "/api/resource/" + remoteId + "/feature/";
     }
 }

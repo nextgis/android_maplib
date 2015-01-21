@@ -20,6 +20,7 @@
  ****************************************************************************/
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.util.Constants;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -143,6 +144,20 @@ public class GeoPoint
     {
         mX = coordinates.getDouble(0);
         mY = coordinates.getDouble(1);
+    }
+
+
+    @Override
+    public void setCoordinatesFromWKT(String wkt)
+    {
+        if(wkt.contains("EMPTY"))
+            return;
+
+        if(wkt.startsWith("("))
+            wkt = wkt.substring(1, wkt.length() - 1);
+        int pos = wkt.indexOf(" ");
+        mX = Double.parseDouble(wkt.substring(0, pos).trim());
+        mY = Double.parseDouble(wkt.substring(pos, wkt.length()).trim());
     }
 
 

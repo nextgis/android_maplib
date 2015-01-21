@@ -42,11 +42,12 @@ import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.datasource.ngw.Field;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.util.ChangeFeatureItem;
-import com.nextgis.maplib.util.Feature;
+import com.nextgis.maplib.datasource.ngw.Feature;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -73,7 +74,7 @@ public class VectorLayer extends Layer
     protected Uri                   mContentUri;
     protected UriMatcher            mUriMatcher;
     protected String                mAuthority;
-    protected Map<String, Integer>  mFields;
+    protected Map<String, Field>    mFields;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
@@ -161,7 +162,7 @@ public class VectorLayer extends Layer
             }
 
             List<Feature> features = new ArrayList<>();
-            List<Pair<String, Integer>> fields = new ArrayList<>();
+            List<Field> fields = new ArrayList<>();
 
             int geometryType = GTNone;
             for (int i = 0; i < geoJSONFeatures.length(); i++) {
@@ -214,14 +215,14 @@ public class VectorLayer extends Layer
                     if(nType != NOT_FOUND) {
                         int fieldIndex = NOT_FOUND;
                         for (int j = 0; j < fields.size(); j++) {
-                            if (fields.get(j).first.equals(key)) {
+                            if (fields.get(j).getName().equals(key)) {
                                 fieldIndex = j;
                             }
                         }
                         if (fieldIndex == NOT_FOUND) { //add new field
-                            Pair<String, Integer> fieldKey = Pair.create(key, nType);
+                            Field field = new Field(nType, key, null);
                             fieldIndex = fields.size();
-                            fields.add(fieldKey);
+                            fields.add(field);
                         }
                         feature.setFieldValue(fieldIndex, value);
                     }
@@ -229,101 +230,124 @@ public class VectorLayer extends Layer
                 features.add(feature);
             }
 
-            String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
-                                 FIELD_ID + " INTEGER PRIMARY KEY, " +
-                                 FIELD_GEOM + " BLOB";
-            for(int i = 0; i < fields.size(); ++i)
-            {
-                Pair<String, Integer> field = fields.get(i);
-
-                tableCreate += ", " + field.first + " ";
-                switch (field.second)
-                {
-                    case FTString:
-                        tableCreate += "TEXT";
-                        break;
-                    case FTInteger:
-                        tableCreate += "INTEGER";
-                        break;
-                    case FTReal:
-                        tableCreate += "REAL";
-                        break;
-                    case FTDateTime:
-                        tableCreate += "TIMESTAMP";
-                        break;
-                }
-            }
-            tableCreate += " );";
-
-            GeoEnvelope extents = new GeoEnvelope();
-            for (Feature feature : features) {
-                //update bbox
-                extents.merge(feature.getGeometry().getEnvelope());
-            }
-
-            //1. create table and populate with values
-            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-            SQLiteDatabase db = map.getDatabase(true);
-            db.execSQL(tableCreate);
-            for(Feature feature : features) {
-                ContentValues values = new ContentValues();
-                values.put(FIELD_ID, feature.getId());
-                try {
-                    values.put(FIELD_GEOM, feature.getGeometry().toBlob());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                for(int i = 0; i < fields.size(); ++i){
-                    if(!feature.isValuePresent(i))
-                        continue;
-                    switch (fields.get(i).second)
-                    {
-                        case FTString:
-                            values.put(fields.get(i).first, feature.getFieldValueAsString(i));
-                            break;
-                        case FTInteger:
-                            values.put(fields.get(i).first, (int)feature.getFieldValue(i));
-                            break;
-                        case FTReal:
-                            values.put(fields.get(i).first, (double)feature.getFieldValue(i));
-                            break;
-                        case FTDateTime:
-                            values.put(fields.get(i).first, feature.getFieldValueAsString(i));
-                            break;
-                    }
-                }
-                db.insert(mPath.getName(), "", values);
-            }
-
-            //2. save the layer properties to config.json
-            mGeometryType = geometryType;
-            mExtents = extents;
-            mIsInitialized = true;
-            setDefaultRenderer();
-            mFields = new HashMap<>();
-
-            for (Pair<String, Integer> field : fields){
-                mFields.put(field.first, field.second);
-            }
-            save();
-
-            //3. fill the geometry and labels array
-            mVectorCacheItems = new ArrayList<>();
-            for(Feature feature : features){
-                mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
-            }
-
-
-            if(null != mParent){ //notify the load is over
-                LayerGroup layerGroup = (LayerGroup)mParent;
-                layerGroup.onLayerChanged(this);
-            }
-
-            return "";
+            return initialize(features);
         } catch (JSONException e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
         }
+    }
+
+    protected String initialize(List<Feature> features)
+    {
+        if(features.isEmpty())
+            return null;
+
+        Feature firstFeature = features.get(0);
+        List<Field> fields = firstFeature.getFields();
+
+        String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
+                             FIELD_ID + " INTEGER PRIMARY KEY, " +
+                             FIELD_GEOM + " BLOB";
+        for(int i = 0; i < fields.size(); ++i)
+        {
+            Field field = fields.get(i);
+
+            tableCreate += ", " + field.getName() + " ";
+            switch (field.getType())
+            {
+                case FTString:
+                    tableCreate += "TEXT";
+                    break;
+                case FTInteger:
+                    tableCreate += "INTEGER";
+                    break;
+                case FTReal:
+                    tableCreate += "REAL";
+                    break;
+                case FTDateTime:
+                    tableCreate += "TIMESTAMP";
+                    break;
+            }
+        }
+        tableCreate += " );";
+
+        //1. create table and populate with values
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+        db.execSQL(tableCreate);
+        for(Feature feature : features) {
+            ContentValues values = new ContentValues();
+            values.put(FIELD_ID, feature.getId());
+            try {
+                values.put(FIELD_GEOM, feature.getGeometry().toBlob());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            for(int i = 0; i < fields.size(); ++i){
+                if(!feature.isValuePresent(i))
+                    continue;
+                switch (fields.get(i).getType())
+                {
+                    case FTString:
+                        values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
+                        break;
+                    case FTInteger:
+                        Object intVal = feature.getFieldValue(i);
+                        if(intVal instanceof Integer)
+                            values.put(fields.get(i).getName(), (int)intVal);
+                        else
+                            values.put(fields.get(i).getName(), 0);
+                        break;
+                    case FTReal:
+                        Object doubleVal = feature.getFieldValue(i);
+                        if(doubleVal instanceof Double)
+                            values.put(fields.get(i).getName(), (double)doubleVal);
+                        else
+                            values.put(fields.get(i).getName(), 0.0);
+                        break;
+                    case FTDateTime:
+                        values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
+                        break;
+                }
+            }
+            db.insert(mPath.getName(), "", values);
+        }
+
+        //fill the geometry and labels array
+        GeoEnvelope extents = new GeoEnvelope();
+        mVectorCacheItems = new ArrayList<>();
+        int geometryType = NOT_FOUND;
+        for (Feature feature : features) {
+            if(null == feature.getGeometry())
+                continue;
+            //update bbox
+            extents.merge(feature.getGeometry().getEnvelope());
+            //add to cache
+            mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
+
+            if(geometryType == NOT_FOUND){
+                geometryType = feature.getGeometry().getType();
+            }
+        }
+
+        //2. save the layer properties to config.json
+        mGeometryType = geometryType;
+        mExtents = extents;
+        mIsInitialized = true;
+        setDefaultRenderer();
+        mFields = new HashMap<>();
+
+        for (Field field : fields){
+            mFields.put(field.getName(), field);
+        }
+        save();
+
+        if(null != mParent){ //notify the load is over
+            LayerGroup layerGroup = (LayerGroup)mParent;
+            layerGroup.onLayerChanged(this);
+        }
+
+        return null;
     }
 
 
@@ -361,13 +385,11 @@ public class VectorLayer extends Layer
         rootConfig.put(JSON_IS_INITIALIZED_KEY, mIsInitialized);
 
         if(null != mFields) {
-            JSONObject fields = new JSONObject();
-            for (Map.Entry<String, Integer> field : mFields.entrySet()) {
-                String key = field.getKey();
-                Integer value = field.getValue();
-                fields.put(key, value);
+            JSONArray fields = new JSONArray();
+            for(Field field : mFields.values()){
+                JSONObject fieldJsonObject = field.toJSON();
+                fields.put(fieldJsonObject);
             }
-
             rootConfig.put(JSON_FIELDS_KEY, fields);
         }
 
@@ -389,12 +411,11 @@ public class VectorLayer extends Layer
 
         if(jsonObject.has(JSON_FIELDS_KEY)) {
             mFields = new HashMap<>();
-            JSONObject fields = jsonObject.getJSONObject(JSON_FIELDS_KEY);
-            Iterator<?> keys = fields.keys();
-            while (keys.hasNext()) {
-                String key = (String) keys.next();
-                int type = fields.getInt(key);
-                mFields.put(key, type);
+            JSONArray fields = jsonObject.getJSONArray(JSON_FIELDS_KEY);
+            for(int i = 0; i < fields.length(); i++){
+                Field field = new Field();
+                field.fromJSON(fields.getJSONObject(i));
+                mFields.put(field.getName(), field);
             }
         }
 
@@ -427,8 +448,6 @@ public class VectorLayer extends Layer
             do{
                 try {
                     GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                    String str = geoGeometry.toWKT(true);
-                    Log.d(TAG, "geom type:" + str);
                     int nId = cursor.getInt(0);
                     mExtents.merge(geoGeometry.getEnvelope());
                     mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));

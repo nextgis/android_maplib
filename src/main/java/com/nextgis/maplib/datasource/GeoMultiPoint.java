@@ -68,6 +68,22 @@ public class GeoMultiPoint
     }
 
 
+    @Override
+    public void setCoordinatesFromWKT(String wkt)
+    {
+        if(wkt.contains("EMPTY"))
+            return;
+
+        if(wkt.startsWith("("))
+            wkt = wkt.substring(1, wkt.length() - 1);
+        for(String wktPt : wkt.split(",")){
+            GeoPoint pt = new GeoPoint();
+            pt.setCoordinatesFromWKT(wktPt.trim());
+            add(pt);
+        }
+    }
+
+
     public void add(GeoPoint point)
     {
         super.add(point);
@@ -86,8 +102,8 @@ public class GeoMultiPoint
             for (int i = 0; i < mGeometries.size(); i++) {
                 if(i > 0)
                     buf.append(", ");
-                GeoPoint pt = (GeoPoint) mGeometries.get(i);
-                buf.append(pt.toWKT(false));
+                GeoGeometry geom = mGeometries.get(i);
+                buf.append(geom.toWKT(false));
             }
             buf.append(")");
         }

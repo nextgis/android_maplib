@@ -28,12 +28,12 @@ public class VectorCacheItem
 {
     protected GeoGeometry mGeoGeometry;
     protected String mLabel;
-    protected int mId;
+    protected long mId;
 
 
     public VectorCacheItem(
             GeoGeometry geoGeometry,
-            int id)
+            long id)
     {
         mGeoGeometry = geoGeometry;
         mId = id;
@@ -64,13 +64,13 @@ public class VectorCacheItem
     }
 
 
-    public int getId()
+    public long getId()
     {
         return mId;
     }
 
 
-    public void setId(int id)
+    public void setId(long id)
     {
         mId = id;
     }

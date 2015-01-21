@@ -107,6 +107,8 @@ public abstract class GeoGeometry implements Serializable
     public abstract void setCoordinatesFromJSON(JSONArray coordinates)
             throws JSONException;
 
+    public abstract void setCoordinatesFromWKT(String wkt);
+
     public byte[] toBlob()
             throws IOException
     {

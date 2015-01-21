@@ -20,6 +20,7 @@
  ****************************************************************************/
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.util.Constants;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -116,7 +117,34 @@ public class GeoPolygon
                     "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. The first and last positions of LinearRing must be equivalent (they represent equivalent points).");
         }
 
-        //TODO: inner rings
+        //TODO: add inner rings
+    }
+
+
+    @Override
+    public void setCoordinatesFromWKT(String wkt)
+    {
+        if(wkt.contains("EMPTY"))
+            return;
+
+        if(wkt.startsWith("("))
+            wkt = wkt.substring(1, wkt.length() - 1);
+        //get outer ring
+        int pos = wkt.indexOf(")");
+        mOuterRing.setCoordinatesFromWKT(wkt.substring(0, pos));
+        pos = wkt.indexOf("(");
+        while(pos != Constants.NOT_FOUND) {
+            wkt = wkt.substring(pos + 1, wkt.length());
+            pos = wkt.indexOf(")") - 1;
+            if(pos < 1)
+                return;
+
+            GeoLinearRing innerRing = new GeoLinearRing();
+            innerRing.setCoordinatesFromWKT(wkt.substring(0, pos));
+            mInnerRings.add(innerRing);
+
+            pos = wkt.indexOf("(");
+        }
     }
 
 

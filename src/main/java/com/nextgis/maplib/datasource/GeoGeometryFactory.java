@@ -131,6 +131,40 @@ public class GeoGeometryFactory
 
     public static GeoGeometry fromWKT(String wkt)
     {
-        return null;
+        GeoGeometry output = null;
+        wkt = wkt.trim();
+        if(wkt.startsWith("POINT")) {
+            output = new GeoPoint();
+            output.setCoordinatesFromWKT(wkt.substring(5).trim());
+        }
+        else if(wkt.startsWith("LINESTRING")){
+            output = new GeoLineString();
+            output.setCoordinatesFromWKT(wkt.substring(10).trim());
+        }
+        else if(wkt.startsWith("LINEARRING")){
+            output = new GeoLinearRing();
+            output.setCoordinatesFromWKT(wkt.substring(10).trim());
+        }
+        else if(wkt.startsWith("POLYGON")){
+            output = new GeoPolygon();
+            output.setCoordinatesFromWKT(wkt.substring(7).trim());
+        }
+        else if(wkt.startsWith("MULTIPOINT")){
+            output = new GeoMultiPoint();
+            output.setCoordinatesFromWKT(wkt.substring(10).trim());
+        }
+        else if(wkt.startsWith("MULTILINESTRING")){
+            output = new GeoMultiLineString();
+            output.setCoordinatesFromWKT(wkt.substring(15).trim());
+        }
+        else if(wkt.startsWith("MULTIPOLYGON")){
+            output = new GeoMultiPolygon();
+            output.setCoordinatesFromWKT(wkt.substring(12).trim());
+        }
+        else if(wkt.startsWith("GEOMETRYCOLLECTION")){
+            output = new GeoGeometryCollection();
+            output.setCoordinatesFromWKT(wkt.substring(18).trim());
+        }
+        return output;
     }
 }

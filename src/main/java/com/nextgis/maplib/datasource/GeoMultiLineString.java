@@ -20,6 +20,7 @@
  ****************************************************************************/
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.util.Constants;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -68,8 +69,55 @@ public class GeoMultiLineString
     }
 
 
+    @Override
+    public void setCoordinatesFromWKT(String wkt)
+    {
+        if(wkt.contains("EMPTY"))
+            return;
+
+        if(wkt.startsWith("("))
+            wkt = wkt.substring(1, wkt.length() - 1);
+
+        int pos = wkt.indexOf("(");
+        while(pos != Constants.NOT_FOUND) {
+            wkt = wkt.substring(pos + 1, wkt.length());
+            pos = wkt.indexOf(")") - 1;
+            if(pos < 1)
+                return;
+
+            GeoLineString lineString = new GeoLineString();
+            lineString.setCoordinatesFromWKT(wkt.substring(0, pos).trim());
+            add(lineString);
+
+            pos = wkt.indexOf("(");
+        }
+    }
+
+
     public void add(GeoLineString lineString)
     {
         super.add(lineString);
+    }
+
+
+    @Override
+    public String toWKT(boolean full)
+    {
+        StringBuilder buf = new StringBuilder();
+        if(full)
+            buf.append("MULTILINESTRING ");
+        if (mGeometries.size() == 0)
+            buf.append(" EMPTY");
+        else {
+            buf.append("(");
+            for (int i = 0; i < mGeometries.size(); i++) {
+                if(i > 0)
+                    buf.append(", ");
+                GeoGeometry geom = mGeometries.get(i);
+                buf.append(geom.toWKT(false));
+            }
+            buf.append(")");
+        }
+        return buf.toString();
     }
 }

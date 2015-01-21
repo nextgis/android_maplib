@@ -22,9 +22,11 @@
 package com.nextgis.maplib.map;
 
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SyncResult;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Base64;
@@ -34,10 +36,13 @@ import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.datasource.ngw.Feature;
+import com.nextgis.maplib.datasource.ngw.Field;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
+import com.nextgis.maplib.util.VectorCacheItem;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -46,7 +51,9 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -200,7 +207,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     /**
      * download and create new NGW layer from GeoJSON data
-     * @return the error message or empty string if everything is ok
+     * @return the error message or null if everything is ok
      */
     public String download()
     {
@@ -210,7 +217,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
         try {
 
-            final HttpGet get = new HttpGet(NGWUtil.getGeoJSONUrl(mURL, mRemoteId)); //get as GeoJSON
+            //get layer definition
+            HttpGet get = new HttpGet(NGWUtil.getResourceMetaUrl(mURL, mRemoteId));
             //basic auth
             if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
                 get.setHeader("Accept", "*/*");
@@ -220,17 +228,16 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            final HttpResponse response = HTTPClient.execute(get);
-
+            HttpResponse response = HTTPClient.execute(get);
             // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
+            org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
                 Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
                            line);
                 return getContext().getString(R.string.error_download_data);
             }
 
-            final HttpEntity entity = response.getEntity();
+            HttpEntity entity = response.getEntity();
             if (entity == null) {
                 Log.d(TAG, "No content downloading GeoJSON: " + mURL);
                 return getContext().getString(R.string.error_download_data);
@@ -239,7 +246,82 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             String data = EntityUtils.toString(entity);
             JSONObject geoJSONObject = new JSONObject(data);
 
-            return createFromGeoJSON(geoJSONObject);
+            //fill field list
+            JSONObject featureLayerJSONObject = geoJSONObject.getJSONObject("feature_layer");
+            JSONArray fieldsJSONArray = featureLayerJSONObject.getJSONArray("fields");
+            List<Field> fields = new ArrayList<>();
+            for(int i = 0; i < fieldsJSONArray.length(); i++){
+                JSONObject fieldJSONObject = fieldsJSONArray.getJSONObject(i);
+                String type = fieldJSONObject.getString("datatype");
+                String alias = fieldJSONObject.getString("display_name");
+                String name = fieldJSONObject.getString("keyname");
+
+                int nType = stringToType(type);
+                if(NOT_FOUND != nType){
+                    fields.add(new Field(nType, name, alias));
+                }
+            }
+
+            //fill SRS
+            JSONObject vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
+            JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
+            int nSRS = srs.getInt("id");
+            if(nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84)
+                return getContext().getString(R.string.error_crs_unsuported);
+
+            //get layer data
+            get = new HttpGet(NGWUtil.getFeaturesUrl(mURL, mRemoteId)); //get as GeoJSON
+            //basic auth
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
+                get.setHeader("Accept", "*/*");
+                final String basicAuth = "Basic " + Base64.encodeToString(
+                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                get.setHeader("Authorization", basicAuth);
+            }
+
+
+            response = HTTPClient.execute(get);
+
+            // Check to see if we got success
+            line = response.getStatusLine();
+            if (line.getStatusCode() != 200) {
+                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                           line);
+                return getContext().getString(R.string.error_download_data);
+            }
+
+            entity = response.getEntity();
+            if (entity == null) {
+                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
+                return getContext().getString(R.string.error_download_data);
+            }
+
+            data = EntityUtils.toString(entity);
+
+            List<Feature> features = new ArrayList<>();
+            JSONArray featuresJSONArray = new JSONArray(data);
+            for(int i = 0; i < featuresJSONArray.length(); i++){
+                JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
+                long id = featureJSONObject.getLong(JSON_ID_KEY);
+                String wkt = featureJSONObject.getString("geom");
+                JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
+                Feature feature = new Feature(id, fields);
+                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+                if(null == geom)
+                    continue;
+                geom.setCRS(nSRS);
+                if(nSRS != GeoConstants.CRS_WEB_MERCATOR)
+                    geom.project(GeoConstants.CRS_WEB_MERCATOR);
+                feature.setGeometry(geom);
+
+                for(Field field : fields) {
+                    feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
+                }
+
+                features.add(feature);
+            }
+
+            return initialize(features);
 
         } catch (IOException e) {
             Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
@@ -249,6 +331,22 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         catch (JSONException e) {
             e.printStackTrace();
             return getContext().getString(R.string.error_download_data);
+        }
+    }
+
+    protected int stringToType(String type)
+    {
+        switch (type) {
+            case "STRING":
+                return GeoConstants.FTString;
+            case "INTEGER":
+                return GeoConstants.FTInteger;
+            case "DATE":
+                return GeoConstants.FTDateTime;
+            case "REAL":
+                return GeoConstants.FTReal;
+            default:
+                return NOT_FOUND;
         }
     }
 
@@ -404,6 +502,34 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
+    protected void changeFeatureId(long oldFeatureId, long newFeatureId)
+    {
+        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
+        if(null == map)
+            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+        //update id in DB
+        SQLiteDatabase db = map.getDatabase(false);
+        ContentValues values = new ContentValues();
+        values.put(FIELD_ID, newFeatureId);
+        if( db.update(mPath.getName(), values, FIELD_ID + " = " + oldFeatureId, null) != 1 ){
+            Log.d(TAG, "failed to set new id");
+        }
+
+        //update id in cache
+        for(VectorCacheItem cacheItem : mVectorCacheItems){
+            if(cacheItem.getId() == oldFeatureId)
+                cacheItem.setId(newFeatureId);
+        }
+
+        //rename photo id folder if exist
+        File photoFolder = new File(mPath, "" + oldFeatureId);
+        if(photoFolder.exists()) {
+            if(photoFolder.renameTo(new File(mPath, "" + newFeatureId))){
+                Log.d(TAG, "rename photo folder " + oldFeatureId + "failed");
+            }
+        }
+    }
+
 
     protected void getChangesFromServer(SyncResult syncResult)
     {
@@ -480,12 +606,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 post.setHeader("Authorization", basicAuth);
             }
 
-            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
-            nameValuePairs.add(new BasicNameValuePair("json", payload));
-            post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
-            Log.d(TAG, "payload: " + payload);
-
+            post.setEntity(new StringEntity(payload, "UTF8"));
+            post.setHeader("Content-type", "application/json");
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             final HttpResponse response = HTTPClient.execute(post);
@@ -507,9 +629,12 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
 
             String data = EntityUtils.toString(entity);
-            Log.d(TAG, data);
-            //TODO: set new id from server!
-
+            //TODO: set new id from server! {"id": 24}
+            JSONObject result = new JSONObject(data);
+            if(result.has(JSON_ID_KEY)){
+                long id = result.getLong(JSON_ID_KEY);
+                changeFeatureId(featureId, id);
+            }
 
             return true;
         }
@@ -590,9 +715,13 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 put.setHeader("Authorization", basicAuth);
             }
 
-            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
-            nameValuePairs.add(new BasicNameValuePair("json", payload));
-            put.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+            //List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+            //nameValuePairs.add(new BasicNameValuePair("json", payload));
+            //StringEntity se = new StringEntity( "json=" + payload);
+            //se.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
+
+            put.setEntity(new StringEntity(payload, "UTF8"));
+            put.setHeader("Content-type", "application/json");
 
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
@@ -647,7 +776,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             if(name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
                 continue;
 
-            switch (mFields.get(cursor.getColumnName(i))) {
+            Field field = mFields.get(cursor.getColumnName(i));
+            if(null == field)
+                continue;
+
+            switch (field.getType()) {
                 case GeoConstants.FTReal:
                     valueObject.put(name, cursor.getFloat(i));
                     break;
