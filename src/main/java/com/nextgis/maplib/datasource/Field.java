@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.nextgis.maplib.datasource.ngw;
+package com.nextgis.maplib.datasource;
 
 import android.text.TextUtils;
 import com.nextgis.maplib.api.IJSONStore;
@@ -67,7 +67,7 @@ public class Field implements IJSONStore
         rootObject.put(Constants.JSON_TYPE_KEY, mType);
         rootObject.put(Constants.JSON_NAME_KEY, mName);
         rootObject.put(JSON_ALIAS_KEY, mAlias);
-        return null;
+        return rootObject;
     }
 
 

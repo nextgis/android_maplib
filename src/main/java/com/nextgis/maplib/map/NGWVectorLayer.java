@@ -36,8 +36,8 @@ import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.datasource.ngw.Feature;
-import com.nextgis.maplib.datasource.ngw.Field;
+import com.nextgis.maplib.datasource.Feature;
+import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
@@ -45,16 +45,12 @@ import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,7 +58,9 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -463,6 +461,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
         //2. send current changes
         sendLocalChanges(syncResult);
+
+        save();
     }
 
     protected void sendLocalChanges(SyncResult syncResult)
@@ -615,7 +615,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " +
                            line);
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -623,13 +623,13 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
             final HttpEntity entity = response.getEntity();
             if (entity == null) {
-                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
+                Log.d(TAG, "No content downloading: " + mURL);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
 
             String data = EntityUtils.toString(entity);
-            //TODO: set new id from server! {"id": 24}
+            //set new id from server! {"id": 24}
             JSONObject result = new JSONObject(data);
             if(result.has(JSON_ID_KEY)){
                 long id = result.getLong(JSON_ID_KEY);
@@ -667,21 +667,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " +
                            line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
-
-            final HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-
-            String data = EntityUtils.toString(entity);
-            Log.d(TAG, data);
 
             return true;
         }
@@ -715,11 +705,6 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 put.setHeader("Authorization", basicAuth);
             }
 
-            //List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
-            //nameValuePairs.add(new BasicNameValuePair("json", payload));
-            //StringEntity se = new StringEntity( "json=" + payload);
-            //se.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
-
             put.setEntity(new StringEntity(payload, "UTF8"));
             put.setHeader("Content-type", "application/json");
 
@@ -730,23 +715,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " +
                            line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
-
-            final HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-
-            String data = EntityUtils.toString(entity);
-            Log.d(TAG, data);
-            //TODO: set new id from server!
-
 
             return true;
         } catch (JSONException | ClassNotFoundException | IOException e) {
@@ -791,7 +764,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     valueObject.put(name, cursor.getString(i));
                     break;
                 case GeoConstants.FTDateTime:
-                    valueObject.put(name, cursor.getLong(i));
+                    valueObject.put(name, new SimpleDateFormat().format(new Date(cursor.getLong(i))));
                     break;
                 default:
                     continue;
@@ -804,6 +777,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
 
         rootObject.put("geom", geometry.toWKT(true));
+        //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
 
         return rootObject.toString();
     }

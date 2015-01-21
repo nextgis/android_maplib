@@ -34,7 +34,6 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.Pair;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
@@ -42,12 +41,12 @@ import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.datasource.ngw.Field;
+import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.util.ChangeFeatureItem;
-import com.nextgis.maplib.datasource.ngw.Feature;
+import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -335,11 +334,12 @@ public class VectorLayer extends Layer
         mExtents = extents;
         mIsInitialized = true;
         setDefaultRenderer();
-        mFields = new HashMap<>();
 
+        mFields = new HashMap<>();
         for (Field field : fields){
             mFields.put(field.getName(), field);
         }
+
         save();
 
         if(null != mParent){ //notify the load is over

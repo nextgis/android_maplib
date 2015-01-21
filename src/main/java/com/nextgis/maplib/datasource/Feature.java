@@ -19,11 +19,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.nextgis.maplib.datasource.ngw;
+package com.nextgis.maplib.datasource;
 
 import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.datasource.GeoGeometry;
-import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -39,7 +37,7 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 
 public class Feature implements IJSONStore
 {
-    protected long          mId;
+    protected long         mId;
     protected GeoGeometry  mGeometry;
     protected List<Object> mFieldValues;
     protected List<Field>  mFields;

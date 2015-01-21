@@ -207,8 +207,10 @@ public class Layer
             JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
             fromJSON(jsonObject);
         } catch (JSONException e) {
+            e.printStackTrace();
             return false;
         } catch (IOException e) {
+            e.printStackTrace();
             return false;
         }
         return true;
