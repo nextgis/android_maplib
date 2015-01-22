@@ -315,6 +315,10 @@ public class LayerGroup
                 drawNext(display);
             }
         }
+        else{
+            //fake notify
+            onDrawFinished(layer.getId(), 1.0f);
+        }
     }
 
     protected void onLayerAdded(ILayer layer)

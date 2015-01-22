@@ -60,7 +60,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -311,13 +313,26 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 feature.setGeometry(geom);
 
                 for(Field field : fields) {
-                    feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
+                    if(field.getType() == GeoConstants.FTDateTime){
+                        if(!fieldsJSONObject.isNull(field.getName())) {
+                            JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
+                            int nYear = dateJson.getInt("year");
+                            int nMonth = dateJson.getInt("month");
+                            int nDay = dateJson.getInt("day");
+                            Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
+                            feature.setFieldValue(field.getName(), calendar.getTime());
+                        }
+                    }
+                    else {
+                        if(!fieldsJSONObject.isNull(field.getName()))
+                            feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
+                    }
                 }
 
                 features.add(feature);
             }
 
-            return initialize(features, geomType);
+            return initialize(fields, features, geomType);
 
         } catch (IOException e) {
             Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
@@ -455,7 +470,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
 
         //1. get remote changes
-        getChangesFromServer(syncResult);
+        //getChangesFromServer(syncResult);
 
         //2. send current changes
         sendLocalChanges(syncResult);
@@ -465,6 +480,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     protected void sendLocalChanges(SyncResult syncResult)
     {
+        Log.d(TAG, "sendLocalChanges: " + mChanges.size());
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem change = mChanges.get(i);
             switch (change.getOperation()){
@@ -688,11 +704,14 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null);
-        if (!cursor.moveToFirst())
+        if (!cursor.moveToFirst()) {
+            Log.d(TAG, "empty cursor for uri: " + uri);
             return false;
+        }
 
         try {
             String payload = cursorToJson(cursor);
+            Log.d(TAG, "payload: " + payload);
 
             final HttpPut put = new HttpPut(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
             //basic auth
@@ -759,13 +778,24 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     valueObject.put(name, cursor.getInt(i));
                     break;
                 case GeoConstants.FTString:
-                    valueObject.put(name, cursor.getString(i));
+                    String stringVal = cursor.getString(i);
+                    if(null != stringVal && !stringVal.equals("null"))
+                        valueObject.put(name, stringVal);
                     break;
                 case GeoConstants.FTDateTime:
-                    valueObject.put(name, new SimpleDateFormat().format(new Date(cursor.getLong(i))));
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis(cursor.getLong(i));
+                    int nYear = calendar.get(Calendar.YEAR);
+                    int nMonth = calendar.get(Calendar.MONTH) + 1;
+                    int nDay = calendar.get(Calendar.DAY_OF_MONTH);
+                    JSONObject date = new JSONObject();
+                    date.put("year", nYear);
+                    date.put("month", nMonth);
+                    date.put("day", nDay);
+                    valueObject.put(name, date);
                     break;
                 default:
-                    continue;
+                    break;
             }
         }
         rootObject.put("fields", valueObject);

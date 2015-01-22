@@ -229,7 +229,7 @@ public class VectorLayer extends Layer
                 features.add(feature);
             }
 
-            return initialize(features, NOT_FOUND);
+            return initialize(fields, features, NOT_FOUND);
         } catch (JSONException e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
@@ -237,20 +237,11 @@ public class VectorLayer extends Layer
     }
 
     protected String initialize(
+            List<Field> fields,
             List<Feature> features,
             int geometryType)
     {
         Log.d(TAG, "init layer " + getName());
-        if(features.isEmpty()) {
-            mGeometryType = geometryType;
-            mIsInitialized = true;
-
-            save(); //save initialized state
-            return null;
-        }
-
-        Feature firstFeature = features.get(0);
-        List<Field> fields = firstFeature.getFields();
 
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
                              FIELD_ID + " INTEGER PRIMARY KEY, " +
@@ -493,7 +484,7 @@ public class VectorLayer extends Layer
     @Override
     public boolean isValid()
     {
-        return mIsInitialized;
+        return mIsInitialized && mExtents.isInit();
     }
 
 
