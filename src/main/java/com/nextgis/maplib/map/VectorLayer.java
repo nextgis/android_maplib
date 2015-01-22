@@ -229,18 +229,25 @@ public class VectorLayer extends Layer
                 features.add(feature);
             }
 
-            return initialize(features);
+            return initialize(features, NOT_FOUND);
         } catch (JSONException e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
         }
     }
 
-    protected String initialize(List<Feature> features)
+    protected String initialize(
+            List<Feature> features,
+            int geometryType)
     {
         Log.d(TAG, "init layer " + getName());
-        if(features.isEmpty())
+        if(features.isEmpty()) {
+            mGeometryType = geometryType;
+            mIsInitialized = true;
+
+            save(); //save initialized state
             return null;
+        }
 
         Feature firstFeature = features.get(0);
         List<Field> fields = firstFeature.getFields();
@@ -322,7 +329,6 @@ public class VectorLayer extends Layer
         //fill the geometry and labels array
         GeoEnvelope extents = new GeoEnvelope();
         mVectorCacheItems = new ArrayList<>();
-        int geometryType = NOT_FOUND;
         for (Feature feature : features) {
             if(null == feature.getGeometry())
                 continue;
@@ -331,7 +337,7 @@ public class VectorLayer extends Layer
             //add to cache
             mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
 
-            if(geometryType == NOT_FOUND){
+            if(geometryType == NOT_FOUND || geometryType != feature.getGeometry().getType()){
                 geometryType = feature.getGeometry().getType();
             }
         }
@@ -1029,5 +1035,11 @@ public class VectorLayer extends Layer
     protected void addChange(String featureId, String photoName, int operation)
     {
         //nothing to do
+    }
+
+
+    public int getGeometryType()
+    {
+        return mGeometryType;
     }
 }

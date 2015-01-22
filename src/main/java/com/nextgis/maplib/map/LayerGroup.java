@@ -101,6 +101,50 @@ public class LayerGroup
 
 
     /**
+     * Get a list of specified type layers
+     * @param layerGroup to inspect for layers
+     * @param types A layer type
+     * @param layerList A list to fill with find layers
+     */
+    public static void getLayersByType(LayerGroup layerGroup, int types, List<ILayer> layerList)
+    {
+        for(int i = 0; i < layerGroup.getLayerCount(); i++)
+        {
+            ILayer layer = layerGroup.getLayer(i);
+
+            if(0 != (types & layer.getType())){
+                layerList.add(layer);
+            }
+
+            if(layer instanceof LayerGroup)
+            {
+                getLayersByType((LayerGroup)layer, types, layerList);
+            }
+        }
+    }
+
+    public static void getVectorLayersByType(LayerGroup layerGroup, int types, List<ILayer> layerList)
+    {
+        for(int i = 0; i < layerGroup.getLayerCount(); i++)
+        {
+            ILayer layer = layerGroup.getLayer(i);
+
+            if(layer instanceof VectorLayer) {
+                VectorLayer vectorLayer = (VectorLayer)layer;
+                if (0 != (types & vectorLayer.getGeometryType())) {
+                    layerList.add(layer);
+                }
+            }
+
+            if(layer instanceof LayerGroup)
+            {
+                getVectorLayersByType((LayerGroup)layer, types, layerList);
+            }
+        }
+    }
+
+
+    /**
      * Create existed layer from path and add it to the map
      *
      * @param layer

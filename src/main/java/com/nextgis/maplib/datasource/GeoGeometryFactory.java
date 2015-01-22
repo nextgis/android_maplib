@@ -41,7 +41,7 @@ public class GeoGeometryFactory
             throws JSONException
     {
         String jsonType = jsonObject.getString(GEOJSON_TYPE);
-        int type = typeFromJSON(jsonType);
+        int type = typeFromString(jsonType);
 
         GeoGeometry output = null;
         switch (type) {
@@ -92,27 +92,34 @@ public class GeoGeometryFactory
         return output;
     }
 
-    public static int typeFromJSON(String jsonType)
+    public static int typeFromString(String jsonType)
     {
         switch (jsonType) {
+            case "POINT":
             case GEOJSON_TYPE_Point:
                 return GTPoint;
 
+            case "LINESTRING":
             case GEOJSON_TYPE_LineString:
                 return GTLineString;
 
+            case "POLIGON":
             case GEOJSON_TYPE_Polygon:
                 return GTPolygon;
 
+            case "MULTIPOINT":
             case GEOJSON_TYPE_MultiPoint:
                 return GTMultiPoint;
 
+            case "MULTILINESTRING":
             case GEOJSON_TYPE_MultiLineString:
                 return GTMultiLineString;
 
+            case "MULTIPOLYGON":
             case GEOJSON_TYPE_MultiPolygon:
                 return GTMultiPolygon;
 
+            case "GEOMETRYCOLLECTION":
             case GEOJSON_TYPE_GeometryCollection:
                 return GTGeometryCollection;
 

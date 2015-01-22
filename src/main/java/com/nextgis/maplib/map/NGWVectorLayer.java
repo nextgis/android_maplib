@@ -256,6 +256,10 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
             //fill SRS
             JSONObject vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
+            String geomTypeString = vectorLayerJSONObject.getString("geometry_type");
+            int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
+            if(geomType < 4)
+                geomType += 3;
             JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
             int nSRS = srs.getInt("id");
             if(nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84)
@@ -313,7 +317,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 features.add(feature);
             }
 
-            return initialize(features);
+            return initialize(features, geomType);
 
         } catch (IOException e) {
             Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
