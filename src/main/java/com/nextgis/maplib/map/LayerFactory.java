@@ -73,6 +73,9 @@ public abstract class LayerFactory
                 case LAYERTYPE_NGW_VECTOR:
                     layer = new NGWVectorLayer(context, path);
                     break;
+                case LAYERTYPE_GROUP:
+                    layer = new LayerGroup(context, path, this);
+                    break;
             }
         } catch (IOException | JSONException e) {
             Log.d(TAG, e.getLocalizedMessage());

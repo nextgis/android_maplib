@@ -82,8 +82,8 @@ public class VectorLayer extends Layer
     protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
     protected static final String JSON_FIELDS_KEY = "fields";
 
-    public static final String FIELD_ID   = "_ID";
-    public static final String FIELD_GEOM = "_GEOM";
+    public static final String FIELD_ID   = "_id";
+    public static final String FIELD_GEOM = "_geom";
 
     protected static final String CONTENT_PHOTO_TYPE  = "image/jpeg";
     protected static final String CONTENT_PHOTOS_TYPE = "vnd.android.cursor.dir/image";

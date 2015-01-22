@@ -97,6 +97,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
         mChanges = new ArrayList<>();
         mSyncType = SYNC_NONE;
+        mLayerType = LAYERTYPE_NGW_VECTOR;
     }
 
 
@@ -128,14 +129,6 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     {
         mPassword = password;
     }
-
-
-    @Override
-    public int getType()
-    {
-        return LAYERTYPE_NGW_VECTOR;
-    }
-
 
     @Override
     public JSONObject toJSON()

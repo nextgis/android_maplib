@@ -75,6 +75,7 @@ public class RemoteTMSLayer
         mNet = new NetworkUtil(context);
         mSubdomains = new ArrayList<>();
         mCurrentSubdomain = 0;
+        mLayerType = LAYERTYPE_REMOTE_TMS;
     }
 
 
@@ -178,14 +179,6 @@ public class RemoteTMSLayer
 
         analizeURL(mURL);
     }
-
-
-    @Override
-    public int getType()
-    {
-        return LAYERTYPE_REMOTE_TMS;
-    }
-
 
     public String getURL()
     {

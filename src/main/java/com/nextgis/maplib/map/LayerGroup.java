@@ -61,6 +61,8 @@ public class LayerGroup
         mLayers = new ArrayList<>();
 
         mLayerDrawId = 0;
+
+        mLayerType = LAYERTYPE_GROUP;
     }
 
 

@@ -42,6 +42,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
             File path)
     {
         super(context, path);
+        mLayerType = LAYERTYPE_NGW_RASTER;
     }
 
 
@@ -68,13 +69,6 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
     public int getMaxThreadCount()
     {
         return MAX_THREAD_COUNT;
-    }
-
-
-    @Override
-    public int getType()
-    {
-        return LAYERTYPE_NGW_RASTER;
     }
 
 
