@@ -39,6 +39,7 @@ import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.util.ChangeFeatureItem;
+import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -166,7 +167,20 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
         if(jsonObject.has(JSON_SYNC_TYPE_KEY))
             mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
+
+        loadChanges(jsonObject);
+
+        if (!mIsInitialized) {
+            //init in separate thread
+            downloadAsync();
+        }
+    }
+
+    protected void loadChanges(JSONObject jsonObject)
+            throws JSONException
+    {
         if (jsonObject.has(JSON_CHANGES_KEY)) {
+            mChanges.clear();
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
                 JSONObject change = array.getJSONObject(i);
@@ -174,11 +188,6 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 item.fromJSON(change);
                 mChanges.add(item);
             }
-        }
-
-        if (!mIsInitialized) {
-            //init in separate thread
-            downloadAsync();
         }
     }
 
@@ -467,13 +476,22 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             return;
         }
 
-        //1. get remote changes
-        //getChangesFromServer(syncResult);
+        try {
+            //0. get changes from layer config file
+            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
+            loadChanges(jsonObject);
 
-        //2. send current changes
-        sendLocalChanges(syncResult);
+            //1. get remote changes
+            //getChangesFromServer(syncResult);
 
-        save();
+            //2. send current changes
+            sendLocalChanges(syncResult);
+
+            save();
+
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     protected void sendLocalChanges(SyncResult syncResult)
