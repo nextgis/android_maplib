@@ -40,7 +40,7 @@ public interface Constants
     /**
      * NGW account type
      */
-    public static final String NGW_ACCOUNT_TYPE = "nextgis.com";
+    public static final String NGW_ACCOUNT_TYPE = "com.nextgis.account";
 
     /**
      * Map parameters
