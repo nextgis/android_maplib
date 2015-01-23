@@ -106,7 +106,9 @@ public interface Constants
     public static final TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
 
     public static final int SYNC_NONE = 1<<0;
-    public static final int SYNC_DATA = 1<<1;
-    public static final int SYNC_PHOTO = 1<<2;
+    public static final int SYNC_GEOMETRY = 1<<1;
+    public static final int SYNC_ATTRIBUTES = 1<<2;
+    public static final int SYNC_DATA = SYNC_GEOMETRY | SYNC_ATTRIBUTES;
+    public static final int SYNC_PHOTO = 1<<3;
     public static final int SYNC_ALL = SYNC_DATA | SYNC_PHOTO;
 }

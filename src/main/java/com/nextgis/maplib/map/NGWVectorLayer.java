@@ -164,10 +164,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
         if (jsonObject.has(JSON_PASSWORD_KEY))
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
-        //DEBUG:
-        //if(jsonObject.has(JSON_SYNC_TYPE_KEY))
-        //    mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
-        mSyncType = SYNC_ALL;
+        if(jsonObject.has(JSON_SYNC_TYPE_KEY))
+            mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
         if (jsonObject.has(JSON_CHANGES_KEY)) {
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
@@ -760,52 +758,55 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             throws JSONException, IOException, ClassNotFoundException
     {
         JSONObject rootObject = new JSONObject();
-        JSONObject valueObject = new JSONObject();
-        for(int i = 0; i < cursor.getColumnCount(); i++){
-            String name = cursor.getColumnName(i);
-            if(name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
-                continue;
+        if(0 != (mSyncType & SYNC_ATTRIBUTES)) {
+            JSONObject valueObject = new JSONObject();
+            for (int i = 0; i < cursor.getColumnCount(); i++) {
+                String name = cursor.getColumnName(i);
+                if (name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
+                    continue;
 
-            Field field = mFields.get(cursor.getColumnName(i));
-            if(null == field)
-                continue;
+                Field field = mFields.get(cursor.getColumnName(i));
+                if (null == field)
+                    continue;
 
-            switch (field.getType()) {
-                case GeoConstants.FTReal:
-                    valueObject.put(name, cursor.getFloat(i));
-                    break;
-                case GeoConstants.FTInteger:
-                    valueObject.put(name, cursor.getInt(i));
-                    break;
-                case GeoConstants.FTString:
-                    String stringVal = cursor.getString(i);
-                    if(null != stringVal && !stringVal.equals("null"))
-                        valueObject.put(name, stringVal);
-                    break;
-                case GeoConstants.FTDateTime:
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.setTimeInMillis(cursor.getLong(i));
-                    int nYear = calendar.get(Calendar.YEAR);
-                    int nMonth = calendar.get(Calendar.MONTH) + 1;
-                    int nDay = calendar.get(Calendar.DAY_OF_MONTH);
-                    JSONObject date = new JSONObject();
-                    date.put("year", nYear);
-                    date.put("month", nMonth);
-                    date.put("day", nDay);
-                    valueObject.put(name, date);
-                    break;
-                default:
-                    break;
+                switch (field.getType()) {
+                    case GeoConstants.FTReal:
+                        valueObject.put(name, cursor.getFloat(i));
+                        break;
+                    case GeoConstants.FTInteger:
+                        valueObject.put(name, cursor.getInt(i));
+                        break;
+                    case GeoConstants.FTString:
+                        String stringVal = cursor.getString(i);
+                        if (null != stringVal && !stringVal.equals("null"))
+                            valueObject.put(name, stringVal);
+                        break;
+                    case GeoConstants.FTDateTime:
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTimeInMillis(cursor.getLong(i));
+                        int nYear = calendar.get(Calendar.YEAR);
+                        int nMonth = calendar.get(Calendar.MONTH) + 1;
+                        int nDay = calendar.get(Calendar.DAY_OF_MONTH);
+                        JSONObject date = new JSONObject();
+                        date.put("year", nYear);
+                        date.put("month", nMonth);
+                        date.put("day", nDay);
+                        valueObject.put(name, date);
+                        break;
+                    default:
+                        break;
+                }
             }
+            rootObject.put("fields", valueObject);
         }
-        rootObject.put("fields", valueObject);
 
-        //may be found geometry in cache by id is faster
-        GeoGeometry geometry = GeoGeometryFactory.fromBlob(
-                cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
+        if(0 != (mSyncType & SYNC_GEOMETRY)) {
+            //may be found geometry in cache by id is faster
+            GeoGeometry geometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
 
-        rootObject.put("geom", geometry.toWKT(true));
-        //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
+            rootObject.put("geom", geometry.toWKT(true));
+            //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
+        }
 
         return rootObject.toString();
     }
