@@ -107,6 +107,14 @@ public class GpsEventSource
     }
 
 
+    public Location getLastKnownLocation(String provider)
+    {
+        if(null != mLocationManager)
+            return mLocationManager.getLastKnownLocation(provider);
+        return null;
+    }
+
+
     protected final class GpsLocationListener
             implements LocationListener
     {

@@ -1033,4 +1033,8 @@ public class VectorLayer extends Layer
     {
         return mGeometryType;
     }
+
+    public List<Field> getFields(){
+        return new ArrayList<>(mFields.values());
+    }
 }

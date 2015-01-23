@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib.api;
 
+import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.MapBase;
 
 
@@ -31,6 +32,21 @@ import com.nextgis.maplib.map.MapBase;
  */
 public interface IGISApplication
 {
+    /**
+     *
+     * @return A MapBase or any inherited classes or null if not created in application
+     */
     public MapBase getMap();
+
+    /**
+     *
+     * @return A authority for sync purposes or empty string in not sync anything
+     */
     public String getAuthority();
+
+    /**
+     *
+     * @return A GpsEventSource or null if not needed or created in application
+     */
+    public GpsEventSource getGpsEventSource();
 }
