@@ -37,20 +37,21 @@ import java.util.List;
 public class MapEventSource
         extends MapContentProviderHelper
 {
-    protected static final String BUNDLE_ID_KEY        = "id";
-    protected static final String BUNDLE_TYPE_KEY      = "type";
-    protected static final String BUNDLE_DONE_KEY      = "done";
-    protected static final String BUNDLE_ZOOM_KEY      = "zoom";
-    protected static final String BUNDLE_X_KEY      = "x";
-    protected static final String BUNDLE_Y_KEY      = "y";
-    protected final static int EVENT_onLayerAdded = 1;
-    protected final static int EVENT_onLayerDeleted = 2;
-    protected final static int EVENT_onLayerChanged = 3;
-    protected final static int EVENT_onExtentChanged = 4;
-    protected final static int EVENT_onLayersReordered = 5;
-    protected final static int EVENT_onLayerDrawFinished = 6;
+    protected static final String BUNDLE_ID_KEY             = "id";
+    protected static final String BUNDLE_TYPE_KEY           = "type";
+    protected static final String BUNDLE_DONE_KEY           = "done";
+    protected static final String BUNDLE_ZOOM_KEY           = "zoom";
+    protected static final String BUNDLE_X_KEY              = "x";
+    protected static final String BUNDLE_Y_KEY              = "y";
+    protected final static int    EVENT_onLayerAdded        = 1;
+    protected final static int    EVENT_onLayerDeleted      = 2;
+    protected final static int    EVENT_onLayerChanged      = 3;
+    protected final static int    EVENT_onExtentChanged     = 4;
+    protected final static int    EVENT_onLayersReordered   = 5;
+    protected final static int    EVENT_onLayerDrawFinished = 6;
     protected List<MapEventListener> mListeners;
     protected Handler                mHandler;
+    protected boolean                mFreeze;
 
 
     public MapEventSource(
@@ -60,6 +61,7 @@ public class MapEventSource
     {
         super(context, mapPath, layerFactory);
         mListeners = new ArrayList<>();
+        mFreeze = false;
 
         createHandler();
     }
@@ -255,6 +257,9 @@ public class MapEventSource
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
 
+                if(mFreeze)
+                    return;
+
                 Bundle resultData = msg.getData();
 
                 for (MapEventListener listener : mListeners) {
@@ -281,5 +286,13 @@ public class MapEventSource
                 }
             }
         };
+    }
+
+    public void freeze(){
+        mFreeze = true;
+    }
+
+    public void thaw(){
+        mFreeze = false;
     }
 }
