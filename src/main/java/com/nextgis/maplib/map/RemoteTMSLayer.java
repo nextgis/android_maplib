@@ -144,7 +144,8 @@ public class RemoteTMSLayer
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             return ret;
 
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
+            e.printStackTrace();
             Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " +
                        e.getLocalizedMessage());
         }

@@ -21,7 +21,7 @@
 
 <resources>
     <string name="app_name">Map Library</string>
-    <string name="error_crs_unsuported">Unsuported spatial reference</string>
+    <string name="error_crs_unsupported">Unsupported spatial reference</string>
     <string name="error_empty_dataset">Dataset is empty</string>
     <string name="error_network_unavailable">The network is unavailable</string>
     <string name="error_download_data">Download data failed</string>
@@ -29,4 +29,5 @@
     <string name="S">S</string>
     <string name="E">E</string>
     <string name="W">W</string>
+    <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
 </resources>

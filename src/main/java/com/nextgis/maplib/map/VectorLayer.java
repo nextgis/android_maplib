@@ -47,6 +47,7 @@ import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.datasource.Feature;
+import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -80,7 +81,7 @@ public class VectorLayer extends Layer
 
     protected static final String JSON_GEOMETRY_TYPE_KEY  = "geometry_type";
     protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
-    protected static final String JSON_FIELDS_KEY = "fields";
+    protected static final String JSON_FIELDS_KEY         = "fields";
 
     public static final String FIELD_ID   = "_id";
     public static final String FIELD_GEOM = "_geom";
@@ -93,7 +94,6 @@ public class VectorLayer extends Layer
     protected static final int TYPE_FEATURE  = 2;
     protected static final int TYPE_PHOTO    = 3;
     protected static final int TYPE_PHOTO_ID = 4;
-
 
     public VectorLayer(
             Context context,
@@ -139,7 +139,7 @@ public class VectorLayer extends Layer
                 JSONObject crsJSONObject = geoJSONObject.getJSONObject(GEOJSON_CRS);
                 //the link is unsupported yet.
                 if (!crsJSONObject.getString(GEOJSON_TYPE).equals(GEOJSON_NAME)) {
-                    return mContext.getString(R.string.error_crs_unsuported);
+                    return mContext.getString(R.string.error_crs_unsupported);
                 }
                 JSONObject crsPropertiesJSONObject =
                         crsJSONObject.getJSONObject(GEOJSON_PROPERTIES);
@@ -150,7 +150,7 @@ public class VectorLayer extends Layer
                            crsName.equals("EPSG:3857")) { //Web Mercator
                     isWGS84 = false;
                 } else {
-                    return mContext.getString(R.string.error_crs_unsuported);
+                    return mContext.getString(R.string.error_crs_unsupported);
                 }
             }
 
@@ -242,6 +242,36 @@ public class VectorLayer extends Layer
             int geometryType)
     {
         Log.d(TAG, "init layer " + getName());
+
+        //filter out forbidden fields
+
+        String[] forbiddenFields = {"ABORT", "ACTION", "ADD", "AFTER", "ALL", "ALTER",
+         "ANALYZE", "AND", "AS", "ASC", "ATTACH", "AUTOINCREMENT", "BEFORE", "BEGIN", "BETWEEN",
+         "BY", "CASCADE", "CASE", "CAST", "CHECK", "COLLATE", "COLUMN", "COMMIT", "CONFLICT",
+         "CONSTRAINT", "CREATE", "CROSS", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
+         "DATABASE", "DEFAULT", "DEFERRABLE", "DEFERRED", "DELETE", "DESC", "DETACH", "DISTINCT",
+         "DROP", "EACH", "ELSE", "END", "ESCAPE", "EXCEPT", "EXCLUSIVE", "EXISTS", "EXPLAIN",
+         "FAIL", "FOR", "FOREIGN", "FROM", "FULL", "GLOB", "GROUP", "HAVING", "IF", "IGNORE",
+         "IMMEDIATE", "IN", "INDEX", "INDEXED", "INITIALLY", "INNER", "INSERT", "INSTEAD", "INTERSECT",
+         "INTO", "IS", "ISNULL", "JOIN", "KEY", "LEFT", "LIKE", "LIMIT", "MATCH", "NATURAL", "NO",
+         "NOT", "NOTNULL", "NULL", "OF", "OFFSET", "ON", "OR", "ORDER", "OUTER", "PLAN", "PRAGMA",
+         "PRIMARY", "QUERY", "RAISE", "RECURSIVE", "REFERENCES", "REGEXP", "REINDEX", "RELEASE",
+         "RENAME", "REPLACE", "RESTRICT", "RIGHT", "ROLLBACK", "ROW", "SAVEPOINT", "SELECT", "SET",
+         "TABLE", "TEMP", "TEMPORARY", "THEN", "TO", "TRANSACTION", "TRIGGER", "UNION", "UNIQUE",
+         "UPDATE", "USING", "VACUUM", "VALUES", "VIEW", "VIRTUAL", "WHEN", "WHERE", "WITH",
+         "WITHOUT"};
+
+        for(int i = 0; i < fields.size(); i++) {
+            Field field = fields.get(i);
+            String fieldName = field.getName();
+            if (NGWUtil.containsCaseInsensitive(fieldName, forbiddenFields)){
+                fields.remove(i);
+                i--;
+
+                String warning = getContext().getString(R.string.warning_remove_field);
+                reportError(String.format(warning, fieldName));
+            }
+        }
 
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
                              FIELD_ID + " INTEGER PRIMARY KEY, " +

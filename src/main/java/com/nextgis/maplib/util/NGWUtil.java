@@ -21,6 +21,9 @@
 
 package com.nextgis.maplib.util;
 
+import java.util.List;
+
+
 public class NGWUtil
 {
      /*
@@ -139,5 +142,17 @@ public class NGWUtil
         if (!server.startsWith("http"))
             server = "http://" + server;
         return server + "/api/resource/" + remoteId + "/feature/";
+    }
+
+    public static boolean containsCaseInsensitive(String strToCompare, String[] list)
+    {
+        for(String str : list)
+        {
+            if(str.equalsIgnoreCase(strToCompare))
+            {
+                return(true);
+            }
+        }
+        return(false);
     }
 }

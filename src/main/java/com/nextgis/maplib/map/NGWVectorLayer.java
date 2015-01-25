@@ -61,10 +61,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
@@ -274,7 +272,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
             int nSRS = srs.getInt("id");
             if(nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84)
-                return getContext().getString(R.string.error_crs_unsuported);
+                return getContext().getString(R.string.error_crs_unsupported);
 
             //get layer data
             get = new HttpGet(NGWUtil.getFeaturesUrl(mURL, mRemoteId)); //get as GeoJSON
