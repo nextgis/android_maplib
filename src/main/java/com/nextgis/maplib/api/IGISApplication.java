@@ -49,4 +49,9 @@ public interface IGISApplication
      * @return A GpsEventSource or null if not needed or created in application
      */
     public GpsEventSource getGpsEventSource();
+
+    /**
+     * Show settings Activity
+     */
+    public void showSettings();
 }

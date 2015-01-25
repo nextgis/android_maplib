@@ -452,9 +452,11 @@ public class VectorLayer extends Layer
             do{
                 try {
                     GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                    int nId = cursor.getInt(0);
-                    mExtents.merge(geoGeometry.getEnvelope());
-                    mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+                    if(null != geoGeometry) {
+                        int nId = cursor.getInt(0);
+                        mExtents.merge(geoGeometry.getEnvelope());
+                        mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+                    }
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -487,6 +489,17 @@ public class VectorLayer extends Layer
         return mIsInitialized && mExtents.isInit();
     }
 
+    public Cursor query(String[] projection,
+                        String selection,
+                        String[] selectionArgs,
+                        String sortOrder){
+        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
+        if(null == map)
+            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+
+        SQLiteDatabase db = map.getDatabase(true);
+        return db.query(mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
+    }
 
     public Cursor query(
             Uri uri,
@@ -495,11 +508,6 @@ public class VectorLayer extends Layer
             String[] selectionArgs,
             String sortOrder)
     {
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
-
-        SQLiteDatabase db;
         Cursor cursor;
         MatrixCursor matrixCursor;
         String featureId;
@@ -513,8 +521,7 @@ public class VectorLayer extends Layer
                 if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = FIELD_ID + " ASC";
                 }
-                db = map.getDatabase(true);
-                cursor = db.query(mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
+                cursor = query(projection, selection, selectionArgs, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 return cursor;
             case TYPE_FEATURE:
@@ -524,9 +531,8 @@ public class VectorLayer extends Layer
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
-                db = map.getDatabase(true);
-                cursor = db.query(mPath.getName(), projection, selection, selectionArgs, null, null,
-                                  sortOrder);
+
+                cursor = query(projection, selection, selectionArgs, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 return cursor;
             case TYPE_PHOTO:
@@ -643,46 +649,48 @@ public class VectorLayer extends Layer
         return null;
     }
 
+    public long insert(ContentValues contentValues){
+        if(!contentValues.containsKey(FIELD_GEOM))
+            return NOT_FOUND;
+        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
+        if(null == map)
+            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+        SQLiteDatabase db = map.getDatabase(false);
+        long rowID = db.insert(mPath.getName(), null, contentValues);
+        if(rowID != NOT_FOUND){
+            notifyLayerChanged();
+            try {
+                GeoGeometry geom = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(
+                        FIELD_GEOM));
+                mVectorCacheItems.add(new VectorCacheItem(geom, (int)rowID));
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+                return NOT_FOUND;
+            }
+        }
+        return rowID;
+    }
+
 
     public Uri insert(
             Uri uri,
             ContentValues contentValues)
     {
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
-
-        SQLiteDatabase db;
-
         int uriType = mUriMatcher.match(uri);
         switch (uriType)
         {
             case TYPE_TABLE:
-                db = map.getDatabase(false);
-                long rowID = db.insert(mPath.getName(), null, contentValues);
+                long rowID = insert(contentValues);
                 if(rowID != NOT_FOUND) {
-                    if(contentValues.containsKey(FIELD_GEOM)){
-                        try {
-                            GeoGeometry geom = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(
-                                    FIELD_GEOM));
-                            mVectorCacheItems.add(new VectorCacheItem(geom, (int)rowID));
-                        } catch (IOException | ClassNotFoundException e) {
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }
-
                     Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(resultUri, null, false);
-                        notifyLayerChanged();
                     }
                     else {
                         addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
-                        notifyLayerChanged();
                     }
                     return resultUri;
                 }
@@ -726,13 +734,19 @@ public class VectorLayer extends Layer
         }
     }
 
-    public int delete(Uri uri, String selection, String[] selectionArgs)
-    {
+    public int delete(String selection, String[] selectionArgs){
         MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
         if(null == map)
             throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+        SQLiteDatabase db = map.getDatabase(false);
+        int result = db.delete(mPath.getName(), selection, selectionArgs);
+        if(result > 0)
+            notifyLayerChanged();
+        return result;
+    }
 
-        SQLiteDatabase db;
+    public int delete(Uri uri, String selection, String[] selectionArgs)
+    {
         String featureId;
         String photoName;
         List<String> pathSegments;
@@ -742,20 +756,16 @@ public class VectorLayer extends Layer
         switch (uriType)
         {
             case TYPE_TABLE:
-                db = map.getDatabase(false);
-                result = db.delete(mPath.getName(), selection, selectionArgs);
-
+                result = delete(selection, selectionArgs);
                 if(result > 0){
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                        notifyLayerChanged();
                     }
                     else {
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
-                        notifyLayerChanged();
                     }
 
                     //clear cache
@@ -769,8 +779,7 @@ public class VectorLayer extends Layer
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
-                db = map.getDatabase(false);
-                result = db.delete(mPath.getName(), selection, selectionArgs);
+                result = delete(selection, selectionArgs);
 
                 if(result > 0){
                     //remove cached item
@@ -786,12 +795,10 @@ public class VectorLayer extends Layer
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                        notifyLayerChanged();
                     }
                     else {
                         addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
-                        notifyLayerChanged();
                     }
                 }
                 return result;
@@ -847,14 +854,19 @@ public class VectorLayer extends Layer
         }
     }
 
-
-    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs)
-    {
+    public int update(ContentValues values, String selection, String[] selectionArgs){
         MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
         if(null == map)
             throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+        SQLiteDatabase db = map.getDatabase(false);
+        int result = db.update(mPath.getName(), values, selection, selectionArgs);
+        if(result > 0)
+            notifyLayerChanged();
+        return result;
+    }
 
-        SQLiteDatabase db;
+    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs)
+    {
         String featureId;
         int result;
 
@@ -862,20 +874,17 @@ public class VectorLayer extends Layer
         switch (uriType)
         {
             case TYPE_TABLE:
-                db = map.getDatabase(false);
-                result = db.update(mPath.getName(), values, selection, selectionArgs);
+                result = update(values, selection, selectionArgs);
 
                 if(result > 0){
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                        notifyLayerChanged();
                     }
                     else {
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
-                        notifyLayerChanged();
                     }
                 }
                 if(values.containsKey(FIELD_GEOM))
@@ -888,8 +897,8 @@ public class VectorLayer extends Layer
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
-                db = map.getDatabase(false);
-                result = db.update(mPath.getName(), values, selection, selectionArgs);
+
+                result = update(values, selection, selectionArgs);
 
                 if(result > 0){
                     //change cached item
@@ -911,12 +920,10 @@ public class VectorLayer extends Layer
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if(bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                        notifyLayerChanged();
                     }
                     else {
                         addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
-                        notifyLayerChanged();
                     }
                 }
                 return result;

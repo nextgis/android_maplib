@@ -146,7 +146,7 @@ public class Feature implements IJSONStore
                 return val.toString();
             case FTDateTime:
                 if(val instanceof Date) {
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                    SimpleDateFormat dateFormat = new SimpleDateFormat();
                     return dateFormat.format((Date) val);
                 }
                 break;

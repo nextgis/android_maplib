@@ -131,6 +131,8 @@ public class GeoGeometryFactory
     public static GeoGeometry fromBlob(byte[] raw)
             throws IOException, ClassNotFoundException
     {
+        if(null == raw)
+            return null;
         ByteArrayInputStream in = new ByteArrayInputStream(raw);
         ObjectInputStream is = new ObjectInputStream(in);
         return (GeoGeometry) is.readObject();
