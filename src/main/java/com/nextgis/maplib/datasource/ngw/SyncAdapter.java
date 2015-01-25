@@ -64,6 +64,7 @@ public class SyncAdapter
 {
     public static final String SYNC_START = "com.nextgis.maplib.sync_start";
     public static final String SYNC_FINISH = "com.nextgis.maplib.sync_finish";
+    public static final String SYNC_CHANGES = "com.nextgis.maplib.sync_changes";
 
     public SyncAdapter(
             Context context,

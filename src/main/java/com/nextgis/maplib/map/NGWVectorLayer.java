@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SyncResult;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -38,6 +39,7 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
+import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
@@ -496,7 +498,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     protected void sendLocalChanges(SyncResult syncResult)
     {
-        Log.d(TAG, "sendLocalChanges: " + mChanges.size());
+        int changesGount = mChanges.size();
+        Log.d(TAG, "sendLocalChanges: " + changesGount);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem change = mChanges.get(i);
             switch (change.getOperation()){
@@ -529,6 +532,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     }
                     break;
             }
+        }
+
+        if(changesGount != mChanges.size()){
+            //notify to reload changes
+            getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
         }
     }
 
