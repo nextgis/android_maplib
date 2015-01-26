@@ -496,8 +496,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     protected void sendLocalChanges(SyncResult syncResult)
     {
-        int changesGount = mChanges.size();
-        Log.d(TAG, "sendLocalChanges: " + changesGount);
+        int changesCount = mChanges.size();
+        Log.d(TAG, "sendLocalChanges: " + changesCount);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem change = mChanges.get(i);
             switch (change.getOperation()){
@@ -532,7 +532,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
         }
 
-        if(changesGount != mChanges.size()){
+        if(changesCount != mChanges.size()){
             //notify to reload changes
             getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
         }

@@ -402,7 +402,7 @@ public class LayerGroup
         return super.save();
     }
 
-    public File cretateLayerStorage()
+    public File createLayerStorage()
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
         String layerDir = LAYER_PREFIX + sdf.format(new Date()) + getLayerCount();
