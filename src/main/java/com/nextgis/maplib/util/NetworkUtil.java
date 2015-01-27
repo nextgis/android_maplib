@@ -52,10 +52,10 @@ public class NetworkUtil
 
     public boolean isNetworkAvailable()
     {
-        if(System.currentTimeMillis() - mLastCheckTime < ONE_SECOND * 5)     //check every 5 sec.
-            return mLastState;
+        //if(System.currentTimeMillis() - mLastCheckTime < ONE_SECOND * 5)     //check every 5 sec.
+        //    return mLastState;
 
-        mLastCheckTime = System.currentTimeMillis();
+        //mLastCheckTime = System.currentTimeMillis();
         mLastState = false;
 
         if (mConnectionManager == null) {
