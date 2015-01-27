@@ -50,7 +50,7 @@ public class NetworkUtil
     }
 
 
-    public boolean isNetworkAvailable()
+    public synchronized boolean isNetworkAvailable()
     {
         //if(System.currentTimeMillis() - mLastCheckTime < ONE_SECOND * 5)     //check every 5 sec.
         //    return mLastState;

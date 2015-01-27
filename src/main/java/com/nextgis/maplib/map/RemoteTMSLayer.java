@@ -85,7 +85,9 @@ public class RemoteTMSLayer
         Bitmap ret;
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
-        if (tilePath.exists() && System.currentTimeMillis() - tilePath.lastModified() <
+        boolean exist = tilePath.exists();
+        //Log.d(TAG, "time diff: " + (System.currentTimeMillis() - tilePath.lastModified()) + " age: " + DEFAULT_MAXIMUM_CACHED_FILE_AGE);
+        if (exist && System.currentTimeMillis() - tilePath.lastModified() <
                                  DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             if (ret != null) {
@@ -94,9 +96,15 @@ public class RemoteTMSLayer
         }
 
         if (!mNet.isNetworkAvailable()) { //return tile from cache
-            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-            return ret;
+            if(exist){
+                ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                return ret;
+            }
+            else{
+                return null;
+            }
         }
+
         // try to get tile from remote
         String url = tile.toString(getURLSubdomain());
         Log.d(TAG, "url: " + url);
