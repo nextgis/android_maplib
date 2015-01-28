@@ -34,7 +34,7 @@ public interface Constants
      */
     public static final String APP_USER_AGENT     = "NextGIS Mobile";
     public static final int    TIMEOUT_CONNECTION = 1500;
-    public static final int    TIMEOUT_SOKET      = 3000;
+    public static final int    TIMEOUT_SOKET      = 7000;
     public static final int    IO_BUFFER_SIZE     = 1024;
 
     /**
@@ -87,10 +87,12 @@ public interface Constants
     /**
      * Layer type
      */
-    public static final int LAYERTYPE_REMOTE_TMS = 1 << 0;
-    public static final int LAYERTYPE_NGW_RASTER = 1 << 1;
-    public static final int LAYERTYPE_NGW_VECTOR = 1 << 2;
-    public static final int LAYERTYPE_GROUP      = 1 << 3;
+    public static final int LAYERTYPE_REMOTE_TMS   = 1 << 0;
+    public static final int LAYERTYPE_NGW_RASTER   = 1 << 1;
+    public static final int LAYERTYPE_NGW_VECTOR   = 1 << 2;
+    public static final int LAYERTYPE_GROUP        = 1 << 3;
+    public static final int LAYERTYPE_LOCAL_VECTOR = 1 << 4;
+    public static final int LAYERTYPE_LOCAL_TMS    = 1 << 5;
 
     /**
      * time constants

@@ -22,6 +22,12 @@
 
 package com.nextgis.maplib.util;
 
+import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -121,5 +127,28 @@ public class FileUtil
             }
             os.write(buffer, 0, count);
         }
+    }
+
+    public static String getFileNameByUri(final Context context, Uri uri, String defaultName)
+    {
+        String fileName = defaultName;
+        try {
+            if (uri.getScheme().compareTo("content") == 0) {
+                Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+                if (cursor.moveToFirst()) {
+                    int column_index = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
+                    fileName = cursor.getString(column_index);
+                }
+            } else if (uri.getScheme().compareTo("file") == 0) {
+                fileName = uri.getLastPathSegment();
+            } else {
+                fileName = fileName + "_" + uri.getLastPathSegment();
+            }
+        }
+        catch (Exception e){
+            //do nothing, only return default file name;
+            Log.d(Constants.TAG, e.getLocalizedMessage());
+        }
+        return fileName;
     }
 }

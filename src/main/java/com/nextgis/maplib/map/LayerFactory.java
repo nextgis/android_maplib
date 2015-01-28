@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.ngw.Connection;
@@ -113,4 +114,20 @@ public abstract class LayerFactory
     public abstract void createNewNGWLayer(
             final Context context,
             final LayerGroup groupLayer);
+
+
+    public abstract void createNewLocalTMSLayer(
+            final Context context,
+            final LayerGroup groupLayer,
+            final Uri uri);
+
+    public abstract void createNewVectorLayer(
+            final Context context,
+            final LayerGroup groupLayer,
+            final Uri uri);
+
+    public abstract void createNewVectorLayerWithForm(
+            final Context context,
+            final LayerGroup groupLayer,
+            final Uri uri);
 }
