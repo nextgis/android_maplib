@@ -236,7 +236,7 @@ public class VectorLayer extends Layer
         }
     }
 
-    protected String initialize(
+    public String initialize(
             List<Field> fields,
             List<Feature> features,
             int geometryType)

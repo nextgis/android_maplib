@@ -204,6 +204,23 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         new DownloadTask().execute();
     }
 
+    public static List<Field> getFieldsFromJson(JSONArray fieldsJSONArray)
+            throws JSONException
+    {
+        List<Field> fields = new ArrayList<>();
+        for(int i = 0; i < fieldsJSONArray.length(); i++){
+            JSONObject fieldJSONObject = fieldsJSONArray.getJSONObject(i);
+            String type = fieldJSONObject.getString("datatype");
+            String alias = fieldJSONObject.getString("display_name");
+            String name = fieldJSONObject.getString("keyname");
+
+            int nType = stringToType(type);
+            if(NOT_FOUND != nType){
+                fields.add(new Field(nType, name, alias));
+            }
+        }
+        return fields;
+    }
 
     /**
      * download and create new NGW layer from GeoJSON data
@@ -250,18 +267,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             //fill field list
             JSONObject featureLayerJSONObject = geoJSONObject.getJSONObject("feature_layer");
             JSONArray fieldsJSONArray = featureLayerJSONObject.getJSONArray("fields");
-            List<Field> fields = new ArrayList<>();
-            for(int i = 0; i < fieldsJSONArray.length(); i++){
-                JSONObject fieldJSONObject = fieldsJSONArray.getJSONObject(i);
-                String type = fieldJSONObject.getString("datatype");
-                String alias = fieldJSONObject.getString("display_name");
-                String name = fieldJSONObject.getString("keyname");
-
-                int nType = stringToType(type);
-                if(NOT_FOUND != nType){
-                    fields.add(new Field(nType, name, alias));
-                }
-            }
+            List<Field> fields = getFieldsFromJson(fieldsJSONArray);
 
             //fill SRS
             JSONObject vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
@@ -352,7 +358,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
-    protected int stringToType(String type)
+    protected static int stringToType(String type)
     {
         switch (type) {
             case "STRING":
