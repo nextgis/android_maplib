@@ -83,6 +83,7 @@ public interface Constants
     public static final String JSON_WIDTH_KEY   = "width";
     public static final String JSON_COLOR_KEY   = "color";
     public static final String JSON_CHANGES_KEY  = "changes";
+    public static final String JSON_VALUE_KEY = "value";
 
     /**
      * Layer type
