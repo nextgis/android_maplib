@@ -857,6 +857,17 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     public void setSyncType(int syncType)
     {
+        if(mSyncType == syncType)
+            return;
+        if(syncType == SYNC_NONE)
+        {
+            mChanges.clear();
+        }
+        else if(mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA)) //TODO: now we ignore SYNC_PHOTO
+        {
+
+        }
+
         mSyncType = syncType;
     }
 }
