@@ -863,10 +863,16 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         {
             mChanges.clear();
         }
-        else if(mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA)) //TODO: now we ignore SYNC_PHOTO
+        else if(mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA))
         {
-
+            for(VectorCacheItem cacheItem : mVectorCacheItems){
+                long id = cacheItem.getId();
+                addChange("" + id, ChangeFeatureItem.TYPE_NEW);
+            }
         }
+
+        //TODO: now we ignore SYNC_PHOTO
+        //TODO: add photo with names (ids) more than 1000 to change
 
         mSyncType = syncType;
     }
