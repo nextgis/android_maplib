@@ -89,8 +89,6 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected static final String JSON_PASSWORD_KEY = "password";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
 
-    protected OnDownloadFinishedListener mOnDownloadFinishedListener = null;
-
 
     public NGWVectorLayer(
             Context context,
@@ -336,42 +334,42 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected List<Feature> jsonToFeatures(JSONArray featuresJSONArray, List<Field> fields, int nSRS)
             throws JSONException
     {
-        List<Feature> features = new ArrayList<>();
-        for(int i = 0; i < featuresJSONArray.length(); i++){
-            JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
-            long id = featureJSONObject.getLong(JSON_ID_KEY);
-            String wkt = featureJSONObject.getString("geom");
-            JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
-            Feature feature = new Feature(id, fields);
-            GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
-            if(null == geom)
-                continue;
-            geom.setCRS(nSRS);
-            if(nSRS != GeoConstants.CRS_WEB_MERCATOR)
-                geom.project(GeoConstants.CRS_WEB_MERCATOR);
-            feature.setGeometry(geom);
+            List<Feature> features = new ArrayList<>();
+            for(int i = 0; i < featuresJSONArray.length(); i++){
+                JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
+                long id = featureJSONObject.getLong(JSON_ID_KEY);
+                String wkt = featureJSONObject.getString("geom");
+                JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
+                Feature feature = new Feature(id, fields);
+                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+                if(null == geom)
+                    continue;
+                geom.setCRS(nSRS);
+                if(nSRS != GeoConstants.CRS_WEB_MERCATOR)
+                    geom.project(GeoConstants.CRS_WEB_MERCATOR);
+                feature.setGeometry(geom);
 
-            for(Field field : fields) {
-                if(field.getType() == GeoConstants.FTDateTime){
-                    if(!fieldsJSONObject.isNull(field.getName())) {
-                        JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
-                        int nYear = dateJson.getInt("year");
-                        int nMonth = dateJson.getInt("month");
-                        int nDay = dateJson.getInt("day");
-                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
-                        feature.setFieldValue(field.getName(), calendar.getTime());
+                for(Field field : fields) {
+                    if(field.getType() == GeoConstants.FTDateTime){
+                        if(!fieldsJSONObject.isNull(field.getName())) {
+                            JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
+                            int nYear = dateJson.getInt("year");
+                            int nMonth = dateJson.getInt("month");
+                            int nDay = dateJson.getInt("day");
+                            Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
+                            feature.setFieldValue(field.getName(), calendar.getTime());
+                        }
+                    }
+                    else {
+                        if(!fieldsJSONObject.isNull(field.getName()))
+                            feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
                     }
                 }
-                else {
-                    if(!fieldsJSONObject.isNull(field.getName()))
-                        feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
-                }
-            }
 
-            features.add(feature);
-        }
+                features.add(feature);
+            }
         return features;
-    }
+        }
 
     protected static int stringToType(String type)
     {
@@ -390,18 +388,6 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     }
 
 
-    public void setOnDownloadFinishedListener(OnDownloadFinishedListener listener)
-    {
-        mOnDownloadFinishedListener = listener;
-    }
-
-
-    public interface OnDownloadFinishedListener
-    {
-        void OnDownloadFinished(boolean withError);
-    }
-
-
     protected class DownloadTask
             extends AsyncTask<Void, Void, String>
     {
@@ -416,15 +402,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         @Override
         protected void onPostExecute(String error)
         {
-            boolean withError = false;
-
             if (null != error && error.length() > 0) {
-                withError = true;
                 Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-            }
-
-            if (mOnDownloadFinishedListener != null) {
-                mOnDownloadFinishedListener.OnDownloadFinished(withError);
             }
         }
     }

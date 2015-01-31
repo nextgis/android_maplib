@@ -248,11 +248,25 @@ public class LayerGroup
     }
 
 
+    public void clearLayers()
+    {
+        for (ILayer layer : mLayers) {
+            if (LAYERTYPE_GROUP == layer.getType()) {
+                ((LayerGroup) layer).clearLayers();
+            }
+        }
+
+        mLayers.clear();
+    }
+
+
     @Override
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
         super.fromJSON(jsonObject);
+
+        clearLayers();
 
         final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LAYERS_KEY);
         for (int i = 0; i < jsonArray.length(); i++) {
