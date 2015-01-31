@@ -89,6 +89,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected static final String JSON_PASSWORD_KEY = "password";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
 
+    protected OnDownloadFinishedListener mOnDownloadFinishedListener = null;
+
 
     public NGWVectorLayer(
             Context context,
@@ -114,6 +116,12 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     public void setURL(String URL)
     {
         mURL = URL;
+    }
+
+
+    public long getRemoteId()
+    {
+        return mRemoteId;
     }
 
 
@@ -381,6 +389,19 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
+
+    public void setOnDownloadFinishedListener(OnDownloadFinishedListener listener)
+    {
+        mOnDownloadFinishedListener = listener;
+    }
+
+
+    public interface OnDownloadFinishedListener
+    {
+        void OnDownloadFinished(boolean withError);
+    }
+
+
     protected class DownloadTask
             extends AsyncTask<Void, Void, String>
     {
@@ -391,15 +412,23 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             return download();
         }
 
+
         @Override
         protected void onPostExecute(String error)
         {
-            if(null != error && error.length() > 0){
-                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT)
-                     .show();
+            boolean withError = false;
+
+            if (null != error && error.length() > 0) {
+                withError = true;
+                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+            }
+
+            if (mOnDownloadFinishedListener != null) {
+                mOnDownloadFinishedListener.OnDownloadFinished(withError);
             }
         }
     }
+
 
     @Override
     protected void addChange(String featureId, int operation)
