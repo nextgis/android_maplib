@@ -127,6 +127,8 @@ public class VectorLayer extends Layer
                 "vnd.android.cursor.dir/vnd." + application.getAuthority() + "." + mPath.getName();
         CONTENT_ITEM_TYPE =
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
+
+        mVectorCacheItems = new ArrayList<>();
     }
 
 
@@ -349,7 +351,6 @@ public class VectorLayer extends Layer
 
         //fill the geometry and labels array
         GeoEnvelope extents = new GeoEnvelope();
-        mVectorCacheItems = new ArrayList<>();
         for (Feature feature : features) {
             if(null == feature.getGeometry())
                 continue;
@@ -478,7 +479,6 @@ public class VectorLayer extends Layer
         String[] columns = new String[]{FIELD_ID, FIELD_GEOM};
         Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
         if(null != cursor && cursor.moveToFirst()) {
-            mVectorCacheItems = new ArrayList<>();
             do{
                 try {
                     GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
@@ -1073,5 +1073,11 @@ public class VectorLayer extends Layer
 
     public List<Field> getFields(){
         return new ArrayList<>(mFields.values());
+    }
+
+    public int getCount(){
+        if(null != mVectorCacheItems)
+            return mVectorCacheItems.size();
+        return 0;
     }
 }

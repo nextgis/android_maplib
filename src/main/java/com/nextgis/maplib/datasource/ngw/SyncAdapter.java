@@ -37,7 +37,6 @@ import android.util.Log;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.map.LayerGroup;
-import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.NGWVectorLayer;
 import com.nextgis.maplib.util.Constants;
@@ -99,7 +98,7 @@ public class SyncAdapter
         IGISApplication application = (IGISApplication)getContext();
         MapContentProviderHelper mapContentProviderHelper = (MapContentProviderHelper) application.getMap();
         if(null != mapContentProviderHelper){
-            sync(mapContentProviderHelper, syncResult);
+            sync(mapContentProviderHelper, authority, syncResult);
         }
 
         SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES, Context.MODE_PRIVATE |
@@ -111,16 +110,19 @@ public class SyncAdapter
         getContext().sendBroadcast(new Intent(SYNC_FINISH));
     }
 
-    protected void sync(LayerGroup layerGroup, SyncResult syncResult)
+    protected void sync(
+            LayerGroup layerGroup,
+            String authority,
+            SyncResult syncResult)
     {
         for(int i = 0; i < layerGroup.getLayerCount(); i++){
             ILayer layer = layerGroup.getLayer(i);
             if(layer instanceof LayerGroup){
-                sync((LayerGroup) layer, syncResult);
+                sync((LayerGroup) layer, authority, syncResult);
             }
             else if(layer instanceof NGWVectorLayer){
                 NGWVectorLayer ngwVectorLayer = (NGWVectorLayer)layer;
-                ngwVectorLayer.sync(syncResult);
+                ngwVectorLayer.sync(authority, syncResult);
             }
         }
     }

@@ -309,41 +309,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
             data = EntityUtils.toString(entity);
 
-            List<Feature> features = new ArrayList<>();
             JSONArray featuresJSONArray = new JSONArray(data);
-            for(int i = 0; i < featuresJSONArray.length(); i++){
-                JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
-                long id = featureJSONObject.getLong(JSON_ID_KEY);
-                String wkt = featureJSONObject.getString("geom");
-                JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
-                Feature feature = new Feature(id, fields);
-                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
-                if(null == geom)
-                    continue;
-                geom.setCRS(nSRS);
-                if(nSRS != GeoConstants.CRS_WEB_MERCATOR)
-                    geom.project(GeoConstants.CRS_WEB_MERCATOR);
-                feature.setGeometry(geom);
-
-                for(Field field : fields) {
-                    if(field.getType() == GeoConstants.FTDateTime){
-                        if(!fieldsJSONObject.isNull(field.getName())) {
-                            JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
-                            int nYear = dateJson.getInt("year");
-                            int nMonth = dateJson.getInt("month");
-                            int nDay = dateJson.getInt("day");
-                            Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
-                            feature.setFieldValue(field.getName(), calendar.getTime());
-                        }
-                    }
-                    else {
-                        if(!fieldsJSONObject.isNull(field.getName()))
-                            feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
-                    }
-                }
-
-                features.add(feature);
-            }
+            List<Feature> features = jsonToFeatures(featuresJSONArray, fields, nSRS);
 
             return initialize(fields, features, geomType);
 
@@ -356,6 +323,46 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             e.printStackTrace();
             return getContext().getString(R.string.error_download_data);
         }
+    }
+
+    protected List<Feature> jsonToFeatures(JSONArray featuresJSONArray, List<Field> fields, int nSRS)
+            throws JSONException
+    {
+        List<Feature> features = new ArrayList<>();
+        for(int i = 0; i < featuresJSONArray.length(); i++){
+            JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
+            long id = featureJSONObject.getLong(JSON_ID_KEY);
+            String wkt = featureJSONObject.getString("geom");
+            JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
+            Feature feature = new Feature(id, fields);
+            GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+            if(null == geom)
+                continue;
+            geom.setCRS(nSRS);
+            if(nSRS != GeoConstants.CRS_WEB_MERCATOR)
+                geom.project(GeoConstants.CRS_WEB_MERCATOR);
+            feature.setGeometry(geom);
+
+            for(Field field : fields) {
+                if(field.getType() == GeoConstants.FTDateTime){
+                    if(!fieldsJSONObject.isNull(field.getName())) {
+                        JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
+                        int nYear = dateJson.getInt("year");
+                        int nMonth = dateJson.getInt("month");
+                        int nDay = dateJson.getInt("day");
+                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
+                        feature.setFieldValue(field.getName(), calendar.getTime());
+                    }
+                }
+                else {
+                    if(!fieldsJSONObject.isNull(field.getName()))
+                        feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
+                }
+            }
+
+            features.add(feature);
+        }
+        return features;
     }
 
     protected static int stringToType(String type)
@@ -474,11 +481,14 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     /**
      * Synchronize changes with NGW. Should be run from non UI thread.
+     * @param authority
      * @param syncResult - report some errors via this parameter
      */
-    public void sync(SyncResult syncResult)
+    public void sync(
+            String authority,
+            SyncResult syncResult)
     {
-        if(0 != (mSyncType & SYNC_NONE)) {
+        if(0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -488,11 +498,12 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             loadChanges(jsonObject);
 
             //1. get remote changes
-            //getChangesFromServer(syncResult);
+            //getChangesFromServer(authority, syncResult);
 
             //2. send current changes
             sendLocalChanges(syncResult);
 
+            Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
             save();
 
         } catch (JSONException | IOException e) {
@@ -512,6 +523,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     {
                         mChanges.remove(i);
                         i--;
+                        Log.d(TAG, "addFeatureOnServer: " + mChanges.size());
                     }
                     break;
                 case ChangeFeatureItem.TYPE_CHANGED:
@@ -519,6 +531,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     {
                         mChanges.remove(i);
                         i--;
+                        Log.d(TAG, "changeFeatureOnServer: " + mChanges.size());
                     }
                     break;
                 case ChangeFeatureItem.TYPE_DELETE:
@@ -526,6 +539,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     {
                         mChanges.remove(i);
                         i--;
+                        Log.d(TAG, "deleteFeatureOnServer: " + mChanges.size());
                     }
                     break;
                 case ChangeFeatureItem.TYPE_PHOTO:
@@ -533,6 +547,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                     {
                         mChanges.remove(i);
                         i--;
+                        Log.d(TAG, "sendPhotosOnServer: " + mChanges.size());
                     }
                     break;
             }
@@ -546,10 +561,14 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     protected void changeFeatureId(long oldFeatureId, long newFeatureId)
     {
+        if(oldFeatureId == newFeatureId)
+            return;
+
         MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
         if(null == map)
             throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
         //update id in DB
+        Log.d(TAG, "old id: " + oldFeatureId + " new id: " + newFeatureId);
         SQLiteDatabase db = map.getDatabase(false);
         ContentValues values = new ContentValues();
         values.put(FIELD_ID, newFeatureId);
@@ -573,7 +592,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     }
 
 
-    protected void getChangesFromServer(SyncResult syncResult)
+    protected void getChangesFromServer(String authority, SyncResult syncResult)
     {
         if(!mNet.isNetworkAvailable()){
             return;
@@ -609,10 +628,59 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
 
             String data = EntityUtils.toString(entity);
-            JSONArray remoteLayerContents = new JSONArray(data);
+            JSONArray featuresJSONArray = new JSONArray(data);
+            List<Feature> features = jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
+/*
+            for(Feature remoteFeature : features){
+                Cursor cursor = query(null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
 
-            //compare
+                //no local feature
+                if(null == cursor || cursor.getCount() == 0){
+                    for(ChangeFeatureItem change : mChanges){
+                        if(change.getFeatureId() == remoteFeature.getId())
+                            continue;
+                    }
+                    //create new feature with remoteId
+                    ContentValues values = remoteFeature.getContentValues(true);
+                    insert(, values);
+                }
+                else {
 
+                    Feature currentFeature = cursorToFeature(cursor);
+                    //compare features
+
+                    if (remoteFeature.equals(currentFeature)) {
+                        //remove from changes
+                        for(int i = 0; i < mChanges.size(); i++){
+                            ChangeFeatureItem change = mChanges.get(i);
+                            if(change.getFeatureId() == remoteFeature.getId()) {
+                                mChanges.remove(i);
+                                i--;
+                            }
+                        }
+                    } else {
+                        boolean isChangedLocal = false;
+                        for(ChangeFeatureItem change : mChanges){
+                            if(change.getFeatureId() == remoteFeature.getId()) {
+                                isChangedLocal = true;
+                                break;
+                            }
+                        }
+
+                        //no local changes - update local feature
+                        if(!isChangedLocal){
+                            ContentValues values = remoteFeature.getContentValues(false);
+
+                            Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
+                            Uri updateUri =
+                                    ContentUris.withAppendedId(uri, 29);
+
+                            update(, values, null, null);
+                        }
+                    }
+                }
+            }
+*/
         } catch (IOException e) {
             Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
                        e.getLocalizedMessage());
@@ -633,8 +701,10 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null);
-        if(!cursor.moveToFirst())
-            return false;
+        if(!cursor.moveToFirst()) {
+            Log.d(TAG, "addFeatureOnServer: Get cursor failed");
+            return true;
+        }
 
         try {
             String payload = cursorToJson(cursor);
@@ -682,6 +752,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
         catch (ClassNotFoundException | JSONException | IOException e){
             e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
             return false;
         }
     }
@@ -734,7 +805,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         Cursor cursor = query(uri, null, null, null, null);
         if (!cursor.moveToFirst()) {
             Log.d(TAG, "empty cursor for uri: " + uri);
-            return false;
+            return true;
         }
 
         try {
@@ -865,7 +936,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
         else if(mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA))
         {
-            for(VectorCacheItem cacheItem : mVectorCacheItems){
+            for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
                 addChange("" + id, ChangeFeatureItem.TYPE_NEW);
             }
