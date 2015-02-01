@@ -23,12 +23,15 @@
 package com.nextgis.maplib.location;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.GpsEventListener;
+import com.nextgis.maplib.util.SettingsConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,11 @@ public class GpsEventSource
     protected LocationManager     mLocationManager;
     protected GpsLocationListener mGpsLocationListener;
     protected GpsStatusListener   mGpsStatusListener;
+    protected int mListenProviders;
+    protected Location mLastLocation;
+
+    protected static final int GPS_PROVIDER     = 1 << 0;
+    protected static final int NETWORK_PROVIDER = 1 << 1;
 
 
     public GpsEventSource(Context context)
@@ -50,6 +58,9 @@ public class GpsEventSource
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         mGpsLocationListener = new GpsLocationListener();
         mGpsStatusListener = new GpsStatusListener();
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        mListenProviders = sharedPreferences.getInt(SettingsConstants.KEY_PREF_LOCATION_SOURCE, GPS_PROVIDER | NETWORK_PROVIDER);
     }
 
 
@@ -69,12 +80,12 @@ public class GpsEventSource
 
             if (mListeners.size() == 1) {
 
-                if (mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
+                if (0 != (mListenProviders & GPS_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
                     mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
                                                             mGpsLocationListener);
                 }
 
-                if (mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
+                if (0 != (mListenProviders & GPS_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
                     mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
                                                             mGpsLocationListener);
                 }
@@ -107,10 +118,23 @@ public class GpsEventSource
     }
 
 
-    public Location getLastKnownLocation(String provider)
+    public Location getLastKnownLocation()
     {
-        if(null != mLocationManager)
-            return mLocationManager.getLastKnownLocation(provider);
+        if(null != mLastLocation)
+            return mLastLocation;
+        if(null != mLocationManager) {
+            if(0 != (mListenProviders & GPS_PROVIDER)) {
+                mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if(null != mLastLocation)
+                    return mLastLocation;
+            }
+
+            if(0 != (mListenProviders & NETWORK_PROVIDER)) {
+                mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if(null != mLastLocation)
+                    return mLastLocation;
+            }
+        }
         return null;
     }
 
@@ -121,6 +145,7 @@ public class GpsEventSource
 
         public void onLocationChanged(Location location)
         {
+            mLastLocation = location;
             for (GpsEventListener listener : mListeners) {
                 listener.onLocationChanged(location);
             }
