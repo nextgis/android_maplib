@@ -47,8 +47,8 @@ public class GpsEventSource
     protected int mListenProviders;
     protected Location mLastLocation;
 
-    protected static final int GPS_PROVIDER     = 1 << 0;
-    protected static final int NETWORK_PROVIDER = 1 << 1;
+    public static final int GPS_PROVIDER     = 1 << 0;
+    public static final int NETWORK_PROVIDER = 1 << 1;
 
 
     public GpsEventSource(Context context)
