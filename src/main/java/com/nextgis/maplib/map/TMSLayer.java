@@ -96,7 +96,7 @@ public abstract class TMSLayer
             endY = tilesInMap;
         }
 
-        //fill tiles from center
+        //fill tiles from center snake order
 /*
         checkDuplicates.clear();
         int centerX = begX + (endX - begX) / 2;
@@ -136,38 +136,105 @@ public abstract class TMSLayer
             }
         }
 */
-        // normal fill from left bottom corner
-        int realY;
-        int realX;
-        for(int x = begX; x < endX; x++){
-            for(int y = begY; y < endY; y++){
+        // fill by 9 segments center first
+        int xParts = (endX - begX) / 3;
+        int yParts = (endY - begY) / 3;
 
-                realX = x;
-                if (realX < 0) {
-                    realX += tilesInMap;
-                } else if (realX >= tilesInMap) {
-                    realX -= tilesInMap;
-                }
+        /*
+                +---+---+---+
+                | 1 | 2 | 3 |
+                +---+---+---+
+                | 4 | 5 | 6 |
+                +---+---+---+
+                | 7 | 8 | 9 |
+                +---+---+---+
+         */
 
-                realY = y;
-                if(mTMSType == TMSTYPE_OSM){
-                    realY = tilesInMap - y - 1;
-                }
+        //5
+        for(int x = begX + xParts; x < endX - xParts; x++){
+            for(int y = begY + yParts; y < endY - yParts; y++){
 
-                if (realY < 0 || realY >= tilesInMap) {
-                    continue;
-                }
-
-                final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(), fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
-                TileItem item = new TileItem(realX, realY, nZoom, pt);
-                list.add(item);
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
             }
         }
 
+        //6
+        for(int x = endX - xParts; x < endX; x++){
+            for(int y = begY + yParts; y < endY - yParts; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //4
+        for(int x = begX; x < begX + xParts; x++){
+            for(int y = begY + yParts; y < endY - yParts; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //2
+        for(int x = begX + xParts; x < endX - xParts; x++){
+            for(int y = begY; y < begY + yParts; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //8
+        for(int x = begX + xParts; x < endX - xParts; x++){
+            for(int y = endY - yParts; y < endY; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //1
+        for(int x = begX; x < begX + xParts; x++){
+            for(int y = begY; y < begY + yParts; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //3
+        for(int x = endX - xParts; x < endX; x++){
+            for(int y = begY; y < begY + yParts; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //9
+        for(int x = endX - xParts; x < endX; x++){
+            for(int y = endY - yParts; y < endY; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+        //7
+        for(int x = begX; x < begX + xParts; x++){
+            for(int y = endY - yParts; y < endY; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+
+/*
+        // normal fill from left bottom corner
+        for(int x = begX; x < endX; x++){
+            for(int y = begY; y < endY; y++){
+
+                addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
+            }
+        }
+*/
         return list;
     }
 
-/*
+
     protected void addItemToList(
             final GeoEnvelope fullBounds,
             final GeoPoint mapTileSize,
@@ -177,7 +244,30 @@ public abstract class TMSLayer
             int tilesInMap,
             List<TileItem> list)
     {
-        int realX = x;
+        int realY;
+        int realX;
+
+        realX = x;
+        if (realX < 0) {
+            realX += tilesInMap;
+        } else if (realX >= tilesInMap) {
+            realX -= tilesInMap;
+        }
+
+        realY = y;
+        if(mTMSType == TMSTYPE_OSM){
+            realY = tilesInMap - y - 1;
+        }
+
+        if (realY < 0 || realY >= tilesInMap) {
+            return;
+        }
+
+        final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(), fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
+        TileItem item = new TileItem(realX, realY, zoom, pt);
+        list.add(item);
+
+        /*int realX = x;
         if (realX < 0) {
             //while(realX < 0)
                 realX += tilesInMap;
@@ -202,9 +292,9 @@ public abstract class TMSLayer
 
         checkDuplicates.add(realX + "." + realY);// + "." + zoom
         TileItem item = new TileItem(realX, realY, zoom, pt);
-        list.add(item);
+        list.add(item);*/
     }
-*/
+
 
     public abstract Bitmap getBitmap(TileItem tile);
 

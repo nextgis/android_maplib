@@ -54,7 +54,7 @@ public interface Constants
     //the additional size to off screen drawing
     //from 1 and higher
     //As more than more memory needed
-    public static final float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
+    public static final float OFFSCREEN_EXTRASIZE_RATIO = 1.8f;
 
     public static final String CONFIG               = "config.json";
     public static final String LAYER_PREFIX         = "layer_";
