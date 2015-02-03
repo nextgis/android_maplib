@@ -277,6 +277,8 @@ public class RemoteTMSLayer
     @Override
     public int getMaxThreadCount()
     {
+        if(mSubdomains.isEmpty())
+            return HTTP_SEPARATE_THREADS;
         return mSubdomains.size() * HTTP_SEPARATE_THREADS;
     }
 
