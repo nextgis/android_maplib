@@ -131,7 +131,10 @@ public class GeoPolygon
             wkt = wkt.substring(1, wkt.length() - 1);
         //get outer ring
         int pos = wkt.indexOf(")");
-        mOuterRing.setCoordinatesFromWKT(wkt.substring(0, pos));
+        if(pos == Constants.NOT_FOUND) // no inner rings
+            mOuterRing.setCoordinatesFromWKT(wkt);
+        else
+            mOuterRing.setCoordinatesFromWKT(wkt.substring(0, pos));
         pos = wkt.indexOf("(");
         while(pos != Constants.NOT_FOUND) {
             wkt = wkt.substring(pos + 1, wkt.length());
