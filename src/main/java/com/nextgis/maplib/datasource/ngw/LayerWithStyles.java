@@ -153,7 +153,7 @@ public class LayerWithStyles
 
     public String getTMSUrl(int styleNo)
     {
-        if(getType() == Connection.NGWResourceTypeRasterLayer)
+        if(getType() == Connection.NGWResourceTypeRasterLayer || getType() == Connection.NGWResourceTypeVectorLayer || getType() == Connection.NGWResourceTypePostgisLayer)
             return NGWUtil.getTMSUrl(mConnection.getURL(), mStyles.get(styleNo));
 
         if(getType() == Connection.NGWResourceTypeWMSClient)
