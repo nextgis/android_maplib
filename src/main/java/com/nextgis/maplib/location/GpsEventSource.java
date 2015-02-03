@@ -46,6 +46,7 @@ public class GpsEventSource
     protected GpsStatusListener   mGpsStatusListener;
     protected int mListenProviders;
     protected Location mLastLocation;
+    protected Context mContext;
 
     public static final int GPS_PROVIDER     = 1 << 0;
     public static final int NETWORK_PROVIDER = 1 << 1;
@@ -53,14 +54,14 @@ public class GpsEventSource
 
     public GpsEventSource(Context context)
     {
+        mContext = context;
         mListeners = new ArrayList<>();
 
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         mGpsLocationListener = new GpsLocationListener();
         mGpsStatusListener = new GpsStatusListener();
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        mListenProviders = sharedPreferences.getInt(SettingsConstants.KEY_PREF_LOCATION_SOURCE, GPS_PROVIDER | NETWORK_PROVIDER);
+        updateActiveListeners();
     }
 
 
@@ -80,15 +81,7 @@ public class GpsEventSource
 
             if (mListeners.size() == 1) {
 
-                if (0 != (mListenProviders & GPS_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
-                    mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
-                                                            mGpsLocationListener);
-                }
-
-                if (0 != (mListenProviders & GPS_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
-                    mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
-                                                            mGpsLocationListener);
-                }
+                requestUpdates();
 
                 mLocationManager.addGpsStatusListener(mGpsStatusListener);
             }
@@ -136,6 +129,31 @@ public class GpsEventSource
             }
         }
         return null;
+    }
+
+
+    public void updateActiveListeners(){
+        mLocationManager.removeUpdates(mGpsLocationListener);
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        mListenProviders = sharedPreferences.getInt(SettingsConstants.KEY_PREF_LOCATION_SOURCE, GPS_PROVIDER | NETWORK_PROVIDER);
+
+        if (mListeners.size() >= 1) {
+            requestUpdates();
+        }
+    }
+
+    private void requestUpdates()
+    {
+        if (0 != (mListenProviders & GPS_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
+                                                    mGpsLocationListener);
+        }
+
+        if (0 != (mListenProviders & NETWORK_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
+            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
+                                                    mGpsLocationListener);
+        }
     }
 
 
