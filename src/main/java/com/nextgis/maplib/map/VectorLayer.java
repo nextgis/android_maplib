@@ -129,6 +129,8 @@ public class VectorLayer extends Layer
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
 
         mVectorCacheItems = new ArrayList<>();
+
+        mLayerType = LAYERTYPE_LOCAL_VECTOR;
     }
 
 
