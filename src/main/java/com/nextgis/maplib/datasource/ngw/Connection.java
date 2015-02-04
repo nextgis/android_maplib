@@ -347,8 +347,10 @@ public class Connection implements INGWResource
         for(int i = 0; i < count; i++)
             mSupportedTypes.add(in.readInt());
         mRootResource = in.readParcelable(ResourceGroup.class.getClassLoader());
-        mRootResource.setConnection(this);
-        mRootResource.setParent(this);
+        if(null != mRootResource) {
+            mRootResource.setConnection(this);
+            mRootResource.setParent(this);
+        }
     }
 
 
