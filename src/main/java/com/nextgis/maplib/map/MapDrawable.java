@@ -137,7 +137,6 @@ public class MapDrawable
         }
     }
 
-
     @Override
     public GeoPoint getMapCenter()
     {
@@ -220,7 +219,6 @@ public class MapDrawable
     @Override
     public void runDraw(final GISDisplay display)
     {
-        cancelDraw();
         mLayerDrawId = 0;
 
         if(display != null){

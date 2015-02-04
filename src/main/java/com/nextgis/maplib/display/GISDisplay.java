@@ -133,7 +133,6 @@ public class GISDisplay
         setZoomAndCenter(mZoomLevel, mCenter);
     }
 
-
     public void setZoomAndCenter(
             float zoom,
             GeoPoint center)
@@ -141,6 +140,7 @@ public class GISDisplay
         if (zoom > mMaxZoomLevel || zoom < mMinZoomLevel) {
             return;
         }
+
         mZoomLevel = zoom;
 
         mCenter = center;

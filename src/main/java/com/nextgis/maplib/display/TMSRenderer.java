@@ -162,12 +162,14 @@ public class TMSRenderer
     {
         final double zoom = display.getZoomLevel();
 
-        GeoEnvelope env = display.getBounds();
+
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
-        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, env, zoom);
+        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, display.getBounds(), zoom);
 
-        int threadCount = tmsLayer.getMaxThreadCount();
+        cancelDraw();
+
+        int threadCount = DRAWING_SEPARATE_THREADS;//tmsLayer.getMaxThreadCount();
         if (threadCount > 0)
             mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
                                                      KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
