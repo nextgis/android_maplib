@@ -77,6 +77,9 @@ public abstract class LayerFactory
                 case LAYERTYPE_LOCAL_VECTOR:
                     layer = new VectorLayer(context, path);
                     break;
+                case LAYERTYPE_LOCAL_TMS:
+                    layer = new LocalTMSLayer(context, path);
+                    break;
                 case LAYERTYPE_GROUP:
                     layer = new LayerGroup(context, path, this);
                     break;
