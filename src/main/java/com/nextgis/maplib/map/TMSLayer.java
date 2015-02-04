@@ -136,7 +136,7 @@ public abstract class TMSLayer
             }
         }
 */
-        // fill by 9 segments center first
+        /*/ fill by 9 segments center first
         int xParts = (endX - begX) / 3;
         int yParts = (endY - begY) / 3;
 
@@ -149,7 +149,7 @@ public abstract class TMSLayer
                 | 7 | 8 | 9 |
                 +---+---+---+
          */
-
+/*
         //5
         for(int x = begX + xParts; x < endX - xParts; x++){
             for(int y = begY + yParts; y < endY - yParts; y++){
@@ -220,9 +220,9 @@ public abstract class TMSLayer
 
                 addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
             }
-        }
+        }*/
 
-/*
+
         // normal fill from left bottom corner
         for(int x = begX; x < endX; x++){
             for(int y = begY; y < endY; y++){
@@ -230,7 +230,7 @@ public abstract class TMSLayer
                 addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
             }
         }
-*/
+
         return list;
     }
 
