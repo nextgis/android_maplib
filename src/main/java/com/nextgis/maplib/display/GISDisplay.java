@@ -383,6 +383,14 @@ public class GISDisplay
     }
 
 
+    public void drawLine(
+            float x0, float y0,
+            float x1, float y1,
+            Paint paint)
+    {
+        mMainCanvas.drawLine(x0, y0, x1, y1, paint);
+    }
+
     public void drawLines(
             float[] pts,
             Paint paint)

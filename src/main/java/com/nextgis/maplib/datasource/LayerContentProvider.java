@@ -28,8 +28,10 @@ import android.net.Uri;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
 import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.NGWVectorLayer;
+import com.nextgis.maplib.map.TrackLayer;
 import com.nextgis.maplib.map.VectorLayer;
 
 
@@ -54,7 +56,7 @@ public class LayerContentProvider
         return false;
     }
 
-    protected VectorLayer getLayerByUri(Uri uri)
+    protected Layer getLayerByUri(Uri uri)
     {
         String path = uri.getPath();
         return MapContentProviderHelper.getVectorLayerByPath(mMap, path);
@@ -69,20 +71,38 @@ public class LayerContentProvider
             String[] selectionArgs,
             String sortOrder)
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
-        return layer.query(uri, projection, selection, selectionArgs, sortOrder);
+
+        if (layer instanceof VectorLayer) {
+            return ((VectorLayer)layer).query(uri, projection, selection, selectionArgs, sortOrder);
+        }
+
+        if (layer instanceof TrackLayer) {
+            return ((TrackLayer)layer).query(uri, projection, selection, selectionArgs, sortOrder);
+        }
+
+        return null;
     }
 
 
     @Override
     public String getType(Uri uri)
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
-        return layer.getType(uri);
+
+        if (layer instanceof VectorLayer) {
+            return ((VectorLayer)layer).getType(uri);
+        }
+
+        if (layer instanceof TrackLayer) {
+            return ((TrackLayer)layer).getType(uri);
+        }
+
+        return null;
     }
 
 
@@ -91,10 +111,10 @@ public class LayerContentProvider
             Uri uri,
             String mimeTypeFilter)
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
-        return layer.getStreamTypes(uri, mimeTypeFilter);
+        return ((VectorLayer)layer).getStreamTypes(uri, mimeTypeFilter);
     }
 
 
@@ -104,10 +124,10 @@ public class LayerContentProvider
             String mode)
             throws FileNotFoundException
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
-        return layer.openFile(uri, mode);
+        return ((VectorLayer)layer).openFile(uri, mode);
     }
 
 
@@ -116,10 +136,19 @@ public class LayerContentProvider
             Uri uri,
             ContentValues contentValues)
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return null;
-        return layer.insert(uri, contentValues);
+
+        if (layer instanceof VectorLayer) {
+            return ((VectorLayer)layer).insert(uri, contentValues);
+        }
+
+        if (layer instanceof TrackLayer) {
+            return ((TrackLayer)layer).insert(uri, contentValues);
+        }
+
+        return null;
     }
 
 
@@ -129,10 +158,19 @@ public class LayerContentProvider
             String s,
             String[] strings)
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return 0;
-        return layer.delete(uri, s, strings);
+
+        if (layer instanceof VectorLayer) {
+            return ((VectorLayer)layer).delete(uri, s, strings);
+        }
+
+        if (layer instanceof TrackLayer) {
+            return ((TrackLayer)layer).delete(uri, s, strings);
+        }
+
+        return 0;
     }
 
 
@@ -143,9 +181,18 @@ public class LayerContentProvider
             String s,
             String[] strings)
     {
-        VectorLayer layer = getLayerByUri(uri);
+        Layer layer = getLayerByUri(uri);
         if(null == layer)
             return 0;
-        return layer.update(uri, contentValues, s, strings);
+
+        if (layer instanceof VectorLayer) {
+            return ((VectorLayer)layer).update(uri, contentValues, s, strings);
+        }
+
+        if (layer instanceof TrackLayer) {
+            return ((TrackLayer)layer).update(uri, contentValues, s, strings);
+        }
+
+        return 0;
     }
 }

@@ -77,7 +77,7 @@ public class MapContentProviderHelper extends MapBase
             return mDatabaseHelper.getWritableDatabase();
     }
 
-    public static VectorLayer getVectorLayerByPath(LayerGroup layerGroup, String path)
+    public static Layer getVectorLayerByPath(LayerGroup layerGroup, String path)
     {
         for(int i = 0; i < layerGroup.getLayerCount(); i++)
         {
@@ -85,7 +85,7 @@ public class MapContentProviderHelper extends MapBase
             if(layer instanceof LayerGroup)
             {
                 LayerGroup inLayerGroup = (LayerGroup)layer;
-                VectorLayer out = getVectorLayerByPath(inLayerGroup, path);
+                Layer out = getVectorLayerByPath(inLayerGroup, path);
                 if(null != out)
                     return out;
             }
@@ -94,6 +94,12 @@ public class MapContentProviderHelper extends MapBase
                 VectorLayer vectorLayer = (VectorLayer)layer;
                 if(path.contains(vectorLayer.getPath().getName()))
                     return vectorLayer;
+            }
+            else if(layer instanceof TrackLayer)
+            {
+                TrackLayer trackLayer = (TrackLayer) layer;
+                if(path.contains(TrackLayer.TABLE_TRACKS) || path.contains(TrackLayer.TABLE_TRACKPOINTS))
+                    return trackLayer;
             }
         }
         return null;

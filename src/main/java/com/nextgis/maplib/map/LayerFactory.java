@@ -83,6 +83,9 @@ public abstract class LayerFactory
                 case LAYERTYPE_GROUP:
                     layer = new LayerGroup(context, path, this);
                     break;
+                case LAYERTYPE_TRACKS:
+                    layer = new TrackLayer(context, path);
+                    break;
             }
         } catch (IOException | JSONException e) {
             Log.d(TAG, e.getLocalizedMessage());

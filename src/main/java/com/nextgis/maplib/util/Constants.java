@@ -94,6 +94,7 @@ public interface Constants
     public static final int LAYERTYPE_GROUP        = 1 << 3;
     public static final int LAYERTYPE_LOCAL_VECTOR = 1 << 4;
     public static final int LAYERTYPE_LOCAL_TMS    = 1 << 5;
+    public static final int LAYERTYPE_TRACKS       = 1 << 6;
 
     /**
      * time constants
