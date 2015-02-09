@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib.service;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -57,16 +58,23 @@ public class TrackerService
     public static final  String TARGET_CLASS          = "target_class";
     private static final String TRACK_URI             = "track_uri";
     private static final String ACTION_STOP           = "TRACK_STOP";
+    private static final String ACTION_SPLIT          = "TRACK_SPLIT";
     private static final int    TRACK_NOTIFICATION_ID = 1;
 
-    private NotificationManager mNotificationManager;
-    private SharedPreferences   mSharedPreferences;
-    private String              mTrackName, mTrackId;
     private boolean         mIsRunning;
     private LocationManager mLocationManager;
-    private Uri             mContentUriTracks, mContentUriTrackpoints, mNewTrack;
+
+    private SharedPreferences mSharedPreferences;
+    private String            mTrackName, mTrackId;
+    private Uri mContentUriTracks, mContentUriTrackpoints, mNewTrack;
     private Cursor        mLastTrack;
     private ContentValues mValues;
+
+    private NotificationManager mNotificationManager;
+    private AlarmManager        mAlarmManager;
+    private PendingIntent       mSplitService, mOpenActivity;
+    private String mTicker;
+    private int    mSmallIcon;
 
 
     public void onCreate()
@@ -74,6 +82,7 @@ public class TrackerService
         super.onCreate();
 
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
         IGISApplication application = (IGISApplication) getApplication();
         String authority = application.getAuthority();
@@ -92,7 +101,6 @@ public class TrackerService
         // TODO provider selection
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-
         if (mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
             mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime,
                                                     minDistance, this);
@@ -104,6 +112,14 @@ public class TrackerService
         }
 
         mLastTrack = getLastTrack();
+
+        mTicker = getString(R.string.tracks_running);
+        mSmallIcon = android.R.drawable.ic_menu_myplaces;
+
+        Intent intentSplit = new Intent(this, TrackerService.class);
+        intentSplit.setAction(ACTION_SPLIT);
+        mSplitService =
+                PendingIntent.getService(this, 0, intentSplit, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
 
@@ -119,23 +135,34 @@ public class TrackerService
             targetActivity = intent.getStringExtra(TARGET_CLASS);
             String action = intent.getAction();
 
-            if (!TextUtils.isEmpty(action) && action.equals(ACTION_STOP)) {
-                stopSelf();
-                return START_NOT_STICKY;
+            if (!TextUtils.isEmpty(action)) {
+                switch (action) {
+                    case ACTION_STOP:
+                        stopSelf();
+                        return START_NOT_STICKY;
+                    case ACTION_SPLIT:
+                        stopTrack();
+                        mLastTrack = getLastTrack();
+                        startTrack();
+                        addNotification();
+                        return START_STICKY;
+                }
             }
         }
 
         if (!mIsRunning) {
-
+            // there are no tracks or last track correctly ended
             if (!hasLastTrack() || isLastTrackClosed()) {
                 startTrack();
                 mSharedPreferences.edit().putString(TARGET_CLASS, targetActivity).commit();
             } else {
+                // looks like service was killed, restore data
                 restoreData();
                 targetActivity = mSharedPreferences.getString(TARGET_CLASS, "");
             }
 
-            addNotification(targetActivity);
+            initTargetIntent(targetActivity);
+            addNotification();
         }
 
         return START_STICKY;
@@ -177,17 +204,20 @@ public class TrackerService
 
     private void startTrack()
     {
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        // get track name date unique appendix
         final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-");
         String append = "1";
 
+        // there is at least one track
         if (hasLastTrack()) {
-            Calendar today = Calendar.getInstance();
-            today.set(Calendar.HOUR, 0);
-            today.set(Calendar.MINUTE, 0);
-            today.set(Calendar.MILLISECOND, 0);
-
             long lastTrackEnd = mLastTrack.getLong(mLastTrack.getColumnIndex(TrackLayer.FIELD_END));
 
+            // last track recorded today, increase appendix
             if (lastTrackEnd > today.getTimeInMillis()) {
                 String[] segments =
                         mLastTrack.getString(mLastTrack.getColumnIndex(TrackLayer.FIELD_NAME))
@@ -197,56 +227,45 @@ public class TrackerService
             }
         }
 
+        // insert DB row
         final long started = System.currentTimeMillis();
         mTrackName = simpleDateFormat.format(started) + append;
+        mValues.clear();
         mValues.put(TrackLayer.FIELD_NAME, mTrackName);
         mValues.put(TrackLayer.FIELD_START, started);
         mValues.put(TrackLayer.FIELD_VISIBLE, true);
         mNewTrack = getContentResolver().insert(mContentUriTracks, mValues);
 
+        // save vars
         mTrackId = mNewTrack.getLastPathSegment();
         mSharedPreferences.edit().putString(TRACK_URI, mNewTrack.toString()).commit();
         mIsRunning = true;
+
+        // set midnight track splitter
+        today.add(Calendar.DATE, 1);
+        mAlarmManager.set(AlarmManager.RTC, today.getTimeInMillis(), mSplitService);
     }
 
 
     private void stopTrack()
     {
+        // update DB row
         mValues.clear();
         mValues.put(TrackLayer.FIELD_END, System.currentTimeMillis());
         getContentResolver().update(mNewTrack, mValues, null, null);
         mIsRunning = false;
+
+        // cancel midnight splitter
+        mAlarmManager.cancel(mSplitService);
     }
 
 
-    private void addNotification(String className)
+    private void addNotification()
     {
         Notification notif;
-        String ticker = getString(R.string.tracks_running);
         String title = String.format(getString(R.string.tracks_title), mTrackName);
-        int smallIcon = android.R.drawable.ic_menu_myplaces;
         Bitmap largeIcon =
                 BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_menu_myplaces);
-
-        Intent intentActivity = new Intent();
-
-        if (!TextUtils.isEmpty(className)) {
-            Class<?> targetClass = null;
-
-            try {
-                targetClass = Class.forName(className);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-
-            if (targetClass != null) {
-                intentActivity = new Intent(this, targetClass);
-            }
-        }
-
-        intentActivity.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent openActivity = PendingIntent.getActivity(this, 0, intentActivity,
-                                                               PendingIntent.FLAG_UPDATE_CURRENT);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             Intent intentStop = new Intent(this, TrackerService.class);
@@ -256,26 +275,26 @@ public class TrackerService
 
             Notification.Builder builder = new Notification.Builder(this);
 
-            builder.setContentIntent(openActivity)
-                   .setSmallIcon(smallIcon)
+            builder.setContentIntent(mOpenActivity)
+                   .setSmallIcon(mSmallIcon)
                    .setLargeIcon(largeIcon)
-                   .setTicker(ticker)
+                   .setTicker(mTicker)
                    .setWhen(System.currentTimeMillis())
                    .setAutoCancel(false)
                    .setContentTitle(title)
-                   .setContentText(ticker);
+                   .setContentText(mTicker)
+                   .setOngoing(true);
 
             builder.addAction(android.R.drawable.ic_menu_mapmode, getString(R.string.tracks_open),
-                              openActivity);
+                              mOpenActivity);
             builder.addAction(android.R.drawable.ic_menu_close_clear_cancel,
                               getString(R.string.tracks_stop), stopService);
 
             notif = builder.build();
         } else {
-            notif = buildDeprecated(smallIcon, ticker, title, openActivity);
+            notif = buildDeprecated(mSmallIcon, mTicker, title, mOpenActivity);
         }
 
-        notif.flags |= Notification.FLAG_ONGOING_EVENT;
         mNotificationManager.notify(TRACK_NOTIFICATION_ID, notif);
     }
 
@@ -289,6 +308,7 @@ public class TrackerService
     {
         Notification result = new Notification(smallIcon, ticker, System.currentTimeMillis());
         result.setLatestEventInfo(this, title, ticker, intent);
+        result.flags |= Notification.FLAG_ONGOING_EVENT;
 
         return result;
     }
@@ -297,6 +317,31 @@ public class TrackerService
     private void removeNotification()
     {
         mNotificationManager.cancel(TRACK_NOTIFICATION_ID);
+    }
+
+
+    // intent to open on notification click
+    private void initTargetIntent(String targetActivity)
+    {
+        Intent intentActivity = new Intent();
+
+        if (!TextUtils.isEmpty(targetActivity)) {
+            Class<?> targetClass = null;
+
+            try {
+                targetClass = Class.forName(targetActivity);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            if (targetClass != null) {
+                intentActivity = new Intent(this, targetClass);
+            }
+        }
+
+        intentActivity.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        mOpenActivity = PendingIntent.getActivity(this, 0, intentActivity,
+                                                  PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
 
