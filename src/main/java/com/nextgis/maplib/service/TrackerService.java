@@ -33,6 +33,8 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.GpsSatellite;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -40,11 +42,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.TrackLayer;
+import com.nextgis.maplib.util.SettingsConstants;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -52,7 +54,7 @@ import java.util.Calendar;
 
 public class TrackerService
         extends Service
-        implements LocationListener
+        implements LocationListener, GpsStatus.Listener
 {
     //    private final       String TAG          = "com.nextgis.mobile";
     public static final  String TARGET_CLASS          = "target_class";
@@ -60,6 +62,7 @@ public class TrackerService
     private static final String ACTION_STOP           = "TRACK_STOP";
     private static final String ACTION_SPLIT          = "TRACK_SPLIT";
     private static final int    TRACK_NOTIFICATION_ID = 1;
+    private static final int    MODE_MULTI_PROCESS    = 0x4;
 
     private boolean         mIsRunning;
     private LocationManager mLocationManager;
@@ -74,7 +77,7 @@ public class TrackerService
     private AlarmManager        mAlarmManager;
     private PendingIntent       mSplitService, mOpenActivity;
     private String mTicker;
-    private int    mSmallIcon;
+    private int    mSmallIcon, mSatellitesCount;
 
 
     public void onCreate()
@@ -92,15 +95,20 @@ public class TrackerService
 
         mValues = new ContentValues();
 
-        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mSharedPreferences =
+                getSharedPreferences(getPackageName() + "_preferences", MODE_MULTI_PROCESS);
 
-        // TODO preference
-        long minTime = 1000;
-        float minDistance = 2;
+        String minTimeStr =
+                mSharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_TIME, "10");
+        String minDistanceStr =
+                mSharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_DISTANCE, "2");
+        long minTime = Integer.parseInt(minTimeStr) * 1000;
+        float minDistance = Float.parseFloat(minDistanceStr);
+
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        mLocationManager.addGpsStatusListener(this);
 
         // TODO provider selection
-        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
         if (mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
             mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime,
                                                     minDistance, this);
@@ -249,10 +257,13 @@ public class TrackerService
 
     private void stopTrack()
     {
-        // update DB row
+        // update unclosed tracks in DB
         mValues.clear();
         mValues.put(TrackLayer.FIELD_END, System.currentTimeMillis());
-        getContentResolver().update(mNewTrack, mValues, null, null);
+
+        String selection = TrackLayer.FIELD_END + " IS NULL OR " + TrackLayer.FIELD_END + " = ''";
+        getContentResolver().update(mNewTrack, mValues, selection, null);
+
         mIsRunning = false;
 
         // cancel midnight splitter
@@ -349,6 +360,7 @@ public class TrackerService
     {
         stopTrack();
         mLocationManager.removeUpdates(this);
+        mLocationManager.removeGpsStatusListener(this);
         removeNotification();
         stopSelf();
         super.onDestroy();
@@ -365,11 +377,16 @@ public class TrackerService
     @Override
     public void onLocationChanged(Location location)
     {
+        String fixType = location.hasAltitude() ? "3d" : "2d";
+
         mValues.clear();
         mValues.put(TrackLayer.FIELD_SESSION, mTrackId);
         mValues.put(TrackLayer.FIELD_LON, location.getLongitude());
         mValues.put(TrackLayer.FIELD_LAT, location.getLatitude());
-        mValues.put(TrackLayer.FIELD_TIMESTAMP, System.currentTimeMillis());
+        mValues.put(TrackLayer.FIELD_ELE, location.getAltitude());
+        mValues.put(TrackLayer.FIELD_FIX, fixType);
+        mValues.put(TrackLayer.FIELD_SAT, mSatellitesCount);
+        mValues.put(TrackLayer.FIELD_TIMESTAMP, location.getTime());
         getContentResolver().insert(mContentUriTrackpoints, mValues);
     }
 
@@ -395,5 +412,22 @@ public class TrackerService
     public void onProviderDisabled(String provider)
     {
 
+    }
+
+
+    @Override
+    public void onGpsStatusChanged(int event)
+    {
+        switch (event) {
+            case GpsStatus.GPS_EVENT_SATELLITE_STATUS:
+                mSatellitesCount = 0;
+
+                for (GpsSatellite sat : mLocationManager.getGpsStatus(null).getSatellites()) {
+                    if (sat.usedInFix()) {
+                        mSatellitesCount++;
+                    }
+                }
+                break;
+        }
     }
 }

@@ -23,8 +23,10 @@ package com.nextgis.maplib.util;
 
 public interface SettingsConstants
 {
-    public static final String KEY_PREF_MAP      = "map";
-    public static final String KEY_PREF_MAP_PATH = "map_path";
+    public static final String KEY_PREF_MAP                 = "map";
+    public static final String KEY_PREF_MAP_PATH            = "map_path";
     public static final String KEY_PREF_LAST_SYNC_TIMESTAMP = "last_sync_timestamp";
-    public static final String KEY_PREF_LOCATION_SOURCE = "location_source";
+    public static final String KEY_PREF_LOCATION_SOURCE     = "location_source";
+    public static final String KEY_PREF_TRACKS_MIN_TIME     = "tracks_min_time";
+    public static final String KEY_PREF_TRACKS_MIN_DISTANCE = "tracks_min_distance";
 }
