@@ -24,11 +24,10 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Bundle;
 import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
-import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
 import java.util.List;
@@ -100,25 +99,29 @@ public class MapContentProviderHelper extends MapBase
                 TrackLayer trackLayer = (TrackLayer) layer;
                 if(path.contains(TrackLayer.TABLE_TRACKS) || path.contains(TrackLayer.TABLE_TRACKPOINTS))
                     return trackLayer;
-            }
+        }
         }
         return null;
     }
 
-    public static void getLayersByAccount(LayerGroup layerGroup, String account, List<NGWVectorLayer> layerList)
+
+    public static void getLayersByAccount(
+            LayerGroup layerGroup,
+            String account,
+            List<INGWLayer> layerList)
     {
-        for(int i = 0; i < layerGroup.getLayerCount(); i++)
-        {
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             ILayer layer = layerGroup.getLayer(i);
-            if(layer instanceof LayerGroup)
-            {
-                getLayersByAccount((LayerGroup)layer, account, layerList);
+
+            if (layer instanceof INGWLayer) {
+                INGWLayer ngwLayer = (INGWLayer) layer;
+                if (ngwLayer.getAccountName().equals(account)) {
+                    layerList.add(ngwLayer);
+                }
             }
-            else if(layer instanceof NGWVectorLayer)
-            {
-                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer) layer;
-                if(ngwVectorLayer.getAccountName().equals(account))
-                    layerList.add(ngwVectorLayer);
+
+            if (layer instanceof LayerGroup) {
+                getLayersByAccount((LayerGroup) layer, account, layerList);
             }
         }
     }

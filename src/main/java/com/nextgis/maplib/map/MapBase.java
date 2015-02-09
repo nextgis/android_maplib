@@ -89,6 +89,11 @@ public class MapBase
     @Override
     public boolean delete()
     {
+        for (ILayer layer : mLayers) {
+            layer.setParent(null);
+            layer.delete();
+        }
+
         return FileUtil.deleteRecursive(getFileName());
     }
 

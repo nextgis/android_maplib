@@ -231,6 +231,18 @@ public class LayerGroup
 
 
     @Override
+    public boolean delete()
+    {
+        for (ILayer layer : mLayers) {
+            layer.setParent(null);
+            layer.delete();
+        }
+
+        return super.delete();
+    }
+
+
+    @Override
     public JSONObject toJSON()
             throws JSONException
     {
@@ -251,7 +263,7 @@ public class LayerGroup
     public void clearLayers()
     {
         for (ILayer layer : mLayers) {
-            if (LAYERTYPE_GROUP == layer.getType()) {
+            if (layer instanceof LayerGroup) {
                 ((LayerGroup) layer).clearLayers();
             }
         }
