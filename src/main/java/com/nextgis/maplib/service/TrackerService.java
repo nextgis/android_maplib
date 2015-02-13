@@ -46,6 +46,7 @@ import android.text.TextUtils;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.TrackLayer;
+import com.nextgis.maplib.util.LocationUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
 import java.text.SimpleDateFormat;
@@ -102,21 +103,22 @@ public class TrackerService
                 mSharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_TIME, "10");
         String minDistanceStr =
                 mSharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_DISTANCE, "2");
-        long minTime = Integer.parseInt(minTimeStr) * 1000;
+        long minTime = Long.parseLong(minTimeStr) * 1000;
         float minDistance = Float.parseFloat(minDistanceStr);
 
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mLocationManager.addGpsStatusListener(this);
 
-        // TODO provider selection
-        if (mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime,
-                                                    minDistance, this);
+        String provider = LocationManager.GPS_PROVIDER;
+        if (LocationUtil.isProviderEnabled(this, provider, true) &&
+            mLocationManager.getAllProviders().contains(provider)) {
+            mLocationManager.requestLocationUpdates(provider, minTime, minDistance, this);
         }
 
-        if (mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
-            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime,
-                                                    minDistance, this);
+        provider = LocationManager.NETWORK_PROVIDER;
+        if (LocationUtil.isProviderEnabled(this, provider, true) &&
+            mLocationManager.getAllProviders().contains(provider)) {
+            mLocationManager.requestLocationUpdates(provider, minTime, minDistance, this);
         }
 
         mLastTrack = getLastTrack();

@@ -44,9 +44,11 @@ public class GpsEventSource
     protected LocationManager     mLocationManager;
     protected GpsLocationListener mGpsLocationListener;
     protected GpsStatusListener   mGpsStatusListener;
-    protected int mListenProviders;
-    protected Location mLastLocation;
-    protected Context mContext;
+    protected int                 mListenProviders;
+    protected Location            mLastLocation;
+    protected Context             mContext;
+    protected long                mUpdateMinTime;
+    protected float               mUpdateMinDistance;
 
     public static final int GPS_PROVIDER     = 1 << 0;
     public static final int NETWORK_PROVIDER = 1 << 1;
@@ -113,45 +115,63 @@ public class GpsEventSource
 
     public Location getLastKnownLocation()
     {
-        if(null != mLastLocation)
+        if (null != mLastLocation) {
             return mLastLocation;
-        if(null != mLocationManager) {
-            if(0 != (mListenProviders & GPS_PROVIDER)) {
+        }
+        if (null != mLocationManager) {
+            if (0 != (mListenProviders & GPS_PROVIDER)) {
                 mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                if(null != mLastLocation)
+                if (null != mLastLocation) {
                     return mLastLocation;
+                }
             }
 
-            if(0 != (mListenProviders & NETWORK_PROVIDER)) {
-                mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                if(null != mLastLocation)
+            if (0 != (mListenProviders & NETWORK_PROVIDER)) {
+                mLastLocation =
+                        mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (null != mLastLocation) {
                     return mLastLocation;
+                }
             }
         }
         return null;
     }
 
 
-    public void updateActiveListeners(){
+    public void updateActiveListeners()
+    {
         mLocationManager.removeUpdates(mGpsLocationListener);
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-        mListenProviders = sharedPreferences.getInt(SettingsConstants.KEY_PREF_LOCATION_SOURCE, GPS_PROVIDER | NETWORK_PROVIDER);
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(mContext);
+        mListenProviders = sharedPreferences.getInt(SettingsConstants.KEY_PREF_LOCATION_SOURCE,
+                                                    GPS_PROVIDER | NETWORK_PROVIDER);
+
+        String minTimeStr =
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_TIME, "0");
+        String minDistanceStr =
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_DISTANCE, "0");
+        mUpdateMinTime = Long.parseLong(minTimeStr) * 1000;
+        mUpdateMinDistance = Float.parseFloat(minDistanceStr);
 
         if (mListeners.size() >= 1) {
             requestUpdates();
         }
     }
 
+
     private void requestUpdates()
     {
-        if (0 != (mListenProviders & GPS_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
-                                                    mGpsLocationListener);
+        if (0 != (mListenProviders & GPS_PROVIDER) &&
+            mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, mUpdateMinTime,
+                                                    mUpdateMinDistance, mGpsLocationListener);
         }
 
-        if (0 != (mListenProviders & NETWORK_PROVIDER) && mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
-            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
+        if (0 != (mListenProviders & NETWORK_PROVIDER) &&
+            mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
+            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                                                    mUpdateMinTime, mUpdateMinDistance,
                                                     mGpsLocationListener);
         }
     }

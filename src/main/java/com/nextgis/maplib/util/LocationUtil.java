@@ -21,10 +21,15 @@
 
 package com.nextgis.maplib.util;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.location.Location;
+import android.location.LocationManager;
 import android.media.ExifInterface;
+import android.preference.PreferenceManager;
 import com.nextgis.maplib.R;
+import com.nextgis.maplib.location.GpsEventSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -153,4 +158,35 @@ public class LocationUtil
 
         exif.saveAttributes();
     }
+
+
+    public static boolean isProviderEnabled(
+            Context context,
+            String provider,
+            boolean isTracks)
+    {
+        int currentProvider = 0;
+
+        switch (provider) {
+            case LocationManager.GPS_PROVIDER:
+                currentProvider = GpsEventSource.GPS_PROVIDER;
+                break;
+            case LocationManager.NETWORK_PROVIDER:
+                currentProvider = GpsEventSource.NETWORK_PROVIDER;
+                break;
+        }
+
+        String preferenceKey = isTracks
+                               ? SettingsConstants.KEY_PREF_TRACKS_SOURCE
+                               : SettingsConstants.KEY_PREF_LOCATION_SOURCE;
+
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(context);
+        int providers = sharedPreferences.getInt(preferenceKey, GpsEventSource.GPS_PROVIDER |
+                                                                GpsEventSource.NETWORK_PROVIDER);
+
+        return 0 != (providers & currentProvider);
+    }
+
+
 }
