@@ -175,4 +175,14 @@ public class GeoPoint
         else
             return mX + " " + mY;
     }
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(! super.equals(o) )
+            return false;
+        GeoPoint otherPt = (GeoPoint)o;
+        return getX() == otherPt.getX() && getY() == otherPt.getY();
+    }
 }

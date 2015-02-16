@@ -21,16 +21,22 @@
 
 package com.nextgis.maplib.datasource;
 
+import android.content.ContentValues;
+import android.database.Cursor;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.map.VectorLayer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
@@ -193,5 +199,95 @@ public class Feature implements IJSONStore
     public List<Field> getFields()
     {
         return mFields;
+    }
+
+
+    public ContentValues getContentValues(boolean withId)
+            throws IOException
+    {
+        ContentValues returnValues = new ContentValues();
+        if(withId) {
+            returnValues.put(VectorLayer.FIELD_ID, mId);
+        }
+        returnValues.put(VectorLayer.FIELD_GEOM, mGeometry.toBlob());
+
+        for(int i = 0; i < mFields.size(); i++){
+            Field field = mFields.get(i);
+            Object value = mFieldValues.get(i);
+            if(null != value) {
+                switch(field.getType()) {
+                    case FTString:
+                        returnValues.put(field.getName(), (String)value);
+                        break;
+                    case FTReal:
+                        returnValues.put(field.getName(), (double)value);
+                        break;
+                    case FTInteger:
+                        returnValues.put(field.getName(), (long)value);
+                        break;
+                    case FTDateTime:
+                        Date date = (Date)value;
+                        returnValues.put(field.getName(), date.getTime());
+                        break;
+                }
+            }
+        }
+        return returnValues;
+    }
+
+
+    public void fromCursor(Cursor cursor)
+            throws IOException, ClassNotFoundException
+    {
+        if(null == cursor)
+            return;
+        mId = cursor.getLong(cursor.getColumnIndex(VectorLayer.FIELD_ID));
+        mGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(VectorLayer.FIELD_GEOM)));
+        for(int i = 0; i < mFields.size(); i++){
+            Field field = mFields.get(i);
+            int index = cursor.getColumnIndex(field.getName());
+            if(index != NOT_FOUND){
+                switch (field.getType()){
+                    case FTString:
+                        setFieldValue(i, cursor.getString(index));
+                        break;
+                    case FTInteger:
+                        setFieldValue(i, cursor.getLong(index));
+                        break;
+                    case FTReal:
+                        setFieldValue(i, cursor.getDouble(index));
+                        break;
+                    case FTDateTime:
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTimeInMillis(cursor.getLong(index));
+                        setFieldValue(i, calendar.getTime());
+                        break;
+                }
+            }
+        }
+    }
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(super.equals(o)) //if same pointers
+            return true;
+
+        Feature other = (Feature)o;
+        if(null == other)
+            return false;
+        // go deeper
+
+        //compare attributes
+        for(int i = 0; i < mFields.size(); i++){
+            Field field = mFields.get(i);
+            Object value = mFieldValues.get(i);
+            Object valueOther = other.getFieldValue(field.getName());
+            if(!value.equals(valueOther))
+                return false;
+        }
+        //compare geometry
+        return mGeometry.equals(other.getGeometry());
     }
 }

@@ -166,4 +166,27 @@ public class GeoLineString
         }
         return buf.toString();
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!super.equals(o))
+            return false;
+        GeoLineString otherLn = (GeoLineString) o;
+        for(int i = 0; i < mPoints.size(); i++){
+            GeoPoint pt = mPoints.get(i);
+            GeoPoint otherPt = otherLn.getPoint(i);
+            if(!pt.equals(otherPt))
+                return false;
+        }
+        return true;
+    }
+
+
+    public GeoPoint getPoint(int index)
+    {
+        if(index < mPoints.size())
+            return mPoints.get(index);
+        return null;
+    }
 }

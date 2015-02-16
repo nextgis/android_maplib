@@ -120,4 +120,11 @@ public abstract class GeoGeometry implements Serializable
 
     public abstract String toWKT(boolean full);
 
+    public boolean equals(Object o)
+    {
+        if(super.equals(o))
+            return true;
+        GeoGeometry other = (GeoGeometry)o;
+        return null != other && getType() == other.getType();
+    }
 }

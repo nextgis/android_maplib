@@ -179,4 +179,30 @@ public class GeoPolygon
         }
         return buf.toString();
     }
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!super.equals(o))
+            return false;
+        GeoPolygon otherPlg = (GeoPolygon) o;
+        if(!otherPlg.getOuterRing().equals(getOuterRing()))
+            return false;
+        for(int i = 0; i < mInnerRings.size(); i++){
+            GeoLinearRing ring = mInnerRings.get(i);
+            GeoLinearRing otherRing = otherPlg.getInnerRing(i);
+            if(!ring.equals(otherRing))
+                return false;
+        }
+        return true;
+    }
+
+
+    public GeoLinearRing getInnerRing(int index)
+    {
+        if(mInnerRings.size() > index)
+            return mInnerRings.get(index);
+        return null;
+    }
 }
