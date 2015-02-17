@@ -709,9 +709,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null);
-        if(!cursor.moveToFirst()) {
+        if(null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "addFeatureOnServer: Get cursor failed");
-            return true;
+            return false;
         }
 
         try {
@@ -811,9 +811,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null);
-        if (!cursor.moveToFirst()) {
+        if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "empty cursor for uri: " + uri);
-            return true;
+            return false;
         }
 
         try {

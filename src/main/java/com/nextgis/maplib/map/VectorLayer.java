@@ -28,6 +28,7 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
@@ -530,7 +531,13 @@ public class VectorLayer extends Layer
             throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
 
         SQLiteDatabase db = map.getDatabase(true);
-        return db.query(mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
+
+        try {
+            return db.query(mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
+        } catch (SQLiteException e) {
+            Log.d(TAG, e.getLocalizedMessage());
+            return null;
+        }
     }
 
     public Cursor query(
@@ -554,7 +561,9 @@ public class VectorLayer extends Layer
                     sortOrder = FIELD_ID + " ASC";
                 }
                 cursor = query(projection, selection, selectionArgs, sortOrder);
-                cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
+                if (null != cursor) {
+                    cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
+                }
                 return cursor;
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
@@ -565,7 +574,9 @@ public class VectorLayer extends Layer
                 }
 
                 cursor = query(projection, selection, selectionArgs, sortOrder);
-                cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
+                if (null != cursor) {
+                    cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
+                }
                 return cursor;
             case TYPE_PHOTO:
                 pathSegments = uri.getPathSegments();
