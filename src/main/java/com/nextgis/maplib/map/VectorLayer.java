@@ -527,8 +527,11 @@ public class VectorLayer extends Layer
                         String[] selectionArgs,
                         String sortOrder){
         MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+        if(null == map) {
+            Log.d(TAG, "The map should extends MapContentProviderHelper or inherited");
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
 
         SQLiteDatabase db = map.getDatabase(true);
 

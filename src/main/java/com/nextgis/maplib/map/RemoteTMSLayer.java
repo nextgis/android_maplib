@@ -81,6 +81,10 @@ public class RemoteTMSLayer
         mLayerType = LAYERTYPE_REMOTE_TMS;
     }
 
+    public void onPrepare(){
+        mAvailable.release(getMaxThreadCount());
+    }
+
 
     @Override
     public Bitmap getBitmap(TileItem tile)

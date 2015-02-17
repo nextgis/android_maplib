@@ -33,7 +33,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 public class GeoPolygon
         extends GeoGeometry
 {
-
+    protected static final long serialVersionUID =-1241179697270831764L;
     protected GeoLinearRing mOuterRing;
     protected List<GeoLinearRing> mInnerRings;
 

@@ -30,7 +30,7 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 public class GeoPoint
         extends GeoGeometry
 {
-
+    protected static final long serialVersionUID =-1241179697270831762L;
     protected double mX;
     protected double mY;
 

@@ -30,6 +30,7 @@ import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
+import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -165,6 +166,12 @@ public class TMSRenderer
 
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
+
+        if(tmsLayer instanceof RemoteTMSLayer){
+            RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer)tmsLayer;
+            remoteTMSLayer.onPrepare();
+        }
+
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, display.getBounds(), zoom);
 
         cancelDraw();

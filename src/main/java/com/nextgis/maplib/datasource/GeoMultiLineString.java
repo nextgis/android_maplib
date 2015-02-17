@@ -30,7 +30,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 public class GeoMultiLineString
         extends GeoGeometryCollection
 {
-
+    protected static final long serialVersionUID =-1241179697270831766L;
     @Override
     public void add(GeoGeometry geometry)
             throws ClassCastException

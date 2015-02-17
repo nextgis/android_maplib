@@ -30,7 +30,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 public class GeoMultiPolygon
         extends GeoGeometryCollection
 {
-
+    protected static final long serialVersionUID =-1241179697270831767L;
     @Override
     public void add(GeoGeometry geometry)
             throws ClassCastException

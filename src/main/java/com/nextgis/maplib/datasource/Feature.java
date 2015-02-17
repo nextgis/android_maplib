@@ -23,6 +23,7 @@ package com.nextgis.maplib.datasource;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.util.Log;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.map.VectorLayer;
 import org.json.JSONException;
@@ -116,7 +117,7 @@ public class Feature implements IJSONStore
 
     public Object getFieldValue(int index)
     {
-        if (index < 0 || index >= mFields.size() || index >= mFieldValues.size())
+        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() || index >= mFieldValues.size())
             return null;
         return mFieldValues.get(index);
     }
@@ -139,7 +140,7 @@ public class Feature implements IJSONStore
     }
 
     public String getFieldValueAsString(int index) {
-        if (index < 0 || index >= mFields.size() || index >= mFieldValues.size())
+        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() || index >= mFieldValues.size())
             return "";
         Object val = mFieldValues.get(index);
         if(null == val)
@@ -203,65 +204,97 @@ public class Feature implements IJSONStore
 
 
     public ContentValues getContentValues(boolean withId)
-            throws IOException
     {
         ContentValues returnValues = new ContentValues();
         if(withId) {
             returnValues.put(VectorLayer.FIELD_ID, mId);
         }
-        returnValues.put(VectorLayer.FIELD_GEOM, mGeometry.toBlob());
+
+        try {
+            if(null != mGeometry)
+                returnValues.put(VectorLayer.FIELD_GEOM, mGeometry.toBlob());
+        }
+        catch (IOException e){ //if exception - not create geom
+            e.printStackTrace();
+        }
 
         for(int i = 0; i < mFields.size(); i++){
             Field field = mFields.get(i);
-            Object value = mFieldValues.get(i);
+            Object value = getFieldValue(i);
+
             if(null != value) {
                 switch(field.getType()) {
                     case FTString:
                         returnValues.put(field.getName(), (String)value);
                         break;
                     case FTReal:
-                        returnValues.put(field.getName(), (double)value);
+                        if(value instanceof Double)
+                            returnValues.put(field.getName(), (double)value);
+                        else
+                            returnValues.put(field.getName(), (float)value);
                         break;
                     case FTInteger:
-                        returnValues.put(field.getName(), (long)value);
+                        if(value instanceof Long)
+                            returnValues.put(field.getName(), (long)value);
+                        else
+                            returnValues.put(field.getName(), (int)value);
                         break;
                     case FTDateTime:
                         Date date = (Date)value;
                         returnValues.put(field.getName(), date.getTime());
                         break;
+                    default:
+                        break;
                 }
             }
+            else{
+                returnValues.putNull(field.getName());
+            }
         }
+
         return returnValues;
     }
 
 
     public void fromCursor(Cursor cursor)
-            throws IOException, ClassNotFoundException
     {
         if(null == cursor)
             return;
         mId = cursor.getLong(cursor.getColumnIndex(VectorLayer.FIELD_ID));
-        mGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(VectorLayer.FIELD_GEOM)));
+
+        try {
+            mGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(VectorLayer.FIELD_GEOM)));
+        }
+        catch (ClassNotFoundException | IOException e){ //let it be empty geometry
+            e.printStackTrace();
+        }
+
         for(int i = 0; i < mFields.size(); i++){
             Field field = mFields.get(i);
             int index = cursor.getColumnIndex(field.getName());
-            if(index != NOT_FOUND){
-                switch (field.getType()){
-                    case FTString:
-                        setFieldValue(i, cursor.getString(index));
-                        break;
-                    case FTInteger:
-                        setFieldValue(i, cursor.getLong(index));
-                        break;
-                    case FTReal:
-                        setFieldValue(i, cursor.getDouble(index));
-                        break;
-                    case FTDateTime:
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.setTimeInMillis(cursor.getLong(index));
-                        setFieldValue(i, calendar.getTime());
-                        break;
+            if(cursor.isNull(index)){
+                setFieldValue(i, null);
+            }
+            else {
+                if (index != NOT_FOUND) {
+                    switch (field.getType()) {
+                        case FTString:
+                            setFieldValue(i, cursor.getString(index));
+                            break;
+                        case FTInteger:
+                            setFieldValue(i, cursor.getLong(index));
+                            break;
+                        case FTReal:
+                            setFieldValue(i, cursor.getDouble(index));
+                            break;
+                        case FTDateTime:
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTimeInMillis(cursor.getLong(index));
+                            setFieldValue(i, calendar.getTime());
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         }
@@ -280,14 +313,79 @@ public class Feature implements IJSONStore
         // go deeper
 
         //compare attributes
+        Log.d(TAG, "Feature id:" + mId + " compare attributes");
         for(int i = 0; i < mFields.size(); i++){
             Field field = mFields.get(i);
-            Object value = mFieldValues.get(i);
+
+            Object value = getFieldValue(i);
             Object valueOther = other.getFieldValue(field.getName());
-            if(!value.equals(valueOther))
+
+            //Log.d(TAG, value + "<->" + valueOther);
+
+            if(null == value){
+                if(null != valueOther) {
+                    if(field.getType() == FTDateTime){
+                        Date dt = (Date)valueOther;
+                        if(dt.getTime() != 0) {
+                            Log.d(TAG, value + "<->" + valueOther);
+                            return false;
+                        }
+                    }
+                    else{
+                        Log.d(TAG, value + "<->" + valueOther);
+                        return false;
+                    }
+                }
+            }
+            else if(null == valueOther){
+                Log.d(TAG, value + "<->" + valueOther);
                 return false;
+            }
+            else {
+                if(value instanceof Integer && valueOther instanceof Long){
+                    Integer vlong = (Integer)value;
+                    Long ovlong = (Long)valueOther;
+                    if(vlong != ovlong.intValue()) {
+                        Log.d(TAG, value + "<->" + valueOther);
+                        return false;
+                    }
+                }
+                else if(value instanceof Long && valueOther instanceof Integer){
+                    Long vlong = (Long)value;
+                    Integer ovlong = (Integer)valueOther;
+                    if(vlong.intValue() != ovlong) {
+                        Log.d(TAG, value + "<->" + valueOther);
+                        return false;
+                    }
+                }
+                else if(value instanceof Float && valueOther instanceof Double){
+                    Float vlong = (Float)value;
+                    Double ovlong = (Double)valueOther;
+                    if(vlong != ovlong.floatValue()) {
+                        Log.d(TAG, value + "<->" + valueOther);
+                        return false;
+                    }
+                }
+                else if(value instanceof Double && valueOther instanceof Float){
+                    Double vlong = (Double)value;
+                    Float ovlong = (Float)valueOther;
+                    if(vlong.floatValue() != ovlong) {
+                        Log.d(TAG, value + "<->" + valueOther);
+                        return false;
+                    }
+                }
+                else if (!value.equals(valueOther)) {
+                    Log.d(TAG, value + "<->" + valueOther);
+                    return false;
+                }
+            }
         }
+
         //compare geometry
+        Log.d(TAG, "compare geometry");
+        if(null == mGeometry){
+            return null == other.getGeometry();
+        }
         return mGeometry.equals(other.getGeometry());
     }
 }

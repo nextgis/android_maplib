@@ -48,6 +48,7 @@ import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -506,10 +507,16 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             loadChanges(jsonObject);
 
             //1. get remote changes
-            //getChangesFromServer(authority, syncResult);
+            if(!getChangesFromServer(authority, syncResult)) {
+                Log.d(TAG, "Get remote changes failed");
+                return;
+            }
 
             //2. send current changes
-            sendLocalChanges(syncResult);
+            if(!sendLocalChanges(syncResult)){
+                Log.d(TAG, "Set local changes failed");
+                return;
+            }
 
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
             save();
@@ -519,7 +526,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
-    protected void sendLocalChanges(SyncResult syncResult)
+    protected boolean sendLocalChanges(SyncResult syncResult)
     {
         int changesCount = mChanges.size();
         Log.d(TAG, "sendLocalChanges: " + changesCount);
@@ -565,6 +572,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             //notify to reload changes
             getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
         }
+
+        return true;
     }
 
     protected void changeFeatureId(long oldFeatureId, long newFeatureId)
@@ -600,11 +609,13 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     }
 
 
-    protected void getChangesFromServer(String authority, SyncResult syncResult)
+    protected boolean getChangesFromServer(String authority, SyncResult syncResult)
     {
         if(!mNet.isNetworkAvailable()){
-            return;
+            return false;
         }
+
+        Log.d(TAG, "The network is available. Get changes from server");
 
         try {
             final HttpGet get = new HttpGet(NGWUtil.getVectorDataUrl(mURL, mRemoteId));
@@ -625,35 +636,45 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
                            line);
                 syncResult.stats.numIoExceptions++;
-                return;
+                return false;
             }
 
             final HttpEntity entity = response.getEntity();
             if (entity == null) {
                 Log.d(TAG, "No content downloading GeoJSON: " + mURL);
                 syncResult.stats.numIoExceptions++;
-                return;
+                return false;
             }
 
             String data = EntityUtils.toString(entity);
             JSONArray featuresJSONArray = new JSONArray(data);
             List<Feature> features = jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
-/*
+            Log.d(TAG, "Get " + features.size() + " feature(s) from server");
+
             for(Feature remoteFeature : features){
                 Cursor cursor = query(null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
-
                 //no local feature
                 if(null == cursor || cursor.getCount() == 0){
+
+                    boolean createNewFeature = true;
                     for(ChangeFeatureItem change : mChanges){
-                        if(change.getFeatureId() == remoteFeature.getId())
-                            continue;
+                        if(change.getFeatureId() == remoteFeature.getId()) {
+                            createNewFeature = false; //if have changes (delete) not create new feature
+                            break;
+                        }
                     }
                     //create new feature with remoteId
-                    ContentValues values = remoteFeature.getContentValues(true);
-                    insert(, values);
+                    if(createNewFeature) {
+                        ContentValues values = remoteFeature.getContentValues(true);
+                        Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
+                        //prevent add changes and events
+                        uri = uri.buildUpon().fragment(NO_SYNC).build();
+                        Uri newFeatureUri = insert(uri, values);
+                        Log.d(TAG, "Add new feature from server - " + newFeatureUri.toString());
+                    }
                 }
                 else {
-
+                    cursor.moveToFirst();
                     Feature currentFeature = cursorToFeature(cursor);
                     //compare features
 
@@ -662,6 +683,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                         for(int i = 0; i < mChanges.size(); i++){
                             ChangeFeatureItem change = mChanges.get(i);
                             if(change.getFeatureId() == remoteFeature.getId()) {
+                                Log.d(TAG, "The feature " + change.getFeatureId() + " already changed on server. Remove change set #" + i);
                                 mChanges.remove(i);
                                 i--;
                             }
@@ -680,25 +702,32 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                             ContentValues values = remoteFeature.getContentValues(false);
 
                             Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
-                            Uri updateUri =
-                                    ContentUris.withAppendedId(uri, 29);
-
-                            update(, values, null, null);
+                            Uri updateUri = ContentUris.withAppendedId(uri, remoteFeature.getId());
+                            updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
+                            //prevent add changes
+                            int count = update(updateUri, values, null, null);
+                            Log.d(TAG, "Update feature (" + count + ") from server - " + remoteFeature.getId());
                         }
                     }
                 }
             }
-*/
-        } catch (IOException e) {
-            Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
-                       e.getLocalizedMessage());
-            syncResult.stats.numIoExceptions++;
+            return true;
         }
-        catch (JSONException e) {
+        catch (IOException | JSONException e) {
             e.printStackTrace();
             syncResult.stats.numParseExceptions++;
         }
+        return false;
     }
+
+
+    protected Feature cursorToFeature(Cursor cursor)
+    {
+        Feature out = new Feature((long)NOT_FOUND, getFields());
+        out.fromCursor(cursor);
+        return out;
+    }
+
 
     protected boolean addFeatureOnServer(long featureId, SyncResult syncResult)
     {
@@ -711,7 +740,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         Cursor cursor = query(uri, null, null, null, null);
         if(null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "addFeatureOnServer: Get cursor failed");
-            return false;
+            return true; //just remove buggy data
         }
 
         try {
@@ -813,7 +842,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         Cursor cursor = query(uri, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "empty cursor for uri: " + uri);
-            return false;
+            return true; //just remove buggy data
         }
 
         try {

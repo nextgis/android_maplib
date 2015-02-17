@@ -33,7 +33,7 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 public class GeoGeometryCollection
         extends GeoGeometry
 {
-
+    protected static final long serialVersionUID =-1241179697270831768L;
     protected List<GeoGeometry> mGeometries;
 
 

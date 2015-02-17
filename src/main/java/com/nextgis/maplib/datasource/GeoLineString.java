@@ -32,7 +32,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 public class GeoLineString
         extends GeoGeometry
 {
-
+    protected static final long serialVersionUID =-1241179697270831763L;
     protected List<GeoPoint> mPoints;
 
 
