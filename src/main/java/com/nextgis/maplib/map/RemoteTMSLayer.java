@@ -82,7 +82,10 @@ public class RemoteTMSLayer
     }
 
     public void onPrepare(){
-        mAvailable.release(getMaxThreadCount());
+        int diff = getMaxThreadCount() - mAvailable.availablePermits();
+        if( diff > 0 )
+            mAvailable.release(diff);
+        Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
     }
 
 
@@ -129,7 +132,7 @@ public class RemoteTMSLayer
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             mAvailable.acquire();
-            Log.d(TAG, "Semaphore left: " + mAvailable.getQueueLength());
+            Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
             final HttpResponse response = HTTPClient.execute(get);
             mAvailable.release();
 
