@@ -21,14 +21,15 @@
 
 package com.nextgis.maplib.display;
 
-import android.database.Cursor;
 import android.graphics.Paint;
 import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.map.TrackLayer;
-import com.nextgis.maplib.util.GeoConstants;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.List;
 
 
 public class TrackRenderer
@@ -43,6 +44,7 @@ public class TrackRenderer
 
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeCap(Paint.Cap.ROUND);
     }
 
 
@@ -66,39 +68,18 @@ public class TrackRenderer
     public void runDraw(GISDisplay display)
     {
         TrackLayer layer = (TrackLayer) mLayer;
-        layer.loadTracks();
 
         mPaint.setColor(layer.getColor());
-        mPaint.setStrokeWidth((float) (4 / display.getScale()));
+        mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
 
-        int size = layer.getTracksCount();
+        List<GeoLineString> trackLines = layer.getTracks();
+        for (GeoLineString trackLine : trackLines) {
+            List<GeoPoint> points = trackLine.getPoints();
 
-        for (int i = 0; i < size; i++) {
-            Cursor track = layer.getTrack(i);
-
-            if (track == null || !track.moveToFirst()) {
-                continue;
-            }
-
-            float x0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LON)),
-                    y0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LAT)), x1, y1;
-
-            GeoPoint point0 = new GeoPoint(x0, y0);
-            point0.setCRS(GeoConstants.CRS_WGS84);
-            point0.project(GeoConstants.CRS_WEB_MERCATOR);
-            x0 = (float) point0.getX();
-            y0 = (float) point0.getY();
-
-            while (track.moveToNext()) {
-                x1 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LON));
-                y1 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LAT));
-                point0.setCoordinates(x1, y1);
-                point0.setCRS(GeoConstants.CRS_WGS84);
-                point0.project(GeoConstants.CRS_WEB_MERCATOR);
-
-                display.drawLine(x0, y0, (float) point0.getX(), (float) point0.getY(), mPaint);
-                x0 = (float) point0.getX();
-                y0 = (float) point0.getY();
+            for (int i = 1; i < points.size(); i++) {
+                display.drawLine((float) points.get(i - 1).getX(), (float) points.get(i - 1).getY(),
+                                 (float) points.get(i).getX(), (float) points.get(i).getY(),
+                                 mPaint);
             }
         }
 

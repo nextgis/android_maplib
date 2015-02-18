@@ -58,17 +58,17 @@ public class TrackerService
         implements LocationListener, GpsStatus.Listener
 {
     //    private final       String TAG          = "com.nextgis.mobile";
+    public static final  String TEMP_PREFERENCES      = "tracks_temp";
     public static final  String TARGET_CLASS          = "target_class";
     private static final String TRACK_URI             = "track_uri";
     private static final String ACTION_STOP           = "TRACK_STOP";
     private static final String ACTION_SPLIT          = "TRACK_SPLIT";
     private static final int    TRACK_NOTIFICATION_ID = 1;
-    private static final int    MODE_MULTI_PROCESS    = 0x4;
 
     private boolean         mIsRunning;
     private LocationManager mLocationManager;
 
-    private SharedPreferences mSharedPreferences;
+    private SharedPreferences mSharedPreferencesTemp;
     private String            mTrackName, mTrackId;
     private Uri mContentUriTracks, mContentUriTrackpoints, mNewTrack;
     private Cursor        mLastTrack;
@@ -96,13 +96,14 @@ public class TrackerService
 
         mValues = new ContentValues();
 
-        mSharedPreferences =
-                getSharedPreferences(getPackageName() + "_preferences", MODE_MULTI_PROCESS);
+        SharedPreferences sharedPreferences =
+                getSharedPreferences(getPackageName() + "_preferences", MODE_PRIVATE);
+        mSharedPreferencesTemp = getSharedPreferences(TEMP_PREFERENCES, MODE_PRIVATE);
 
         String minTimeStr =
-                mSharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_TIME, "10");
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_TIME, "0");
         String minDistanceStr =
-                mSharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_DISTANCE, "2");
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_DISTANCE, "2");
         long minTime = Long.parseLong(minTimeStr) * 1000;
         float minDistance = Float.parseFloat(minDistanceStr);
 
@@ -116,7 +117,7 @@ public class TrackerService
         }
 
         provider = LocationManager.NETWORK_PROVIDER;
-        if (LocationUtil.isProviderEnabled(this, provider, true) &&
+        if (LocationUtil.isProviderEnabled(this, provider, false) &&
             mLocationManager.getAllProviders().contains(provider)) {
             mLocationManager.requestLocationUpdates(provider, minTime, minDistance, this);
         }
@@ -164,11 +165,11 @@ public class TrackerService
             // there are no tracks or last track correctly ended
             if (!hasLastTrack() || isLastTrackClosed()) {
                 startTrack();
-                mSharedPreferences.edit().putString(TARGET_CLASS, targetActivity).commit();
+                mSharedPreferencesTemp.edit().putString(TARGET_CLASS, targetActivity).commit();
             } else {
                 // looks like service was killed, restore data
                 restoreData();
-                targetActivity = mSharedPreferences.getString(TARGET_CLASS, "");
+                targetActivity = mSharedPreferencesTemp.getString(TARGET_CLASS, "");
             }
 
             initTargetIntent(targetActivity);
@@ -206,7 +207,7 @@ public class TrackerService
     private void restoreData()
     {
         mTrackName = mLastTrack.getString(mLastTrack.getColumnIndex(TrackLayer.FIELD_NAME));
-        mNewTrack = Uri.parse(mSharedPreferences.getString(TRACK_URI, ""));
+        mNewTrack = Uri.parse(mSharedPreferencesTemp.getString(TRACK_URI, ""));
         mTrackId = mNewTrack.getLastPathSegment();
         mIsRunning = true;
     }
@@ -248,7 +249,7 @@ public class TrackerService
 
         // save vars
         mTrackId = mNewTrack.getLastPathSegment();
-        mSharedPreferences.edit().putString(TRACK_URI, mNewTrack.toString()).commit();
+        mSharedPreferencesTemp.edit().putString(TRACK_URI, mNewTrack.toString()).commit();
         mIsRunning = true;
 
         // set midnight track splitter
@@ -270,6 +271,9 @@ public class TrackerService
 
         // cancel midnight splitter
         mAlarmManager.cancel(mSplitService);
+
+        mSharedPreferencesTemp.edit().remove(TARGET_CLASS).commit();
+        mSharedPreferencesTemp.edit().remove(TRACK_URI).commit();
     }
 
 
