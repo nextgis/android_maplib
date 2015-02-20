@@ -28,6 +28,7 @@ import android.content.Intent;
 import android.content.SyncResult;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Base64;
@@ -35,10 +36,10 @@ import android.util.Log;
 import android.widget.Toast;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
-import com.nextgis.maplib.datasource.GeoGeometry;
-import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
+import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.FileUtil;
@@ -48,7 +49,6 @@ import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -494,10 +494,11 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
      * @param syncResult - report some errors via this parameter
      */
     public void sync(
+            SyncAdapter syncAdapter,
             String authority,
             SyncResult syncResult)
     {
-        if(0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
+        if (syncAdapter.isSyncStopped() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -518,15 +519,19 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                 return;
             }
 
+            if (syncAdapter.isSyncStopped()) {
+                return;
+            }
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
             save();
 
-        } catch (JSONException | IOException e) {
+        } catch (JSONException | IOException | SQLiteException e) {
             e.printStackTrace();
         }
     }
 
     protected boolean sendLocalChanges(SyncResult syncResult)
+            throws SQLiteException
     {
         int changesCount = mChanges.size();
         Log.d(TAG, "sendLocalChanges: " + changesCount);
@@ -610,6 +615,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
 
     protected boolean getChangesFromServer(String authority, SyncResult syncResult)
+            throws SQLiteException
     {
         if(!mNet.isNetworkAvailable()){
             return false;
@@ -730,6 +736,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
 
     protected boolean addFeatureOnServer(long featureId, SyncResult syncResult)
+            throws SQLiteException
     {
         if(!mNet.isNetworkAvailable()){
             return false;
@@ -832,6 +839,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     }
 
     protected boolean changeFeatureOnServer(long featureId, SyncResult syncResult)
+            throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
             return false;

@@ -65,6 +65,8 @@ public class SyncAdapter
     public static final String SYNC_FINISH = "com.nextgis.maplib.sync_finish";
     public static final String SYNC_CHANGES = "com.nextgis.maplib.sync_changes";
 
+    protected boolean mIsSyncStopped = false;
+
     public SyncAdapter(
             Context context,
             boolean autoInitialize)
@@ -93,6 +95,8 @@ public class SyncAdapter
     {
         Log.d(TAG, "onPerformSync");
 
+        setSyncStopped(false);
+
         getContext().sendBroadcast(new Intent(SYNC_START));
 
         IGISApplication application = (IGISApplication)getContext();
@@ -116,13 +120,16 @@ public class SyncAdapter
             SyncResult syncResult)
     {
         for(int i = 0; i < layerGroup.getLayerCount(); i++){
+            if (isSyncStopped()) {
+                return;
+            }
             ILayer layer = layerGroup.getLayer(i);
             if(layer instanceof LayerGroup){
                 sync((LayerGroup) layer, authority, syncResult);
             }
             else if(layer instanceof NGWVectorLayer){
                 NGWVectorLayer ngwVectorLayer = (NGWVectorLayer)layer;
-                ngwVectorLayer.sync(authority, syncResult);
+                ngwVectorLayer.sync(this, authority, syncResult);
             }
         }
     }
@@ -134,5 +141,36 @@ public class SyncAdapter
             ContentResolver.addPeriodicSync(account, application.getAuthority(), extras,
                                             pollFrequency);
         }
+    }
+
+
+    protected void setSyncStopped(boolean stopped)
+    {
+        mIsSyncStopped = stopped;
+    }
+
+
+    public boolean isSyncStopped()
+    {
+        return mIsSyncStopped;
+    }
+
+
+    // This will only be invoked when the SyncAdapter indicates that it doesn't support parallel syncs.
+    @Override
+    public void onSyncCanceled()
+    {
+        super.onSyncCanceled();
+        setSyncStopped(true);
+    }
+
+
+    // This will only be invoked when the SyncAdapter indicates that it does support parallel syncs.
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void onSyncCanceled(Thread thread)
+    {
+        super.onSyncCanceled(thread);
+        setSyncStopped(true);
     }
 }
