@@ -500,6 +500,7 @@ public class VectorLayer extends Layer
 
     @Override
     public boolean delete()
+            throws SQLiteException
     {
         //drop table
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
