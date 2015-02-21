@@ -167,8 +167,8 @@ public class SyncAdapter
     @Override
     public void onSyncCanceled()
     {
-        super.onSyncCanceled();
         setSyncStopped(true);
+        super.onSyncCanceled();
     }
 
 
@@ -177,7 +177,7 @@ public class SyncAdapter
     @Override
     public void onSyncCanceled(Thread thread)
     {
-        super.onSyncCanceled(thread);
         setSyncStopped(true);
+        super.onSyncCanceled(thread);
     }
 }
