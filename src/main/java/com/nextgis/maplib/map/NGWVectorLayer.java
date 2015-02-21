@@ -532,7 +532,7 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
-        if (syncAdapter.isCanceled() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
+        if (null != syncAdapter && syncAdapter.isCanceled() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -553,7 +553,7 @@ public class NGWVectorLayer
                 return;
             }
 
-            if (syncAdapter.isCanceled()) {
+            if (null != syncAdapter && syncAdapter.isCanceled()) {
                 return;
             }
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
