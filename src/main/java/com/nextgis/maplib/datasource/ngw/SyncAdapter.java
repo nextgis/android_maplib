@@ -130,7 +130,7 @@ public class SyncAdapter
                 sync((LayerGroup) layer, authority, syncResult);
             } else if (layer instanceof NGWVectorLayer) {
                 NGWVectorLayer ngwVectorLayer = (NGWVectorLayer) layer;
-                ngwVectorLayer.sync(this, authority, syncResult);
+                ngwVectorLayer.sync(authority, syncResult);
             }
         }
     }

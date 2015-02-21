@@ -522,17 +522,15 @@ public class NGWVectorLayer
     /**
      * Synchronize changes with NGW. Should be run from non UI thread.
      *
-     * @param syncAdapter
      * @param authority
      * @param syncResult
      *         - report some errors via this parameter
      */
     public void sync(
-            SyncAdapter syncAdapter,
             String authority,
             SyncResult syncResult)
     {
-        if (null != syncAdapter && syncAdapter.isCanceled() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
+        if (Thread.currentThread().isInterrupted() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -553,7 +551,7 @@ public class NGWVectorLayer
                 return;
             }
 
-            if (null != syncAdapter && syncAdapter.isCanceled()) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
