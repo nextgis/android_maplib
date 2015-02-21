@@ -42,16 +42,6 @@ import static com.nextgis.maplib.util.Constants.*;
 
 public abstract class LayerFactory
 {
-
-    protected File mMapPath;
-
-
-    public LayerFactory(File mapPath)
-    {
-        mMapPath = mapPath;
-    }
-
-
     public ILayer createLayer(
             Context context,
             File path)

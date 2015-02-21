@@ -123,7 +123,7 @@ public class FileUtil
             }
 
             for (String path : from.list()) {
-                if(copyRecursive(new File(from, path), new File(to, path)))
+                if(!copyRecursive(new File(from, path), new File(to, path)))
                     return false;
             }
         }

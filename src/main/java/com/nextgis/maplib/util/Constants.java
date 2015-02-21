@@ -97,6 +97,14 @@ public interface Constants
     public static final int LAYERTYPE_TRACKS       = 1 << 6;
 
     /**
+     * File type
+     */
+    public static final int FILETYPE_FOLDER   = 1 << 0;
+    public static final int FILETYPE_ZIP      = 1 << 1;
+    public static final int FILETYPE_GEOJSON  = 1 << 2;
+    public static final int FILETYPE_FB       = 1 << 3;
+
+    /**
      * time constants
      */
     public static final long     ONE_SECOND                      = 1000;

@@ -103,4 +103,20 @@ public class MapBase
     {
         return new File(getPath(), mFileName);
     }
+
+
+    public void moveTo(File newPath){
+
+        if(mPath.equals(newPath))
+            return;
+
+        clearLayers();
+
+        if(FileUtil.move(mPath, newPath)) {
+            //change path
+            mPath = newPath;
+        }
+        load();
+    }
+
 }
