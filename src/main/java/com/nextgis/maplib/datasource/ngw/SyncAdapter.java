@@ -125,7 +125,7 @@ public class SyncAdapter
     {
         for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             if (isSyncStopped()) {
-                return;
+                break;
             }
             ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
