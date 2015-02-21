@@ -61,12 +61,10 @@ https://books.google.ru/books?id=SXlMAQAAQBAJ&pg=PA158&lpg=PA158&dq=android:sync
 public class SyncAdapter
         extends AbstractThreadedSyncAdapter
 {
-    public static final String SYNC_START       = "com.nextgis.maplib.sync_start";
-    public static final String SYNC_FINISH      = "com.nextgis.maplib.sync_finish";
-    public static final String SYNC_INTERRUPTED = "com.nextgis.maplib.sync_interrupted";
-    public static final String SYNC_CHANGES     = "com.nextgis.maplib.sync_changes";
-
-    protected boolean mIsSyncStopped = false;
+    public static final String SYNC_START    = "com.nextgis.maplib.sync_start";
+    public static final String SYNC_FINISH   = "com.nextgis.maplib.sync_finish";
+    public static final String SYNC_CANCELED = "com.nextgis.maplib.sync_canceled";
+    public static final String SYNC_CHANGES  = "com.nextgis.maplib.sync_changes";
 
 
     public SyncAdapter(
@@ -97,8 +95,6 @@ public class SyncAdapter
     {
         Log.d(TAG, "onPerformSync");
 
-        setSyncStopped(false);
-
         getContext().sendBroadcast(new Intent(SYNC_START));
 
         IGISApplication application = (IGISApplication) getContext();
@@ -108,13 +104,15 @@ public class SyncAdapter
             sync(mapContentProviderHelper, authority, syncResult);
         }
 
-        SharedPreferences settings = getContext().getSharedPreferences(
-                Constants.PREFERENCES, Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
-        editor.commit();
+        if (!isCanceled()) {
+            SharedPreferences settings = getContext().getSharedPreferences(
+                    Constants.PREFERENCES, Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
+            editor.commit();
+        }
 
-        getContext().sendBroadcast(new Intent(isSyncStopped() ? SYNC_INTERRUPTED : SYNC_FINISH));
+        getContext().sendBroadcast(new Intent(isCanceled() ? SYNC_CANCELED : SYNC_FINISH));
     }
 
 
@@ -124,8 +122,8 @@ public class SyncAdapter
             SyncResult syncResult)
     {
         for (int i = 0; i < layerGroup.getLayerCount(); i++) {
-            if (isSyncStopped()) {
-                break;
+            if (isCanceled()) {
+                return;
             }
             ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
@@ -151,15 +149,16 @@ public class SyncAdapter
     }
 
 
-    protected void setSyncStopped(boolean stopped)
+    public boolean isCanceled()
     {
-        mIsSyncStopped = stopped;
+        return Thread.currentThread().isInterrupted();
     }
 
 
-    public boolean isSyncStopped()
+    protected void onCanceled()
     {
-        return mIsSyncStopped;
+        // we try do this before thread is killed
+        getContext().sendBroadcast(new Intent(SYNC_CANCELED));
     }
 
 
@@ -167,7 +166,7 @@ public class SyncAdapter
     @Override
     public void onSyncCanceled()
     {
-        setSyncStopped(true);
+        onCanceled();
         super.onSyncCanceled();
     }
 
@@ -177,7 +176,7 @@ public class SyncAdapter
     @Override
     public void onSyncCanceled(Thread thread)
     {
-        setSyncStopped(true);
+        onCanceled();
         super.onSyncCanceled(thread);
     }
 }

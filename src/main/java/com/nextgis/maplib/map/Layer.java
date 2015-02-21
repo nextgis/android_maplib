@@ -22,6 +22,7 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteException;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
@@ -206,10 +207,7 @@ public class Layer
         try {
             JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
             fromJSON(jsonObject);
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return false;
-        } catch (IOException e) {
+        } catch (JSONException | IOException | SQLiteException e) {
             e.printStackTrace();
             return false;
         }

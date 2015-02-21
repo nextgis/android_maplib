@@ -70,7 +70,9 @@ import java.util.List;
 import static com.nextgis.maplib.util.Constants.*;
 
 
-public class NGWVectorLayer extends VectorLayer implements INGWLayer
+public class NGWVectorLayer
+        extends VectorLayer
+        implements INGWLayer
 {
     protected String      mAccountName;
     protected String      mURL;
@@ -78,16 +80,16 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     protected NetworkUtil mNet;
     protected String      mLogin;
     protected String      mPassword;
-    protected int mSyncType; //0 - no sync, 1 - data, 2 - photo
+    protected int         mSyncType; //0 - no sync, 1 - data, 2 - photo
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/photo
 
     protected List<ChangeFeatureItem> mChanges;
 
-    protected static final String JSON_ACCOUNT_KEY  = "account";
-    protected static final String JSON_URL_KEY      = "url";
-    protected static final String JSON_LOGIN_KEY    = "login";
-    protected static final String JSON_PASSWORD_KEY = "password";
+    protected static final String JSON_ACCOUNT_KEY   = "account";
+    protected static final String JSON_URL_KEY       = "url";
+    protected static final String JSON_LOGIN_KEY     = "login";
+    protected static final String JSON_PASSWORD_KEY  = "password";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
 
 
@@ -129,6 +131,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         mRemoteId = remoteId;
     }
 
+
     public void setLogin(String login)
     {
         mLogin = login;
@@ -139,6 +142,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
     {
         mPassword = password;
     }
+
 
     @Override
     public JSONObject toJSON()
@@ -162,18 +166,21 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     @Override
     public void fromJSON(JSONObject jsonObject)
-            throws JSONException
+            throws JSONException, SQLiteException
     {
         super.fromJSON(jsonObject);
         mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
         mURL = jsonObject.getString(JSON_URL_KEY);
         mRemoteId = jsonObject.getLong(JSON_ID_KEY);
-        if (jsonObject.has(JSON_LOGIN_KEY))
+        if (jsonObject.has(JSON_LOGIN_KEY)) {
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
-        if (jsonObject.has(JSON_PASSWORD_KEY))
+        }
+        if (jsonObject.has(JSON_PASSWORD_KEY)) {
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
-        if(jsonObject.has(JSON_SYNC_TYPE_KEY))
+        }
+        if (jsonObject.has(JSON_SYNC_TYPE_KEY)) {
             mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
+        }
 
         loadChanges(jsonObject);
 
@@ -183,8 +190,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
+
     protected void loadChanges(JSONObject jsonObject)
-            throws JSONException
+            throws JSONException, SQLiteException
     {
         if (jsonObject.has(JSON_CHANGES_KEY)) {
             mChanges.clear();
@@ -211,26 +219,29 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         new DownloadTask().execute();
     }
 
+
     public static List<Field> getFieldsFromJson(JSONArray fieldsJSONArray)
             throws JSONException
     {
         List<Field> fields = new ArrayList<>();
-        for(int i = 0; i < fieldsJSONArray.length(); i++){
+        for (int i = 0; i < fieldsJSONArray.length(); i++) {
             JSONObject fieldJSONObject = fieldsJSONArray.getJSONObject(i);
             String type = fieldJSONObject.getString("datatype");
             String alias = fieldJSONObject.getString("display_name");
             String name = fieldJSONObject.getString("keyname");
 
             int nType = stringToType(type);
-            if(NOT_FOUND != nType){
+            if (NOT_FOUND != nType) {
                 fields.add(new Field(nType, name, alias));
             }
         }
         return fields;
     }
 
+
     /**
      * download and create new NGW layer from GeoJSON data
+     *
      * @return the error message or null if everything is ok
      */
     public String download()
@@ -245,7 +256,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             //get layer definition
             HttpGet get = new HttpGet(NGWUtil.getResourceMetaUrl(mURL, mRemoteId));
             //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
+                mPassword.length() > 0) {
                 get.setHeader("Accept", "*/*");
                 final String basicAuth = "Basic " + Base64.encodeToString(
                         (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
@@ -257,8 +269,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
-                           line);
+                Log.d(
+                        TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                             line);
                 return getContext().getString(R.string.error_download_data);
             }
 
@@ -280,17 +293,20 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             JSONObject vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
             String geomTypeString = vectorLayerJSONObject.getString("geometry_type");
             int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
-            if(geomType < 4)
+            if (geomType < 4) {
                 geomType += 3;
+            }
             JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
             int nSRS = srs.getInt("id");
-            if(nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84)
+            if (nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84) {
                 return getContext().getString(R.string.error_crs_unsupported);
+            }
 
             //get layer data
             get = new HttpGet(NGWUtil.getFeaturesUrl(mURL, mRemoteId)); //get as GeoJSON
             //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
+                mPassword.length() > 0) {
                 get.setHeader("Accept", "*/*");
                 final String basicAuth = "Basic " + Base64.encodeToString(
                         (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
@@ -303,8 +319,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
-                           line);
+                Log.d(
+                        TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                             line);
                 return getContext().getString(R.string.error_download_data);
             }
 
@@ -322,55 +339,63 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             return initialize(fields, features, geomType);
 
         } catch (IOException e) {
-            Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
-                       e.getLocalizedMessage());
+            Log.d(
+                    TAG, "Problem downloading GeoJSON: " + mURL + " Error: " +
+                         e.getLocalizedMessage());
             return getContext().getString(R.string.error_download_data);
-        }
-        catch (JSONException e) {
+        } catch (JSONException | SQLiteException e) {
             e.printStackTrace();
             return getContext().getString(R.string.error_download_data);
         }
     }
 
-    protected List<Feature> jsonToFeatures(JSONArray featuresJSONArray, List<Field> fields, int nSRS)
+
+    protected List<Feature> jsonToFeatures(
+            JSONArray featuresJSONArray,
+            List<Field> fields,
+            int nSRS)
             throws JSONException
     {
-            List<Feature> features = new ArrayList<>();
-            for(int i = 0; i < featuresJSONArray.length(); i++){
-                JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
-                long id = featureJSONObject.getLong(JSON_ID_KEY);
-                String wkt = featureJSONObject.getString("geom");
-                JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
-                Feature feature = new Feature(id, fields);
-                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
-                if(null == geom)
-                    continue;
-                geom.setCRS(nSRS);
-                if(nSRS != GeoConstants.CRS_WEB_MERCATOR)
-                    geom.project(GeoConstants.CRS_WEB_MERCATOR);
-                feature.setGeometry(geom);
+        List<Feature> features = new ArrayList<>();
+        for (int i = 0; i < featuresJSONArray.length(); i++) {
+            JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
+            long id = featureJSONObject.getLong(JSON_ID_KEY);
+            String wkt = featureJSONObject.getString("geom");
+            JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
+            Feature feature = new Feature(id, fields);
+            GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+            if (null == geom) {
+                continue;
+            }
+            geom.setCRS(nSRS);
+            if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
+                geom.project(GeoConstants.CRS_WEB_MERCATOR);
+            }
+            feature.setGeometry(geom);
 
-                for(Field field : fields) {
-                    if(field.getType() == GeoConstants.FTDateTime){
-                        if(!fieldsJSONObject.isNull(field.getName())) {
-                            JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
-                            int nYear = dateJson.getInt("year");
-                            int nMonth = dateJson.getInt("month");
-                            int nDay = dateJson.getInt("day");
-                            Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
-                            feature.setFieldValue(field.getName(), calendar.getTime());
-                        }
+            for (Field field : fields) {
+                if (field.getType() == GeoConstants.FTDateTime) {
+                    if (!fieldsJSONObject.isNull(field.getName())) {
+                        JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
+                        int nYear = dateJson.getInt("year");
+                        int nMonth = dateJson.getInt("month");
+                        int nDay = dateJson.getInt("day");
+                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
+                        feature.setFieldValue(field.getName(), calendar.getTime());
                     }
-                    else {
-                        if(!fieldsJSONObject.isNull(field.getName()))
-                            feature.setFieldValue(field.getName(), fieldsJSONObject.get(field.getName()));
+                } else {
+                    if (!fieldsJSONObject.isNull(field.getName())) {
+                        feature.setFieldValue(
+                                field.getName(), fieldsJSONObject.get(field.getName()));
                     }
                 }
-
-                features.add(feature);
             }
-        return features;
+
+            features.add(feature);
         }
+        return features;
+    }
+
 
     protected static int stringToType(String type)
     {
@@ -411,46 +436,48 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
 
     @Override
-    protected void addChange(String featureId, int operation)
+    protected void addChange(
+            String featureId,
+            int operation)
     {
-        if(0 == (mSyncType & SYNC_DATA))
+        if (0 == (mSyncType & SYNC_DATA)) {
             return;
+        }
 
         //1. if featureId == NOT_FOUND remove all changes and add this one
-        if(featureId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
+        if (featureId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
             mChanges.clear();
             mChanges.add(new ChangeFeatureItem(NOT_FOUND, operation));
-        }
-        else {
+        } else {
             int id = Integer.parseInt(featureId);
-            for(int i = 0; i < mChanges.size(); i++) {
+            for (int i = 0; i < mChanges.size(); i++) {
                 ChangeFeatureItem item = mChanges.get(i);
-                if(item.getFeatureId() == id){
+                if (item.getFeatureId() == id) {
                     //2. if featureId == some id and op is delete - remove and other operations
-                    if(operation == ChangeFeatureItem.TYPE_DELETE) {
-                        if(item.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                    if (operation == ChangeFeatureItem.TYPE_DELETE) {
+                        if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
                             return;
                         }
                         mChanges.remove(i);
-                        if(item.getOperation() == ChangeFeatureItem.TYPE_NEW){
+                        if (item.getOperation() == ChangeFeatureItem.TYPE_NEW) {
                             save();
                             return;
                         }
                         i--;
                     }
                     //3. if featureId == some id and op is update and previous op was add or update - skip
-                    else if(operation == ChangeFeatureItem.TYPE_CHANGED){
-                        if(item.getOperation() == ChangeFeatureItem.TYPE_CHANGED || item.getOperation() == ChangeFeatureItem.TYPE_NEW){
+                    else if (operation == ChangeFeatureItem.TYPE_CHANGED) {
+                        if (item.getOperation() == ChangeFeatureItem.TYPE_CHANGED ||
+                            item.getOperation() == ChangeFeatureItem.TYPE_NEW) {
                             return;
-                        }
-                        else{
+                        } else {
                             item.setOperation(operation);
                             save();
                             return;
                         }
                     }
                     //4. if featureId == some id and op is add and value present - warning
-                    else if(operation == ChangeFeatureItem.TYPE_NEW){
+                    else if (operation == ChangeFeatureItem.TYPE_NEW) {
                         Log.w(TAG, "Something wrong. Should nether get here");
                         return;
                     }
@@ -461,20 +488,24 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         save();
     }
 
+
     @Override
-    protected void addChange(String featureId, String photoName, int operation)
+    protected void addChange(
+            String featureId,
+            String photoName,
+            int operation)
     {
-        if(0 == (mSyncType & SYNC_PHOTO))
+        if (0 == (mSyncType & SYNC_PHOTO)) {
             return;
+        }
 
         int id = Integer.parseInt(featureId);
-        for(int i = 0; i < mChanges.size(); i++){
+        for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem item = mChanges.get(i);
-            if(item.getFeatureId() == id){
-                if(item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
+            if (item.getFeatureId() == id) {
+                if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
                     return;
-                }
-                else{
+                } else {
                     item.addPhotoChange(photoName, operation);
                     save();
                     return;
@@ -490,16 +521,18 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     /**
      * Synchronize changes with NGW. Should be run from non UI thread.
+     *
      * @param syncAdapter
      * @param authority
-     * @param syncResult - report some errors via this parameter
+     * @param syncResult
+     *         - report some errors via this parameter
      */
     public void sync(
             SyncAdapter syncAdapter,
             String authority,
             SyncResult syncResult)
     {
-        if (syncAdapter.isSyncStopped() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
+        if (syncAdapter.isCanceled() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -509,18 +542,18 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             loadChanges(jsonObject);
 
             //1. get remote changes
-            if(!getChangesFromServer(authority, syncResult)) {
+            if (!getChangesFromServer(authority, syncResult)) {
                 Log.d(TAG, "Get remote changes failed");
                 return;
             }
 
             //2. send current changes
-            if(!sendLocalChanges(syncResult)){
+            if (!sendLocalChanges(syncResult)) {
                 Log.d(TAG, "Set local changes failed");
                 return;
             }
 
-            if (syncAdapter.isSyncStopped()) {
+            if (syncAdapter.isCanceled()) {
                 return;
             }
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
@@ -531,6 +564,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
+
     protected boolean sendLocalChanges(SyncResult syncResult)
             throws SQLiteException
     {
@@ -538,34 +572,30 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         Log.d(TAG, "sendLocalChanges: " + changesCount);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem change = mChanges.get(i);
-            switch (change.getOperation()){
+            switch (change.getOperation()) {
                 case ChangeFeatureItem.TYPE_NEW:
-                    if(addFeatureOnServer(change.getFeatureId(), syncResult))
-                    {
+                    if (addFeatureOnServer(change.getFeatureId(), syncResult)) {
                         mChanges.remove(i);
                         i--;
                         Log.d(TAG, "addFeatureOnServer: " + mChanges.size());
                     }
                     break;
                 case ChangeFeatureItem.TYPE_CHANGED:
-                    if(changeFeatureOnServer(change.getFeatureId(), syncResult))
-                    {
+                    if (changeFeatureOnServer(change.getFeatureId(), syncResult)) {
                         mChanges.remove(i);
                         i--;
                         Log.d(TAG, "changeFeatureOnServer: " + mChanges.size());
                     }
                     break;
                 case ChangeFeatureItem.TYPE_DELETE:
-                    if(deleteFeatureOnServer(change.getFeatureId(), syncResult))
-                    {
+                    if (deleteFeatureOnServer(change.getFeatureId(), syncResult)) {
                         mChanges.remove(i);
                         i--;
                         Log.d(TAG, "deleteFeatureOnServer: " + mChanges.size());
                     }
                     break;
                 case ChangeFeatureItem.TYPE_PHOTO:
-                    if(sendPhotosOnServer(change.getFeatureId(), syncResult))
-                    {
+                    if (sendPhotosOnServer(change.getFeatureId(), syncResult)) {
                         mChanges.remove(i);
                         i--;
                         Log.d(TAG, "sendPhotosOnServer: " + mChanges.size());
@@ -574,7 +604,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             }
         }
 
-        if(changesCount != mChanges.size()){
+        if (changesCount != mChanges.size()) {
             //notify to reload changes
             getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
         }
@@ -582,43 +612,52 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         return true;
     }
 
-    protected void changeFeatureId(long oldFeatureId, long newFeatureId)
-    {
-        if(oldFeatureId == newFeatureId)
-            return;
 
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+    protected void changeFeatureId(
+            long oldFeatureId,
+            long newFeatureId)
+    {
+        if (oldFeatureId == newFeatureId) {
+            return;
+        }
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
         //update id in DB
         Log.d(TAG, "old id: " + oldFeatureId + " new id: " + newFeatureId);
         SQLiteDatabase db = map.getDatabase(false);
         ContentValues values = new ContentValues();
         values.put(FIELD_ID, newFeatureId);
-        if( db.update(mPath.getName(), values, FIELD_ID + " = " + oldFeatureId, null) != 1 ){
+        if (db.update(mPath.getName(), values, FIELD_ID + " = " + oldFeatureId, null) != 1) {
             Log.d(TAG, "failed to set new id");
         }
 
         //update id in cache
-        for(VectorCacheItem cacheItem : mVectorCacheItems){
-            if(cacheItem.getId() == oldFeatureId)
+        for (VectorCacheItem cacheItem : mVectorCacheItems) {
+            if (cacheItem.getId() == oldFeatureId) {
                 cacheItem.setId(newFeatureId);
+            }
         }
 
         //rename photo id folder if exist
         File photoFolder = new File(mPath, "" + oldFeatureId);
-        if(photoFolder.exists()) {
-            if(photoFolder.renameTo(new File(mPath, "" + newFeatureId))){
+        if (photoFolder.exists()) {
+            if (photoFolder.renameTo(new File(mPath, "" + newFeatureId))) {
                 Log.d(TAG, "rename photo folder " + oldFeatureId + "failed");
             }
         }
     }
 
 
-    protected boolean getChangesFromServer(String authority, SyncResult syncResult)
+    protected boolean getChangesFromServer(
+            String authority,
+            SyncResult syncResult)
             throws SQLiteException
     {
-        if(!mNet.isNetworkAvailable()){
+        if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
@@ -627,7 +666,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         try {
             final HttpGet get = new HttpGet(NGWUtil.getVectorDataUrl(mURL, mRemoteId));
             //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword && mPassword.length() > 0){
+            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
+                mPassword.length() > 0) {
                 get.setHeader("Accept", "*/*");
                 final String basicAuth = "Basic " + Base64.encodeToString(
                         (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
@@ -640,8 +680,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
-                           line);
+                Log.d(
+                        TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
+                             line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -655,23 +696,26 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
             String data = EntityUtils.toString(entity);
             JSONArray featuresJSONArray = new JSONArray(data);
-            List<Feature> features = jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
+            List<Feature> features =
+                    jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
             Log.d(TAG, "Get " + features.size() + " feature(s) from server");
 
-            for(Feature remoteFeature : features){
-                Cursor cursor = query(null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
+            for (Feature remoteFeature : features) {
+                Cursor cursor = query(
+                        null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
                 //no local feature
-                if(null == cursor || cursor.getCount() == 0){
+                if (null == cursor || cursor.getCount() == 0) {
 
                     boolean createNewFeature = true;
-                    for(ChangeFeatureItem change : mChanges){
-                        if(change.getFeatureId() == remoteFeature.getId()) {
-                            createNewFeature = false; //if have changes (delete) not create new feature
+                    for (ChangeFeatureItem change : mChanges) {
+                        if (change.getFeatureId() == remoteFeature.getId()) {
+                            createNewFeature =
+                                    false; //if have changes (delete) not create new feature
                             break;
                         }
                     }
                     //create new feature with remoteId
-                    if(createNewFeature) {
+                    if (createNewFeature) {
                         ContentValues values = remoteFeature.getContentValues(true);
                         Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
                         //prevent add changes and events
@@ -679,48 +723,51 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                         Uri newFeatureUri = insert(uri, values);
                         Log.d(TAG, "Add new feature from server - " + newFeatureUri.toString());
                     }
-                }
-                else {
+                } else {
                     cursor.moveToFirst();
                     Feature currentFeature = cursorToFeature(cursor);
                     //compare features
 
                     if (remoteFeature.equals(currentFeature)) {
                         //remove from changes
-                        for(int i = 0; i < mChanges.size(); i++){
+                        for (int i = 0; i < mChanges.size(); i++) {
                             ChangeFeatureItem change = mChanges.get(i);
-                            if(change.getFeatureId() == remoteFeature.getId()) {
-                                Log.d(TAG, "The feature " + change.getFeatureId() + " already changed on server. Remove change set #" + i);
+                            if (change.getFeatureId() == remoteFeature.getId()) {
+                                Log.d(
+                                        TAG, "The feature " + change.getFeatureId() +
+                                             " already changed on server. Remove change set #" + i);
                                 mChanges.remove(i);
                                 i--;
                             }
                         }
                     } else {
                         boolean isChangedLocal = false;
-                        for(ChangeFeatureItem change : mChanges){
-                            if(change.getFeatureId() == remoteFeature.getId()) {
+                        for (ChangeFeatureItem change : mChanges) {
+                            if (change.getFeatureId() == remoteFeature.getId()) {
                                 isChangedLocal = true;
                                 break;
                             }
                         }
 
                         //no local changes - update local feature
-                        if(!isChangedLocal){
+                        if (!isChangedLocal) {
                             ContentValues values = remoteFeature.getContentValues(false);
 
-                            Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
+                            Uri uri =
+                                    Uri.parse("content://" + authority + "/" + getPath().getName());
                             Uri updateUri = ContentUris.withAppendedId(uri, remoteFeature.getId());
                             updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
                             //prevent add changes
                             int count = update(updateUri, values, null, null);
-                            Log.d(TAG, "Update feature (" + count + ") from server - " + remoteFeature.getId());
+                            Log.d(
+                                    TAG, "Update feature (" + count + ") from server - " +
+                                         remoteFeature.getId());
                         }
                     }
                 }
             }
             return true;
-        }
-        catch (IOException | JSONException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
             syncResult.stats.numParseExceptions++;
         }
@@ -730,23 +777,25 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     protected Feature cursorToFeature(Cursor cursor)
     {
-        Feature out = new Feature((long)NOT_FOUND, getFields());
+        Feature out = new Feature((long) NOT_FOUND, getFields());
         out.fromCursor(cursor);
         return out;
     }
 
 
-    protected boolean addFeatureOnServer(long featureId, SyncResult syncResult)
+    protected boolean addFeatureOnServer(
+            long featureId,
+            SyncResult syncResult)
             throws SQLiteException
     {
-        if(!mNet.isNetworkAvailable()){
+        if (!mNet.isNetworkAvailable()) {
             return false;
         }
         Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null);
-        if(null == cursor || !cursor.moveToFirst()) {
+        if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "addFeatureOnServer: Get cursor failed");
             return true; //just remove buggy data
         }
@@ -759,7 +808,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
                 mPassword.length() > 0) {
                 post.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                final String basicAuth = "Basic " + Base64.encodeToString(
+                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
                 post.setHeader("Authorization", basicAuth);
             }
 
@@ -772,8 +822,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " +
-                           line);
+                Log.d(
+                        TAG, "Problem execute: " + mURL + " HTTP response: " +
+                             line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -788,34 +839,38 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             String data = EntityUtils.toString(entity);
             //set new id from server! {"id": 24}
             JSONObject result = new JSONObject(data);
-            if(result.has(JSON_ID_KEY)){
+            if (result.has(JSON_ID_KEY)) {
                 long id = result.getLong(JSON_ID_KEY);
                 changeFeatureId(featureId, id);
             }
 
             return true;
-        }
-        catch (ClassNotFoundException | JSONException | IOException e){
+        } catch (ClassNotFoundException | JSONException | IOException e) {
             e.printStackTrace();
             Log.d(TAG, e.getLocalizedMessage());
             return false;
         }
     }
 
-    protected boolean deleteFeatureOnServer(long featureId, SyncResult syncResult)
+
+    protected boolean deleteFeatureOnServer(
+            long featureId,
+            SyncResult syncResult)
     {
-        if(!mNet.isNetworkAvailable()){
+        if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
         try {
 
-            final HttpDelete delete = new HttpDelete(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
+            final HttpDelete delete =
+                    new HttpDelete(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
             //basic auth
             if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
                 mPassword.length() > 0) {
                 delete.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                final String basicAuth = "Basic " + Base64.encodeToString(
+                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
                 delete.setHeader("Authorization", basicAuth);
             }
 
@@ -825,21 +880,24 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " +
-                           line);
+                Log.d(
+                        TAG, "Problem execute: " + mURL + " HTTP response: " +
+                             line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
 
             return true;
-        }
-        catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    protected boolean changeFeatureOnServer(long featureId, SyncResult syncResult)
+
+    protected boolean changeFeatureOnServer(
+            long featureId,
+            SyncResult syncResult)
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
@@ -863,7 +921,8 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
                 mPassword.length() > 0) {
                 put.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString((mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                final String basicAuth = "Basic " + Base64.encodeToString(
+                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
                 put.setHeader("Authorization", basicAuth);
             }
 
@@ -877,8 +936,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " +
-                           line);
+                Log.d(
+                        TAG, "Problem execute: " + mURL + " HTTP response: " +
+                             line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -890,9 +950,12 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         }
     }
 
-    protected boolean sendPhotosOnServer(long featureId, SyncResult syncResult)
+
+    protected boolean sendPhotosOnServer(
+            long featureId,
+            SyncResult syncResult)
     {
-        if(!mNet.isNetworkAvailable()){
+        if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
@@ -901,20 +964,23 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         return true;
     }
 
+
     protected String cursorToJson(Cursor cursor)
             throws JSONException, IOException, ClassNotFoundException
     {
         JSONObject rootObject = new JSONObject();
-        if(0 != (mSyncType & SYNC_ATTRIBUTES)) {
+        if (0 != (mSyncType & SYNC_ATTRIBUTES)) {
             JSONObject valueObject = new JSONObject();
             for (int i = 0; i < cursor.getColumnCount(); i++) {
                 String name = cursor.getColumnName(i);
-                if (name.equals(FIELD_ID) || name.equals(FIELD_GEOM))
+                if (name.equals(FIELD_ID) || name.equals(FIELD_GEOM)) {
                     continue;
+                }
 
                 Field field = mFields.get(cursor.getColumnName(i));
-                if (null == field)
+                if (null == field) {
                     continue;
+                }
 
                 switch (field.getType()) {
                     case GeoConstants.FTReal:
@@ -925,8 +991,9 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
                         break;
                     case GeoConstants.FTString:
                         String stringVal = cursor.getString(i);
-                        if (null != stringVal && !stringVal.equals("null"))
+                        if (null != stringVal && !stringVal.equals("null")) {
                             valueObject.put(name, stringVal);
+                        }
                         break;
                     case GeoConstants.FTDateTime:
                         Calendar calendar = Calendar.getInstance();
@@ -947,9 +1014,10 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
             rootObject.put("fields", valueObject);
         }
 
-        if(0 != (mSyncType & SYNC_GEOMETRY)) {
+        if (0 != (mSyncType & SYNC_GEOMETRY)) {
             //may be found geometry in cache by id is faster
-            GeoGeometry geometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
+            GeoGeometry geometry =
+                    GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
 
             rootObject.put("geom", geometry.toWKT(true));
             //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
@@ -958,13 +1026,13 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
         return rootObject.toString();
     }
 
+
     /**
      * get synchronization type
-     * @return the synchronization type - the OR of this values:
-     * SYNC_NONE - no synchronization
-     * SYNC_DATA - synchronize only data
-     * SYNC_PHOTO - synchronize only photo
-     * SYNC_ALL - synchronize everything
+     *
+     * @return the synchronization type - the OR of this values: SYNC_NONE - no synchronization
+     * SYNC_DATA - synchronize only data SYNC_PHOTO - synchronize only photo SYNC_ALL - synchronize
+     * everything
      */
     public int getSyncType()
     {
@@ -974,14 +1042,12 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     public void setSyncType(int syncType)
     {
-        if(mSyncType == syncType)
+        if (mSyncType == syncType) {
             return;
-        if(syncType == SYNC_NONE)
-        {
-            mChanges.clear();
         }
-        else if(mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA))
-        {
+        if (syncType == SYNC_NONE) {
+            mChanges.clear();
+        } else if (mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA)) {
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
                 addChange("" + id, ChangeFeatureItem.TYPE_NEW);

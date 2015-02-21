@@ -67,7 +67,9 @@ import java.util.Map;
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public class VectorLayer extends Layer
+
+public class VectorLayer
+        extends Layer
 {
     protected boolean               mIsInitialized;
     protected int                   mGeometryType;
@@ -96,6 +98,7 @@ public class VectorLayer extends Layer
     protected static final int TYPE_PHOTO    = 3;
     protected static final int TYPE_PHOTO_ID = 4;
 
+
     public VectorLayer(
             Context context,
             File path)
@@ -103,9 +106,10 @@ public class VectorLayer extends Layer
         super(context, path);
 
 
-        if (!(context instanceof IGISApplication))
+        if (!(context instanceof IGISApplication)) {
             throw new IllegalArgumentException(
                     "The context should be the instance of IGISApplication");
+        }
 
 
         mIsInitialized = false;
@@ -118,10 +122,10 @@ public class VectorLayer extends Layer
 
         mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
         mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos",
-                           TYPE_PHOTO);      //get photos for row
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/photos/#",
-                           TYPE_PHOTO_ID); //get photo by name
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/#/photos", TYPE_PHOTO);      //get photos for row
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/#/photos/#", TYPE_PHOTO_ID); //get photo by name
 
 
         CONTENT_TYPE =
@@ -190,8 +194,9 @@ public class VectorLayer extends Layer
                 }
 
                 int nId = i;
-                if(jsonFeature.has(GEOJSON_ID))
+                if (jsonFeature.has(GEOJSON_ID)) {
                     nId = jsonFeature.getInt(GEOJSON_ID);
+                }
                 Feature feature = new Feature(nId, fields); // ID == i
                 feature.setGeometry(geometry);
 
@@ -202,7 +207,7 @@ public class VectorLayer extends Layer
                     String key = iter.next();
                     Object value = jsonAttributes.get(key);
                     int nType = NOT_FOUND;
-//check type
+                    //check type
                     if (value instanceof Integer || value instanceof Long) {
                         nType = FTInteger;
                     } else if (value instanceof Double || value instanceof Float) {
@@ -213,10 +218,10 @@ public class VectorLayer extends Layer
                         nType = FTString;
                     } else if (value instanceof JSONObject) {
                         nType = NOT_FOUND;
-//the some list - need to check it type FTIntegerList, FTRealList, FTStringList
+                        //the some list - need to check it type FTIntegerList, FTRealList, FTStringList
                     }
 
-                    if(nType != NOT_FOUND) {
+                    if (nType != NOT_FOUND) {
                         int fieldIndex = NOT_FOUND;
                         for (int j = 0; j < fields.size(); j++) {
                             if (fields.get(j).getName().equals(key)) {
@@ -235,41 +240,153 @@ public class VectorLayer extends Layer
             }
 
             return initialize(fields, features, NOT_FOUND);
-        } catch (JSONException e) {
+        } catch (JSONException | SQLiteException e) {
             e.printStackTrace();
             return e.getLocalizedMessage();
         }
     }
 
+
     public String initialize(
             List<Field> fields,
             List<Feature> features,
             int geometryType)
+            throws SQLiteException
     {
         Log.d(TAG, "init layer " + getName());
 
         //filter out forbidden fields
 
-        String[] forbiddenFields = {"ABORT", "ACTION", "ADD", "AFTER", "ALL", "ALTER",
-         "ANALYZE", "AND", "AS", "ASC", "ATTACH", "AUTOINCREMENT", "BEFORE", "BEGIN", "BETWEEN",
-         "BY", "CASCADE", "CASE", "CAST", "CHECK", "COLLATE", "COLUMN", "COMMIT", "CONFLICT",
-         "CONSTRAINT", "CREATE", "CROSS", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
-         "DATABASE", "DEFAULT", "DEFERRABLE", "DEFERRED", "DELETE", "DESC", "DETACH", "DISTINCT",
-         "DROP", "EACH", "ELSE", "END", "ESCAPE", "EXCEPT", "EXCLUSIVE", "EXISTS", "EXPLAIN",
-         "FAIL", "FOR", "FOREIGN", "FROM", "FULL", "GLOB", "GROUP", "HAVING", "IF", "IGNORE",
-         "IMMEDIATE", "IN", "INDEX", "INDEXED", "INITIALLY", "INNER", "INSERT", "INSTEAD", "INTERSECT",
-         "INTO", "IS", "ISNULL", "JOIN", "KEY", "LEFT", "LIKE", "LIMIT", "MATCH", "NATURAL", "NO",
-         "NOT", "NOTNULL", "NULL", "OF", "OFFSET", "ON", "OR", "ORDER", "OUTER", "PLAN", "PRAGMA",
-         "PRIMARY", "QUERY", "RAISE", "RECURSIVE", "REFERENCES", "REGEXP", "REINDEX", "RELEASE",
-         "RENAME", "REPLACE", "RESTRICT", "RIGHT", "ROLLBACK", "ROW", "SAVEPOINT", "SELECT", "SET",
-         "TABLE", "TEMP", "TEMPORARY", "THEN", "TO", "TRANSACTION", "TRIGGER", "UNION", "UNIQUE",
-         "UPDATE", "USING", "VACUUM", "VALUES", "VIEW", "VIRTUAL", "WHEN", "WHERE", "WITH",
-         "WITHOUT"};
+        String[] forbiddenFields = {
+                "ABORT",
+                "ACTION",
+                "ADD",
+                "AFTER",
+                "ALL",
+                "ALTER",
+                "ANALYZE",
+                "AND",
+                "AS",
+                "ASC",
+                "ATTACH",
+                "AUTOINCREMENT",
+                "BEFORE",
+                "BEGIN",
+                "BETWEEN",
+                "BY",
+                "CASCADE",
+                "CASE",
+                "CAST",
+                "CHECK",
+                "COLLATE",
+                "COLUMN",
+                "COMMIT",
+                "CONFLICT",
+                "CONSTRAINT",
+                "CREATE",
+                "CROSS",
+                "CURRENT_DATE",
+                "CURRENT_TIME",
+                "CURRENT_TIMESTAMP",
+                "DATABASE",
+                "DEFAULT",
+                "DEFERRABLE",
+                "DEFERRED",
+                "DELETE",
+                "DESC",
+                "DETACH",
+                "DISTINCT",
+                "DROP",
+                "EACH",
+                "ELSE",
+                "END",
+                "ESCAPE",
+                "EXCEPT",
+                "EXCLUSIVE",
+                "EXISTS",
+                "EXPLAIN",
+                "FAIL",
+                "FOR",
+                "FOREIGN",
+                "FROM",
+                "FULL",
+                "GLOB",
+                "GROUP",
+                "HAVING",
+                "IF",
+                "IGNORE",
+                "IMMEDIATE",
+                "IN",
+                "INDEX",
+                "INDEXED",
+                "INITIALLY",
+                "INNER",
+                "INSERT",
+                "INSTEAD",
+                "INTERSECT",
+                "INTO",
+                "IS",
+                "ISNULL",
+                "JOIN",
+                "KEY",
+                "LEFT",
+                "LIKE",
+                "LIMIT",
+                "MATCH",
+                "NATURAL",
+                "NO",
+                "NOT",
+                "NOTNULL",
+                "NULL",
+                "OF",
+                "OFFSET",
+                "ON",
+                "OR",
+                "ORDER",
+                "OUTER",
+                "PLAN",
+                "PRAGMA",
+                "PRIMARY",
+                "QUERY",
+                "RAISE",
+                "RECURSIVE",
+                "REFERENCES",
+                "REGEXP",
+                "REINDEX",
+                "RELEASE",
+                "RENAME",
+                "REPLACE",
+                "RESTRICT",
+                "RIGHT",
+                "ROLLBACK",
+                "ROW",
+                "SAVEPOINT",
+                "SELECT",
+                "SET",
+                "TABLE",
+                "TEMP",
+                "TEMPORARY",
+                "THEN",
+                "TO",
+                "TRANSACTION",
+                "TRIGGER",
+                "UNION",
+                "UNIQUE",
+                "UPDATE",
+                "USING",
+                "VACUUM",
+                "VALUES",
+                "VIEW",
+                "VIRTUAL",
+                "WHEN",
+                "WHERE",
+                "WITH",
+                "WITHOUT"};
 
-        for(int i = 0; i < fields.size(); i++) {
+        for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             String fieldName = field.getName();
-            if (NGWUtil.containsCaseInsensitive(fieldName, forbiddenFields)){
+            if (NGWUtil.containsCaseInsensitive(fieldName, forbiddenFields)) {
                 fields.remove(i);
                 i--;
 
@@ -278,16 +395,15 @@ public class VectorLayer extends Layer
             }
         }
 
-        String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " + //table name is the same as the folder of the layer
+        String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " +
+                             //table name is the same as the folder of the layer
                              FIELD_ID + " INTEGER PRIMARY KEY, " +
                              FIELD_GEOM + " BLOB";
-        for(int i = 0; i < fields.size(); ++i)
-        {
+        for (int i = 0; i < fields.size(); ++i) {
             Field field = fields.get(i);
 
             tableCreate += ", " + field.getName() + " ";
-            switch (field.getType())
-            {
+            switch (field.getType()) {
                 case FTString:
                     tableCreate += "TEXT";
                     break;
@@ -310,7 +426,7 @@ public class VectorLayer extends Layer
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
         db.execSQL(tableCreate);
-        for(Feature feature : features) {
+        for (Feature feature : features) {
             ContentValues values = new ContentValues();
             values.put(FIELD_ID, feature.getId());
             try {
@@ -318,31 +434,33 @@ public class VectorLayer extends Layer
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            for(int i = 0; i < fields.size(); ++i){
-                if(!feature.isValuePresent(i))
+            for (int i = 0; i < fields.size(); ++i) {
+                if (!feature.isValuePresent(i)) {
                     continue;
-                switch (fields.get(i).getType())
-                {
+                }
+                switch (fields.get(i).getType()) {
                     case FTString:
                         values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
                         break;
                     case FTInteger:
                         Object intVal = feature.getFieldValue(i);
-                        if(intVal instanceof Integer)
-                            values.put(fields.get(i).getName(), (int)intVal);
-                        else if(intVal instanceof Long)
-                            values.put(fields.get(i).getName(), (long)intVal);
-                        else
+                        if (intVal instanceof Integer) {
+                            values.put(fields.get(i).getName(), (int) intVal);
+                        } else if (intVal instanceof Long) {
+                            values.put(fields.get(i).getName(), (long) intVal);
+                        } else {
                             Log.d(TAG, "skip value: " + intVal.toString());
+                        }
                         break;
                     case FTReal:
                         Object realVal = feature.getFieldValue(i);
-                        if(realVal instanceof Double)
-                            values.put(fields.get(i).getName(), (double)realVal);
-                        else if(realVal instanceof Float)
-                            values.put(fields.get(i).getName(), (float)realVal);
-                        else
+                        if (realVal instanceof Double) {
+                            values.put(fields.get(i).getName(), (double) realVal);
+                        } else if (realVal instanceof Float) {
+                            values.put(fields.get(i).getName(), (float) realVal);
+                        } else {
                             Log.d(TAG, "skip value: " + realVal.toString());
+                        }
                         break;
                     case FTDateTime:
                         values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
@@ -355,14 +473,15 @@ public class VectorLayer extends Layer
         //fill the geometry and labels array
         GeoEnvelope extents = new GeoEnvelope();
         for (Feature feature : features) {
-            if(null == feature.getGeometry())
+            if (null == feature.getGeometry()) {
                 continue;
+            }
             //update bbox
             extents.merge(feature.getGeometry().getEnvelope());
             //add to cache
             mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
 
-            if(geometryType == NOT_FOUND || geometryType != feature.getGeometry().getType()){
+            if (geometryType == NOT_FOUND || geometryType != feature.getGeometry().getType()) {
                 geometryType = feature.getGeometry().getType();
             }
         }
@@ -374,14 +493,14 @@ public class VectorLayer extends Layer
         setDefaultRenderer();
 
         mFields = new HashMap<>();
-        for (Field field : fields){
+        for (Field field : fields) {
             mFields.put(field.getName(), field);
         }
 
         save();
 
-        if(null != mParent){ //notify the load is over
-            LayerGroup layerGroup = (LayerGroup)mParent;
+        if (null != mParent) { //notify the load is over
+            LayerGroup layerGroup = (LayerGroup) mParent;
             layerGroup.onLayerChanged(this);
         }
 
@@ -391,11 +510,12 @@ public class VectorLayer extends Layer
 
     protected void setDefaultRenderer()
     {
-        switch (mGeometryType)
-        {
+        switch (mGeometryType) {
             case GTPoint:
             case GTMultiPoint:
-                mRenderer = new SimpleFeatureRenderer(this, new SimpleMarkerStyle(Color.RED, Color.BLACK, 6, SimpleMarkerStyle.MarkerStyleCircle));
+                mRenderer = new SimpleFeatureRenderer(
+                        this, new SimpleMarkerStyle(
+                        Color.RED, Color.BLACK, 6, SimpleMarkerStyle.MarkerStyleCircle));
                 break;
             case GTLineString:
             case GTMultiLineString:
@@ -414,6 +534,7 @@ public class VectorLayer extends Layer
         Log.w(TAG, error);
     }
 
+
     @Override
     public JSONObject toJSON()
             throws JSONException
@@ -422,9 +543,9 @@ public class VectorLayer extends Layer
         rootConfig.put(JSON_GEOMETRY_TYPE_KEY, mGeometryType);
         rootConfig.put(JSON_IS_INITIALIZED_KEY, mIsInitialized);
 
-        if(null != mFields) {
+        if (null != mFields) {
             JSONArray fields = new JSONArray();
-            for(Field field : mFields.values()){
+            for (Field field : mFields.values()) {
                 JSONObject fieldJsonObject = field.toJSON();
                 fields.put(fieldJsonObject);
             }
@@ -441,16 +562,16 @@ public class VectorLayer extends Layer
 
     @Override
     public void fromJSON(JSONObject jsonObject)
-            throws JSONException
+            throws JSONException, SQLiteException
     {
         super.fromJSON(jsonObject);
         mGeometryType = jsonObject.getInt(JSON_GEOMETRY_TYPE_KEY);
         mIsInitialized = jsonObject.getBoolean(JSON_IS_INITIALIZED_KEY);
 
-        if(jsonObject.has(JSON_FIELDS_KEY)) {
+        if (jsonObject.has(JSON_FIELDS_KEY)) {
             mFields = new HashMap<>();
             JSONArray fields = jsonObject.getJSONArray(JSON_FIELDS_KEY);
-            for(int i = 0; i < fields.length(); i++){
+            for (int i = 0; i < fields.length(); i++) {
                 Field field = new Field();
                 field.fromJSON(fields.getJSONObject(i));
                 mFields.put(field.getName(), field);
@@ -466,26 +587,27 @@ public class VectorLayer extends Layer
             }
         }
 
-        if(mIsInitialized)
-        {
+        if (mIsInitialized) {
             mExtents = new GeoEnvelope();
 
             reloadCache();
         }
     }
 
+
     protected void reloadCache()
+            throws SQLiteException
     {
         //load vector cache
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
-        String[] columns = new String[]{FIELD_ID, FIELD_GEOM};
+        String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
         Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
-        if(null != cursor && cursor.moveToFirst()) {
-            do{
+        if (null != cursor && cursor.moveToFirst()) {
+            do {
                 try {
                     GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                    if(null != geoGeometry) {
+                    if (null != geoGeometry) {
                         int nId = cursor.getInt(0);
                         mExtents.merge(geoGeometry.getEnvelope());
                         mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
@@ -493,10 +615,10 @@ public class VectorLayer extends Layer
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-            }
-            while (cursor.moveToNext());
+            } while (cursor.moveToNext());
         }
     }
+
 
     @Override
     public boolean delete()
@@ -517,18 +639,22 @@ public class VectorLayer extends Layer
         return mVectorCacheItems;
     }
 
+
     @Override
     public boolean isValid()
     {
         return mIsInitialized && mExtents.isInit();
     }
 
-    public Cursor query(String[] projection,
-                        String selection,
-                        String[] selectionArgs,
-                        String sortOrder){
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map) {
+
+    public Cursor query(
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder)
+    {
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
             Log.d(TAG, "The map should extends MapContentProviderHelper or inherited");
             throw new IllegalArgumentException(
                     "The map should extends MapContentProviderHelper or inherited");
@@ -537,12 +663,14 @@ public class VectorLayer extends Layer
         SQLiteDatabase db = map.getDatabase(true);
 
         try {
-            return db.query(mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
+            return db.query(
+                    mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
         } catch (SQLiteException e) {
             Log.d(TAG, e.getLocalizedMessage());
             return null;
         }
     }
+
 
     public Cursor query(
             Uri uri,
@@ -558,8 +686,7 @@ public class VectorLayer extends Layer
         List<String> pathSegments;
 
         int uriType = mUriMatcher.match(uri);
-        switch (uriType)
-        {
+        switch (uriType) {
             case TYPE_TABLE:
                 if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = FIELD_ID + " ASC";
@@ -594,27 +721,35 @@ public class VectorLayer extends Layer
                 }
                 matrixCursor = new MatrixCursor(projection);
                 //get photo path
-                File photoFolder = new File(mPath, featureId); //the photos store in id folder in layer folder
+                File photoFolder =
+                        new File(mPath, featureId); //the photos store in id folder in layer folder
                 for (File photoFile : photoFolder.listFiles()) {
-                    if(photoFile.getName().endsWith("jpg")){
+                    if (photoFile.getName().endsWith("jpg")) {
                         Object[] row = new Object[projection.length];
                         for (int i = 0; i < projection.length; i++) {
 
-                            if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DISPLAY_NAME) == 0) {
+                            if (projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns.DISPLAY_NAME) == 0) {
                                 row[i] = photoFile.getName();
-                            } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.SIZE) == 0) {
+                            } else if (projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns.SIZE) == 0) {
                                 row[i] = photoFile.length();
-                            } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATA) == 0) {
+                            } else if (projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns.DATA) == 0) {
                                 row[i] = photoFile.getPath();
-                            } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.MIME_TYPE)==0) {
+                            } else if (projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns.MIME_TYPE) == 0) {
                                 row[i] = CONTENT_PHOTO_TYPE;
-                            } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_ADDED)==0 ||
-                                       projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_MODIFIED)==0 ||
-                                       projection[i].compareToIgnoreCase("datetaken")==0) {
+                            } else if (projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns.DATE_ADDED) == 0 ||
+                                       projection[i].compareToIgnoreCase(
+                                               MediaStore.MediaColumns.DATE_MODIFIED) == 0 ||
+                                       projection[i].compareToIgnoreCase("datetaken") == 0) {
                                 row[i] = photoFile.lastModified();
-                            } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns._ID)==0) {
+                            } else if (projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns._ID) == 0) {
                                 row[i] = photoFile.getName();
-                            } else if (projection[i].compareToIgnoreCase("orientation")==0) {
+                            } else if (projection[i].compareToIgnoreCase("orientation") == 0) {
                                 row[i] = "vertical";
                             }
                         }
@@ -634,28 +769,40 @@ public class VectorLayer extends Layer
                             MediaStore.MediaColumns.MIME_TYPE};
                 }
                 matrixCursor = new MatrixCursor(projection);
-                if(!photoName.endsWith("jpg"))
+                if (!photoName.endsWith("jpg")) {
                     photoName += ".jpg";
+                }
                 //get photo path
-                File photoFile = new File(mPath, featureId + "/" + photoName); //the photos store in id folder in layer folder
+                File photoFile = new File(
+                        mPath, featureId + "/" +
+                               photoName); //the photos store in id folder in layer folder
                 Object[] row = new Object[projection.length];
                 for (int i = 0; i < projection.length; i++) {
 
-                    if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DISPLAY_NAME) == 0) {
+                    if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DISPLAY_NAME) ==
+                        0) {
                         row[i] = photoFile.getName();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.SIZE) == 0) {
+                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.SIZE) ==
+                               0) {
                         row[i] = photoFile.length();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATA) == 0) {
+                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATA) ==
+                               0) {
                         row[i] = photoFile.getPath();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.MIME_TYPE)==0) {
+                    } else if (
+                            projection[i].compareToIgnoreCase(MediaStore.MediaColumns.MIME_TYPE) ==
+                            0) {
                         row[i] = CONTENT_PHOTO_TYPE;
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_ADDED)==0 ||
-                               projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_MODIFIED)==0 ||
-                               projection[i].compareToIgnoreCase("datetaken")==0) {
+                    } else if (
+                            projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_ADDED) ==
+                            0 ||
+                            projection[i].compareToIgnoreCase(
+                                    MediaStore.MediaColumns.DATE_MODIFIED) == 0 ||
+                            projection[i].compareToIgnoreCase("datetaken") == 0) {
                         row[i] = photoFile.lastModified();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns._ID)==0) {
+                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns._ID) ==
+                               0) {
                         row[i] = photoFile.getName();
-                    } else if (projection[i].compareToIgnoreCase("orientation")==0) {
+                    } else if (projection[i].compareToIgnoreCase("orientation") == 0) {
                         row[i] = "vertical";
                     }
                 }
@@ -691,25 +838,31 @@ public class VectorLayer extends Layer
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_PHOTO_ID:
-                return new String[]{CONTENT_PHOTO_TYPE};
+                return new String[] {CONTENT_PHOTO_TYPE};
         }
         return null;
     }
 
-    public long insert(ContentValues contentValues){
-        if(!contentValues.containsKey(FIELD_GEOM))
+
+    public long insert(ContentValues contentValues)
+    {
+        if (!contentValues.containsKey(FIELD_GEOM)) {
             return NOT_FOUND;
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+        }
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
         SQLiteDatabase db = map.getDatabase(false);
         long rowID = db.insert(mPath.getName(), null, contentValues);
-        if(rowID != NOT_FOUND){
+        if (rowID != NOT_FOUND) {
             notifyLayerChanged();
             try {
-                GeoGeometry geom = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(
-                        FIELD_GEOM));
-                mVectorCacheItems.add(new VectorCacheItem(geom, (int)rowID));
+                GeoGeometry geom = GeoGeometryFactory.fromBlob(
+                        contentValues.getAsByteArray(
+                                FIELD_GEOM));
+                mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
                 return NOT_FOUND;
@@ -724,18 +877,16 @@ public class VectorLayer extends Layer
             ContentValues contentValues)
     {
         int uriType = mUriMatcher.match(uri);
-        switch (uriType)
-        {
+        switch (uriType) {
             case TYPE_TABLE:
                 long rowID = insert(contentValues);
-                if(rowID != NOT_FOUND) {
+                if (rowID != NOT_FOUND) {
                     Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(resultUri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
                     }
@@ -748,22 +899,22 @@ public class VectorLayer extends Layer
                 //get photo path
                 File photoFolder = new File(mPath, featureId);
                 long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
-                for(File file : photoFolder.listFiles()){
+                for (File file : photoFolder.listFiles()) {
                     long val = Long.parseLong(file.getName().replace(".jpg", ""));
-                    if(val >= maxId)
+                    if (val >= maxId) {
                         maxId = val + 1;
+                    }
                 }
                 String fileName = maxId + ".jpg";
                 File photo = new File(photoFolder, fileName);
                 try {
-                    if(photo.createNewFile()) {
+                    if (photo.createNewFile()) {
                         Uri resultUri = ContentUris.withAppendedId(uri, maxId);
                         String fragment = uri.getFragment();
                         boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                        if(bFromNetwork) {
+                        if (bFromNetwork) {
                             getContext().getContentResolver().notifyChange(resultUri, null, false);
-                        }
-                        else {
+                        } else {
                             addChange(featureId, fileName, ChangeFeatureItem.TYPE_NEW);
                             getContext().getContentResolver().notifyChange(resultUri, null, true);
                         }
@@ -781,18 +932,29 @@ public class VectorLayer extends Layer
         }
     }
 
-    public int delete(String selection, String[] selectionArgs){
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+
+    public int delete(
+            String selection,
+            String[] selectionArgs)
+    {
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
-        if(result > 0)
+        if (result > 0) {
             notifyLayerChanged();
+        }
         return result;
     }
 
-    public int delete(Uri uri, String selection, String[] selectionArgs)
+
+    public int delete(
+            Uri uri,
+            String selection,
+            String[] selectionArgs)
     {
         String featureId;
         String photoName;
@@ -800,17 +962,15 @@ public class VectorLayer extends Layer
         int result;
 
         int uriType = mUriMatcher.match(uri);
-        switch (uriType)
-        {
+        switch (uriType) {
             case TYPE_TABLE:
                 result = delete(selection, selectionArgs);
-                if(result > 0){
+                if (result > 0) {
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
@@ -828,11 +988,11 @@ public class VectorLayer extends Layer
                 }
                 result = delete(selection, selectionArgs);
 
-                if(result > 0){
+                if (result > 0) {
                     //remove cached item
                     int id = Integer.parseInt(featureId);
-                    for(VectorCacheItem item : mVectorCacheItems){
-                        if(item.getId() == id){
+                    for (VectorCacheItem item : mVectorCacheItems) {
+                        if (item.getId() == id) {
                             mVectorCacheItems.remove(item);
                             break;
                         }
@@ -840,10 +1000,9 @@ public class VectorLayer extends Layer
 
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
@@ -854,21 +1013,21 @@ public class VectorLayer extends Layer
                 featureId = pathSegments.get(pathSegments.size() - 2);
                 result = 0;
                 //get photo path
-                File photoFolder = new File(mPath, featureId); //the photos store in id folder in layer folder
+                File photoFolder =
+                        new File(mPath, featureId); //the photos store in id folder in layer folder
                 for (File photoFile : photoFolder.listFiles()) {
-                    if(photoFile.getName().endsWith("jpg")){
-                        if(photoFile.delete()){
+                    if (photoFile.getName().endsWith("jpg")) {
+                        if (photoFile.delete()) {
                             result++;
                         }
                     }
                 }
-                if(result > 0){
+                if (result > 0) {
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
@@ -879,17 +1038,19 @@ public class VectorLayer extends Layer
                 featureId = pathSegments.get(pathSegments.size() - 3);
                 photoName = uri.getLastPathSegment();
 
-                if(!photoName.endsWith("jpg"))
+                if (!photoName.endsWith("jpg")) {
                     photoName += ".jpg";
+                }
                 //get photo path
-                File photoFile = new File(mPath, featureId + "/" + photoName); //the photos store in id folder in layer folder
-                if(photoFile.delete()){
+                File photoFile = new File(
+                        mPath, featureId + "/" +
+                               photoName); //the photos store in id folder in layer folder
+                if (photoFile.delete()) {
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange(featureId, photoName, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
@@ -901,41 +1062,53 @@ public class VectorLayer extends Layer
         }
     }
 
-    public int update(ContentValues values, String selection, String[] selectionArgs){
-        MapContentProviderHelper map = (MapContentProviderHelper)MapBase.getInstance();
-        if(null == map)
-            throw new IllegalArgumentException("The map should extends MapContentProviderHelper or inherited");
+
+    public int update(
+            ContentValues values,
+            String selection,
+            String[] selectionArgs)
+    {
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.update(mPath.getName(), values, selection, selectionArgs);
-        if(result > 0)
+        if (result > 0) {
             notifyLayerChanged();
+        }
         return result;
     }
 
-    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs)
+
+    public int update(
+            Uri uri,
+            ContentValues values,
+            String selection,
+            String[] selectionArgs)
     {
         String featureId;
         int result;
 
         int uriType = mUriMatcher.match(uri);
-        switch (uriType)
-        {
+        switch (uriType) {
             case TYPE_TABLE:
                 result = update(values, selection, selectionArgs);
 
-                if(result > 0){
+                if (result > 0) {
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
-                if(values.containsKey(FIELD_GEOM))
+                if (values.containsKey(FIELD_GEOM)) {
                     reloadCache();
+                }
                 return result;
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
@@ -947,14 +1120,16 @@ public class VectorLayer extends Layer
 
                 result = update(values, selection, selectionArgs);
 
-                if(result > 0){
+                if (result > 0) {
                     //change cached item
-                    if(values.containsKey(FIELD_GEOM)) {
+                    if (values.containsKey(FIELD_GEOM)) {
                         int id = Integer.parseInt(featureId);
                         for (VectorCacheItem item : mVectorCacheItems) {
                             if (item.getId() == id) {
                                 try {
-                                    item.setGeoGeometry(GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM)));
+                                    item.setGeoGeometry(
+                                            GeoGeometryFactory.fromBlob(
+                                                    values.getAsByteArray(FIELD_GEOM)));
 
                                 } catch (IOException | ClassNotFoundException e) {
                                     e.printStackTrace();
@@ -965,10 +1140,9 @@ public class VectorLayer extends Layer
                     }
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if(bFromNetwork) {
+                    if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
-                    }
-                    else {
+                    } else {
                         addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
@@ -981,7 +1155,11 @@ public class VectorLayer extends Layer
         }
     }
 
-    public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException
+
+    public ParcelFileDescriptor openFile(
+            Uri uri,
+            String mode)
+            throws FileNotFoundException
     {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
@@ -989,8 +1167,9 @@ public class VectorLayer extends Layer
                 List<String> pathSegments = uri.getPathSegments();
                 String featureId = pathSegments.get(pathSegments.size() - 3);
                 String photoName = uri.getLastPathSegment();
-                if(!photoName.endsWith("jpg"))
+                if (!photoName.endsWith("jpg")) {
                     photoName += ".jpg";
+                }
                 int nMode = ParcelFileDescriptor.MODE_READ_ONLY;
                 //mode 	May be "w", "wa", "rw", or "rwt".
                 switch (mode) {
@@ -1008,7 +1187,8 @@ public class VectorLayer extends Layer
                         break;
                 }
 
-                return ParcelFileDescriptor.open(new File(mPath, featureId + "/" + photoName), nMode);
+                return ParcelFileDescriptor.open(
+                        new File(mPath, featureId + "/" + photoName), nMode);
             default:
                 throw new FileNotFoundException();
         }
@@ -1072,12 +1252,19 @@ public class VectorLayer extends Layer
     and open using real path
     */
 
-    protected void addChange(String featureId, int operation)
+
+    protected void addChange(
+            String featureId,
+            int operation)
     {
         //nothing to do
     }
 
-    protected void addChange(String featureId, String photoName, int operation)
+
+    protected void addChange(
+            String featureId,
+            String photoName,
+            int operation)
     {
         //nothing to do
     }
@@ -1088,13 +1275,18 @@ public class VectorLayer extends Layer
         return mGeometryType;
     }
 
-    public List<Field> getFields(){
+
+    public List<Field> getFields()
+    {
         return new ArrayList<>(mFields.values());
     }
 
-    public int getCount(){
-        if(null != mVectorCacheItems)
+
+    public int getCount()
+    {
+        if (null != mVectorCacheItems) {
             return mVectorCacheItems.size();
+        }
         return 0;
     }
 }
