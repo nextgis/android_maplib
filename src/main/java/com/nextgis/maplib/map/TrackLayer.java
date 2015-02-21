@@ -30,10 +30,20 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.text.TextUtils;
 import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.datasource.GeoLineString;
+import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.TrackRenderer;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 
 
 public class TrackLayer
@@ -79,6 +89,10 @@ public class TrackLayer
     private static final int TYPE_TRACKPOINTS  = 2;
     private static final int TYPE_SINGLE_TRACK = 3;
 
+    private static final int UPDATE = 1;
+    private static final int INSERT = 2;
+    private static final int DELETE = 3;
+
     private static String CONTENT_TYPE, CONTENT_TYPE_TRACKPOINTS, CONTENT_ITEM_TYPE;
 
     protected int    mColor;
@@ -87,7 +101,8 @@ public class TrackLayer
     SQLiteDatabase mSQLiteDatabase;
     private UriMatcher mUriMatcher;
     private Uri        mContentUriTracks, mContentUriTrackpoints;
-    private MapContentProviderHelper mMap;
+    private MapContentProviderHelper    mMap;
+    private Map<Integer, GeoLineString> mTracks;
 
 
     public TrackLayer(
@@ -127,31 +142,119 @@ public class TrackLayer
 
         mLayerType = Constants.LAYERTYPE_TRACKS;
         mRenderer = new TrackRenderer(this);
+        mTracks = new HashMap<>();
     }
 
 
-    public void loadTracks()
+    public List<GeoLineString> getTracks()
+    {
+        if (mTracks.size() == 0) {
+            reloadTracks(INSERT);
+        }
+
+        return new ArrayList<>(mTracks.values());
+    }
+
+
+    public void reloadTracks(int mode)
+    {
+        reloadCursor();
+        List<Integer> trackIds = new ArrayList<>();
+
+        if (mCursor.moveToFirst()) {
+            do {
+                int trackId = mCursor.getInt(mCursor.getColumnIndex(TrackLayer.FIELD_ID));
+                trackIds.add(trackId);
+            } while (mCursor.moveToNext());
+        }
+
+        switch (mode) {
+            case UPDATE:
+                Iterator itUpdate = mTracks.keySet().iterator();
+                while (itUpdate.hasNext()) {
+                    Integer entry = (Integer) itUpdate.next();
+                    if (trackIds.contains(entry)) {
+                        loadTrack(entry);
+                    } else {
+                        itUpdate.remove();
+                    }
+                }
+
+                for (int key : trackIds) {
+                    if (!mTracks.keySet().contains(key)) {
+                        loadTrack(key);
+                    }
+                }
+                break;
+            case INSERT:
+                for (int key : trackIds) {
+                    if (!mTracks.keySet().contains(key)) {
+                        loadTrack(key);
+                    }
+                }
+                break;
+            case DELETE:
+                Iterator itDelete = mTracks.keySet().iterator();
+                while (itDelete.hasNext()) {
+                    Integer entry = (Integer) itDelete.next();
+                    if (!trackIds.contains(entry)) {
+                        itDelete.remove();
+                    }
+                }
+                break;
+        }
+    }
+
+
+    private void reloadCursor()
     {
         String[] proj = new String[] {FIELD_ID};
-        String selection = FIELD_VISIBLE + " = 1";
+        String selection =
+                FIELD_VISIBLE + " = 1 AND " + FIELD_END + " IS NOT NULL AND " + FIELD_END +
+                " != ''";
 
         mCursor =
                 mContext.getContentResolver().query(mContentUriTracks, proj, selection, null, null);
     }
 
 
-    public Cursor getTrack(int position)
+    private void loadTrack(int trackId)
+    {
+        Cursor track = getTrack(trackId);
+
+        if (track == null || !track.moveToFirst()) {
+            return;
+        }
+
+        float x0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LON)),
+                y0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LAT));
+
+        GeoLineString trackLine = new GeoLineString();
+        trackLine.setCRS(GeoConstants.CRS_WGS84);
+        trackLine.add(new GeoPoint(x0, y0));
+
+        while (track.moveToNext()) {
+            x0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LON));
+            y0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LAT));
+            trackLine.add(new GeoPoint(x0, y0));
+        }
+
+        trackLine.project(GeoConstants.CRS_WEB_MERCATOR);
+        mTracks.put(trackId, trackLine);
+    }
+
+
+    private Cursor getTrack(int id)
     {
         if (mCursor == null) {
             throw new RuntimeException("Tracks' cursor is null");
         }
 
-        mCursor.moveToPosition(position);
         String[] proj = new String[] {FIELD_LON, FIELD_LAT};
-        String id = mCursor.getString(mCursor.getColumnIndex(FIELD_ID));
 
         return mContext.getContentResolver()
-                       .query(Uri.withAppendedPath(mContentUriTracks, id), proj, null, null, null);
+                       .query(Uri.withAppendedPath(mContentUriTracks, id + ""), proj, null, null,
+                              null);
     }
 
 
@@ -161,14 +264,12 @@ public class TrackLayer
     }
 
 
-    public int getTracksCount()
-    {
-        if (mCursor == null) {
-            return 0;
-        }
-
-        return mCursor.getCount();
-    }
+//    @Override
+//    protected void notifyLayerChanged()
+//    {
+//        super.notifyLayerChanged();
+//        mMap.onLayerChanged(this);
+//    }
 
 
     private void initDB()
@@ -247,7 +348,11 @@ public class TrackLayer
                 throw new IllegalArgumentException("Wrong tracks URI: " + uri);
         }
 
-        getContext().getContentResolver().notifyChange(inserted, null);
+        if (id != NOT_FOUND) {
+//            notifyLayerChanged();
+            reloadTracks(INSERT);
+            getContext().getContentResolver().notifyChange(inserted, null);
+        }
 
         return inserted;
     }
@@ -274,7 +379,12 @@ public class TrackLayer
         }
 
         int deleted = mSQLiteDatabase.delete(TABLE_TRACKS, selection, selectionArgs);
-        getContext().getContentResolver().notifyChange(uri, null);
+
+        if (deleted > 0) {
+//            notifyLayerChanged();
+            reloadTracks(DELETE);
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
 
         return deleted;
     }
@@ -298,8 +408,9 @@ public class TrackLayer
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + id;
                 }
-                break;
             case TYPE_TRACKS:
+                mMap.onLayerChanged(this);
+//                notifyLayerChanged();
                 break;
             case TYPE_TRACKPOINTS:
                 throw new IllegalArgumentException("Trackpoints can't be updated");
@@ -308,7 +419,11 @@ public class TrackLayer
         }
 
         updated = mSQLiteDatabase.update(TABLE_TRACKS, values, selection, selectionArgs);
-        getContext().getContentResolver().notifyChange(uri, null);
+
+        if (updated > 0) {
+            reloadTracks(UPDATE);
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
 
         return updated;
     }
