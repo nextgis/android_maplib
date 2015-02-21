@@ -98,7 +98,6 @@ public class FileUtil
         }
     }
 
-
     public static boolean deleteRecursive(File fileOrDirectory)
     {
         boolean isOK = true;
@@ -112,6 +111,39 @@ public class FileUtil
         return fileOrDirectory.delete() && isOK;
     }
 
+    public static boolean move(File from, File to){
+        return copyRecursive(from, to) && deleteRecursive(from);
+    }
+
+    public static boolean copyRecursive(File from, File to){
+        if (from.isDirectory()) {
+            if (!to.exists()) {
+                if(!to.mkdir())
+                    return false;
+            }
+
+            for (String path : from.list()) {
+                if(copyRecursive(new File(from, path), new File(to, path)))
+                    return false;
+            }
+        }
+        else {
+
+            try {
+                InputStream in = new FileInputStream(from);
+                OutputStream out = new FileOutputStream(to);
+                byte[] buf = new byte[1024];
+                copyStream(in, out, buf, 1024);
+                in.close();
+                out.close();
+            }
+            catch (IOException e){
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return true;
+    }
 
     public static void copyStream(
             InputStream is,
@@ -120,12 +152,9 @@ public class FileUtil
             int bufferSize)
             throws IOException
     {
-        for (; ; ) {
-            int count = is.read(buffer, 0, bufferSize);
-            if (count == -1) {
-                break;
-            }
-            os.write(buffer, 0, count);
+        int len;
+        while ((len = is.read(buffer, 0, bufferSize)) > 0) {
+            os.write(buffer, 0, len);
         }
     }
 
