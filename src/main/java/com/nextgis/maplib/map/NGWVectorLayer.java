@@ -490,6 +490,7 @@ public class NGWVectorLayer extends VectorLayer implements INGWLayer
 
     /**
      * Synchronize changes with NGW. Should be run from non UI thread.
+     * @param syncAdapter
      * @param authority
      * @param syncResult - report some errors via this parameter
      */

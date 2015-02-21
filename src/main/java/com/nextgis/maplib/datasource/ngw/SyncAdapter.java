@@ -61,11 +61,13 @@ https://books.google.ru/books?id=SXlMAQAAQBAJ&pg=PA158&lpg=PA158&dq=android:sync
 public class SyncAdapter
         extends AbstractThreadedSyncAdapter
 {
-    public static final String SYNC_START = "com.nextgis.maplib.sync_start";
-    public static final String SYNC_FINISH = "com.nextgis.maplib.sync_finish";
-    public static final String SYNC_CHANGES = "com.nextgis.maplib.sync_changes";
+    public static final String SYNC_START       = "com.nextgis.maplib.sync_start";
+    public static final String SYNC_FINISH      = "com.nextgis.maplib.sync_finish";
+    public static final String SYNC_INTERRUPTED = "com.nextgis.maplib.sync_interrupted";
+    public static final String SYNC_CHANGES     = "com.nextgis.maplib.sync_changes";
 
     protected boolean mIsSyncStopped = false;
+
 
     public SyncAdapter(
             Context context,
@@ -99,47 +101,52 @@ public class SyncAdapter
 
         getContext().sendBroadcast(new Intent(SYNC_START));
 
-        IGISApplication application = (IGISApplication)getContext();
-        MapContentProviderHelper mapContentProviderHelper = (MapContentProviderHelper) application.getMap();
-        if(null != mapContentProviderHelper){
+        IGISApplication application = (IGISApplication) getContext();
+        MapContentProviderHelper mapContentProviderHelper =
+                (MapContentProviderHelper) application.getMap();
+        if (null != mapContentProviderHelper) {
             sync(mapContentProviderHelper, authority, syncResult);
         }
 
-        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES, Context.MODE_PRIVATE |
-                                                                       Context.MODE_MULTI_PROCESS);
+        SharedPreferences settings = getContext().getSharedPreferences(
+                Constants.PREFERENCES, Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
         SharedPreferences.Editor editor = settings.edit();
         editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
         editor.commit();
 
-        getContext().sendBroadcast(new Intent(SYNC_FINISH));
+        getContext().sendBroadcast(new Intent(isSyncStopped() ? SYNC_INTERRUPTED : SYNC_FINISH));
     }
+
 
     protected void sync(
             LayerGroup layerGroup,
             String authority,
             SyncResult syncResult)
     {
-        for(int i = 0; i < layerGroup.getLayerCount(); i++){
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             if (isSyncStopped()) {
                 return;
             }
             ILayer layer = layerGroup.getLayer(i);
-            if(layer instanceof LayerGroup){
+            if (layer instanceof LayerGroup) {
                 sync((LayerGroup) layer, authority, syncResult);
-            }
-            else if(layer instanceof NGWVectorLayer){
-                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer)layer;
+            } else if (layer instanceof NGWVectorLayer) {
+                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer) layer;
                 ngwVectorLayer.sync(this, authority, syncResult);
             }
         }
     }
 
-    public static void setSyncPeriod(IGISApplication application, Bundle extras, long pollFrequency)
+
+    public static void setSyncPeriod(
+            IGISApplication application,
+            Bundle extras,
+            long pollFrequency)
     {
         final AccountManager accountManager = AccountManager.get((Context) application);
-        for(Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)){
-            ContentResolver.addPeriodicSync(account, application.getAuthority(), extras,
-                                            pollFrequency);
+        for (Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)) {
+            ContentResolver.addPeriodicSync(
+                    account, application.getAuthority(), extras, pollFrequency);
         }
     }
 
