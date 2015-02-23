@@ -38,16 +38,16 @@ import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.datasource.Feature;
+import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.util.ChangeFeatureItem;
-import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
@@ -253,6 +253,10 @@ public class VectorLayer
             int geometryType)
             throws SQLiteException
     {
+        if (Thread.currentThread().isInterrupted()) {
+            return "";
+        }
+
         Log.d(TAG, "init layer " + getName());
 
         //filter out forbidden fields
@@ -420,12 +424,17 @@ public class VectorLayer
         }
         tableCreate += " );";
 
+        if (Thread.currentThread().isInterrupted()) {
+            return "";
+        }
+
         Log.d(TAG, "create layer table: " + tableCreate);
 
         //1. create table and populate with values
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
         db.execSQL(tableCreate);
+
         for (Feature feature : features) {
             ContentValues values = new ContentValues();
             values.put(FIELD_ID, feature.getId());
@@ -467,6 +476,11 @@ public class VectorLayer
                         break;
                 }
             }
+
+            if (Thread.currentThread().isInterrupted()) {
+                return "";
+            }
+
             db.insert(mPath.getName(), "", values);
         }
 
@@ -495,6 +509,10 @@ public class VectorLayer
         mFields = new HashMap<>();
         for (Field field : fields) {
             mFields.put(field.getName(), field);
+        }
+
+        if (Thread.currentThread().isInterrupted()) {
+            return "";
         }
 
         save();
