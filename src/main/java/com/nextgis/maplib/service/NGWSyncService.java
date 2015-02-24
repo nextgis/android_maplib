@@ -94,14 +94,14 @@ public class NGWSyncService
         unregisterReceiver(mSyncReceiver);
 
         if (isSyncStarted()) {
-            Log.d(Constants.TAG, "Sync is canceled");
+            Log.d(Constants.TAG, "SyncAdapter - sync is canceled, sleep");
 
             try {
                 // We have not guarantee to receive SyncAdapter.SYNC_CANCELED
                 // because of a possible sync service shutdown.
                 // For it we sleep.
                 Thread.sleep(10000);
-                Log.d(Constants.TAG, "Sleep for SYNC_CANCELED is ended");
+                Log.d(Constants.TAG, "SyncAdapter - sleep for SYNC_CANCELED is ended");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -137,6 +137,7 @@ public class NGWSyncService
                     break;
 
                 case SyncAdapter.SYNC_CANCELED:
+                    Log.d(Constants.TAG, "SyncAdapter - SYNC_CANCELED is received");
                     mIsSyncStarted = false;
                     break;
 

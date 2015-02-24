@@ -87,13 +87,16 @@ public class SyncAdapter
     }
 
 
-    /*
-    * Warning!
-    * When you stop the sync service by ContentResolver.cancelSync()
-    * then onPerformSync stops after end of syncing of current NGWVectorLayer.
-    * The data structure of the current NGWVectorLayer will be saved.
-    *
-    * */
+    /**
+     * Warning! When you stop the sync service by ContentResolver.cancelSync() then onPerformSync
+     * stops after end of syncing of current NGWVectorLayer. The data structure of the current
+     * NGWVectorLayer will be saved.
+     * <p/>
+     * <b>Description copied from class:</b> AbstractThreadedSyncAdapter
+     * Perform a sync for this account. SyncAdapter-specific parameters may be specified in extras,
+     * which is guaranteed to not be null. Invocations of this method are guaranteed to be
+     * serialized.
+     */
     @Override
     public void onPerformSync(
             Account account,
@@ -116,6 +119,7 @@ public class SyncAdapter
         }
 
         if (isCanceled()) {
+            Log.d(Constants.TAG, "onPerformSync - SYNC_CANCELED is sent");
             getContext().sendBroadcast(new Intent(SYNC_CANCELED));
             return;
         }
