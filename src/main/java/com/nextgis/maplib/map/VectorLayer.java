@@ -1289,4 +1289,14 @@ public class VectorLayer
         }
         return 0;
     }
+
+    public List<VectorCacheItem> query(GeoEnvelope envelope){
+        List<VectorCacheItem> ret = new ArrayList<>();
+        for(VectorCacheItem cacheItem : mVectorCacheItems){
+            if(cacheItem.getGeoGeometry().intersects(envelope)){
+                ret.add(cacheItem);
+            }
+        }
+        return ret;
+    }
 }
