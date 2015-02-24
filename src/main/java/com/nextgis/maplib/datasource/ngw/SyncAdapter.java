@@ -90,9 +90,8 @@ public class SyncAdapter
     /*
     * Warning!
     * When you stop the sync service by ContentResolver.cancelSync()
-    * then onPerformSync stops immediately,
-    * because of what may be a violation of the data structure.
-    * Use ContentResolver.cancelSync() only before deleting of all layers.
+    * then onPerformSync stops after end of syncing of current NGWVectorLayer.
+    * The data structure of the current NGWVectorLayer will be saved.
     *
     * */
     @Override

@@ -246,10 +246,6 @@ public class NGWVectorLayer
      */
     public String download()
     {
-        if (Thread.currentThread().isInterrupted()) {
-            return "";
-        }
-
         if (!mNet.isNetworkAvailable()) { //return tile from cache
             return getContext().getString(R.string.error_network_unavailable);
         }
@@ -304,10 +300,6 @@ public class NGWVectorLayer
             int nSRS = srs.getInt("id");
             if (nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84) {
                 return getContext().getString(R.string.error_crs_unsupported);
-            }
-
-            if (Thread.currentThread().isInterrupted()) {
-                return "";
             }
 
             //get layer data
@@ -538,7 +530,7 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
-        if (Thread.currentThread().isInterrupted() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
+        if (0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -559,9 +551,6 @@ public class NGWVectorLayer
                 return;
             }
 
-            if (Thread.currentThread().isInterrupted()) {
-                return;
-            }
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
             save();
 

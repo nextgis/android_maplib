@@ -253,10 +253,6 @@ public class VectorLayer
             int geometryType)
             throws SQLiteException
     {
-        if (Thread.currentThread().isInterrupted()) {
-            return "";
-        }
-
         Log.d(TAG, "init layer " + getName());
 
         //filter out forbidden fields
@@ -424,10 +420,6 @@ public class VectorLayer
         }
         tableCreate += " );";
 
-        if (Thread.currentThread().isInterrupted()) {
-            return "";
-        }
-
         Log.d(TAG, "create layer table: " + tableCreate);
 
         //1. create table and populate with values
@@ -477,10 +469,6 @@ public class VectorLayer
                 }
             }
 
-            if (Thread.currentThread().isInterrupted()) {
-                return "";
-            }
-
             db.insert(mPath.getName(), "", values);
         }
 
@@ -509,10 +497,6 @@ public class VectorLayer
         mFields = new HashMap<>();
         for (Field field : fields) {
             mFields.put(field.getName(), field);
-        }
-
-        if (Thread.currentThread().isInterrupted()) {
-            return "";
         }
 
         save();
