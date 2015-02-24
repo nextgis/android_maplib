@@ -127,4 +127,8 @@ public abstract class GeoGeometry implements Serializable
         GeoGeometry other = (GeoGeometry)o;
         return null != other && getType() == other.getType();
     }
+
+    public boolean intersects(GeoEnvelope envelope){
+        return getEnvelope().intersects(envelope);
+    }
 }

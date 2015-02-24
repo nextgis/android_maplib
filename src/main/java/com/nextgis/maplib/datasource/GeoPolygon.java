@@ -205,4 +205,19 @@ public class GeoPolygon
             return mInnerRings.get(index);
         return null;
     }
+
+
+    @Override
+    public boolean intersects(GeoEnvelope envelope)
+    {
+        if(super.intersects(envelope)){
+            if(mOuterRing.intersects(envelope))
+                return true;
+            for(GeoLinearRing ring : mInnerRings){
+                if(ring.intersects(envelope))
+                    return true;
+            }
+        }
+        return false;
+    }
 }

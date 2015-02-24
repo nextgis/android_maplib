@@ -185,4 +185,13 @@ public class GeoPoint
         GeoPoint otherPt = (GeoPoint)o;
         return getX() == otherPt.getX() && getY() == otherPt.getY();
     }
+
+
+    @Override
+    public boolean intersects(GeoEnvelope envelope)
+    {
+        return super.intersects(envelope) && envelope.getMinX() < getX() &&
+               envelope.getMaxX() > getX() && envelope.getMinY() < getY() &&
+               envelope.getMaxY() > getY();
+    }
 }

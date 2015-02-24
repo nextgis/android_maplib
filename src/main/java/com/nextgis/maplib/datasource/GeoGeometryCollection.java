@@ -202,4 +202,15 @@ public class GeoGeometryCollection
             return mGeometries.get(index);
         return null;
     }
+
+
+    @Override
+    public boolean intersects(GeoEnvelope envelope)
+    {
+        for(GeoGeometry geom : mGeometries) {
+            if (geom.intersects(envelope))
+                return true;
+        }
+        return false;
+    }
 }
