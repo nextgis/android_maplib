@@ -530,7 +530,7 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
-        if (Thread.currentThread().isInterrupted() || 0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
+        if (0 != (mSyncType & SYNC_NONE) || !mIsInitialized) {
             return;
         }
 
@@ -551,9 +551,6 @@ public class NGWVectorLayer
                 return;
             }
 
-            if (Thread.currentThread().isInterrupted()) {
-                return;
-            }
             Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
             save();
 

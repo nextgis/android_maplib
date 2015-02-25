@@ -38,16 +38,16 @@ import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.datasource.Feature;
+import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.util.ChangeFeatureItem;
-import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
@@ -426,6 +426,7 @@ public class VectorLayer
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
         db.execSQL(tableCreate);
+
         for (Feature feature : features) {
             ContentValues values = new ContentValues();
             values.put(FIELD_ID, feature.getId());
@@ -467,6 +468,7 @@ public class VectorLayer
                         break;
                 }
             }
+
             db.insert(mPath.getName(), "", values);
         }
 

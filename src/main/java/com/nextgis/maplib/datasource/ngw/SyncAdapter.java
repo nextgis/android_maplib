@@ -44,6 +44,7 @@ import com.nextgis.maplib.util.SettingsConstants;
 
 import static com.nextgis.maplib.util.Constants.NGW_ACCOUNT_TYPE;
 import static com.nextgis.maplib.util.Constants.TAG;
+
 /*
 https://udinic.wordpress.com/2013/07/24/write-your-own-android-sync-adapter/#more-507
 http://www.fussylogic.co.uk/blog/?p=1031
@@ -57,6 +58,7 @@ http://stackoverflow.com/questions/5486228/how-do-we-control-an-android-sync-ada
 https://books.google.ru/books?id=SXlMAQAAQBAJ&pg=PA158&lpg=PA158&dq=android:syncAdapterSettingsAction&source=bl&ots=T832S7VvKb&sig=vgNNDHfwyMzvINeHfdfDhu9tREs&hl=ru&sa=X&ei=YviqVIPMF9DgaPOUgOgP&ved=0CFUQ6AEwBw#v=onepage&q=android%3AsyncAdapterSettingsAction&f=false
 
  */
+
 
 public class SyncAdapter
         extends AbstractThreadedSyncAdapter
@@ -85,6 +87,16 @@ public class SyncAdapter
     }
 
 
+    /**
+     * Warning! When you stop the sync service by ContentResolver.cancelSync() then onPerformSync
+     * stops after end of syncing of current NGWVectorLayer. The data structure of the current
+     * NGWVectorLayer will be saved.
+     * <p/>
+     * <b>Description copied from class:</b> AbstractThreadedSyncAdapter
+     * Perform a sync for this account. SyncAdapter-specific parameters may be specified in extras,
+     * which is guaranteed to not be null. Invocations of this method are guaranteed to be
+     * serialized.
+     */
     @Override
     public void onPerformSync(
             Account account,
@@ -100,19 +112,26 @@ public class SyncAdapter
         IGISApplication application = (IGISApplication) getContext();
         MapContentProviderHelper mapContentProviderHelper =
                 (MapContentProviderHelper) application.getMap();
+
         if (null != mapContentProviderHelper) {
+            mapContentProviderHelper.load(); // reload map for deleted/added layers
             sync(mapContentProviderHelper, authority, syncResult);
         }
 
-        if (!isCanceled()) {
-            SharedPreferences settings = getContext().getSharedPreferences(
-                    Constants.PREFERENCES, Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
-            SharedPreferences.Editor editor = settings.edit();
-            editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
-            editor.commit();
+        if (isCanceled()) {
+            Log.d(Constants.TAG, "onPerformSync - SYNC_CANCELED is sent");
+            getContext().sendBroadcast(new Intent(SYNC_CANCELED));
+            return;
         }
 
-        getContext().sendBroadcast(new Intent(isCanceled() ? SYNC_CANCELED : SYNC_FINISH));
+        SharedPreferences settings = getContext().getSharedPreferences(
+                Constants.PREFERENCES, Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putLong(
+                SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
+        editor.commit();
+
+        getContext().sendBroadcast(new Intent(SYNC_FINISH));
     }
 
 
@@ -152,31 +171,5 @@ public class SyncAdapter
     public boolean isCanceled()
     {
         return Thread.currentThread().isInterrupted();
-    }
-
-
-    protected void onCanceled()
-    {
-        // we try do this before thread is killed
-        getContext().sendBroadcast(new Intent(SYNC_CANCELED));
-    }
-
-
-    // This will only be invoked when the SyncAdapter indicates that it doesn't support parallel syncs.
-    @Override
-    public void onSyncCanceled()
-    {
-        onCanceled();
-        super.onSyncCanceled();
-    }
-
-
-    // This will only be invoked when the SyncAdapter indicates that it does support parallel syncs.
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    @Override
-    public void onSyncCanceled(Thread thread)
-    {
-        onCanceled();
-        super.onSyncCanceled(thread);
     }
 }
