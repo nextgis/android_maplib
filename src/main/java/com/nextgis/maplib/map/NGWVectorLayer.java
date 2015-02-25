@@ -675,9 +675,7 @@ public class NGWVectorLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
-                             line);
+                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " + line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -728,8 +726,7 @@ public class NGWVectorLayer
                         for (int i = 0; i < mChanges.size(); i++) {
                             ChangeFeatureItem change = mChanges.get(i);
                             if (change.getFeatureId() == remoteFeature.getId()) {
-                                Log.d(
-                                        TAG, "The feature " + change.getFeatureId() +
+                                Log.d(TAG, "The feature " + change.getFeatureId() +
                                              " already changed on server. Remove change set #" + i);
                                 mChanges.remove(i);
                                 i--;
@@ -754,8 +751,7 @@ public class NGWVectorLayer
                             updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
                             //prevent add changes
                             int count = update(updateUri, values, null, null);
-                            Log.d(
-                                    TAG, "Update feature (" + count + ") from server - " +
+                            Log.d(TAG, "Update feature (" + count + ") from server - " +
                                          remoteFeature.getId());
                         }
                     }
@@ -817,9 +813,7 @@ public class NGWVectorLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem execute: " + mURL + " HTTP response: " +
-                             line);
+                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " + line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -875,9 +869,7 @@ public class NGWVectorLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem execute: " + mURL + " HTTP response: " +
-                             line);
+                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " + line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -931,9 +923,7 @@ public class NGWVectorLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem execute: " + mURL + " HTTP response: " +
-                             line);
+                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " + line);
                 syncResult.stats.numIoExceptions++;
                 return false;
             }

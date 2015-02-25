@@ -50,6 +50,7 @@ public interface GeoConstants
     public static final int GTMultiPolygon       = 6;
     public static final int GTGeometryCollection = 7;
     public static final int GTNone               = 100;
+    public static final int GTAny = GTMultiPoint | GTPoint | GTLineString | GTMultiLineString | GTPolygon | GTMultiPolygon | GTGeometryCollection;
 
     /**
      * geojson see http://geojson.org/geojson-spec.html
