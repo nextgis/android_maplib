@@ -47,7 +47,9 @@ import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
+import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
+import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
@@ -89,14 +91,25 @@ public class VectorLayer
     public static final String FIELD_ID   = "_id";
     public static final String FIELD_GEOM = "_geom";
 
-    protected static final String CONTENT_PHOTO_TYPE  = "image/jpeg";
-    protected static final String CONTENT_PHOTOS_TYPE = "vnd.android.cursor.dir/image";
+    protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
     protected static final String NO_SYNC             = "no_sync";
 
-    protected static final int TYPE_TABLE    = 1;
-    protected static final int TYPE_FEATURE  = 2;
-    protected static final int TYPE_PHOTO    = 3;
-    protected static final int TYPE_PHOTO_ID = 4;
+    protected static final int TYPE_TABLE     = 1;
+    protected static final int TYPE_FEATURE   = 2;
+    protected static final int TYPE_ATTACH    = 3;
+    protected static final int TYPE_ATTACH_ID = 4;
+
+    protected static final String META = "meta.json";
+
+    public static final String ATTACH_DISPLAY_NAME = MediaStore.MediaColumns.DISPLAY_NAME;
+    public static final String ATTACH_SIZE         = MediaStore.MediaColumns.SIZE;
+    public static final String ATTACH_ID           = MediaStore.MediaColumns._ID;
+    public static final String ATTACH_MIME_TYPE    = MediaStore.MediaColumns.MIME_TYPE;
+    public static final String ATTACH_DATA         = MediaStore.MediaColumns.DATA;
+    public static final String ATTACH_DATE_ADDED   = MediaStore.MediaColumns.DATE_ADDED;
+    public static final String ATTACH_DESCRIPTION  = MediaStore.Images.ImageColumns.DESCRIPTION;
+
+    protected Map<String, Map<String, AttachItem>> mAttaches;
 
 
     public VectorLayer(
@@ -122,10 +135,8 @@ public class VectorLayer
 
         mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
         mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
-        mUriMatcher.addURI(
-                mAuthority, mPath.getName() + "/#/photos", TYPE_PHOTO);      //get photos for row
-        mUriMatcher.addURI(
-                mAuthority, mPath.getName() + "/#/photos/#", TYPE_PHOTO_ID); //get photo by name
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/attach", TYPE_ATTACH);      //get attaches for row
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/attach/#", TYPE_ATTACH_ID); //get attach by id
 
 
         CONTENT_TYPE =
@@ -134,6 +145,7 @@ public class VectorLayer
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
 
         mVectorCacheItems = new ArrayList<>();
+        mAttaches = new HashMap<>();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
     }
@@ -684,7 +696,7 @@ public class VectorLayer
         Cursor cursor;
         MatrixCursor matrixCursor;
         String featureId;
-        String photoName;
+        String attachId;
         List<String> pathSegments;
 
         int uriType = mUriMatcher.match(uri);
@@ -711,104 +723,72 @@ public class VectorLayer
                     cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 }
                 return cursor;
-            case TYPE_PHOTO:
+            case TYPE_ATTACH:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
                 if (projection == null) {
-                    projection = new String[] {
-                            MediaStore.MediaColumns.DISPLAY_NAME,
-                            MediaStore.MediaColumns.SIZE,
-                            MediaStore.MediaColumns._ID,
-                            MediaStore.MediaColumns.MIME_TYPE};
+                    projection = new String[] { ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
                 matrixCursor = new MatrixCursor(projection);
-                //get photo path
-                File photoFolder =
-                        new File(mPath, featureId); //the photos store in id folder in layer folder
-                for (File photoFile : photoFolder.listFiles()) {
-                    if (photoFile.getName().endsWith("jpg")) {
+                Map<String, AttachItem> attach = getAttachMap(featureId);
+                if(null != attach) {
+                    File attachFolder = new File(mPath, featureId); //the attach store in id folder in layer folder
+                    for (AttachItem item : attach.values()) {
                         Object[] row = new Object[projection.length];
+                        File attachFile = new File(attachFolder, item.getAttachId());
                         for (int i = 0; i < projection.length; i++) {
-
-                            if (projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns.DISPLAY_NAME) == 0) {
-                                row[i] = photoFile.getName();
-                            } else if (projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns.SIZE) == 0) {
-                                row[i] = photoFile.length();
-                            } else if (projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns.DATA) == 0) {
-                                row[i] = photoFile.getPath();
-                            } else if (projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns.MIME_TYPE) == 0) {
-                                row[i] = CONTENT_PHOTO_TYPE;
-                            } else if (projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns.DATE_ADDED) == 0 ||
-                                       projection[i].compareToIgnoreCase(
-                                               MediaStore.MediaColumns.DATE_MODIFIED) == 0 ||
-                                       projection[i].compareToIgnoreCase("datetaken") == 0) {
-                                row[i] = photoFile.lastModified();
-                            } else if (projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns._ID) == 0) {
-                                row[i] = photoFile.getName();
-                            } else if (projection[i].compareToIgnoreCase("orientation") == 0) {
-                                row[i] = "vertical";
+                            if (projection[i].compareToIgnoreCase(ATTACH_DISPLAY_NAME) == 0) {
+                                row[i] = item.getDisplayName();
+                            } else if (projection[i].compareToIgnoreCase(ATTACH_SIZE) == 0) {
+                                row[i] = attachFile.length();
+                            } else if (projection[i].compareToIgnoreCase(ATTACH_DATA) == 0) {
+                                row[i] = attachFile.getPath();
+                            } else if (projection[i].compareToIgnoreCase(ATTACH_MIME_TYPE) == 0) {
+                                row[i] = item.getMimetype();
+                            } else if (projection[i].compareToIgnoreCase(ATTACH_DATE_ADDED) == 0) {
+                                row[i] = attachFile.lastModified();
+                            } else if (projection[i].compareToIgnoreCase(ATTACH_ID) == 0) {
+                                row[i] = item.getAttachId();
+                            } else if (projection[i].compareToIgnoreCase(ATTACH_DESCRIPTION) == 0) {
+                                row[i] = item.getDescription();
                             }
                         }
                         matrixCursor.addRow(row);
                     }
                 }
                 return matrixCursor;
-            case TYPE_PHOTO_ID:
+            case TYPE_ATTACH_ID:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 3);
-                photoName = uri.getLastPathSegment();
+                attachId = uri.getLastPathSegment();
                 if (projection == null) {
-                    projection = new String[] {
-                            MediaStore.MediaColumns.DISPLAY_NAME,
-                            MediaStore.MediaColumns.SIZE,
-                            MediaStore.MediaColumns._ID,
-                            MediaStore.MediaColumns.MIME_TYPE};
+                    projection = new String[] { ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
                 matrixCursor = new MatrixCursor(projection);
-                if (!photoName.endsWith("jpg")) {
-                    photoName += ".jpg";
-                }
-                //get photo path
-                File photoFile = new File(
-                        mPath, featureId + "/" +
-                               photoName); //the photos store in id folder in layer folder
-                Object[] row = new Object[projection.length];
-                for (int i = 0; i < projection.length; i++) {
-
-                    if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DISPLAY_NAME) ==
-                        0) {
-                        row[i] = photoFile.getName();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.SIZE) ==
-                               0) {
-                        row[i] = photoFile.length();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATA) ==
-                               0) {
-                        row[i] = photoFile.getPath();
-                    } else if (
-                            projection[i].compareToIgnoreCase(MediaStore.MediaColumns.MIME_TYPE) ==
-                            0) {
-                        row[i] = CONTENT_PHOTO_TYPE;
-                    } else if (
-                            projection[i].compareToIgnoreCase(MediaStore.MediaColumns.DATE_ADDED) ==
-                            0 ||
-                            projection[i].compareToIgnoreCase(
-                                    MediaStore.MediaColumns.DATE_MODIFIED) == 0 ||
-                            projection[i].compareToIgnoreCase("datetaken") == 0) {
-                        row[i] = photoFile.lastModified();
-                    } else if (projection[i].compareToIgnoreCase(MediaStore.MediaColumns._ID) ==
-                               0) {
-                        row[i] = photoFile.getName();
-                    } else if (projection[i].compareToIgnoreCase("orientation") == 0) {
-                        row[i] = "vertical";
+                //get attach path
+                AttachItem item = getAttach(featureId, attachId);
+                if(null != item) {
+                    File attachFile = new File(mPath, featureId + "/" + item.getAttachId()); //the attaches store in id folder in layer folder
+                    Object[] row = new Object[projection.length];
+                    for (int i = 0; i < projection.length; i++) {
+                        if (projection[i].compareToIgnoreCase(ATTACH_DISPLAY_NAME) == 0) {
+                            row[i] = item.getDisplayName();
+                        } else if (projection[i].compareToIgnoreCase(ATTACH_SIZE) == 0) {
+                            row[i] = attachFile.length();
+                        } else if (projection[i].compareToIgnoreCase(ATTACH_DATA) == 0) {
+                            row[i] = attachFile.getPath();
+                        } else if (projection[i].compareToIgnoreCase(ATTACH_MIME_TYPE) == 0) {
+                            row[i] = item.getMimetype();
+                        } else if (projection[i].compareToIgnoreCase(ATTACH_DATE_ADDED) == 0) {
+                            row[i] = attachFile.lastModified();
+                        } else if (projection[i].compareToIgnoreCase(ATTACH_ID) == 0) {
+                            row[i] = item.getAttachId();
+                        } else if (projection[i].compareToIgnoreCase(ATTACH_DESCRIPTION) == 0) {
+                            row[i] = item.getDescription();
+                        }
                     }
+                    matrixCursor.addRow(row);
                 }
-                matrixCursor.addRow(row);
                 return matrixCursor;
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
@@ -824,10 +804,15 @@ public class VectorLayer
                 return CONTENT_TYPE;
             case TYPE_FEATURE:
                 return CONTENT_ITEM_TYPE;
-            case TYPE_PHOTO:
-                return CONTENT_PHOTOS_TYPE;
-            case TYPE_PHOTO_ID:
-                return CONTENT_PHOTO_TYPE;
+            case TYPE_ATTACH:
+                return CONTENT_ATTACH_TYPE;
+            case TYPE_ATTACH_ID:
+                List<String> pathSegments = uri.getPathSegments();
+                String featureId = pathSegments.get(pathSegments.size() - 3);
+                String attachId = uri.getLastPathSegment();
+                AttachItem item = getAttach(featureId, attachId);
+                if(null != item)
+                    return item.getMimetype();
         }
         return null;
     }
@@ -839,8 +824,13 @@ public class VectorLayer
     {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
-            case TYPE_PHOTO_ID:
-                return new String[] {CONTENT_PHOTO_TYPE};
+            case TYPE_ATTACH_ID:
+                List<String> pathSegments = uri.getPathSegments();
+                String featureId = pathSegments.get(pathSegments.size() - 3);
+                String attachId = uri.getLastPathSegment();
+                AttachItem item = getAttach(featureId, attachId);
+                if(null != item)
+                    return new String[] {item.getMimetype()};
         }
         return null;
     }
@@ -895,40 +885,62 @@ public class VectorLayer
                     return resultUri;
                 }
                 return null;
-            case TYPE_PHOTO:
-                List<String> pathSegments = uri.getPathSegments();
-                String featureId = pathSegments.get(pathSegments.size() - 2);
-                //get photo path
-                File photoFolder = new File(mPath, featureId);
-                long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
-                for (File file : photoFolder.listFiles()) {
-                    long val = Long.parseLong(file.getName().replace(".jpg", ""));
-                    if (val >= maxId) {
-                        maxId = val + 1;
-                    }
-                }
-                String fileName = maxId + ".jpg";
-                File photo = new File(photoFolder, fileName);
-                try {
-                    if (photo.createNewFile()) {
-                        Uri resultUri = ContentUris.withAppendedId(uri, maxId);
-                        String fragment = uri.getFragment();
-                        boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                        if (bFromNetwork) {
-                            getContext().getContentResolver().notifyChange(resultUri, null, false);
-                        } else {
-                            addChange(featureId, fileName, ChangeFeatureItem.TYPE_NEW);
-                            getContext().getContentResolver().notifyChange(resultUri, null, true);
+            case TYPE_ATTACH:
+                if(contentValues.containsKey(ATTACH_DISPLAY_NAME) && contentValues.containsKey(ATTACH_MIME_TYPE)) {
+                    List<String> pathSegments = uri.getPathSegments();
+                    String featureId = pathSegments.get(pathSegments.size() - 2);
+                    //get photo path
+                    File attachFolder = new File(mPath, featureId);
+                    long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
+                    if(attachFolder.isDirectory()) {
+                        for (File attachFile : attachFolder.listFiles()) {
+                            if (attachFile.getName().equals(META))
+                                continue;
+                            long val = Long.parseLong(attachFile.getName());
+                            if (val >= maxId) {
+                                maxId = val + 1;
+                            }
                         }
-
-                        return resultUri;
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    else{
+                        FileUtil.createDir(attachFolder);
+                    }
+
+                    File attachFile = new File(attachFolder, "" + maxId);
+                    try {
+                        if (attachFile.createNewFile()) {
+                            //create new record in attaches - description, mime_type, ext
+                            String displayName = contentValues.getAsString(ATTACH_DISPLAY_NAME);
+                            String mimeType  = contentValues.getAsString(ATTACH_MIME_TYPE);
+                            String description = "";
+
+                            if(contentValues.containsKey(ATTACH_DESCRIPTION))
+                                description = contentValues.getAsString(ATTACH_DESCRIPTION);
+
+                            AttachItem item = new AttachItem("" + maxId, displayName, mimeType, description);
+                            addAttach(featureId, item);
+
+                            Uri resultUri = ContentUris.withAppendedId(uri, maxId);
+                            String fragment = uri.getFragment();
+                            boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
+                            if (bFromNetwork) {
+                                getContext().getContentResolver()
+                                            .notifyChange(resultUri, null, false);
+                            } else {
+                                addChange(featureId, "" + maxId, ChangeFeatureItem.TYPE_NEW);
+                                getContext().getContentResolver()
+                                            .notifyChange(resultUri, null, true);
+                            }
+
+                            return resultUri;
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
                 return null;
             case TYPE_FEATURE:
-            case TYPE_PHOTO_ID:
+            case TYPE_ATTACH_ID:
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
@@ -959,7 +971,7 @@ public class VectorLayer
             String[] selectionArgs)
     {
         String featureId;
-        String photoName;
+        String attachId;
         List<String> pathSegments;
         int result;
 
@@ -1010,21 +1022,21 @@ public class VectorLayer
                     }
                 }
                 return result;
-            case TYPE_PHOTO:
+            case TYPE_ATTACH:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
                 result = 0;
                 //get photo path
-                File photoFolder =
-                        new File(mPath, featureId); //the photos store in id folder in layer folder
-                for (File photoFile : photoFolder.listFiles()) {
-                    if (photoFile.getName().endsWith("jpg")) {
-                        if (photoFile.delete()) {
-                            result++;
-                        }
+                File attachFolder = new File(mPath, featureId); //the photos store in id folder in layer folder
+                for (File attachFile : attachFolder.listFiles()) {
+                    if (attachFile.delete()) {
+                        result++;
                     }
                 }
                 if (result > 0) {
+
+                    deleteAttaches(featureId);
+
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
@@ -1035,25 +1047,23 @@ public class VectorLayer
                     }
                 }
                 return result;
-            case TYPE_PHOTO_ID:
+            case TYPE_ATTACH_ID:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 3);
-                photoName = uri.getLastPathSegment();
+                attachId = uri.getLastPathSegment();
 
-                if (!photoName.endsWith("jpg")) {
-                    photoName += ".jpg";
-                }
-                //get photo path
-                File photoFile = new File(
-                        mPath, featureId + "/" +
-                               photoName); //the photos store in id folder in layer folder
-                if (photoFile.delete()) {
+                //get attach path
+                File attachFile = new File( mPath, featureId + "/" + attachId);
+                if (attachFile.delete()) {
+
+                    deleteAttach(featureId, attachId);
+
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureId, photoName, ChangeFeatureItem.TYPE_DELETE);
+                        addChange(featureId, attachId, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                     return 1;
@@ -1091,6 +1101,9 @@ public class VectorLayer
             String[] selectionArgs)
     {
         String featureId;
+        String attachId;
+        List<String> pathSegments;
+
         int result;
 
         int uriType = mUriMatcher.match(uri);
@@ -1150,8 +1163,61 @@ public class VectorLayer
                     }
                 }
                 return result;
-            case TYPE_PHOTO:
-            case TYPE_PHOTO_ID:
+            case TYPE_ATTACH:
+                if(values.containsKey(ATTACH_DESCRIPTION)){
+                    //set the same description to all items
+                    pathSegments = uri.getPathSegments();
+                    featureId = pathSegments.get(pathSegments.size() - 2);
+                    Map<String, AttachItem> attaches = getAttachMap(featureId);
+                    int changed = 0;
+                    if(null != attaches) {
+                        for(AttachItem item : attaches.values()){
+                            item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
+                            addChange(featureId, item.getAttachId(), ChangeFeatureItem.TYPE_CHANGED);
+                            changed++;
+                        }
+                        return changed;
+                    }
+                    return 0;
+                }
+            case TYPE_ATTACH_ID:
+                if(values.containsKey(ATTACH_ID) || values.containsKey(ATTACH_DESCRIPTION) || values.containsKey(ATTACH_DISPLAY_NAME) || values.containsKey(ATTACH_MIME_TYPE)){
+                    pathSegments = uri.getPathSegments();
+                    featureId = pathSegments.get(pathSegments.size() - 3);
+                    attachId = uri.getLastPathSegment();
+
+                    AttachItem item = getAttach(featureId, attachId);
+                    if(null != item) {
+                        if(values.containsKey(ATTACH_DESCRIPTION))
+                            item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
+                        if(values.containsKey(ATTACH_DISPLAY_NAME))
+                            item.setDisplayName(values.getAsString(ATTACH_DISPLAY_NAME));
+                        if(values.containsKey(ATTACH_MIME_TYPE))
+                            item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
+                        if(values.containsKey(ATTACH_ID)) {
+                            item.setAttachId(values.getAsString(ATTACH_ID));
+                            //rename file in file system
+                            File attachFile = new File( mPath, featureId + "/" + attachId);
+                            attachFile.renameTo(new File(attachFile.getParentFile(), item.getAttachId()));
+
+                            //save changes to meta.json
+                            Map<String, AttachItem> attaches = getAttachMap(featureId);
+                            attaches.remove(attachId);
+                            attaches.put(item.getAttachId(), item);
+                            saveAttach(featureId);
+                        }
+                        String fragment = uri.getFragment();
+                        boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
+                        if (bFromNetwork) {
+                            getContext().getContentResolver().notifyChange(uri, null, false);
+                        } else {
+                            addChange(featureId, attachId, ChangeFeatureItem.TYPE_CHANGED);
+                            getContext().getContentResolver().notifyChange(uri, null);
+                        }
+                        return 1;
+                    }
+                    return 0;
+                }
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
@@ -1165,13 +1231,10 @@ public class VectorLayer
     {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
-            case TYPE_PHOTO_ID:
+            case TYPE_ATTACH_ID:
                 List<String> pathSegments = uri.getPathSegments();
                 String featureId = pathSegments.get(pathSegments.size() - 3);
-                String photoName = uri.getLastPathSegment();
-                if (!photoName.endsWith("jpg")) {
-                    photoName += ".jpg";
-                }
+                String attachId = uri.getLastPathSegment();
                 int nMode = ParcelFileDescriptor.MODE_READ_ONLY;
                 //mode 	May be "w", "wa", "rw", or "rwt".
                 switch (mode) {
@@ -1190,7 +1253,7 @@ public class VectorLayer
                 }
 
                 return ParcelFileDescriptor.open(
-                        new File(mPath, featureId + "/" + photoName), nMode);
+                        new File(mPath, featureId + "/" + attachId), nMode);
             default:
                 throw new FileNotFoundException();
         }
@@ -1250,7 +1313,7 @@ public class VectorLayer
     also it can be used
     Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/photos
     Cursor cursor = resolver.query(newUri, {MediaStore.MediaColumns.DATA}, null....)
-    File bitmapFile = new File(cursor.getString(MediaStore.MediaColumns.DATA))
+    File bitmapFile = new File(cursor.getString(ATTACH_DATA))
     and open using real path
     */
 
@@ -1265,7 +1328,7 @@ public class VectorLayer
 
     protected void addChange(
             String featureId,
-            String photoName,
+            String attachId,
             int operation)
     {
         //nothing to do
@@ -1300,5 +1363,94 @@ public class VectorLayer
             }
         }
         return ret;
+    }
+
+    protected Map<String, AttachItem> getAttachMap(String featureId){
+        Map<String, AttachItem> attachMap = mAttaches.get(featureId);
+        if(null == attachMap){
+            loadAttach(featureId);
+            return mAttaches.get(featureId);
+        }
+        else {
+            return attachMap;
+        }
+    }
+
+    protected AttachItem getAttach(String featureId, String attachId){
+        Map<String, AttachItem> attachMap = getAttachMap(featureId);
+        if(null == attachMap)
+            return null;
+
+        return attachMap.get(attachId);
+    }
+
+    protected void loadAttach(String featureId){
+        File attachFolder = new File(mPath, featureId);
+        File meta = new File(attachFolder, META);
+        try {
+            String metaContent = FileUtil.readFromFile(meta);
+            JSONArray jsonArray = new JSONArray(metaContent);
+            Map<String, AttachItem> attach = new HashMap<>();
+            for(int i = 0; i < jsonArray.length(); i++){
+                JSONObject jsonValue = jsonArray.getJSONObject(i);
+                AttachItem attachItem = new AttachItem();
+                attachItem.fromJSON(jsonValue);
+                attach.put(attachItem.getAttachId(), attachItem);
+            }
+            mAttaches.put(featureId, attach);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    protected void saveAttach(String featureId){
+        Map<String, AttachItem> attachMap = mAttaches.get(featureId);
+        if(null != attachMap){
+            JSONArray jsonArray = new JSONArray();
+
+            for (AttachItem item : attachMap.values())
+            {
+                try {
+                    jsonArray.put(item.toJSON());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            String payload = jsonArray.toString();
+            File attachFolder = new File(mPath, featureId);
+            File meta = new File(attachFolder, META);
+            try {
+                FileUtil.writeToFile(meta, payload);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    protected void deleteAttaches(String featureId){
+        mAttaches.remove(featureId);
+        saveAttach(featureId);
+    }
+
+    protected void deleteAttach(String featureId, String attachId){
+        Map<String, AttachItem> attachMap = getAttachMap(featureId);
+        if(null != attachMap){
+            attachMap.remove(attachId);
+            saveAttach(featureId);
+        }
+    }
+
+    protected void addAttach(String featureId, AttachItem item){
+        Map<String, AttachItem> attachMap = getAttachMap(featureId);
+        if(null == attachMap) {
+            attachMap = new HashMap<>();
+            mAttaches.put(featureId, attachMap);
+        }
+
+        attachMap.put(item.getAttachId(), item);
+        saveAttach(featureId);
     }
 }

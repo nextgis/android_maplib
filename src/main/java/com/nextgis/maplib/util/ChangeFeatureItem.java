@@ -40,17 +40,19 @@ import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
  */
 public class ChangeFeatureItem implements IJSONStore
 {
-    public static final int TYPE_NEW = 1;
+    public static final int TYPE_NEW     = 1;
     public static final int TYPE_CHANGED = 2;
-    public static final int TYPE_DELETE = 3;
-    public static final int TYPE_PHOTO = 4;
+    public static final int TYPE_DELETE  = 3;
+    public static final int TYPE_ATTACH  = 4;
 
-    protected static final String JSON_OPERATION_KEY  = "operation";
+    protected static final String JSON_OPERATION_KEY = "operation";
 
     protected int mFeatureId;
     protected int mOperation;
 
-    protected class ChangePhotoItem implements IJSONStore
+
+    public class ChangePhotoItem
+            implements IJSONStore
     {
         protected int mPhotoId;
         protected int mOperation;
@@ -69,6 +71,7 @@ public class ChangeFeatureItem implements IJSONStore
         {
             return mPhotoId;
         }
+
 
         public int getOperation()
         {
@@ -102,6 +105,7 @@ public class ChangeFeatureItem implements IJSONStore
         }
     }
 
+
     protected List<ChangePhotoItem> mPhotoItems;
 
 
@@ -119,6 +123,12 @@ public class ChangeFeatureItem implements IJSONStore
     public int getFeatureId()
     {
         return mFeatureId;
+    }
+
+
+    public List<ChangePhotoItem> getPhotoItems()
+    {
+        return mPhotoItems;
     }
 
 

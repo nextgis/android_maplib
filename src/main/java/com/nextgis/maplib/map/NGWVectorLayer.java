@@ -492,7 +492,7 @@ public class NGWVectorLayer
     @Override
     protected void addChange(
             String featureId,
-            String photoName,
+            String attachId,
             int operation)
     {
         if (0 == (mSyncType & SYNC_PHOTO)) {
@@ -506,14 +506,14 @@ public class NGWVectorLayer
                 if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
                     return;
                 } else {
-                    item.addPhotoChange(photoName, operation);
+                    item.addPhotoChange(attachId, operation);
                     save();
                     return;
                 }
             }
         }
-        ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_PHOTO);
-        item.addPhotoChange(photoName, operation);
+        ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_ATTACH);
+        item.addPhotoChange(attachId, operation);
         mChanges.add(item);
         save();
     }
@@ -589,8 +589,8 @@ public class NGWVectorLayer
                         Log.d(TAG, "deleteFeatureOnServer: " + mChanges.size());
                     }
                     break;
-                case ChangeFeatureItem.TYPE_PHOTO:
-                    if (sendPhotosOnServer(change.getFeatureId(), syncResult)) {
+                case ChangeFeatureItem.TYPE_ATTACH:
+                    if (sendPhotosOnServer(change.getFeatureId(), change.getPhotoItems(), syncResult)) {
                         mChanges.remove(i);
                         i--;
                         Log.d(TAG, "sendPhotosOnServer: " + mChanges.size());
@@ -689,6 +689,7 @@ public class NGWVectorLayer
 
             String data = EntityUtils.toString(entity);
             JSONArray featuresJSONArray = new JSONArray(data);
+            //TODO: add "extensions" to feature
             List<Feature> features =
                     jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
             Log.d(TAG, "Get " + features.size() + " feature(s) from server");
@@ -721,7 +722,7 @@ public class NGWVectorLayer
                     Feature currentFeature = cursorToFeature(cursor);
                     //compare features
 
-                    if (remoteFeature.equals(currentFeature)) {
+                    if (remoteFeature.equals(currentFeature)) {//TODO: "extensions" equals too
                         //remove from changes
                         for (int i = 0; i < mChanges.size(); i++) {
                             ChangeFeatureItem change = mChanges.get(i);
@@ -938,13 +939,17 @@ public class NGWVectorLayer
 
     protected boolean sendPhotosOnServer(
             long featureId,
+            List<ChangeFeatureItem.ChangePhotoItem> photoItems,
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
-        //TODO:
+        //TODO: send each photo to server and rename it to appropriate id
+        for(ChangeFeatureItem.ChangePhotoItem item : photoItems){
+            //String photoName = item.getPhotoId();
+        }
 
         return true;
     }
