@@ -306,25 +306,16 @@ public class Feature implements IJSONStore
         }
     }
 
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if(super.equals(o)) //if same pointers
-            return true;
-
-        Feature other = (Feature)o;
-        if(null == other)
+    public boolean equalsData(Feature f){
+        if(null == f)
             return false;
-        // go deeper
-
         //compare attributes
         Log.d(TAG, "Feature id:" + mId + " compare attributes");
         for(int i = 0; i < mFields.size(); i++){
             Field field = mFields.get(i);
 
             Object value = getFieldValue(i);
-            Object valueOther = other.getFieldValue(field.getName());
+            Object valueOther = f.getFieldValue(field.getName());
 
             //Log.d(TAG, value + "<->" + valueOther);
 
@@ -386,9 +377,20 @@ public class Feature implements IJSONStore
                 }
             }
         }
+        //compare geometry
+        Log.d(TAG, "compare geometry");
+        if(null == mGeometry){
+            return null == f.getGeometry();
+        }
+        return mGeometry.equals(f.getGeometry());
 
+    }
+
+    public boolean equalsArrachments(Feature f){
+        if(null == f)
+            return false;
         //compare attachments
-        Map<String, AttachItem> attachments = other.getAttachments();
+        Map<String, AttachItem> attachments = f.getAttachments();
         if(mAttachments.size() != attachments.size())
             return false;
         for(AttachItem item : mAttachments.values()){
@@ -398,13 +400,19 @@ public class Feature implements IJSONStore
             if(!item.equals(otherItem))
                 return false;
         }
+        return true;
+    }
 
-        //compare geometry
-        Log.d(TAG, "compare geometry");
-        if(null == mGeometry){
-            return null == other.getGeometry();
-        }
-        return mGeometry.equals(other.getGeometry());
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(super.equals(o)) //if same pointers
+            return true;
+
+        Feature other = (Feature)o;
+        // go deeper
+        return equalsData(other) && equalsArrachments(other);
     }
 
 

@@ -812,11 +812,15 @@ public class NGWVectorLayer
                     Feature currentFeature = cursorToFeature(cursor);
                     //compare features
 
-                    if (remoteFeature.equals(currentFeature)) {
+                    boolean eqData = remoteFeature.equalsData(currentFeature);
+                    boolean eqAttach = remoteFeature.equalsArrachments(currentFeature);
+
+                    //process data
+                    if (eqData) {
                         //remove from changes
                         for (int i = 0; i < mChanges.size(); i++) {
                             ChangeFeatureItem change = mChanges.get(i);
-                            if (change.getFeatureId() == remoteFeature.getId()) {
+                            if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH))) {
                                 Log.d(TAG, "The feature " + change.getFeatureId() +
                                              " already changed on server. Remove change set #" + i);
                                 mChanges.remove(i);
@@ -827,7 +831,7 @@ public class NGWVectorLayer
                         boolean isChangedLocal = false;
                         for (ChangeFeatureItem change : mChanges) {
                             if (change.getFeatureId() == remoteFeature.getId()) {
-                                isChangedLocal = true;
+                                isChangedLocal = true; //we have local changes ready for sent to server
                                 break;
                             }
                         }
@@ -846,8 +850,41 @@ public class NGWVectorLayer
                                          remoteFeature.getId());
                         }
                     }
+                    //process attachments
+                    if(eqAttach){
+                        for (int i = 0; i < mChanges.size(); i++) {
+                            ChangeFeatureItem change = mChanges.get(i);
+                            if (change.getFeatureId() == remoteFeature.getId() && (eqData || change.getOperation() == ChangeFeatureItem.TYPE_ATTACH)) {
+                                Log.d(TAG, "The feature " + change.getFeatureId() +
+                                           " already changed on server. Remove change set #" + i);
+                                mChanges.remove(i);
+                                i--;
+                            }
+                        }
+                    }
+                    else {
+                        for(String attachId : currentFeature.getAttachments().keySet()){
+                            //delete attachment which not exist on server
+                            if(!remoteFeature.getAttachments().containsKey(attachId)){
+                                deleteAttach("" + currentFeature.getId(), attachId);
+                            }
+                            //or change attachment properties
+                            else{
+                                AttachItem currentItem = currentFeature.getAttachments().get(attachId);
+                                AttachItem remoteItem = remoteFeature.getAttachments().get(attachId);
+                                if(null != currentItem && !currentItem.equals(remoteItem)){
+                                    currentItem.setDescription(remoteItem.getDescription());
+                                    currentItem.setMimetype(remoteItem.getMimetype());
+                                    currentItem.setDisplayName(remoteItem.getDisplayName());
+                                }
+                            }
+                        }
+                        saveAttach("" + currentFeature.getId());
+                    }
+
                 }
             }
+            //TODO: remove features not exist on server from local layer if no operation is in changes array
             return true;
         } catch (IOException | JSONException e) {
             e.printStackTrace();
