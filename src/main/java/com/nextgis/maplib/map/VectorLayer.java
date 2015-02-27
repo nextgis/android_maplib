@@ -889,7 +889,7 @@ public class VectorLayer
                 if(contentValues.containsKey(ATTACH_DISPLAY_NAME) && contentValues.containsKey(ATTACH_MIME_TYPE)) {
                     List<String> pathSegments = uri.getPathSegments();
                     String featureId = pathSegments.get(pathSegments.size() - 2);
-                    //get photo path
+                    //get attach path
                     File attachFolder = new File(mPath, featureId);
                     long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
                     if(attachFolder.isDirectory()) {
@@ -1026,8 +1026,8 @@ public class VectorLayer
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
                 result = 0;
-                //get photo path
-                File attachFolder = new File(mPath, featureId); //the photos store in id folder in layer folder
+                //get attach path
+                File attachFolder = new File(mPath, featureId); //the attach store in id folder in layer folder
                 for (File attachFile : attachFolder.listFiles()) {
                     if (attachFile.delete()) {
                         result++;
@@ -1195,16 +1195,7 @@ public class VectorLayer
                         if(values.containsKey(ATTACH_MIME_TYPE))
                             item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
                         if(values.containsKey(ATTACH_ID)) {
-                            item.setAttachId(values.getAsString(ATTACH_ID));
-                            //rename file in file system
-                            File attachFile = new File( mPath, featureId + "/" + attachId);
-                            attachFile.renameTo(new File(attachFile.getParentFile(), item.getAttachId()));
-
-                            //save changes to meta.json
-                            Map<String, AttachItem> attaches = getAttachMap(featureId);
-                            attaches.remove(attachId);
-                            attaches.put(item.getAttachId(), item);
-                            saveAttach(featureId);
+                            setNewAttachId(featureId, item, values.getAsString(ATTACH_ID));
                         }
                         String fragment = uri.getFragment();
                         boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
@@ -1261,7 +1252,7 @@ public class VectorLayer
 
     /*
     To put image to the feature
-    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/photos
+    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/attach
     Uri uri = getContentResolver().insert(newUri, null);
     try {
         OutputStream outStream = getContentResolver().openOutputStream(uri);
@@ -1283,11 +1274,11 @@ public class VectorLayer
     To get image using uri
 
     Uri featureUri = content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1
-    Uri thisPhotoUri =
-          ContentUris.withAppendedId(featureUri, photoId);
+    Uri thisAttachUri =
+          ContentUris.withAppendedId(featureUri, attachId);
     InputStream inStream = null;
     try {
-       inStream = resolver.openInputStream(thisPhotoUri);
+       inStream = resolver.openInputStream(thisAttachUri);
 
        // what to do with the stream is up to you
        // I simply create a bitmap to display it
@@ -1298,7 +1289,7 @@ public class VectorLayer
        view.setImageBitmap(bm);
        frame.addView(view);
     } catch (FileNotFoundException e) {
-       Log.e(TAG, "file not found " + thisPhotoUri, e);
+       Log.e(TAG, "file not found " + thisAttachUri, e);
     }
     finally {
        if (inStream != null) {
@@ -1311,7 +1302,7 @@ public class VectorLayer
     }
 
     also it can be used
-    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/photos
+    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/attach
     Cursor cursor = resolver.query(newUri, {MediaStore.MediaColumns.DATA}, null....)
     File bitmapFile = new File(cursor.getString(ATTACH_DATA))
     and open using real path
@@ -1451,6 +1442,18 @@ public class VectorLayer
         }
 
         attachMap.put(item.getAttachId(), item);
+        saveAttach(featureId);
+    }
+
+    protected void setNewAttachId(String featureId, AttachItem item, String newAttachId){
+        File attachFile = new File( mPath, featureId + "/" + item.getAttachId());
+        attachFile.renameTo(new File(attachFile.getParentFile(), newAttachId));
+
+        //save changes to meta.json
+        Map<String, AttachItem> attaches = getAttachMap(featureId);
+        attaches.remove(item.getAttachId());
+        item.setAttachId(newAttachId);
+        attaches.put(item.getAttachId(), item);
         saveAttach(featureId);
     }
 }

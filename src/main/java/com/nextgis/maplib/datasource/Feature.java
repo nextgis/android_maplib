@@ -26,6 +26,7 @@ import android.database.Cursor;
 import android.util.Log;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.map.VectorLayer;
+import com.nextgis.maplib.util.AttachItem;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,9 +35,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -44,10 +47,11 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 
 public class Feature implements IJSONStore
 {
-    protected long         mId;
-    protected GeoGeometry  mGeometry;
-    protected List<Object> mFieldValues;
-    protected List<Field>  mFields;
+    protected long                    mId;
+    protected GeoGeometry             mGeometry;
+    protected List<Object>            mFieldValues;
+    protected List<Field>             mFields;
+    protected Map<String, AttachItem> mAttachments;
 
 
     public Feature(
@@ -57,6 +61,7 @@ public class Feature implements IJSONStore
         mId = id;
         mFields = fields;
         mFieldValues = new ArrayList<>(fields.size());
+        mAttachments = new HashMap<>();
     }
 
 
@@ -117,7 +122,8 @@ public class Feature implements IJSONStore
 
     public Object getFieldValue(int index)
     {
-        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() || index >= mFieldValues.size())
+        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
+            index >= mFieldValues.size())
             return null;
         return mFieldValues.get(index);
     }
@@ -381,11 +387,40 @@ public class Feature implements IJSONStore
             }
         }
 
+        //compare attachments
+        Map<String, AttachItem> attachments = other.getAttachments();
+        if(mAttachments.size() != attachments.size())
+            return false;
+        for(AttachItem item : mAttachments.values()){
+            AttachItem otherItem = attachments.get(item.getAttachId());
+            if(null == otherItem)
+                return false;
+            if(!item.equals(otherItem))
+                return false;
+        }
+
         //compare geometry
         Log.d(TAG, "compare geometry");
         if(null == mGeometry){
             return null == other.getGeometry();
         }
         return mGeometry.equals(other.getGeometry());
+    }
+
+
+    public void addAttachment(AttachItem item)
+    {
+        mAttachments.put(item.getAttachId(), item);
+    }
+
+    public void addAttachments(Map<String, AttachItem> attachments){
+        if(null == attachments)
+            return;
+        mAttachments = attachments;
+    }
+
+    public Map<String, AttachItem> getAttachments()
+    {
+        return mAttachments;
     }
 }

@@ -132,8 +132,8 @@ public class FileUtil
             try {
                 InputStream in = new FileInputStream(from);
                 OutputStream out = new FileOutputStream(to);
-                byte[] buf = new byte[1024];
-                copyStream(in, out, buf, 1024);
+                byte[] buf = new byte[Constants.IO_BUFFER_SIZE];
+                copyStream(in, out, buf, Constants.IO_BUFFER_SIZE);
                 in.close();
                 out.close();
             }

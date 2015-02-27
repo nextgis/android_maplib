@@ -41,6 +41,7 @@ import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
+import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
@@ -49,10 +50,6 @@ import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -80,9 +77,9 @@ public class NGWVectorLayer
     protected NetworkUtil mNet;
     protected String      mLogin;
     protected String      mPassword;
-    protected int         mSyncType; //0 - no sync, 1 - data, 2 - photo
+    protected int         mSyncType;
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
-    //check where to sync on GSM/WI-FI for data/photo
+    //check where to sync on GSM/WI-FI for data/attachments
 
     protected List<ChangeFeatureItem> mChanges;
 
@@ -252,36 +249,10 @@ public class NGWVectorLayer
 
         try {
             Log.d(TAG, "download layer " + getName());
-
-            //get layer definition
-            HttpGet get = new HttpGet(NGWUtil.getResourceMetaUrl(mURL, mRemoteId));
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
-                get.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
-                get.setHeader("Authorization", basicAuth);
-            }
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            HttpResponse response = HTTPClient.execute(get);
-            // Check to see if we got success
-            org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
-                             line);
+            String data = mNet.get(NGWUtil.getResourceMetaUrl(mURL, mRemoteId), mLogin, mPassword);
+            if(null == data){
                 return getContext().getString(R.string.error_download_data);
             }
-
-            HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
-                return getContext().getString(R.string.error_download_data);
-            }
-
-            String data = EntityUtils.toString(entity);
             JSONObject geoJSONObject = new JSONObject(data);
 
             //fill field list
@@ -303,35 +274,10 @@ public class NGWVectorLayer
             }
 
             //get layer data
-            get = new HttpGet(NGWUtil.getFeaturesUrl(mURL, mRemoteId)); //get as GeoJSON
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
-                get.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
-                get.setHeader("Authorization", basicAuth);
-            }
-
-
-            response = HTTPClient.execute(get);
-
-            // Check to see if we got success
-            line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " +
-                             line);
+            data = mNet.get(NGWUtil.getFeaturesUrl(mURL, mRemoteId), mLogin, mPassword);
+            if(null == data){
                 return getContext().getString(R.string.error_download_data);
             }
-
-            entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
-                return getContext().getString(R.string.error_download_data);
-            }
-
-            data = EntityUtils.toString(entity);
 
             JSONArray featuresJSONArray = new JSONArray(data);
             List<Feature> features = jsonToFeatures(featuresJSONArray, fields, nSRS);
@@ -387,6 +333,24 @@ public class NGWVectorLayer
                     if (!fieldsJSONObject.isNull(field.getName())) {
                         feature.setFieldValue(
                                 field.getName(), fieldsJSONObject.get(field.getName()));
+                    }
+                }
+            }
+
+            //add extensions
+            if(featureJSONObject.has("extensions")){
+                JSONObject ext = featureJSONObject.getJSONObject("extensions");
+                //get attachment & description
+                if(!ext.isNull("attachment")) {
+                    JSONArray attachment = ext.getJSONArray("attachment");
+                    for (int j = 0; j < attachment.length(); j++) {
+                        JSONObject jsonAttachmentDetails = attachment.getJSONObject(j);
+                        String attachId = "" + jsonAttachmentDetails.getLong(JSON_ID_KEY);
+                        String name = jsonAttachmentDetails.getString(JSON_NAME_KEY);
+                        String mime = jsonAttachmentDetails.getString("mime_type");
+                        String descriptionText = jsonAttachmentDetails.getString("description");
+                        AttachItem item = new AttachItem(attachId, name, mime, descriptionText);
+                        feature.addAttachment(item);
                     }
                 }
             }
@@ -455,11 +419,11 @@ public class NGWVectorLayer
                 if (item.getFeatureId() == id) {
                     //2. if featureId == some id and op is delete - remove and other operations
                     if (operation == ChangeFeatureItem.TYPE_DELETE) {
-                        if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
+                        if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_DELETE)) {
                             return;
                         }
                         mChanges.remove(i);
-                        if (item.getOperation() == ChangeFeatureItem.TYPE_NEW) {
+                        if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
                             save();
                             return;
                         }
@@ -467,8 +431,8 @@ public class NGWVectorLayer
                     }
                     //3. if featureId == some id and op is update and previous op was add or update - skip
                     else if (operation == ChangeFeatureItem.TYPE_CHANGED) {
-                        if (item.getOperation() == ChangeFeatureItem.TYPE_CHANGED ||
-                            item.getOperation() == ChangeFeatureItem.TYPE_NEW) {
+                        if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_CHANGED) ||
+                            0 != (item.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
                             return;
                         } else {
                             item.setOperation(operation);
@@ -495,7 +459,7 @@ public class NGWVectorLayer
             String attachId,
             int operation)
     {
-        if (0 == (mSyncType & SYNC_PHOTO)) {
+        if (0 == (mSyncType & SYNC_ATTACH)) {
             return;
         }
 
@@ -506,14 +470,14 @@ public class NGWVectorLayer
                 if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
                     return;
                 } else {
-                    item.addPhotoChange(attachId, operation);
+                    item.addAttachChange(attachId, operation);
                     save();
                     return;
                 }
             }
         }
         ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_ATTACH);
-        item.addPhotoChange(attachId, operation);
+        item.addAttachChange(attachId, operation);
         mChanges.add(item);
         save();
     }
@@ -567,36 +531,63 @@ public class NGWVectorLayer
         Log.d(TAG, "sendLocalChanges: " + changesCount);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem change = mChanges.get(i);
-            switch (change.getOperation()) {
-                case ChangeFeatureItem.TYPE_NEW:
-                    if (addFeatureOnServer(change.getFeatureId(), syncResult)) {
-                        mChanges.remove(i);
-                        i--;
-                        Log.d(TAG, "addFeatureOnServer: " + mChanges.size());
-                    }
-                    break;
-                case ChangeFeatureItem.TYPE_CHANGED:
-                    if (changeFeatureOnServer(change.getFeatureId(), syncResult)) {
-                        mChanges.remove(i);
-                        i--;
-                        Log.d(TAG, "changeFeatureOnServer: " + mChanges.size());
-                    }
-                    break;
-                case ChangeFeatureItem.TYPE_DELETE:
-                    if (deleteFeatureOnServer(change.getFeatureId(), syncResult)) {
-                        mChanges.remove(i);
-                        i--;
-                        Log.d(TAG, "deleteFeatureOnServer: " + mChanges.size());
-                    }
-                    break;
-                case ChangeFeatureItem.TYPE_ATTACH:
-                    if (sendPhotosOnServer(change.getFeatureId(), change.getPhotoItems(), syncResult)) {
-                        mChanges.remove(i);
-                        i--;
-                        Log.d(TAG, "sendPhotosOnServer: " + mChanges.size());
-                    }
-                    break;
+            if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)){
+                if (!addFeatureOnServer(change.getFeatureId(), syncResult)) {
+                    Log.d(TAG, "proceed change failed");
+                    continue;
+                }
             }
+            else if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_CHANGED)) {
+                if (!changeFeatureOnServer(change.getFeatureId(), syncResult)) {
+                    Log.d(TAG, "proceed change failed");
+                    continue;
+                }
+            }
+            else if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_DELETE)) {
+                if (!deleteFeatureOnServer(change.getFeatureId(), syncResult)) {
+                    Log.d(TAG, "proceed change failed");
+                    continue;
+                }
+            }
+            //process attachments
+            if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
+                boolean hasErrors = false;
+                List<ChangeFeatureItem.ChangeAttachItem> attachItems = change.getAttachItems();
+                for(int j = 0; j < attachItems.size(); j++){
+                    ChangeFeatureItem.ChangeAttachItem attachItem = attachItems.get(j);
+                    if(attachItem.getOperation() == ChangeFeatureItem.TYPE_NEW){
+                        if(!sendAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
+                            hasErrors = true;
+                            Log.d(TAG, "proceed change failed");
+                        }
+                    }
+                    else if(attachItem.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                        if(!deleteAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
+                            hasErrors = true;
+                            Log.d(TAG, "proceed change failed");
+                        }
+                    }
+                    else if(attachItem.getOperation() == ChangeFeatureItem.TYPE_CHANGED){
+                        if(!changeAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
+                            hasErrors = true;
+                            Log.d(TAG, "proceed change failed");
+                        }
+                    }
+
+                    if(hasErrors)
+                        break;
+                    attachItems.remove(j);
+                    j--;
+                    Log.d(TAG, "proceed attache change. leave " + attachItems.size());
+                }
+
+                if(hasErrors)
+                    continue;
+            }
+
+            mChanges.remove(i);
+            i--;
+            Log.d(TAG, "proceed change. leave " + mChanges.size());
         }
 
         if (changesCount != mChanges.size()) {
@@ -605,6 +596,135 @@ public class NGWVectorLayer
         }
 
         return true;
+    }
+
+
+    private boolean changeAttachOnServer(
+            int featureId,
+            ChangeFeatureItem.ChangeAttachItem attachItem,
+            SyncResult syncResult)
+    {
+        if (!mNet.isNetworkAvailable()) {
+            return false;
+        }
+
+        AttachItem attach = getAttach("" + featureId, "" + attachItem.getAttachId());
+        if(null == attach) //just remove buggy item
+            return true;
+
+        try {
+            JSONObject putData = new JSONObject();
+            //putData.put(JSON_ID_KEY, attach.getAttachId());
+            putData.put(JSON_NAME_KEY, attach.getDisplayName());
+            //putData.put("mime_type", attach.getMimetype());
+            putData.put("description", attach.getDescription());
+
+            String data = mNet.put(NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId) + attachItem.getAttachId(),
+                                   putData.toString(), mLogin, mPassword);
+            if(null == data){
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            return true;
+        }
+        catch (JSONException | IOException e) {
+            e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
+            syncResult.stats.numIoExceptions++;
+            return false;
+        }
+    }
+
+
+    private boolean deleteAttachOnServer(
+            int featureId,
+            ChangeFeatureItem.ChangeAttachItem attachItem,
+            SyncResult syncResult)
+    {
+        if (!mNet.isNetworkAvailable()) {
+            return false;
+        }
+
+        try{
+            if(!mNet.delete(NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId) + attachItem.getAttachId(), mLogin, mPassword)){
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            return true;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
+            syncResult.stats.numIoExceptions++;
+            return false;
+        }
+    }
+
+
+    protected boolean sendAttachOnServer(int featureId,
+            ChangeFeatureItem.ChangeAttachItem attachItem,
+            SyncResult syncResult)
+    {
+        if (!mNet.isNetworkAvailable()) {
+            return false;
+        }
+
+        AttachItem attach = getAttach("" + featureId, "" + attachItem.getAttachId());
+        if(null == attach) //just remove buggy item
+            return true;
+        String fileName = attach.getDisplayName();
+        File filePath = new File(mPath, featureId + "/" + attach.getAttachId());
+        String fileMime = attach.getMimetype();
+        try {
+            //1. upload file
+            String data = mNet.postFile(NGWUtil.getFileUploadUrl(mURL), fileName, filePath, fileMime,
+                                        mLogin, mPassword);
+            if(null == data) {
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+            JSONObject result = new JSONObject(data);
+            if(!result.has("upload_meta")){
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
+            if(uploadMetaArray.length() == 0){
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+            //2. add attachment to row
+            JSONObject postJsonData = new JSONObject();
+            postJsonData.put("file_upload", uploadMetaArray.get(0));
+            postJsonData.put("description", attach.getDescription());
+
+            data = mNet.post(NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId),
+                             postJsonData.toString(), mLogin, mPassword);
+            if(null == data) {
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            result = new JSONObject(data);
+            if(!result.has(JSON_ID_KEY)) {
+                syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            long newAttachId = result.getLong(JSON_ID_KEY);
+            setNewAttachId("" + featureId, attach, "" + newAttachId);
+
+            return true;
+
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
+            syncResult.stats.numIoExceptions++;
+            return false;
+        }
     }
 
 
@@ -659,37 +779,8 @@ public class NGWVectorLayer
         Log.d(TAG, "The network is available. Get changes from server");
 
         try {
-            final HttpGet get = new HttpGet(NGWUtil.getVectorDataUrl(mURL, mRemoteId));
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
-                get.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
-                get.setHeader("Authorization", basicAuth);
-            }
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            final HttpResponse response = HTTPClient.execute(get);
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem downloading GeoJSON: " + mURL + " HTTP response: " + line);
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-
-            final HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading GeoJSON: " + mURL);
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-
-            String data = EntityUtils.toString(entity);
+            String data = mNet.get(NGWUtil.getVectorDataUrl(mURL, mRemoteId), mLogin, mPassword);
             JSONArray featuresJSONArray = new JSONArray(data);
-            //TODO: add "extensions" to feature
             List<Feature> features =
                     jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
             Log.d(TAG, "Get " + features.size() + " feature(s) from server");
@@ -703,8 +794,7 @@ public class NGWVectorLayer
                     boolean createNewFeature = true;
                     for (ChangeFeatureItem change : mChanges) {
                         if (change.getFeatureId() == remoteFeature.getId()) {
-                            createNewFeature =
-                                    false; //if have changes (delete) not create new feature
+                            createNewFeature = false; //if have changes (delete) not create new feature
                             break;
                         }
                     }
@@ -722,7 +812,7 @@ public class NGWVectorLayer
                     Feature currentFeature = cursorToFeature(cursor);
                     //compare features
 
-                    if (remoteFeature.equals(currentFeature)) {//TODO: "extensions" equals too
+                    if (remoteFeature.equals(currentFeature)) {
                         //remove from changes
                         for (int i = 0; i < mChanges.size(); i++) {
                             ChangeFeatureItem change = mChanges.get(i);
@@ -771,6 +861,8 @@ public class NGWVectorLayer
     {
         Feature out = new Feature((long) NOT_FOUND, getFields());
         out.fromCursor(cursor);
+        //add extensions to feature
+        out.addAttachments(getAttachMap("" + out.getId()));
         return out;
     }
 
@@ -794,39 +886,11 @@ public class NGWVectorLayer
 
         try {
             String payload = cursorToJson(cursor);
-
-            final HttpPost post = new HttpPost(NGWUtil.getVectorDataUrl(mURL, mRemoteId));
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
-                post.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
-                post.setHeader("Authorization", basicAuth);
-            }
-
-            post.setEntity(new StringEntity(payload, "UTF8"));
-            post.setHeader("Content-type", "application/json");
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            final HttpResponse response = HTTPClient.execute(post);
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " + line);
+            String data = mNet.post(NGWUtil.getVectorDataUrl(mURL, mRemoteId), payload, mLogin, mPassword);
+            if(null == data){
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
-
-            final HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading: " + mURL);
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-
-            String data = EntityUtils.toString(entity);
             //set new id from server! {"id": 24}
             JSONObject result = new JSONObject(data);
             if (result.has(JSON_ID_KEY)) {
@@ -852,25 +916,7 @@ public class NGWVectorLayer
         }
 
         try {
-
-            final HttpDelete delete =
-                    new HttpDelete(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
-                delete.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
-                delete.setHeader("Authorization", basicAuth);
-            }
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            final HttpResponse response = HTTPClient.execute(delete);
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " + line);
+            if(!mNet.delete(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId), mLogin, mPassword)){
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -903,28 +949,8 @@ public class NGWVectorLayer
         try {
             String payload = cursorToJson(cursor);
             Log.d(TAG, "payload: " + payload);
-
-            final HttpPut put = new HttpPut(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId));
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
-                put.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
-                put.setHeader("Authorization", basicAuth);
-            }
-
-            put.setEntity(new StringEntity(payload, "UTF8"));
-            put.setHeader("Content-type", "application/json");
-
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            final HttpResponse response = HTTPClient.execute(put);
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(TAG, "Problem execute: " + mURL + " HTTP response: " + line);
+            String data = mNet.put(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId), payload, mLogin, mPassword);
+            if(null == data){
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -935,25 +961,6 @@ public class NGWVectorLayer
             return false;
         }
     }
-
-
-    protected boolean sendPhotosOnServer(
-            long featureId,
-            List<ChangeFeatureItem.ChangePhotoItem> photoItems,
-            SyncResult syncResult)
-    {
-        if (!mNet.isNetworkAvailable()) {
-            return false;
-        }
-
-        //TODO: send each photo to server and rename it to appropriate id
-        for(ChangeFeatureItem.ChangePhotoItem item : photoItems){
-            //String photoName = item.getPhotoId();
-        }
-
-        return true;
-    }
-
 
     protected String cursorToJson(Cursor cursor)
             throws JSONException, IOException, ClassNotFoundException
@@ -1021,8 +1028,9 @@ public class NGWVectorLayer
      * get synchronization type
      *
      * @return the synchronization type - the OR of this values: SYNC_NONE - no synchronization
-     * SYNC_DATA - synchronize only data SYNC_PHOTO - synchronize only photo SYNC_ALL - synchronize
-     * everything
+     * SYNC_DATA - synchronize only data
+     * SYNC_ATTACH - synchronize only attachments
+     * SYNC_ALL - synchronize everything
      */
     public int getSyncType()
     {
@@ -1041,11 +1049,20 @@ public class NGWVectorLayer
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
                 addChange("" + id, ChangeFeatureItem.TYPE_NEW);
+                //add attach
+                File attacheFolder = new File(mPath, "" + id);
+                if(attacheFolder.isDirectory()){
+                    for(File attach : attacheFolder.listFiles()){
+                        String attachId = attach.getName();
+                        if(attachId.equals(META))
+                            continue;
+                        Long attachIdL = Long.parseLong(attachId);
+                        if(attachIdL >= 1000)
+                            addChange("" + id, attachId, ChangeFeatureItem.TYPE_NEW);
+                    }
+                }
             }
         }
-
-        //TODO: now we ignore SYNC_PHOTO
-        //TODO: add photo with names (ids) more than 1000 to change
 
         mSyncType = syncType;
     }

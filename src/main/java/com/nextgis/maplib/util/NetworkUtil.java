@@ -26,9 +26,34 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+import android.util.Base64;
+import android.util.Log;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -97,5 +122,190 @@ public class NetworkUtil
         HTTPClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
 
         return HTTPClient;
+    }
+
+    public String get(String targetURL, String username, String password)
+            throws IOException
+    {
+        final HttpGet get = new HttpGet(targetURL);
+        //basic auth
+        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
+            final String basicAuth = "Basic " + Base64.encodeToString(
+                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+            get.setHeader("Authorization", basicAuth);
+        }
+
+        final DefaultHttpClient HTTPClient = getHttpClient();
+        final HttpResponse response = HTTPClient.execute(get);
+
+        // Check to see if we got success
+        final org.apache.http.StatusLine line = response.getStatusLine();
+        if (line.getStatusCode() != 200) {
+            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            return null;
+        }
+
+        final HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            Log.d(TAG, "No content downloading: " + targetURL);
+            return null;
+        }
+
+        return EntityUtils.toString(entity);
+    }
+
+    public String post(String targetURL, String payload, String username, String password)
+            throws IOException
+    {
+        final HttpPost post = new HttpPost(targetURL);
+        //basic auth
+        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
+            final String basicAuth = "Basic " + Base64.encodeToString(
+                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+            post.setHeader("Authorization", basicAuth);
+        }
+
+        post.setEntity(new StringEntity(payload, "UTF8"));
+        post.setHeader("Content-type", "application/json");
+
+        final DefaultHttpClient HTTPClient = getHttpClient();
+        final HttpResponse response = HTTPClient.execute(post);
+
+        // Check to see if we got success
+        final org.apache.http.StatusLine line = response.getStatusLine();
+        if (line.getStatusCode() != 200) {
+            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            return null;
+        }
+
+        final HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            Log.d(TAG, "No content downloading: " + targetURL);
+            return null;
+        }
+
+        return EntityUtils.toString(entity);
+    }
+
+    public boolean delete(String targetURL, String username, String password)
+            throws IOException
+    {
+        final HttpDelete delete = new HttpDelete(targetURL);
+        //basic auth
+        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
+            final String basicAuth = "Basic " + Base64.encodeToString(
+                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+            delete.setHeader("Authorization", basicAuth);
+        }
+
+        final DefaultHttpClient HTTPClient = getHttpClient();
+        final HttpResponse response = HTTPClient.execute(delete);
+
+        // Check to see if we got success
+        final org.apache.http.StatusLine line = response.getStatusLine();
+        if (line.getStatusCode() != 200) {
+            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            return false;
+        }
+
+        return true;
+    }
+
+    public String put(String targetURL, String payload, String username, String password)
+            throws IOException
+    {
+        final HttpPut put = new HttpPut(targetURL);
+        //basic auth
+        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
+            final String basicAuth = "Basic " + Base64.encodeToString(
+                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+            put.setHeader("Authorization", basicAuth);
+        }
+
+        put.setEntity(new StringEntity(payload, "UTF8"));
+        put.setHeader("Content-type", "application/json");
+
+
+        final DefaultHttpClient HTTPClient = getHttpClient();
+        final HttpResponse response = HTTPClient.execute(put);
+
+        // Check to see if we got success
+        final org.apache.http.StatusLine line = response.getStatusLine();
+        if (line.getStatusCode() != 200) {
+            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            return null;
+        }
+
+        final HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            Log.d(TAG, "No content downloading: " + targetURL);
+            return null;
+        }
+
+        return EntityUtils.toString(entity);
+    }
+
+    public String postFile(String targetURL, String fileName, File file, String fileMime, String username, String password)
+            throws IOException
+    {
+        final String lineEnd = "\r\n";
+        final String twoHyphens = "--";
+        final String boundary =  "**nextgis**";
+
+        //------------------ CLIENT REQUEST
+        FileInputStream fileInputStream = new FileInputStream(file);
+        // open a URL connection to the Servlet
+        URL url = new URL(targetURL);
+        // Open a HTTP connection to the URL
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
+            final String basicAuth = "Basic " + Base64.encodeToString(
+                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+            conn.setRequestProperty ("Authorization", basicAuth);
+        }
+
+        // Allow Inputs
+        conn.setDoInput(true);
+        // Allow Outputs
+        conn.setDoOutput(true);
+        // Don't use a cached copy.
+        conn.setUseCaches(false);
+        // Use a post method.
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Connection", "Keep-Alive");
+        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
+        DataOutputStream dos = new DataOutputStream( conn.getOutputStream() );
+        dos.writeBytes(twoHyphens + boundary + lineEnd);
+        dos.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" + lineEnd);
+
+        if(!TextUtils.isEmpty(fileMime)){
+            dos.writeBytes("Content-Type: " + fileMime + lineEnd);
+        }
+
+        dos.writeBytes(lineEnd);
+
+        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+        FileUtil.copyStream(fileInputStream, dos, buffer, Constants.IO_BUFFER_SIZE);
+
+        dos.writeBytes(lineEnd);
+        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+        fileInputStream.close();
+        dos.flush();
+        dos.close();
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != 200) {
+            return null;
+        }
+
+        InputStream is = conn.getInputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        FileUtil.copyStream(is, baos, buffer, Constants.IO_BUFFER_SIZE);
+        byte[] bytesReceived = baos.toByteArray();
+        baos.close();
+        is.close();
+
+        return new String(bytesReceived);
     }
 }

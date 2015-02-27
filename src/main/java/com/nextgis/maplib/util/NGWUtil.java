@@ -30,6 +30,12 @@ public class NGWUtil
     NGW API Functions
      */
 
+    public static String getFileUploadUrl(String server){
+        if (!server.startsWith("http"))
+            server = "http://" + server;
+        return server + "/api/component/file_upload/upload";
+    }
+
 
     /**
      * GeoJSON URL. Get data as GeoJSON
@@ -155,4 +161,16 @@ public class NGWUtil
         }
         return(false);
     }
+
+
+    public static String getFeatureAttachmentUrl(
+            String server,
+            long remoteId,
+            int featureId)
+    {
+        if (!server.startsWith("http"))
+            server = "http://" + server;
+        return server + "/api/resource/" + remoteId + "/feature/" + featureId + "/attachment/";
+    }
+
 }

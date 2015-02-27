@@ -130,4 +130,31 @@ public class AttachItem implements IJSONStore
     {
         mAttachId = attachId;
     }
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AttachItem that = (AttachItem) o;
+
+        return mAttachId.equals(that.mAttachId)
+               && !(mDescription != null ? !mDescription.equals(that.mDescription) : that.mDescription != null)
+               && !(mDisplayName != null ? !mDisplayName.equals(that.mDisplayName) : that.mDisplayName != null)
+               && !(mMimetype != null ? !mMimetype.equals(that.mMimetype) : that.mMimetype != null);
+
+    }
+
+
+    @Override
+    public int hashCode()
+    {
+        return mAttachId.hashCode();
+    }
 }
