@@ -458,6 +458,20 @@ public class GISDisplay
         return new GeoPoint(points[0], points[1]);
     }
 
+    public float[] mapToScreen(final GeoPoint[] points){
+        if(null == points)
+            return null;
+        float dfPoints[] = new float[points.length * 2];
+        for(int i = 0; i < points.length; i++){
+            int pos = i * 2;
+            dfPoints[pos] = (float) points[i].getX();
+            dfPoints[pos + 1] = (float) points[i].getY();
+        }
+
+        mTransformMatrix.mapPoints(dfPoints);
+
+        return dfPoints;
+    }
 
     public GeoEnvelope screenToMap(final GeoEnvelope env)
     {

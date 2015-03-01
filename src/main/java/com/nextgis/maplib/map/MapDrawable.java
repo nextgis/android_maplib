@@ -207,6 +207,16 @@ public class MapDrawable
 
 
     @Override
+    public float[] mapToScreen(GeoPoint[] geoPoints)
+    {
+        if (mDisplay != null) {
+            return mDisplay.mapToScreen(geoPoints);
+        }
+        return null;
+    }
+
+
+    @Override
     public GeoEnvelope screenToMap(GeoEnvelope env)
     {
         if (mDisplay != null) {
