@@ -821,10 +821,20 @@ public class NGWVectorLayer
                         for (int i = 0; i < mChanges.size(); i++) {
                             ChangeFeatureItem change = mChanges.get(i);
                             if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH))) {
-                                Log.d(TAG, "The feature " + change.getFeatureId() +
-                                             " already changed on server. Remove change set #" + i);
-                                mChanges.remove(i);
-                                i--;
+                                boolean isDelete = false;
+                                for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
+                                    if(attachItem.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                                        isDelete = true;
+                                        break;
+                                    }
+                                }
+                                if(!isDelete) {
+                                    Log.d(TAG, "The feature " + change.getFeatureId() +
+                                               " already changed on server. Remove change set #" +
+                                               i);
+                                    mChanges.remove(i);
+                                    i--;
+                                }
                             }
                         }
                     } else {
@@ -873,9 +883,23 @@ public class NGWVectorLayer
                                 AttachItem currentItem = currentFeature.getAttachments().get(attachId);
                                 AttachItem remoteItem = remoteFeature.getAttachments().get(attachId);
                                 if(null != currentItem && !currentItem.equals(remoteItem)){
-                                    currentItem.setDescription(remoteItem.getDescription());
-                                    currentItem.setMimetype(remoteItem.getMimetype());
-                                    currentItem.setDisplayName(remoteItem.getDisplayName());
+                                    boolean changeOnServer = true;
+                                    for (ChangeFeatureItem change : mChanges) {
+                                        if(change.getFeatureId() == remoteFeature.getId() && 0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)){
+                                            for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
+                                                if(remoteItem.getAttachId().equals(""+attachItem.getAttachId())){
+                                                    changeOnServer = false;
+                                                }
+                                            }
+                                        }
+                                        if(!changeOnServer)
+                                            break;
+                                    }
+                                    if(changeOnServer) {
+                                        currentItem.setDescription(remoteItem.getDescription());
+                                        currentItem.setMimetype(remoteItem.getMimetype());
+                                        currentItem.setDisplayName(remoteItem.getDisplayName());
+                                    }
                                 }
                             }
                         }

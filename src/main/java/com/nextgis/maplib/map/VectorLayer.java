@@ -1197,6 +1197,7 @@ public class VectorLayer
                         if(values.containsKey(ATTACH_ID)) {
                             setNewAttachId(featureId, item, values.getAsString(ATTACH_ID));
                         }
+                        saveAttach(featureId);
                         String fragment = uri.getFragment();
                         boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                         if (bFromNetwork) {
