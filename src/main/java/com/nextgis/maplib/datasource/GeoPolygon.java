@@ -206,6 +206,10 @@ public class GeoPolygon
         return null;
     }
 
+    public int getInnerRingCount(){
+        return mInnerRings.size();
+    }
+
 
     @Override
     public boolean intersects(GeoEnvelope envelope)
