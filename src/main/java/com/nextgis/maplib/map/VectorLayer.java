@@ -1435,6 +1435,20 @@ public class VectorLayer
         }
     }
 
+    public void deleteCacheItem(long id) {
+        Iterator<VectorCacheItem> cacheItemIterator = mVectorCacheItems.iterator();
+        while (cacheItemIterator.hasNext()) {
+            VectorCacheItem cacheItem = cacheItemIterator.next();
+
+            if (cacheItem.getId() == id) {
+                cacheItemIterator.remove();
+                break;
+            }
+        }
+
+        mVectorCacheItems.remove(id);
+    }
+
     protected void addAttach(String featureId, AttachItem item){
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if(null == attachMap) {
