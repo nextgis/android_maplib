@@ -2,7 +2,6 @@
  * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android.
  * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
- *           NikitaFeodonit, nfeodonit@yandex.com
  * *****************************************************************************
  * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
  *

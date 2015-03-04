@@ -1,10 +1,9 @@
-/*******************************************************************************
- * Project:  NextGIS mobile apps for Compulink
- * Purpose:  Mobile GIS for Android
- * Authors:  Dmitry Baryshnikov (aka Bishop), polimax@mail.ru
- *           NikitaFeodonit, nfeodonit@yandex.com
+/*
+ * Project:  NextGIS Mobile
+ * Purpose:  Mobile GIS for Android.
+ * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
  * *****************************************************************************
- * Copyright (C) 2014-2015 NextGIS
+ * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- ******************************************************************************/
+ */
 
 package com.nextgis.maplib.util;
 
