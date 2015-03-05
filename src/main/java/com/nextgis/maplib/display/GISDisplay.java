@@ -177,6 +177,9 @@ public class GISDisplay
         if(!operationSuccess){
             if(zoom >= mMinZoomLevel){
                 mMinZoomLevel += .5;
+                if(mMinZoomLevel >= mMaxZoomLevel - 1) {
+                    throw new IllegalArgumentException("The transformation matrix is invalid");
+                }
                 setZoomAndCenter(zoom + .5f, center);
                 return;
             }
