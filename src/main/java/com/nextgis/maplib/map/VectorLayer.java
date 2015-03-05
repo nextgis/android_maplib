@@ -80,6 +80,7 @@ public class VectorLayer
     protected UriMatcher            mUriMatcher;
     protected String                mAuthority;
     protected Map<String, Field>    mFields;
+    protected VectorCacheItem       mTempCacheItem;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
@@ -1441,12 +1442,19 @@ public class VectorLayer
             VectorCacheItem cacheItem = cacheItemIterator.next();
 
             if (cacheItem.getId() == id) {
+                mTempCacheItem = cacheItem;
                 cacheItemIterator.remove();
                 break;
             }
         }
+    }
 
-        mVectorCacheItems.remove(id);
+    public void restoreCacheItem()
+    {
+        if (mTempCacheItem != null) {
+            mVectorCacheItems.add(mTempCacheItem);
+            mTempCacheItem = null;
+        }
     }
 
     protected void addAttach(String featureId, AttachItem item){
