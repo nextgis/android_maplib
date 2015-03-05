@@ -86,8 +86,8 @@ public abstract class TMSLayer
 
         int begX = (int) (bounds.getMinX() / mapTileSize.getX() - .5 + halfTilesInMap);
         int begY = (int) (bounds.getMinY() / mapTileSize.getY() - .5 + halfTilesInMap);
-        int endX = (int) (bounds.getMaxX() / mapTileSize.getX() + .5 + halfTilesInMap);
-        int endY = (int) (bounds.getMaxY() / mapTileSize.getY() + .5 + halfTilesInMap);
+        int endX = (int) (bounds.getMaxX() / mapTileSize.getX() + halfTilesInMap) + 1;
+        int endY = (int) (bounds.getMaxY() / mapTileSize.getY() + halfTilesInMap) + 1;
 
         if (begY < 0) {
             begY = 0;
