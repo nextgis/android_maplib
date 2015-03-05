@@ -65,6 +65,7 @@ public class TMSRenderer
     protected float              mContrast;
     protected float              mBrightness;
     protected boolean            mForceToGrayScale;
+    protected int mTileCompleteCount;
 
 
     public TMSRenderer(ILayer layer)
@@ -206,6 +207,8 @@ public class TMSRenderer
             return;
         }
 
+        mTileCompleteCount = 0;
+
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);
             mDrawThreadPool.execute(new Runnable()
@@ -222,12 +225,17 @@ public class TMSRenderer
 
                     float percent = 1;
                     synchronized (mLayer) {
+                        /*long complete = mDrawThreadPool.getCompletedTaskCount() + 1;
                         if (mDrawThreadPool.getTaskCount() > 1)
-                            percent = (float) (mDrawThreadPool.getCompletedTaskCount() + 1) /
-                                      mDrawThreadPool.getTaskCount();
+                            percent = (float) (complete) / mDrawThreadPool.getTaskCount();
                         tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                        Log.d(TAG, "percent: " + percent + " complete: " + complete + " task count: " + mDrawThreadPool.getTaskCount());*/
+                        mTileCompleteCount++;
+                        percent = (float) (mTileCompleteCount) / tiles.size();
+                        tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                        //Log.d(TAG, "percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tiles.size());
                     }
-                    //Log.d(TAG, "percent: " + percent + " complete: " + mDrawThreadPool.getCompletedTaskCount() + " task count: " + mDrawThreadPool.getTaskCount());
+
                 }
             });
         }

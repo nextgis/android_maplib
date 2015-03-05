@@ -172,7 +172,18 @@ public class GISDisplay
                                        (float) (mBackgroundBitmap.getHeight() * .5));
 
         mInvertTransformMatrix.reset();
-        mTransformMatrix.invert(mInvertTransformMatrix);
+        boolean operationSuccess = mTransformMatrix.invert(mInvertTransformMatrix);
+        //found that matrix may not be inverted on some devices, so look for zoom there it inverts successfully
+        if(!operationSuccess){
+            if(zoom >= mMinZoomLevel){
+                mMinZoomLevel += .5;
+                if(mMinZoomLevel >= mMaxZoomLevel - 1) {
+                    throw new IllegalArgumentException("The transformation matrix is invalid");
+                }
+                setZoomAndCenter(zoom + .5f, center);
+                return;
+            }
+        }
 
         Matrix matrix = new Matrix();
         matrix.postTranslate((float) -center.getX(), (float) -center.getY());

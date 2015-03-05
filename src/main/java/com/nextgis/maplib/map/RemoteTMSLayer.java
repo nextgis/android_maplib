@@ -82,10 +82,10 @@ public class RemoteTMSLayer
     }
 
     public void onPrepare(){
-        int diff = getMaxThreadCount() - mAvailable.availablePermits();
-        if( diff > 0 )
-            mAvailable.release(diff);
-        Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
+ //       int diff = getMaxThreadCount() - mAvailable.availablePermits();
+ //       if( diff > 0 )
+ //           mAvailable.release(diff);
+        Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " + getMaxThreadCount());
     }
 
 
