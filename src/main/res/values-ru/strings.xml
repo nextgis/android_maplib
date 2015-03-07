@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Project:  NextGIS Mobile
   ~ Purpose:  Mobile GIS for Android.
-  ~ Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+  ~ Author:   Maxim Dubinin (sim@gis-lab.info)
   ~ ******************************************************************************
   ~ Copyright (c) 2012-2015. NextGIS, info@nextgis.com
   ~
@@ -21,4 +20,18 @@
   -->
 
 <resources>
+    <string name="app_name">Библиотека карт</string>
+    <string name="error_crs_unsupported">Система координат не поддерживается</string>
+    <string name="error_empty_dataset">Набор данных пустой</string>
+    <string name="error_network_unavailable">Нет соединения с сетью</string>
+    <string name="error_download_data">Не удалось загрузить данные</string>
+    <string name="N">С</string>
+    <string name="S">Ю</string>
+    <string name="E">В</string>
+    <string name="W">З</string>
+    <string name="warning_remove_field">Поле \'%s\' запрещено, поле удалено</string>
+    <string name="tracks_running">Записывается трек</string>
+    <string name="tracks_title">Трек %s</string>
+    <string name="tracks_stop">Стоп</string>
+    <string name="tracks_open">Открыть</string>
 </resources>
