@@ -39,4 +39,31 @@ public class GeoLinearRing
         GeoPoint last = points.get(points.size() - 1);
         return first.equals(last);
     }
+
+
+    @Override
+    public boolean intersects(GeoEnvelope envelope)
+    {
+        if(super.intersects(envelope))
+            return true;
+        int intersection = 0;
+
+        //create the ray
+        GeoPoint center = envelope.getCenter();
+        double x1 = center.getX();
+        double y1 = center.getY();
+        double x2 = Double.POSITIVE_INFINITY;
+        double y2 = center.getY();
+        //count intersects
+        for(int i = 0; i < mPoints.size() - 1; i++){
+            GeoPoint pt1 = mPoints.get(i);
+            GeoPoint pt2 = mPoints.get(i + 1);
+
+            //test top
+            if(linesIntersect(pt1.getX(), pt1.getY(), pt2.getX(), pt2.getY(), x1, y1, x2, y2))
+                intersection++;
+        }
+
+        return intersection % 2 == 1;
+    }
 }

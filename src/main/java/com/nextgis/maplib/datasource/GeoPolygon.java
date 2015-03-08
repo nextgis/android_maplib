@@ -215,12 +215,17 @@ public class GeoPolygon
     public boolean intersects(GeoEnvelope envelope)
     {
         if(super.intersects(envelope)){
-            if(mOuterRing.intersects(envelope))
-                return true;
+            //check if inside outer ring but not in hole
+
+            boolean intersects = mOuterRing.intersects(envelope);
+            if(!intersects)
+                return false;
+
             for(GeoLinearRing ring : mInnerRings){
                 if(ring.intersects(envelope))
-                    return true;
+                    return false;
             }
+            return true;
         }
         return false;
     }
