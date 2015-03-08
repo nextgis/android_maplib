@@ -1444,6 +1444,9 @@ public class VectorLayer
             if (cacheItem.getId() == id) {
                 mTempCacheItem = cacheItem;
                 cacheItemIterator.remove();
+
+                notifyLayerChanged();
+
                 break;
             }
         }
@@ -1454,6 +1457,7 @@ public class VectorLayer
         if (mTempCacheItem != null) {
             mVectorCacheItems.add(mTempCacheItem);
             mTempCacheItem = null;
+            notifyLayerChanged();
         }
     }
 
