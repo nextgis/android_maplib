@@ -38,7 +38,16 @@ public class GeoLineString
 
     public GeoLineString()
     {
-        mPoints = new ArrayList<GeoPoint>();
+        mPoints = new ArrayList<>();
+    }
+
+
+    public GeoLineString(GeoLineString geoLineString)
+    {
+        mPoints = new ArrayList<>();
+        for(GeoPoint point : geoLineString.mPoints){
+            mPoints.add((GeoPoint) point.copy());
+        }
     }
 
 
@@ -278,5 +287,12 @@ public class GeoLineString
             return false;
         }
         return true;
+    }
+
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoLineString(this);
     }
 }

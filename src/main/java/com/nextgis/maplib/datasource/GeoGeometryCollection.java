@@ -42,6 +42,13 @@ public class GeoGeometryCollection
         mGeometries = new ArrayList<>();
     }
 
+    public GeoGeometryCollection(GeoGeometryCollection collection){
+        mGeometries = new ArrayList<>();
+        for(GeoGeometry geometry : collection.mGeometries){
+            mGeometries.add(geometry.copy());
+        }
+    }
+
 
     public void add(GeoGeometry geometry)
             throws IllegalArgumentException
@@ -212,5 +219,12 @@ public class GeoGeometryCollection
                 return true;
         }
         return false;
+    }
+
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoGeometryCollection(this);
     }
 }

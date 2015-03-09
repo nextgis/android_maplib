@@ -54,8 +54,8 @@ public class GeoPoint
     {
         this.mX = point.mX;
         this.mY = point.mY;
+        this.mCRS = point.mCRS;
     }
-
 
     public final double getX()
     {
@@ -191,5 +191,12 @@ public class GeoPoint
     public boolean intersects(GeoEnvelope envelope)
     {
         return envelope.contains(this);
+    }
+
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoPoint(this);
     }
 }

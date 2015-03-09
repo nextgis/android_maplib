@@ -44,6 +44,14 @@ public class GeoPolygon
         mInnerRings = new ArrayList<>();
     }
 
+    public GeoPolygon(GeoPolygon polygon){
+        mOuterRing = (GeoLinearRing) polygon.mOuterRing.copy();
+        mInnerRings = new ArrayList<>();
+        for(GeoLinearRing ring : polygon.mInnerRings){
+            mInnerRings.add((GeoLinearRing) ring.copy());
+        }
+    }
+
 
     public void add(GeoPoint point)
     {
@@ -228,5 +236,12 @@ public class GeoPolygon
             return true;
         }
         return false;
+    }
+
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoPolygon(this);
     }
 }

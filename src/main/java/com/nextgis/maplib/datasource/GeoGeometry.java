@@ -62,6 +62,12 @@ public abstract class GeoGeometry implements Serializable
     }
 
 
+    public int getCRS()
+    {
+        return mCRS;
+    }
+
+
     public JSONObject toJSON()
             throws JSONException
     {
@@ -131,4 +137,11 @@ public abstract class GeoGeometry implements Serializable
     public boolean intersects(GeoEnvelope envelope){
         return getEnvelope().intersects(envelope);
     }
+
+
+    /**
+     * Make deep copy of geometry
+     * @return The geometry copy
+     */
+    public abstract GeoGeometry copy();
 }

@@ -32,6 +32,12 @@ public class GeoLinearRing
     }
 
 
+    public GeoLinearRing(GeoLinearRing geoLineRing)
+    {
+        super(geoLineRing);
+    }
+
+
     public boolean isClosed()
     {
         List<GeoPoint> points = getPoints();
@@ -65,5 +71,12 @@ public class GeoLinearRing
         }
 
         return intersection % 2 == 1;
+    }
+
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoLinearRing(this);
     }
 }
