@@ -199,4 +199,11 @@ public class GeoPoint
     {
         return new GeoPoint(this);
     }
+
+
+    @Override
+    public void clear()
+    {
+        mX = mY = 0.0;
+    }
 }

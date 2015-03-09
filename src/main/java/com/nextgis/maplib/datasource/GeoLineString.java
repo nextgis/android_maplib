@@ -295,4 +295,13 @@ public class GeoLineString
     {
         return new GeoLineString(this);
     }
+
+
+    @Override
+    public void clear()
+    {
+        mPoints.clear();
+    }
+
+
 }

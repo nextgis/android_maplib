@@ -144,4 +144,9 @@ public abstract class GeoGeometry implements Serializable
      * @return The geometry copy
      */
     public abstract GeoGeometry copy();
+
+    /**
+     * remove all points from geometry
+     */
+    public abstract void clear();
 }

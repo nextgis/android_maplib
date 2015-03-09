@@ -244,4 +244,12 @@ public class GeoPolygon
     {
         return new GeoPolygon(this);
     }
+
+
+    @Override
+    public void clear()
+    {
+        mOuterRing.clear();
+        mInnerRings.clear();
+    }
 }

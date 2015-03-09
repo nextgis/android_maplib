@@ -227,4 +227,9 @@ public class GeoGeometryCollection
     {
         return new GeoGeometryCollection(this);
     }
+
+    @Override
+    public void clear(){
+        mGeometries.clear();
+    }
 }
