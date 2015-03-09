@@ -276,4 +276,10 @@ public class MapDrawable
         return 0;
     }
 
+
+    public void clearBackground()
+    {
+        if(null != mDisplay)
+            mDisplay.clearBackground();
+    }
 }

@@ -63,6 +63,7 @@ public class GISDisplay
     protected       GeoEnvelope mScreenBounds;
     protected       GeoEnvelope mOffScreenBounds;
     protected       int         mLimitType;
+    protected int mWidth, mHeight;
 
 
     public GISDisplay(Bitmap backgroundTile)
@@ -99,6 +100,11 @@ public class GISDisplay
             int w,
             int h)
     {
+        if(mWidth == w && mHeight == h)
+            return;
+        mWidth = w;
+        mHeight = h;
+
         Log.d(TAG, "new size: " + w + " x " + h);
 
         mScreenBounds = new GeoEnvelope(0, w, 0, h);
