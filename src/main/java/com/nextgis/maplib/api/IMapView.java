@@ -66,4 +66,6 @@ public interface IMapView
     public float[] mapToScreen(final GeoPoint[] geoPoints);
 
     public GeoEnvelope screenToMap(final GeoEnvelope env);
+
+    public GeoPoint[] screenToMap(final float[] points);
 }

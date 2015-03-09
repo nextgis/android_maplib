@@ -227,6 +227,16 @@ public class MapDrawable
 
 
     @Override
+    public GeoPoint[] screenToMap(float[] points)
+    {
+        if (mDisplay != null) {
+            return mDisplay.screenToMap(points);
+        }
+        return null;
+    }
+
+
+    @Override
     public void runDraw(final GISDisplay display)
     {
         mLayerDrawId = 0;
