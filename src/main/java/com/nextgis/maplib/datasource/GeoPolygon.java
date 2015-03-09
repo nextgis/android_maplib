@@ -218,6 +218,13 @@ public class GeoPolygon
         return mInnerRings.size();
     }
 
+    public void removeInnerRing(int index){
+        mInnerRings.remove(index);
+    }
+
+    public void addInnerRing(GeoLinearRing ring){
+        mInnerRings.add(ring);
+    }
 
     @Override
     public boolean intersects(GeoEnvelope envelope)
