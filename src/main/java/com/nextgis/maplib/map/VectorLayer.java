@@ -47,6 +47,7 @@ import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
+import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.FileUtil;
@@ -538,6 +539,8 @@ public class VectorLayer
                 break;
             case GTPolygon:
             case GTMultiPolygon:
+                mRenderer = new SimpleFeatureRenderer(this, new SimplePolygonStyle(Color.MAGENTA));
+                break;
             default:
                 mRenderer = null;
         }

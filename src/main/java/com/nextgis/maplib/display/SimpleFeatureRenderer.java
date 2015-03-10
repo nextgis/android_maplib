@@ -21,12 +21,10 @@
 
 package com.nextgis.maplib.display;
 
-import android.graphics.Bitmap;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
-import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONException;
@@ -163,6 +161,10 @@ public class SimpleFeatureRenderer extends Renderer{
                 break;
             case "SimpleLineStyle":
                 mStyle = new SimpleLineStyle();
+                mStyle.fromJSON(styleJsonObject);
+                break;
+            case "SimplePolygonStyle":
+                mStyle = new SimplePolygonStyle();
                 mStyle.fromJSON(styleJsonObject);
                 break;
         }
