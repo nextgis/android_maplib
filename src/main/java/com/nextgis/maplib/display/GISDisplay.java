@@ -26,6 +26,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
@@ -426,6 +427,10 @@ public class GISDisplay
         mMainCanvas.drawCircle(x, y, (float) (radius / mScale), paint);
     }
 
+    public void drawPath(Path path, Paint paint)
+    {
+        mMainCanvas.drawPath(path, paint);
+    }
 
     public final double getScale()
     {
