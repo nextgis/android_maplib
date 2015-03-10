@@ -604,6 +604,9 @@ public class VectorLayer
                 jsonStore.fromJSON(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
             }
         }
+        else{
+            setDefaultRenderer();
+        }
 
         if (mIsInitialized) {
             mExtents = new GeoEnvelope();
