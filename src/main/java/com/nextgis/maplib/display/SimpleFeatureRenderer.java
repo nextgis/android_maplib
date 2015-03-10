@@ -108,6 +108,8 @@ public class SimpleFeatureRenderer extends Renderer{
                     VectorCacheItem item = cache.get(i);
 
                     GeoGeometry geometry = item.getGeoGeometry();
+                    if(null == geometry)
+                        continue;
                     mStyle.onDraw(geometry, display);
 
                     synchronized (mLayer) {
