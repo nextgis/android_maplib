@@ -1351,7 +1351,10 @@ public class VectorLayer
     public List<VectorCacheItem> query(GeoEnvelope envelope){
         List<VectorCacheItem> ret = new ArrayList<>();
         for(VectorCacheItem cacheItem : mVectorCacheItems){
-            if(cacheItem.getGeoGeometry().intersects(envelope)){
+            GeoGeometry geom = cacheItem.getGeoGeometry();
+            if(null == geom)
+                continue;
+            if(geom.intersects(envelope)){
                 ret.add(cacheItem);
             }
         }
@@ -1434,6 +1437,15 @@ public class VectorLayer
             attachMap.remove(attachId);
             saveAttach(featureId);
         }
+    }
+
+    public VectorCacheItem getCacheItem(long id){
+        for (VectorCacheItem cacheItem : mVectorCacheItems) {
+            if (cacheItem.getId() == id) {
+                return cacheItem;
+            }
+        }
+        return null;
     }
 
     public void deleteCacheItem(long id) {
