@@ -95,7 +95,12 @@ public class GeoPolygon
     {
         JSONArray coordinates = new JSONArray();
         coordinates.put(mOuterRing.coordinatesToJSON());
-//TODO: add inner rings
+
+        for (GeoLinearRing innerRing : mInnerRings) {
+            coordinates = new JSONArray();
+            coordinates.put(innerRing.coordinatesToJSON());
+        }
+
         return coordinates;
     }
 
@@ -111,21 +116,40 @@ public class GeoPolygon
     public void setCoordinatesFromJSON(JSONArray coordinates)
             throws JSONException
     {
-        JSONArray outerRingCoordinates = coordinates.getJSONArray(0);
+        JSONArray ringCoordinates = coordinates.getJSONArray(0);
 
-        if (outerRingCoordinates.length() < 4) {
+        if (ringCoordinates.length() < 4) {
             throw new JSONException(
                     "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. A LinearRing must be with 4 or more positions.");
         }
 
-        mOuterRing.setCoordinatesFromJSON(outerRingCoordinates);
+        mOuterRing.setCoordinatesFromJSON(ringCoordinates);
 
         if (!getOuterRing().isClosed()) {
             throw new JSONException(
                     "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. The first and last positions of LinearRing must be equivalent (they represent equivalent points).");
         }
 
-        //TODO: add inner rings
+        GeoLinearRing innerRing;
+
+        for (int i = 1; i < coordinates.length(); i++) {
+            ringCoordinates = coordinates.getJSONArray(i);
+
+            if (ringCoordinates.length() < 4) {
+                throw new JSONException(
+                        "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. A LinearRing must be with 4 or more positions.");
+            }
+
+            innerRing = new GeoLinearRing();
+            innerRing.setCoordinatesFromJSON(ringCoordinates);
+
+            if (!innerRing.isClosed()) {
+                throw new JSONException(
+                        "For type \"Polygon\", the \"coordinates\" member must be an array of LinearRing coordinate arrays. The first and last positions of LinearRing must be equivalent (they represent equivalent points).");
+            }
+
+            addInnerRing(innerRing);
+        }
     }
 
 

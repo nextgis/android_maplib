@@ -61,36 +61,16 @@ public class SimplePolygonStyle extends Style
         lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
         lnPaint.setStrokeCap(Paint.Cap.ROUND);
         lnPaint.setAntiAlias(true);
+
+        Path polygonPath = getPath(polygon);
+
         lnPaint.setStyle(Paint.Style.STROKE);
         lnPaint.setAlpha(128);
+        display.drawPath(polygonPath, lnPaint);
 
-        List<GeoPoint> points = polygon.getOuterRing().getPoints();
-
-        float x0, y0;
-
-        if (points.size() > 0) {
-            Path polygonPath = new Path();
-            x0 = (float) points.get(0).getX();
-            y0 = (float) points.get(0).getY();
-            polygonPath.moveTo(x0, y0);
-
-            for (int i = 1; i < points.size(); i++) {
-                x0 = (float) points.get(i).getX();
-                y0 = (float) points.get(i).getY();
-
-                polygonPath.lineTo(x0, y0);
-            }
-
-            x0 = (float) points.get(0).getX();
-            y0 = (float) points.get(0).getY();
-            polygonPath.lineTo(x0, y0);
-
-            display.drawPath(polygonPath, lnPaint);
-
-            lnPaint.setStyle(Paint.Style.FILL);
-            lnPaint.setAlpha(64);
-            display.drawPath(polygonPath, lnPaint);
-        }
+        lnPaint.setStyle(Paint.Style.FILL);
+        lnPaint.setAlpha(64);
+        display.drawPath(polygonPath, lnPaint);
     }
 
     @Override
@@ -132,5 +112,41 @@ public class SimplePolygonStyle extends Style
     {
         super.fromJSON(jsonObject);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
+    }
+
+    protected Path getPath(GeoPolygon polygon)
+    {
+        List<GeoPoint> points = polygon.getOuterRing().getPoints();
+        Path polygonPath = new Path();
+        appendPath(polygonPath, points);
+
+        for (int i = 0; i < polygon.getInnerRingCount(); i++) {
+            points = polygon.getInnerRing(i).getPoints();
+            appendPath(polygonPath, points);
+        }
+
+        polygonPath.setFillType(Path.FillType.EVEN_ODD);
+
+        return polygonPath;
+    }
+
+    protected void appendPath(Path polygonPath, List<GeoPoint> points)
+    {
+        float x0, y0;
+
+        if (points.size() > 0) {
+            x0 = (float) points.get(0).getX();
+            y0 = (float) points.get(0).getY();
+            polygonPath.moveTo(x0, y0);
+
+            for (int i = 1; i < points.size(); i++) {
+                x0 = (float) points.get(i).getX();
+                y0 = (float) points.get(i).getY();
+
+                polygonPath.lineTo(x0, y0);
+            }
+
+            polygonPath.close();
+        }
     }
 }
