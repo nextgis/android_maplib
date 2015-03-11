@@ -70,7 +70,7 @@ public class SimpleFeatureRenderer extends Renderer{
         final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
 
         //TODO: more than one thread for drawing (divide the geometry cache array on several parts)
-        //TODO: think about display syncronization in drawing points/lines/polygons
+        //TODO: think about display synchronization in drawing points/lines/polygons
 
         mDrawThreadPool = new ThreadPoolExecutor(1, 1, KEEP_ALIVE_TIME,
                                                  KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),

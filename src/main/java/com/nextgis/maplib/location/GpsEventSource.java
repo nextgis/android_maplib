@@ -192,15 +192,12 @@ public class GpsEventSource
 
         public void onProviderDisabled(String arg0)
         {
-            // TODO Auto-generated method stub
 
         }
 
 
         public void onProviderEnabled(String provider)
         {
-            // TODO Auto-generated method stub
-
         }
 
 
@@ -209,8 +206,6 @@ public class GpsEventSource
                 int status,
                 Bundle extras)
         {
-            // TODO Auto-generated method stub
-
         }
     }
 
