@@ -20,6 +20,8 @@
  */
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.util.GeoConstants;
+
 import java.util.List;
 
 
@@ -58,15 +60,17 @@ public class GeoLinearRing
         GeoPoint center = envelope.getCenter();
         double x1 = center.getX();
         double y1 = center.getY();
-        double x2 = Double.POSITIVE_INFINITY;
+        double x2 = getEnvelope().getMaxX() * 2;
         double y2 = center.getY();
         //count intersects
         for(int i = 0; i < mPoints.size() - 1; i++){
             GeoPoint pt1 = mPoints.get(i);
             GeoPoint pt2 = mPoints.get(i + 1);
 
-            //test top
-            if(linesIntersect(pt1.getX(), pt1.getY(), pt2.getX(), pt2.getY(), x1, y1, x2, y2))
+            if(pt1.getX() < x1 && pt2.getX() < x2)
+                continue;
+
+            if(linesIntersect(x1, y1, x2, y2, pt1.getX(), pt1.getY(), pt2.getX(), pt2.getY()))
                 intersection++;
         }
 
