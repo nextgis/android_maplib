@@ -131,7 +131,7 @@ public class LayerGroup
 
             if(layer instanceof VectorLayer) {
                 VectorLayer vectorLayer = (VectorLayer)layer;
-                if (0 != (types & vectorLayer.getGeometryType())) {
+                if (0 != (types & 1 << vectorLayer.getGeometryType())) {
                     layerList.add(layer);
                 }
             }
