@@ -475,7 +475,7 @@ public class GISDisplay
         GeoPoint[] ret = new GeoPoint[points.length / 2];
         int count = 0;
         for(int i = 0; i < points.length - 1; i += 2){
-            ret[count] = new GeoPoint(points[i], points[i + 1]);
+            ret[count++] = new GeoPoint(points[i], points[i + 1]);
         }
         return ret;
     }
