@@ -101,7 +101,7 @@ public class GISDisplay
             int w,
             int h)
     {
-        if(mWidth == w && mHeight == h)
+        if((mWidth == w && mHeight == h) || w == 0 || h == 0)
             return;
         mWidth = w;
         mHeight = h;
