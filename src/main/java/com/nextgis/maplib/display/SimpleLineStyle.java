@@ -59,15 +59,19 @@ public class SimpleLineStyle  extends Style{
         lnPaint.setAntiAlias(true);
 
         List<GeoPoint> points = lineString.getPoints();
-        float[] pts = new float[points.size() * 2];
-
-        int counter = 0;
-        for (GeoPoint pt : points) {
-            pts[counter++] = (float) pt.getX();
-            pts[counter++] = (float) pt.getY();
+        for (int i = 1; i < points.size(); i++) {
+            display.drawLine((float) points.get(i-1).getX(), (float) points.get(i-1).getY(),
+                             (float) points.get(i).getX(), (float) points.get(i).getY(), lnPaint);
         }
-
-        display.drawLines(pts, lnPaint);
+//        float[] pts = new float[points.size() * 2];
+//
+//        int counter = 0;
+//        for (GeoPoint pt : points) {
+//            pts[counter++] = (float) pt.getX();
+//            pts[counter++] = (float) pt.getY();
+//        }
+//
+//        display.drawLines(pts, lnPaint);
     }
 
 
