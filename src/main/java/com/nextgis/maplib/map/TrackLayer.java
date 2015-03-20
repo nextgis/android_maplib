@@ -158,7 +158,14 @@ public class TrackLayer
 
     public void reloadTracks(int mode)
     {
-        reloadCursor();
+        String[] proj = new String[] {FIELD_ID};
+        String selection =
+                FIELD_VISIBLE + " = 1 AND " + FIELD_END + " IS NOT NULL AND " + FIELD_END +
+                " != ''";
+
+        mCursor =
+                mContext.getContentResolver().query(mContentUriTracks, proj, selection, null, null);
+
         List<Integer> trackIds = new ArrayList<>();
 
         if (mCursor.moveToFirst()) {
@@ -166,7 +173,10 @@ public class TrackLayer
                 int trackId = mCursor.getInt(mCursor.getColumnIndex(TrackLayer.FIELD_ID));
                 trackIds.add(trackId);
             } while (mCursor.moveToNext());
+
         }
+
+        mCursor.close();
 
         switch (mode) {
             case UPDATE:
@@ -203,18 +213,6 @@ public class TrackLayer
                 }
                 break;
         }
-    }
-
-
-    private void reloadCursor()
-    {
-        String[] proj = new String[] {FIELD_ID};
-        String selection =
-                FIELD_VISIBLE + " = 1 AND " + FIELD_END + " IS NOT NULL AND " + FIELD_END +
-                " != ''";
-
-        mCursor =
-                mContext.getContentResolver().query(mContentUriTracks, proj, selection, null, null);
     }
 
 
