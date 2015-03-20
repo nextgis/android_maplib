@@ -25,16 +25,19 @@ package com.nextgis.maplib.util;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
@@ -64,7 +67,7 @@ public class NetworkUtil
     protected final TelephonyManager    mTelephonyManager;
     protected long mLastCheckTime;
     protected boolean mLastState;
-
+    protected Context mContext;
 
     public NetworkUtil(Context context)
     {
@@ -72,6 +75,7 @@ public class NetworkUtil
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         mLastCheckTime = Constants.NOT_FOUND;
+        mContext = context;
     }
 
 
@@ -107,6 +111,38 @@ public class NetworkUtil
         return mLastState;
     }
 
+    public void setProxy(DefaultHttpClient client, String url){
+        HttpHost httpproxy;
+        String proxyAddress;
+        int proxyPort;
+        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH )
+        {
+            if(url.startsWith("https")){
+                proxyAddress = System.getProperty("https.proxyHost");
+                String portStr = System.getProperty("https.proxyPort");
+                proxyPort = Integer.parseInt((portStr != null ? portStr : "-1"));
+            }
+            else {
+                proxyAddress = System.getProperty("http.proxyHost");
+                String portStr = System.getProperty("http.proxyPort");
+                proxyPort = Integer.parseInt((portStr != null ? portStr : "-1"));
+            }
+            httpproxy =  new HttpHost(proxyAddress, proxyPort);
+        }
+        else
+        {
+            proxyAddress = android.net.Proxy.getHost( mContext );
+            proxyPort = android.net.Proxy.getPort( mContext );
+
+            httpproxy =  new HttpHost(proxyAddress, proxyPort);
+        }
+
+        if(proxyPort < 0 || TextUtils.isEmpty(proxyAddress))
+            return;
+
+        client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,  httpproxy);
+    }
+
     public DefaultHttpClient getHttpClient()
     {
         /*HttpParams httpParameters = new BasicHttpParams();
@@ -136,6 +172,7 @@ public class NetworkUtil
         }
 
         final DefaultHttpClient HTTPClient = getHttpClient();
+        setProxy(HTTPClient, targetURL);
         final HttpResponse response = HTTPClient.execute(get);
 
         // Check to see if we got success
@@ -169,6 +206,7 @@ public class NetworkUtil
         post.setHeader("Content-type", "application/json");
 
         final DefaultHttpClient HTTPClient = getHttpClient();
+        setProxy(HTTPClient, targetURL);
         final HttpResponse response = HTTPClient.execute(post);
 
         // Check to see if we got success
@@ -199,6 +237,7 @@ public class NetworkUtil
         }
 
         final DefaultHttpClient HTTPClient = getHttpClient();
+        setProxy(HTTPClient, targetURL);
         final HttpResponse response = HTTPClient.execute(delete);
 
         // Check to see if we got success
@@ -227,6 +266,7 @@ public class NetworkUtil
 
 
         final DefaultHttpClient HTTPClient = getHttpClient();
+        setProxy(HTTPClient, targetURL);
         final HttpResponse response = HTTPClient.execute(put);
 
         // Check to see if we got success

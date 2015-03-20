@@ -131,6 +131,7 @@ public class RemoteTMSLayer
             }
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
+            mNet.setProxy(HTTPClient, url);
             mAvailable.acquire();
             Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
             final HttpResponse response = HTTPClient.execute(get);
