@@ -127,6 +127,10 @@ public class NetworkUtil
                 String portStr = System.getProperty("http.proxyPort");
                 proxyPort = Integer.parseInt((portStr != null ? portStr : "-1"));
             }
+
+            if(proxyPort < 0 || TextUtils.isEmpty(proxyAddress))
+                return;
+
             httpproxy =  new HttpHost(proxyAddress, proxyPort);
         }
         else
@@ -134,11 +138,10 @@ public class NetworkUtil
             proxyAddress = android.net.Proxy.getHost( mContext );
             proxyPort = android.net.Proxy.getPort( mContext );
 
+            if(proxyPort < 0 || TextUtils.isEmpty(proxyAddress))
+                return;
             httpproxy =  new HttpHost(proxyAddress, proxyPort);
         }
-
-        if(proxyPort < 0 || TextUtils.isEmpty(proxyAddress))
-            return;
 
         client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,  httpproxy);
     }
