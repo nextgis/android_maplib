@@ -51,6 +51,7 @@ import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
 import com.nextgis.maplib.util.FileUtil;
+import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
@@ -240,6 +241,7 @@ public class VectorLayer
                         for (int j = 0; j < fields.size(); j++) {
                             if (fields.get(j).getName().equals(key)) {
                                 fieldIndex = j;
+                                break;
                             }
                         }
                         if (fieldIndex == NOT_FOUND) { //add new field
@@ -260,6 +262,75 @@ public class VectorLayer
         }
     }
 
+    public String createFromGeoJSON(JSONObject geoJSONObject, List<Field> fields, int geometryType, int srs)
+    {
+        try {
+            //check crs
+            boolean isWGS84 = srs == GeoConstants.CRS_WGS84;
+            if(!isWGS84 && srs != GeoConstants.CRS_WEB_MERCATOR){
+                return mContext.getString(R.string.error_crs_unsupported);
+            }
+
+            //load contents to memory and reproject if needed
+            JSONArray geoJSONFeatures = geoJSONObject.getJSONArray(GEOJSON_TYPE_FEATURES);
+            if (0 == geoJSONFeatures.length()) {
+                return mContext.getString(R.string.error_empty_dataset);
+            }
+
+            List<Feature> features = new ArrayList<>();
+            for (int i = 0; i < geoJSONFeatures.length(); i++) {
+                JSONObject jsonFeature = geoJSONFeatures.getJSONObject(i);
+                //get geometry
+                JSONObject jsonGeometry = jsonFeature.getJSONObject(GEOJSON_GEOMETRY);
+                GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
+                if (!Geo.isGeometryTypeSame(geometryType, geometry.getType())) {
+                    //skip different geometry type
+                    continue;
+                }
+
+                //reproject if needed
+                if (isWGS84) {
+                    geometry.setCRS(CRS_WGS84);
+                    geometry.project(CRS_WEB_MERCATOR);
+                } else {
+                    geometry.setCRS(CRS_WEB_MERCATOR);
+                }
+
+                int nId = i;
+                if (jsonFeature.has(GEOJSON_ID)) {
+                    nId = jsonFeature.getInt(GEOJSON_ID);
+                }
+                Feature feature = new Feature(nId, fields); // ID == i
+                feature.setGeometry(geometry);
+
+                //normalize attributes
+                JSONObject jsonAttributes = jsonFeature.getJSONObject(GEOJSON_PROPERTIES);
+                Iterator<String> iter = jsonAttributes.keys();
+                while (iter.hasNext()) {
+                    String key = iter.next();
+                    Object value = jsonAttributes.get(key);
+
+                    int fieldIndex = NOT_FOUND;
+                    for (int j = 0; j < fields.size(); j++) {
+                        if (fields.get(j).getName().equals(key)) {
+                            fieldIndex = j;
+                            break;
+                        }
+                    }
+
+                    if (fieldIndex != NOT_FOUND) {
+                        feature.setFieldValue(fieldIndex, value);
+                    }
+                }
+                features.add(feature);
+            }
+
+            return initialize(fields, features, NOT_FOUND);
+        } catch (JSONException | SQLiteException e) {
+            e.printStackTrace();
+            return e.getLocalizedMessage();
+        }
+    }
 
     public String initialize(
             List<Field> fields,
