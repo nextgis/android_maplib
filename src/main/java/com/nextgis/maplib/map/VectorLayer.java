@@ -1093,7 +1093,7 @@ public class VectorLayer
                     "The map should extends MapContentProviderHelper or inherited");
         }
         SQLiteDatabase db = map.getDatabase(false);
-        int result = db.update(mPath.getName(), values, selection, selectionArgs);
+        int result = values != null && values.size() > 0 ? db.update(mPath.getName(), values, selection, selectionArgs) : 0;
         if (result > 0) {
             notifyLayerChanged();
         }
