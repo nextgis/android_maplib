@@ -62,7 +62,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -860,6 +862,7 @@ public class NGWVectorLayer
                                          remoteFeature.getId());
                         }
                     }
+
                     //process attachments
                     if(eqAttach){
                         for (int i = 0; i < mChanges.size(); i++) {
@@ -871,38 +874,70 @@ public class NGWVectorLayer
                                 i--;
                             }
                         }
-                    }
-                    else {
-                        for(String attachId : currentFeature.getAttachments().keySet()){
-                            //delete attachment which not exist on server
-                            if(!remoteFeature.getAttachments().containsKey(attachId)){
-                                deleteAttach("" + currentFeature.getId(), attachId);
+
+                    } else {
+                        boolean isChangedLocal = false;
+
+                        for (ChangeFeatureItem change : mChanges) {
+                            if (change.getFeatureId() == remoteFeature.getId()) {
+                                //we have local changes ready for sent to server
+                                isChangedLocal = true;
+                                break;
                             }
-                            //or change attachment properties
-                            else{
-                                AttachItem currentItem = currentFeature.getAttachments().get(attachId);
-                                AttachItem remoteItem = remoteFeature.getAttachments().get(attachId);
-                                if(null != currentItem && !currentItem.equals(remoteItem)){
-                                    boolean changeOnServer = true;
-                                    for (ChangeFeatureItem change : mChanges) {
-                                        if(change.getFeatureId() == remoteFeature.getId() && 0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)){
-                                            for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
-                                                if(remoteItem.getAttachId().equals(""+attachItem.getAttachId())){
-                                                    changeOnServer = false;
+                        }
+
+                        if (!isChangedLocal) {
+                            Iterator<String> iterator =
+                                    currentFeature.getAttachments().keySet().iterator();
+
+                            while (iterator.hasNext()) {
+                                String attachId = iterator.next();
+
+                                //delete attachment which not exist on server
+                                if (!remoteFeature.getAttachments().containsKey(attachId)) {
+                                    iterator.remove();
+                                    saveAttach("" + currentFeature.getId());
+
+                                } else { //or change attachment properties
+                                    AttachItem currentItem =
+                                            currentFeature.getAttachments().get(attachId);
+                                    AttachItem remoteItem =
+                                            remoteFeature.getAttachments().get(attachId);
+
+                                    if (null != currentItem && !currentItem.equals(remoteItem)) {
+                                        boolean changeOnServer = true;
+
+                                        for (ChangeFeatureItem change : mChanges) {
+
+                                            if (change.getFeatureId() == remoteFeature.getId() &&
+                                                    0 != (change.getOperation() &
+                                                            ChangeFeatureItem.TYPE_ATTACH)) {
+
+                                                for (ChangeFeatureItem.ChangeAttachItem attachItem : change
+                                                        .getAttachItems()) {
+
+                                                    if (remoteItem.getAttachId().equals(
+                                                            "" + attachItem.getAttachId())) {
+                                                        changeOnServer = false;
+                                                    }
                                                 }
                                             }
+
+                                            if (!changeOnServer) {
+                                                break;
+                                            }
                                         }
-                                        if(!changeOnServer)
-                                            break;
-                                    }
-                                    if(changeOnServer) {
-                                        currentItem.setDescription(remoteItem.getDescription());
-                                        currentItem.setMimetype(remoteItem.getMimetype());
-                                        currentItem.setDisplayName(remoteItem.getDisplayName());
+
+                                        if (changeOnServer) {
+                                            currentItem.setDescription(remoteItem.getDescription());
+                                            currentItem.setMimetype(remoteItem.getMimetype());
+                                            currentItem.setDisplayName(remoteItem.getDisplayName());
+                                        }
                                     }
                                 }
                             }
                         }
+
                         saveAttach("" + currentFeature.getId());
                     }
 
