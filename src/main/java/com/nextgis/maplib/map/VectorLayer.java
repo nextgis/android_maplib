@@ -62,6 +62,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -112,6 +114,11 @@ public class VectorLayer
     public static final String ATTACH_DATE_ADDED   = MediaStore.MediaColumns.DATE_ADDED;
     public static final String ATTACH_DESCRIPTION  = MediaStore.Images.ImageColumns.DESCRIPTION;
 
+    public static final int COLUMNTYPE_UNKNOWN = 0;
+    public static final int COLUMNTYPE_STRING  = 1;
+    public static final int COLUMNTYPE_LONG    = 2;
+
+
     protected Map<String, Map<String, AttachItem>> mAttaches;
 
 
@@ -138,8 +145,10 @@ public class VectorLayer
 
         mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
         mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/attach", TYPE_ATTACH);      //get attaches for row
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#/attach/#", TYPE_ATTACH_ID); //get attach by id
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/#/attach", TYPE_ATTACH);      //get attaches for row
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/#/attach/#", TYPE_ATTACH_ID); //get attach by id
 
 
         CONTENT_TYPE =
@@ -171,7 +180,7 @@ public class VectorLayer
                 if (crsName.equals("urn:ogc:def:crs:OGC:1.3:CRS84")) { // WGS84
                     isWGS84 = true;
                 } else if (crsName.equals("urn:ogc:def:crs:EPSG::3857") ||
-                           crsName.equals("EPSG:3857")) { //Web Mercator
+                        crsName.equals("EPSG:3857")) { //Web Mercator
                     isWGS84 = false;
                 } else {
                     return mContext.getString(R.string.error_crs_unsupported);
@@ -801,20 +810,30 @@ public class VectorLayer
                     cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 }
                 return cursor;
+
             case TYPE_ATTACH:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
+
                 if (projection == null) {
-                    projection = new String[] { ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
+                    projection = new String[] {
+                            ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
+
                 matrixCursor = new MatrixCursor(projection);
                 Map<String, AttachItem> attach = getAttachMap(featureId);
-                if(null != attach) {
-                    File attachFolder = new File(mPath, featureId); //the attach store in id folder in layer folder
+
+                if (null != attach) {
+                    //the attach store in id folder in layer folder
+                    File attachFolder = new File(mPath, featureId);
+                    ArrayList<Object[]> rowArray = new ArrayList<>(attach.size());
+
                     for (AttachItem item : attach.values()) {
-                        Object[] row = new Object[projection.length];
                         File attachFile = new File(attachFolder, item.getAttachId());
+                        Object[] row = new Object[projection.length];
+
                         for (int i = 0; i < projection.length; i++) {
+
                             if (projection[i].compareToIgnoreCase(ATTACH_DISPLAY_NAME) == 0) {
                                 row[i] = item.getDisplayName();
                             } else if (projection[i].compareToIgnoreCase(ATTACH_SIZE) == 0) {
@@ -831,10 +850,82 @@ public class VectorLayer
                                 row[i] = item.getDescription();
                             }
                         }
+
+                        rowArray.add(row);
+                    }
+
+                    // sorting rowArray
+                    if (null != sortOrder) {
+                        int sortIndex = -1;
+
+                        for (int i = 0; i < projection.length; i++) {
+                            if (projection[i].compareToIgnoreCase(sortOrder) == 0) {
+                                sortIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (-1 < sortIndex) {
+                            int columnType = COLUMNTYPE_UNKNOWN;
+
+                            if (projection[sortIndex].compareToIgnoreCase(
+                                    ATTACH_DISPLAY_NAME) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_DATA) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_MIME_TYPE) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_ID) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_DESCRIPTION) == 0) {
+
+                                columnType = COLUMNTYPE_STRING;
+
+                            } else if (projection[sortIndex].compareToIgnoreCase(
+                                    ATTACH_SIZE) == 0 || projection[sortIndex].compareToIgnoreCase(
+                                    ATTACH_DATE_ADDED) == 0) {
+
+                                columnType = COLUMNTYPE_LONG;
+                            }
+
+                            final int columnTypeF = columnType;
+                            final int sortIndexF = sortIndex;
+
+                            Collections.sort(
+                                    rowArray, new Comparator<Object[]>()
+                                    {
+                                        @Override
+                                        public int compare(
+                                                Object[] lhs,
+                                                Object[] rhs)
+                                        {
+                                            switch (columnTypeF) {
+                                                case COLUMNTYPE_STRING:
+                                                    return ((String) lhs[sortIndexF]).compareTo(
+                                                            (String) rhs[sortIndexF]);
+
+                                                case COLUMNTYPE_LONG:
+                                                    return ((Long) lhs[sortIndexF]).compareTo(
+                                                            (Long) rhs[sortIndexF]);
+
+                                                case COLUMNTYPE_UNKNOWN:
+                                                default:
+                                                    return 0;
+                                            }
+                                        }
+                                    });
+                        }
+                    }
+
+                    for (Object[] row : rowArray) {
                         matrixCursor.addRow(row);
                     }
+
+                    rowArray.clear();
                 }
+
                 return matrixCursor;
+
             case TYPE_ATTACH_ID:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 3);
