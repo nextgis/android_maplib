@@ -103,7 +103,7 @@ public class GeoGeometryFactory
             case GEOJSON_TYPE_LineString:
                 return GTLineString;
 
-            case "POLIGON":
+            case "POLYGON":
             case GEOJSON_TYPE_Polygon:
                 return GTPolygon;
 
