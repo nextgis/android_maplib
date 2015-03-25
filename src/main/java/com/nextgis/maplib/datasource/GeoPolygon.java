@@ -97,7 +97,6 @@ public class GeoPolygon
         coordinates.put(mOuterRing.coordinatesToJSON());
 
         for (GeoLinearRing innerRing : mInnerRings) {
-            coordinates = new JSONArray();
             coordinates.put(innerRing.coordinatesToJSON());
         }
 
