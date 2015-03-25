@@ -31,7 +31,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 import com.nextgis.maplib.R;
@@ -48,11 +47,6 @@ import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -64,7 +58,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -815,7 +808,7 @@ public class NGWVectorLayer
                     //compare features
 
                     boolean eqData = remoteFeature.equalsData(currentFeature);
-                    boolean eqAttach = remoteFeature.equalsArrachments(currentFeature);
+                    boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
 
                     //process data
                     if (eqData) {
@@ -879,7 +872,8 @@ public class NGWVectorLayer
                         boolean isChangedLocal = false;
 
                         for (ChangeFeatureItem change : mChanges) {
-                            if (change.getFeatureId() == remoteFeature.getId()) {
+                            if (change.getFeatureId() == remoteFeature.getId() &&
+                                0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
                                 //we have local changes ready for sent to server
                                 isChangedLocal = true;
                                 break;
@@ -907,17 +901,17 @@ public class NGWVectorLayer
                                     if (null != currentItem && !currentItem.equals(remoteItem)) {
                                         boolean changeOnServer = true;
 
+                                        // check if we have change attach properties local
                                         for (ChangeFeatureItem change : mChanges) {
-
+                                            //check if this is our record
                                             if (change.getFeatureId() == remoteFeature.getId() &&
-                                                    0 != (change.getOperation() &
-                                                            ChangeFeatureItem.TYPE_ATTACH)) {
-
+                                                0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
                                                 for (ChangeFeatureItem.ChangeAttachItem attachItem : change
                                                         .getAttachItems()) {
 
-                                                    if (remoteItem.getAttachId().equals(
-                                                            "" + attachItem.getAttachId())) {
+                                                    if (remoteItem.getAttachId()
+                                                                  .equals("" +
+                                                                          attachItem.getAttachId())) {
                                                         changeOnServer = false;
                                                     }
                                                 }
@@ -940,7 +934,6 @@ public class NGWVectorLayer
 
                         saveAttach("" + currentFeature.getId());
                     }
-
                 }
             }
             //TODO: remove features not exist on server from local layer if no operation is in changes array

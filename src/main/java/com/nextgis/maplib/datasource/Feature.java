@@ -38,9 +38,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
@@ -386,7 +384,7 @@ public class Feature implements IJSONStore
 
     }
 
-    public boolean equalsArrachments(Feature f){
+    public boolean equalsAttachments(Feature f){
         if(null == f)
             return false;
         //compare attachments
@@ -412,7 +410,7 @@ public class Feature implements IJSONStore
 
         Feature other = (Feature)o;
         // go deeper
-        return equalsData(other) && equalsArrachments(other);
+        return equalsData(other) && equalsAttachments(other);
     }
 
 
