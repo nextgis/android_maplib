@@ -223,4 +223,18 @@ public class FileUtil
             return name.substring(lastPeriodPos + 1, name.length());
         }
     }
+
+    public static long getDirectorySize(File dir) {
+        long size = 0;
+        File[] files = dir.listFiles();
+
+        for (File file : files) {
+            if (file.isFile())
+                size += file.length();
+            else
+                size += getDirectorySize(file);
+        }
+
+        return size;
+    }
 }
