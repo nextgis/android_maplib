@@ -933,12 +933,24 @@ public class VectorLayer
                         contentValues.getAsByteArray(
                                 FIELD_GEOM));
                 mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
+
+                //update extent
+                updateExtenst(geom.getEnvelope());
+
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
                 return NOT_FOUND;
             }
         }
         return rowID;
+    }
+
+    protected void updateExtenst(GeoEnvelope env){
+        //update extent
+        if(mExtents.isInit())
+            mExtents.merge(env);
+        else
+            mExtents = env;
     }
 
 
@@ -1167,6 +1179,17 @@ public class VectorLayer
         int result = values != null && values.size() > 0 ? db.update(mPath.getName(), values, selection, selectionArgs) : 0;
         if (result > 0) {
             notifyLayerChanged();
+
+            //update extent
+            if (!values.containsKey(FIELD_GEOM)) {
+                try {
+                    GeoGeometry geom = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
+                    updateExtenst(geom.getEnvelope());
+                }
+                catch (IOException | ClassNotFoundException e){
+                    e.printStackTrace();
+                }
+            }
         }
         return result;
     }
