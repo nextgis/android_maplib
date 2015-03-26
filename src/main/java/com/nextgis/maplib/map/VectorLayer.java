@@ -1181,7 +1181,7 @@ public class VectorLayer
             notifyLayerChanged();
 
             //update extent
-            if (!values.containsKey(FIELD_GEOM)) {
+            if (values.containsKey(FIELD_GEOM)) {
                 try {
                     GeoGeometry geom = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
                     updateExtenst(geom.getEnvelope());
