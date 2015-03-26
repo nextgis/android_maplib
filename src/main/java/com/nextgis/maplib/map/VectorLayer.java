@@ -855,7 +855,7 @@ public class VectorLayer
                     }
 
                     // sorting rowArray
-                    if (null != sortOrder) {
+                    if (!TextUtils.isEmpty(sortOrder)) {
                         int sortIndex = -1;
 
                         for (int i = 0; i < projection.length; i++) {
