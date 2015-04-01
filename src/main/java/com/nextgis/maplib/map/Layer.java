@@ -293,4 +293,13 @@ public class Layer
     {
         return true;
     }
+
+
+    @Override
+    public IRenderer getRenderer()
+    {
+        return mRenderer;
+    }
+
+
 }

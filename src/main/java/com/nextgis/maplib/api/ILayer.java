@@ -51,4 +51,6 @@ public interface ILayer
     public void setId(short id);
 
     public boolean isValid();
+
+    public IRenderer getRenderer();
 }
