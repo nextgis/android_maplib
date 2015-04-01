@@ -935,6 +935,10 @@ public class NGWVectorLayer
                         saveAttach("" + currentFeature.getId());
                     }
                 }
+
+                if (null != cursor) {
+                    cursor.close();
+                }
             }
             //TODO: remove features not exist on server from local layer if no operation is in changes array
             return true;
@@ -970,11 +974,15 @@ public class NGWVectorLayer
         Cursor cursor = query(uri, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "addFeatureOnServer: Get cursor failed");
+            if (null != cursor) {
+                cursor.close();
+            }
             return true; //just remove buggy data
         }
 
         try {
             String payload = cursorToJson(cursor);
+            cursor.close();
             String data = mNet.post(NGWUtil.getVectorDataUrl(mURL, mRemoteId), payload, mLogin, mPassword);
             if(null == data){
                 syncResult.stats.numIoExceptions++;
@@ -1032,11 +1040,15 @@ public class NGWVectorLayer
         Cursor cursor = query(uri, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "empty cursor for uri: " + uri);
+            if (null != cursor) {
+                cursor.close();
+            }
             return true; //just remove buggy data
         }
 
         try {
             String payload = cursorToJson(cursor);
+            cursor.close();
             Log.d(TAG, "payload: " + payload);
             String data = mNet.put(NGWUtil.getFeatureUrl(mURL, mRemoteId, featureId), payload, mLogin, mPassword);
             if(null == data){
