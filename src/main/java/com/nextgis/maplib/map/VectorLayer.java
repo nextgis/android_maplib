@@ -704,19 +704,22 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
         Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
-        if (null != cursor && cursor.moveToFirst()) {
-            do {
-                try {
-                    GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                    if (null != geoGeometry) {
-                        int nId = cursor.getInt(0);
-                        mExtents.merge(geoGeometry.getEnvelope());
-                        mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+        if (null != cursor) {
+            if (cursor.moveToFirst()) {
+                do {
+                    try {
+                        GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                        if (null != geoGeometry) {
+                            int nId = cursor.getInt(0);
+                            mExtents.merge(geoGeometry.getEnvelope());
+                            mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
                     }
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            } while (cursor.moveToNext());
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
         }
     }
 
