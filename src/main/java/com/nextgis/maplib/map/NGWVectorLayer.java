@@ -775,6 +775,11 @@ public class NGWVectorLayer
 
         try {
             String data = mNet.get(NGWUtil.getVectorDataUrl(mURL, mRemoteId), mLogin, mPassword);
+
+            if (null == data) {
+                return false;
+            }
+
             JSONArray featuresJSONArray = new JSONArray(data);
             List<Feature> features =
                     jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
