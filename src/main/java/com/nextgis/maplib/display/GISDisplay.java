@@ -313,7 +313,8 @@ public class GISDisplay
 
     public synchronized void clearBackground()
     {
-        //Log.d(TAG, "clearBackground()");
+        //Log.d(TAG, "clearBackground(), w: " + mBackgroundBitmap.getWidth() + " h: " + mBackgroundBitmap.getHeight());
+
         for (int i = 0; i < mBackgroundBitmap.getWidth(); i += mBkBitmap.getWidth()) {
             for (int j = 0; j < mBackgroundBitmap.getHeight(); j += mBkBitmap.getHeight()) {
                 mBackgroundCanvas.drawBitmap(mBkBitmap, i, j, null);
