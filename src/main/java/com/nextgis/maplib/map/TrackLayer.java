@@ -166,6 +166,10 @@ public class TrackLayer
         mCursor =
                 mContext.getContentResolver().query(mContentUriTracks, proj, selection, null, null);
 
+        if (null == mCursor) {
+            return;
+        }
+
         List<Integer> trackIds = new ArrayList<>();
 
         if (mCursor.moveToFirst()) {
