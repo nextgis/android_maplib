@@ -28,79 +28,81 @@ public interface GeoConstants
     /**
      * Mercator projection constants
      */
-    public static final double MERCATOR_MAX = 20037508.34;
+    double MERCATOR_MAX = 20037508.34;
 
     /**
      * TMS type
      */
-    public static final int TMSTYPE_NORMAL = 1;
-    public static final int TMSTYPE_OSM    = 2;
+    int TMSTYPE_NORMAL = 1;
+    int TMSTYPE_OSM    = 2;
 
-    public static final int DEFAULT_MAX_ZOOM = 25;
-    public static final int DEFAULT_MIN_ZOOM = 0;
+    int DEFAULT_MAX_ZOOM = 25;
+    int DEFAULT_MIN_ZOOM = 0;
 
     /**
      * geometry type
      */
-    public static final int GTPoint              = 1;
-    public static final int GTLineString         = 2;
-    public static final int GTPolygon            = 3;
-    public static final int GTMultiPoint         = 4;
-    public static final int GTMultiLineString    = 5;
-    public static final int GTMultiPolygon       = 6;
-    public static final int GTGeometryCollection = 7;
-    public static final int GTNone               = 100;
+    int GTPoint              = 1;
+    int GTLineString         = 2;
+    int GTPolygon            = 3;
+    int GTMultiPoint         = 4;
+    int GTMultiLineString    = 5;
+    int GTMultiPolygon       = 6;
+    int GTGeometryCollection = 7;
+    int GTNone               = 100;
 
-    public static final int GTPointCheck         = 1 << GTPoint;
-    public static final int GTLineStringCheck    = 1 << GTLineString;
-    public static final int GTPolygonCheck       = 1 << GTPolygon;
-    public static final int GTMultiPointCheck    = 1 << GTMultiPoint;
-    public static final int GTMultiLineStringCheck = 1 << GTMultiLineString;
-    public static final int GTMultiPolygonCheck = 1 << GTMultiPolygon;
-    public static final int GTGeometryCollectionCheck = 1 << GTGeometryCollection;
-    public static final int GTNoneCheck = 1 << 10;
-    public static final int GTAnyCheck = GTMultiPointCheck | GTPointCheck | GTLineStringCheck | GTMultiLineStringCheck | GTPolygonCheck | GTMultiPolygonCheck | GTGeometryCollectionCheck;
+    int GTPointCheck              = 1 << GTPoint;
+    int GTLineStringCheck         = 1 << GTLineString;
+    int GTPolygonCheck            = 1 << GTPolygon;
+    int GTMultiPointCheck         = 1 << GTMultiPoint;
+    int GTMultiLineStringCheck    = 1 << GTMultiLineString;
+    int GTMultiPolygonCheck       = 1 << GTMultiPolygon;
+    int GTGeometryCollectionCheck = 1 << GTGeometryCollection;
+    int GTNoneCheck               = 1 << 10;
+    int GTAnyCheck                =
+            GTMultiPointCheck | GTPointCheck | GTLineStringCheck | GTMultiLineStringCheck |
+            GTPolygonCheck | GTMultiPolygonCheck | GTGeometryCollectionCheck;
 
     /**
      * geojson see http://geojson.org/geojson-spec.html
      */
-    public static final String GEOJSON_TYPE                    = "type";
-    public static final String GEOJSON_ID                      = "id";
-    public static final String GEOJSON_FEATURE_ID              = "FEATURE_ID";
-    public static final String GEOJSON_CRS                     = "crs";
-    public static final String GEOJSON_NAME                    = "name";
-    public static final String GEOJSON_PROPERTIES              = "properties";
-    public static final String GEOJSON_BBOX                    = "bbox";
-    public static final String GEOJSON_TYPE_FEATURES           = "features";
-    public static final String GEOJSON_GEOMETRY                = "geometry";
-    public static final String GEOJSON_GEOMETRIES              = "geometries";
-    public static final String GEOJSON_COORDINATES             = "coordinates";
-    public static final String GEOJSON_TYPE_Point              = "Point";
-    public static final String GEOJSON_TYPE_MultiPoint         = "MultiPoint";
-    public static final String GEOJSON_TYPE_LineString         = "LineString";
-    public static final String GEOJSON_TYPE_MultiLineString    = "MultiLineString";
-    public static final String GEOJSON_TYPE_Polygon            = "Polygon";
-    public static final String GEOJSON_TYPE_MultiPolygon       = "MultiPolygon";
-    public static final String GEOJSON_TYPE_GeometryCollection = "GeometryCollection";
-    public static final String GEOJSON_TYPE_Feature            = "Feature";
-    public static final String GEOJSON_TYPE_FeatureCollection  = "FeatureCollection";
+    String GEOJSON_TYPE                    = "type";
+    String GEOJSON_ID                      = "id";
+    String GEOJSON_FEATURE_ID              = "FEATURE_ID";
+    String GEOJSON_CRS                     = "crs";
+    String GEOJSON_NAME                    = "name";
+    String GEOJSON_PROPERTIES              = "properties";
+    String GEOJSON_BBOX                    = "bbox";
+    String GEOJSON_TYPE_FEATURES           = "features";
+    String GEOJSON_GEOMETRY                = "geometry";
+    String GEOJSON_GEOMETRIES              = "geometries";
+    String GEOJSON_COORDINATES             = "coordinates";
+    String GEOJSON_TYPE_Point              = "Point";
+    String GEOJSON_TYPE_MultiPoint         = "MultiPoint";
+    String GEOJSON_TYPE_LineString         = "LineString";
+    String GEOJSON_TYPE_MultiLineString    = "MultiLineString";
+    String GEOJSON_TYPE_Polygon            = "Polygon";
+    String GEOJSON_TYPE_MultiPolygon       = "MultiPolygon";
+    String GEOJSON_TYPE_GeometryCollection = "GeometryCollection";
+    String GEOJSON_TYPE_Feature            = "Feature";
+    String GEOJSON_TYPE_FeatureCollection  = "FeatureCollection";
 
     /**
      * field type
      */
-    public static final int FTInteger     = 0;
-    public static final int FTIntegerList = 1;
-    public static final int FTReal        = 2;
-    public static final int FTRealList    = 3;
-    public static final int FTString      = 4;
-    public static final int FTStringList  = 5;
-    public static final int FTBinary      = 8;
-    public static final int FTDateTime    = 11;
+    int FTInteger     = 0;
+    int FTIntegerList = 1;
+    int FTReal        = 2;
+    int FTRealList    = 3;
+    int FTString      = 4;
+    int FTStringList  = 5;
+    int FTBinary      = 8;
+    int FTDateTime    = 11;
 
     /**
      * CRS
      */
-    public static final int CRS_WGS84        = 4326;
-    public static final int CRS_WEB_MERCATOR = 3857;
+    int CRS_WGS84        = 4326;
+    int CRS_WEB_MERCATOR = 3857;
 
 }
