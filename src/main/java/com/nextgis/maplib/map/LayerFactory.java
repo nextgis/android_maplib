@@ -85,7 +85,7 @@ public abstract class LayerFactory
     }
 
     public static Account getAccountByName(Context context, String accountName){
-        final AccountManager accountManager = AccountManager.get(context);
+        final AccountManager accountManager = AccountManager.get(context.getApplicationContext());
         for(Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)){
             if(account.name.equals(accountName)){
                 return account;
@@ -95,7 +95,7 @@ public abstract class LayerFactory
     }
 
     public static Connection getConnectionFromAccount(Context context, String accountName){
-        final AccountManager accountManager = AccountManager.get(context);
+        final AccountManager accountManager = AccountManager.get(context.getApplicationContext());
         Account account = getAccountByName(context, accountName);
         if(null != account){
             String url = accountManager.getUserData(account, "url");
