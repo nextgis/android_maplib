@@ -351,136 +351,10 @@ public class VectorLayer
 
         //filter out forbidden fields
 
-        String[] forbiddenFields = {
-                "ABORT",
-                "ACTION",
-                "ADD",
-                "AFTER",
-                "ALL",
-                "ALTER",
-                "ANALYZE",
-                "AND",
-                "AS",
-                "ASC",
-                "ATTACH",
-                "AUTOINCREMENT",
-                "BEFORE",
-                "BEGIN",
-                "BETWEEN",
-                "BY",
-                "CASCADE",
-                "CASE",
-                "CAST",
-                "CHECK",
-                "COLLATE",
-                "COLUMN",
-                "COMMIT",
-                "CONFLICT",
-                "CONSTRAINT",
-                "CREATE",
-                "CROSS",
-                "CURRENT_DATE",
-                "CURRENT_TIME",
-                "CURRENT_TIMESTAMP",
-                "DATABASE",
-                "DEFAULT",
-                "DEFERRABLE",
-                "DEFERRED",
-                "DELETE",
-                "DESC",
-                "DETACH",
-                "DISTINCT",
-                "DROP",
-                "EACH",
-                "ELSE",
-                "END",
-                "ESCAPE",
-                "EXCEPT",
-                "EXCLUSIVE",
-                "EXISTS",
-                "EXPLAIN",
-                "FAIL",
-                "FOR",
-                "FOREIGN",
-                "FROM",
-                "FULL",
-                "GLOB",
-                "GROUP",
-                "HAVING",
-                "IF",
-                "IGNORE",
-                "IMMEDIATE",
-                "IN",
-                "INDEX",
-                "INDEXED",
-                "INITIALLY",
-                "INNER",
-                "INSERT",
-                "INSTEAD",
-                "INTERSECT",
-                "INTO",
-                "IS",
-                "ISNULL",
-                "JOIN",
-                "KEY",
-                "LEFT",
-                "LIKE",
-                "LIMIT",
-                "MATCH",
-                "NATURAL",
-                "NO",
-                "NOT",
-                "NOTNULL",
-                "NULL",
-                "OF",
-                "OFFSET",
-                "ON",
-                "OR",
-                "ORDER",
-                "OUTER",
-                "PLAN",
-                "PRAGMA",
-                "PRIMARY",
-                "QUERY",
-                "RAISE",
-                "RECURSIVE",
-                "REFERENCES",
-                "REGEXP",
-                "REINDEX",
-                "RELEASE",
-                "RENAME",
-                "REPLACE",
-                "RESTRICT",
-                "RIGHT",
-                "ROLLBACK",
-                "ROW",
-                "SAVEPOINT",
-                "SELECT",
-                "SET",
-                "TABLE",
-                "TEMP",
-                "TEMPORARY",
-                "THEN",
-                "TO",
-                "TRANSACTION",
-                "TRIGGER",
-                "UNION",
-                "UNIQUE",
-                "UPDATE",
-                "USING",
-                "VACUUM",
-                "VALUES",
-                "VIEW",
-                "VIRTUAL",
-                "WHEN",
-                "WHERE",
-                "WITH",
-                "WITHOUT"};
-
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             String fieldName = field.getName();
-            if (NGWUtil.containsCaseInsensitive(fieldName, forbiddenFields)) {
+            if (NGWUtil.containsCaseInsensitive(fieldName, VECTOR_FORBIDDEN_FIELDS)) {
                 fields.remove(i);
                 i--;
 
@@ -1026,10 +900,12 @@ public class VectorLayer
                 GeoGeometry geom = GeoGeometryFactory.fromBlob(
                         contentValues.getAsByteArray(
                                 FIELD_GEOM));
-                mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
+                if(null != geom) {
+                    mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
 
-                //update extent
-                updateExtenst(geom.getEnvelope());
+                    //update extent
+                    updateExtenst(geom.getEnvelope());
+                }
 
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -1278,7 +1154,8 @@ public class VectorLayer
             if (values.containsKey(FIELD_GEOM)) {
                 try {
                     GeoGeometry geom = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
-                    updateExtenst(geom.getEnvelope());
+                    if(null != geom)
+                        updateExtenst(geom.getEnvelope());
                 }
                 catch (IOException | ClassNotFoundException e){
                     e.printStackTrace();
