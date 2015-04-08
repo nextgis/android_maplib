@@ -300,19 +300,22 @@ public class LayerGroup
             int id,
             float percent)
     {
-        if(percent < 1)
-            return;
-        if (mLayers.size() <= mLayerDrawId) {
-            if (mParent != null && mParent instanceof ILayerView) {
-                ILayerView layerView = (ILayerView) mParent;
-                layerView.onDrawFinished(getId(), 100);
-            }
-        } else {
+        //if(percent < 1)
+        //    return;
+        //if (mLayers.size() <= mLayerDrawId) {
+        //    if (mParent != null && mParent instanceof ILayerView) {
+        //        ILayerView layerView = (ILayerView) mParent;
+        //        layerView.onDrawFinished(getId(), 100);
+        //    }
+        //} else {
+        //}
+
+        if(percent >= 1)
             drawNext(mDisplay);
-            if (mParent instanceof ILayerView) {
-                ILayerView layerView = (ILayerView) mParent;
-                layerView.onDrawFinished(id, percent);
-            }
+
+        if (mParent instanceof ILayerView) {
+            ILayerView layerView = (ILayerView) mParent;
+            layerView.onDrawFinished(id, percent);
         }
     }
 

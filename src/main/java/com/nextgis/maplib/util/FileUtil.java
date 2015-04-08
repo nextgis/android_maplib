@@ -237,4 +237,17 @@ public class FileUtil
 
         return size;
     }
+
+    public static boolean isDirectoryWritable(File directory) {
+        File toCreate = new File(directory, "hello");
+        try {
+            toCreate.createNewFile();
+            return true;
+        } catch (IOException e) {
+            // It's expected we'll get a "Permission denied" exception.
+        } finally {
+            toCreate.delete();
+        }
+        return false;
+    }
 }
