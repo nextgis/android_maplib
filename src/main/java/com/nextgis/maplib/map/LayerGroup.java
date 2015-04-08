@@ -46,8 +46,8 @@ public class LayerGroup
 {
     protected List<ILayer> mLayers;
     protected LayerFactory mLayerFactory;
-    protected int        mLayerDrawId;
-    protected GISDisplay mDisplay;
+    protected int          mLayerDrawIndex;
+    protected GISDisplay   mDisplay;
 
 
     public LayerGroup(
@@ -60,7 +60,7 @@ public class LayerGroup
         mLayerFactory = layerFactory;
         mLayers = new ArrayList<>();
 
-        mLayerDrawId = 0;
+        mLayerDrawIndex = 0;
 
         mLayerType = LAYERTYPE_GROUP;
     }
@@ -76,7 +76,7 @@ public class LayerGroup
      */
     public ILayer getLayerById(int id)
     {
-        if(mId == id)
+        if (mId == id)
             return this;
         for (ILayer layer : mLayers) {
             if (layer.getId() == id) {
@@ -89,7 +89,7 @@ public class LayerGroup
 
     public ILayer getLayerByName(String name)
     {
-        if(mName.equals(name))
+        if (mName.equals(name))
             return this;
         for (ILayer layer : mLayers) {
             if (layer.getName().equals(name)) {
@@ -106,18 +106,19 @@ public class LayerGroup
      * @param types A layer type
      * @param layerList A list to fill with find layers
      */
-    public static void getLayersByType(LayerGroup layerGroup, int types, List<ILayer> layerList)
+    public static void getLayersByType(
+            LayerGroup layerGroup,
+            int types,
+            List<ILayer> layerList)
     {
-        for(int i = 0; i < layerGroup.getLayerCount(); i++)
-        {
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             ILayer layer = layerGroup.getLayer(i);
 
-            if(0 != (types & layer.getType())){
+            if (0 != (types & layer.getType())) {
                 layerList.add(layer);
             }
 
-            if(layer instanceof LayerGroup)
-            {
+            if (layer instanceof LayerGroup) {
                 getLayersByType((LayerGroup)layer, types, layerList);
             }
         }
@@ -186,7 +187,7 @@ public class LayerGroup
         if (mDisplay != display) {
             mDisplay = display;
         }
-        mLayerDrawId = 0;
+        mLayerDrawIndex = 0;
         drawNext(display);
     }
 
@@ -300,9 +301,9 @@ public class LayerGroup
             int id,
             float percent)
     {
-        //if(percent < 1)
-        //    return;
-        //if (mLayers.size() <= mLayerDrawId) {
+        // notify group layer draw finished?
+        //
+        //if (mLayers.size() <= mLayerDrawIndex) {
         //    if (mParent != null && mParent instanceof ILayerView) {
         //        ILayerView layerView = (ILayerView) mParent;
         //        layerView.onDrawFinished(getId(), 100);
@@ -313,10 +314,7 @@ public class LayerGroup
         if(percent >= 1)
             drawNext(mDisplay);
 
-        if (mParent instanceof ILayerView) {
-            ILayerView layerView = (ILayerView) mParent;
-            layerView.onDrawFinished(id, percent);
-        }
+        super.onDrawFinished(id, percent);
     }
 
 
@@ -329,11 +327,11 @@ public class LayerGroup
 
     protected void drawNext(final GISDisplay display)
     {
-        if(mLayers.size() == 0 || mLayers.size() <= mLayerDrawId)
+        if(mLayers.size() == 0 || mLayers.size() <= mLayerDrawIndex)
             return;
 
-        ILayer layer = mLayers.get(mLayerDrawId);
-        mLayerDrawId++;
+        ILayer layer = mLayers.get(mLayerDrawIndex);
+        mLayerDrawIndex++;
         if(layer.isValid() && layer instanceof ILayerView){
             ILayerView layerView = (ILayerView)layer;
             if(layerView.isVisible() && layer instanceof IRenderer) {

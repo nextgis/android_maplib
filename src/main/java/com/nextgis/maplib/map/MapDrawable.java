@@ -239,7 +239,7 @@ public class MapDrawable
     @Override
     public void runDraw(final GISDisplay display)
     {
-        mLayerDrawId = 0;
+        mLayerDrawIndex = 0;
 
         if(display != null){
             //print current view to layer or background

@@ -124,7 +124,7 @@ public interface Constants
     int SYNC_ATTACH     = 1 << 3;
     int SYNC_ALL        = SYNC_DATA | SYNC_ATTACH;
 
-    int DRAWING_SEPARATE_THREADS = 9;
+    int DRAWING_SEPARATE_THREADS = 6;
 
     String[] VECTOR_FORBIDDEN_FIELDS = {
             "ABORT",

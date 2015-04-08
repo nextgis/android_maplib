@@ -83,8 +83,6 @@ public class TMSRenderer
         mRasterPaint.setAntiAlias(mAntiAlias);
         mRasterPaint.setFilterBitmap(mFilterBitmap);
         mRasterPaint.setDither(mDither);
-
-
     }
 
     @Override
@@ -168,39 +166,38 @@ public class TMSRenderer
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
 
-        if(tmsLayer instanceof RemoteTMSLayer){
+        /*if(tmsLayer instanceof RemoteTMSLayer){
             RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer)tmsLayer;
             remoteTMSLayer.onPrepare();
-        }
+        }*/
 
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, display.getBounds(), zoom);
 
         cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;//tmsLayer.getMaxThreadCount();
-        if (threadCount > 0)
-            mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
-                                                     KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
-                                                     new RejectedExecutionHandler()
+        mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
+                                                 KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
+                                                 new RejectedExecutionHandler()
+                                                 {
+                                                     @Override
+                                                     public void rejectedExecution(
+                                                             Runnable r,
+                                                             ThreadPoolExecutor executor)
                                                      {
-                                                         @Override
-                                                         public void rejectedExecution(
-                                                                 Runnable r,
-                                                                 ThreadPoolExecutor executor)
-                                                         {
-                                                             try {
-                                                                 executor.getQueue().put(r);
-                                                             } catch (InterruptedException e) {
-                                                                 e.printStackTrace();
-                                                                 //throw new RuntimeException("Interrupted while submitting task", e);
-                                                             }
+                                                         try {
+                                                             executor.getQueue().put(r);
+                                                         } catch (InterruptedException e) {
+                                                             e.printStackTrace();
+                                                             //throw new RuntimeException("Interrupted while submitting task", e);
                                                          }
-                                                     });
+                                                     }
+                                                 });
 
-        if (null == mDrawThreadPool) {
+        /*if (null == mDrawThreadPool) {
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1);
             return;
-        }
+        }*/
 
         if(tiles.size() == 0){
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1);
@@ -216,7 +213,7 @@ public class TMSRenderer
                 @Override
                 public void run()
                 {
-                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
                     final Bitmap bmp = tmsLayer.getBitmap(tile);
                     if (bmp != null) {
@@ -246,7 +243,7 @@ public class TMSRenderer
     public void cancelDraw()
     {
         if (mDrawThreadPool != null) {
-                mDrawThreadPool.shutdownNow();
+            mDrawThreadPool.shutdownNow();
         }
     }
 }
