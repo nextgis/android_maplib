@@ -23,10 +23,12 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.util.Log;
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
+import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
 
@@ -239,6 +241,7 @@ public class MapDrawable
     @Override
     public void runDraw(final GISDisplay display)
     {
+        Log.d(Constants.TAG, "runDraw");
         mLayerDrawIndex = 0;
 
         if(display != null){

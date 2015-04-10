@@ -115,6 +115,7 @@ public interface Constants
     long     DEFAULT_MAXIMUM_CACHED_FILE_AGE = ONE_WEEK;
     long     ONE_YEAR                        = ONE_DAY * 365;
     int      KEEP_ALIVE_TIME                 = 65;
+    int      TERMINATE_TIME                  = 5;
     TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
 
     int SYNC_NONE       = 1 << 0;

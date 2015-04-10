@@ -22,12 +22,14 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
+import com.nextgis.maplib.util.Constants;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -139,7 +141,7 @@ public class LayerGroup
 
             if(layer instanceof LayerGroup)
             {
-                getVectorLayersByType((LayerGroup)layer, types, layerList);
+                getVectorLayersByType((LayerGroup) layer, types, layerList);
             }
         }
     }
@@ -311,8 +313,9 @@ public class LayerGroup
         //} else {
         //}
 
-        if(percent >= 1)
+        if(percent >= 1.0f) {
             drawNext(mDisplay);
+        }
 
         super.onDrawFinished(id, percent);
     }
@@ -335,6 +338,8 @@ public class LayerGroup
         if(layer.isValid() && layer instanceof ILayerView){
             ILayerView layerView = (ILayerView)layer;
             if(layerView.isVisible() && layer instanceof IRenderer) {
+                Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
+
                 IRenderer renderer = (IRenderer) layer;
                 renderer.runDraw(display);
             }
