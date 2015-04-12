@@ -170,7 +170,6 @@ public class TMSRenderer
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
 
-
         Log.d(Constants.TAG, "run draw Layer: " + tmsLayer.getName() + " id: " + tmsLayer.getId());
 
         /*if(tmsLayer instanceof RemoteTMSLayer){
@@ -183,8 +182,6 @@ public class TMSRenderer
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
             return;
         }
-
-
 
         int threadCount = DRAWING_SEPARATE_THREADS;//tmsLayer.getMaxThreadCount();
         mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
@@ -210,7 +207,9 @@ public class TMSRenderer
             return;
         }*/
 
-        mTileCompleteCount = 0;
+        synchronized (mLayer) {
+            mTileCompleteCount = 0;
+        }
 
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);

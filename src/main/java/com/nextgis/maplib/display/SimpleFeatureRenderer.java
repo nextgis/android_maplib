@@ -81,11 +81,6 @@ public class SimpleFeatureRenderer extends Renderer{
             return;
         }
 
-        //TODO: more than one thread for drawing (divide the geometry cache array on several parts)
-        //TODO: think about display synchronization in drawing points/lines/polygons
-
-
-
         int threadCount = DRAWING_SEPARATE_THREADS;
         mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
                                                  KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
@@ -105,9 +100,9 @@ public class SimpleFeatureRenderer extends Renderer{
                                                      }
                                                  });
 
-
-
-        mGeomCompleteCount = 0;
+        synchronized (mLayer) {
+            mGeomCompleteCount = 0;
+        }
 
         for (int i = 0; i < cache.size(); i++) {
             final VectorCacheItem item = cache.get(i);
