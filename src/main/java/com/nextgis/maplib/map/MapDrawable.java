@@ -23,6 +23,7 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.util.Log;
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoEnvelope;
@@ -59,36 +60,33 @@ public class MapDrawable
 
 
     @Override
-    public Bitmap getView(boolean clearBackground)
+    public void draw(Canvas canvas, boolean clearBackground)
     {
         if (mDisplay != null) {
-            return mDisplay.getDisplay(clearBackground);
+            mDisplay.draw(canvas, clearBackground);
         }
-        return null;
     }
 
     @Override
-    public synchronized Bitmap getView(
-            float x,
+    public synchronized void draw(Canvas canvas,
+                                    float x,
             float y,
             boolean clearBackground)
     {
         if (mDisplay != null) {
-            return mDisplay.getDisplay(x, y, clearBackground);
+            mDisplay.draw(canvas, x, y, clearBackground);
         }
-        return null;
     }
 
     @Override
-    public synchronized Bitmap getView(
+    public synchronized void draw(Canvas canvas,
             float x,
             float y,
             float scale)
     {
         if (mDisplay != null) {
-            return mDisplay.getDisplay(x, y, scale);
+            mDisplay.draw(canvas, x, y, scale);
         }
-        return null;
     }
 
     @Override
@@ -280,9 +278,10 @@ public class MapDrawable
     }
 
 
-    public void clearBackground()
+    public void clearBackground(Canvas canvas)
     {
-        if(null != mDisplay)
-            mDisplay.clearBackground();
+        if(null != mDisplay) {
+            mDisplay.clearBackground(canvas);
+        }
     }
 }

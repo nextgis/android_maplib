@@ -22,6 +22,7 @@
 package com.nextgis.maplib.api;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 
@@ -29,15 +30,23 @@ import com.nextgis.maplib.datasource.GeoPoint;
 public interface IMapView
         extends IRenderer
 {
-    public Bitmap getView(boolean clearBackground);
+    void draw(Canvas canvas, boolean clearBackground);
 
-    public Bitmap getView(float x, float y, boolean clearBackground);
+    void draw(Canvas canvas,
+                float x,
+            float y,
+            boolean clearBackground);
 
-    public Bitmap getView(float x, float y, float scale);
+    void draw(Canvas canvas,
+                float x,
+            float y,
+            float scale);
 
-    public void setViewSize(int w, int h);
+    void setViewSize(
+            int w,
+            int h);
 
-    public float getZoomLevel();
+    float getZoomLevel();
 
     /**
      * Set new map extent according zoom level and center
@@ -47,25 +56,29 @@ public interface IMapView
      * @param center
      *         A map center coordinates
      */
-    public void setZoomAndCenter(float zoom, GeoPoint center);
+    void setZoomAndCenter(
+            float zoom,
+            GeoPoint center);
 
-    public GeoPoint getMapCenter();
+    GeoPoint getMapCenter();
 
-    public GeoEnvelope getFullBounds();
+    GeoEnvelope getFullBounds();
 
-    public GeoEnvelope getCurrentBounds();
+    GeoEnvelope getCurrentBounds();
 
-    public GeoEnvelope getLimits();
+    GeoEnvelope getLimits();
 
-    public void setLimits(GeoEnvelope limits, int limitsType);
+    void setLimits(
+            GeoEnvelope limits,
+            int limitsType);
 
-    public GeoPoint screenToMap(final GeoPoint pt);
+    GeoPoint screenToMap(final GeoPoint pt);
 
-    public GeoPoint mapToScreen(final GeoPoint pt);
+    GeoPoint mapToScreen(final GeoPoint pt);
 
-    public float[] mapToScreen(final GeoPoint[] geoPoints);
+    float[] mapToScreen(final GeoPoint[] geoPoints);
 
-    public GeoEnvelope screenToMap(final GeoEnvelope env);
+    GeoEnvelope screenToMap(final GeoEnvelope env);
 
-    public GeoPoint[] screenToMap(final float[] points);
+    GeoPoint[] screenToMap(final float[] points);
 }
