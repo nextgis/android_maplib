@@ -27,19 +27,21 @@ import com.nextgis.maplib.datasource.GeoPoint;
 
 public interface MapEventListener
 {
-    public abstract void onLayerAdded(int id);
+    void onLayerAdded(int id);
 
-    public abstract void onLayerDeleted(int id);
+    void onLayerDeleted(int id);
 
-    public abstract void onLayerChanged(int id);
+    void onLayerChanged(int id);
 
-    public abstract void onExtentChanged(
+    void onExtentChanged(
             float zoom,
             GeoPoint center);
 
-    public abstract void onLayersReordered();
+    void onLayersReordered();
 
-    public abstract void onLayerDrawFinished(
+    void onLayerDrawFinished(
             int id,
             float percent);
+
+    void onLayerDrawStarted();
 }

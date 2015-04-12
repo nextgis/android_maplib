@@ -49,8 +49,9 @@ public class MapEventSource
     protected final static int    EVENT_onExtentChanged     = 4;
     protected final static int    EVENT_onLayersReordered   = 5;
     protected final static int    EVENT_onLayerDrawFinished = 6;
+    protected final static int    EVENT_onLayerDrawStarted  = 7;
     protected List<MapEventListener> mListeners;
-    protected Handler                mHandler;
+    protected static Handler         mHandler;
     protected boolean                mFreeze;
 
 
@@ -250,6 +251,23 @@ public class MapEventSource
     }
 
     /**
+     * Send layers draw started event to all listeners
+     */
+    protected void onLayerDrawStarted()
+    {
+        if (mListeners == null) {
+            return;
+        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDrawStarted);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+    }
+
+    /**
      * Create handler for messages
      */
     protected void createHandler(){
@@ -281,6 +299,9 @@ public class MapEventSource
                             break;
                         case EVENT_onLayersReordered:
                             listener.onLayersReordered();
+                            break;
+                        case EVENT_onLayerDrawStarted:
+                            listener.onLayerDrawStarted();
                             break;
                     }
                 }
