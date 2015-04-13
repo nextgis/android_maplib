@@ -43,9 +43,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
+import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.TrackLayer;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.LocationUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
@@ -260,12 +262,16 @@ public class TrackerService
 
     private void stopTrack()
     {
-        // update unclosed tracks in DB
-        mValues.clear();
-        mValues.put(TrackLayer.FIELD_END, System.currentTimeMillis());
+        if(null != mNewTrack && !mNewTrack.equals(Uri.parse(""))) {
+            Log.d(Constants.TAG, "uri: " + mNewTrack);
+            // update unclosed tracks in DB
+            mValues.clear();
+            mValues.put(TrackLayer.FIELD_END, System.currentTimeMillis());
 
-        String selection = TrackLayer.FIELD_END + " IS NULL OR " + TrackLayer.FIELD_END + " = ''";
-        getContentResolver().update(mNewTrack, mValues, selection, null);
+            String selection =
+                    TrackLayer.FIELD_END + " IS NULL OR " + TrackLayer.FIELD_END + " = ''";
+            getContentResolver().update(mNewTrack, mValues, selection, null);
+        }
 
         mIsRunning = false;
 

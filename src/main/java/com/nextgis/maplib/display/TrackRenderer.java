@@ -73,6 +73,11 @@ public class TrackRenderer
         mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
 
         List<GeoLineString> trackLines = layer.getTracks();
+        if(trackLines.size() < 1){
+            layer.onDrawFinished(layer.getId(), 1.0f);
+            return;
+        }
+
         int linesCompleteCount = 0;
         for (GeoLineString trackLine : trackLines) {
             List<GeoPoint> points = trackLine.getPoints();
