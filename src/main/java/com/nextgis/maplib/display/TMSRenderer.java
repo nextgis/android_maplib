@@ -172,10 +172,10 @@ public class TMSRenderer
 
         Log.d(Constants.TAG, "run draw Layer: " + tmsLayer.getName() + " id: " + tmsLayer.getId());
 
-        /*if(tmsLayer instanceof RemoteTMSLayer){
+        if(tmsLayer instanceof RemoteTMSLayer){
             RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer)tmsLayer;
             remoteTMSLayer.onPrepare();
-        }*/
+        }
 
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, display.getBounds(), zoom);
         if(tiles.size() == 0){
