@@ -34,29 +34,39 @@ import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
 
-public class SimpleMarkerStyle extends Style{
-    protected int mType;
+public class SimpleMarkerStyle
+        extends Style
+{
+    protected int   mType;
     protected float mSize;
     protected float mWidth;
-    protected int mOutColor;
+    protected int   mOutColor;
 
-    public final static int MarkerStylePoint = 1;
-    public final static int MarkerStyleCircle = 2;
-    public final static int MarkerStyleDiamond = 3;
-    public final static int MarkerStyleCross = 4;
-    public final static int MarkerStyleTriangle = 5;
-    public final static int MarkerStyleBox = 6;
+    public final static int MarkerStylePoint      = 1;
+    public final static int MarkerStyleCircle     = 2;
+    public final static int MarkerStyleDiamond    = 3;
+    public final static int MarkerStyleCross      = 4;
+    public final static int MarkerStyleTriangle   = 5;
+    public final static int MarkerStyleBox        = 6;
     public final static int MarkerEditStyleCircle = 7;
+    public final static int MarkerStyleCrossedBox = 8;
 
     public static final String JSON_OUTCOLOR_KEY = "out_color";
     public static final String JSON_SIZE_KEY     = "size";
+
 
     public SimpleMarkerStyle()
     {
         super();
     }
 
-    public SimpleMarkerStyle(int fillColor, int outColor, float size, int type) {
+
+    public SimpleMarkerStyle(
+            int fillColor,
+            int outColor,
+            float size,
+            int type)
+    {
         super(fillColor);
         mType = type;
         mSize = size;
@@ -64,12 +74,16 @@ public class SimpleMarkerStyle extends Style{
         mWidth = 1;
     }
 
-    protected void onDraw(GeoPoint pt, GISDisplay display)
-    {
-        if(null == pt)
-            return;
 
-        switch (mType){
+    protected void onDraw(
+            GeoPoint pt,
+            GISDisplay display)
+    {
+        if (null == pt) {
+            return;
+        }
+
+        switch (mType) {
             case MarkerStylePoint:
                 Paint ptPaint = new Paint();
                 ptPaint.setColor(mColor);
@@ -77,85 +91,140 @@ public class SimpleMarkerStyle extends Style{
                 ptPaint.setStrokeCap(Paint.Cap.ROUND);
                 ptPaint.setAntiAlias(true);
 
-                display.drawPoint((float)pt.getX(), (float)pt.getY(), ptPaint);
+                display.drawPoint((float) pt.getX(), (float) pt.getY(), ptPaint);
                 break;
+
             case MarkerStyleCircle:
                 Paint fillCirclePaint = new Paint();
                 fillCirclePaint.setColor(mColor);
                 fillCirclePaint.setStrokeCap(Paint.Cap.ROUND);
 
-                display.drawCircle((float)pt.getX(), (float)pt.getY(), mSize, fillCirclePaint);
+                display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, fillCirclePaint);
 
                 Paint outCirclePaint = new Paint();
                 outCirclePaint.setColor(mOutColor);
                 outCirclePaint.setStrokeWidth((float) (mWidth / display.getScale()));
                 outCirclePaint.setStyle(Paint.Style.STROKE);
                 outCirclePaint.setAntiAlias(true);
-                display.drawCircle((float)pt.getX(), (float)pt.getY(), mSize, outCirclePaint);
 
+                display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, outCirclePaint);
                 break;
+
             case MarkerStyleDiamond:
                 break;
+
             case MarkerStyleCross:
                 break;
+
             case MarkerStyleTriangle:
                 break;
+
             case MarkerStyleBox:
+                Paint fillBoxPaint = new Paint();
+                fillBoxPaint.setColor(mColor);
+                fillBoxPaint.setStrokeCap(Paint.Cap.ROUND);
+
+                display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillBoxPaint);
+
+                Paint outBoxPaint = new Paint();
+                outBoxPaint.setColor(mOutColor);
+                outBoxPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+                outBoxPaint.setStyle(Paint.Style.STROKE);
+                outBoxPaint.setAntiAlias(true);
+
+                display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, outBoxPaint);
+                break;
+
+            case MarkerStyleCrossedBox:
+                Paint fillCrossedBoxPaint = new Paint();
+                fillCrossedBoxPaint.setColor(mColor);
+                fillCrossedBoxPaint.setStrokeCap(Paint.Cap.ROUND);
+
+                display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillCrossedBoxPaint);
+
+                Paint outCrossedBoxPaint = new Paint();
+                outCrossedBoxPaint.setColor(mOutColor);
+                outCrossedBoxPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+                outCrossedBoxPaint.setStyle(Paint.Style.STROKE);
+                outCrossedBoxPaint.setAntiAlias(true);
+
+                display.drawCrossedBox(
+                        (float) pt.getX(), (float) pt.getY(), mSize, outCrossedBoxPaint);
                 break;
         }
     }
 
+
     @Override
-    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
-        switch (geoGeometry.getType())
-        {
+    public void onDraw(
+            GeoGeometry geoGeometry,
+            GISDisplay display)
+    {
+        switch (geoGeometry.getType()) {
             case GTPoint:
                 GeoPoint pt = (GeoPoint) geoGeometry;
                 onDraw(pt, display);
                 break;
             case GTMultiPoint:
                 GeoMultiPoint multiPoint = (GeoMultiPoint) geoGeometry;
-                for(int i = 0; i < multiPoint.size(); i++)
-                {
+                for (int i = 0; i < multiPoint.size(); i++) {
                     onDraw(multiPoint.get(i), display);
                 }
                 break;
             default:
-                throw new IllegalArgumentException("The input geometry type is not support by this style");
+                throw new IllegalArgumentException(
+                        "The input geometry type is not support by this style");
         }
     }
 
-    public int getType() {
+
+    public int getType()
+    {
         return mType;
     }
 
-    public void setType(int type) {
+
+    public void setType(int type)
+    {
         mType = type;
     }
 
-    public float getSize() {
+
+    public float getSize()
+    {
         return mSize;
     }
 
-    public void setSize(float size) {
+
+    public void setSize(float size)
+    {
         mSize = size;
     }
 
-    public float getWidth() {
+
+    public float getWidth()
+    {
         return mWidth;
     }
 
-    public void setWidth(float width) {
-       mWidth = width;
+
+    public void setWidth(float width)
+    {
+        mWidth = width;
     }
 
-    public int getOutlineColor() {
+
+    public int getOutlineColor()
+    {
         return mOutColor;
     }
 
-    public void setOutlineColor(int outColor) {
+
+    public void setOutlineColor(int outColor)
+    {
         mOutColor = outColor;
     }
+
 
     @Override
     public JSONObject toJSON()
