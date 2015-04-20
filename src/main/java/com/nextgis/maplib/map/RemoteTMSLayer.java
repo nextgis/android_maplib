@@ -28,6 +28,7 @@ import android.util.Base64;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import org.apache.http.HttpEntity;
@@ -47,6 +48,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
@@ -68,6 +70,7 @@ public class RemoteTMSLayer
     protected       String       mPassword;
     protected Semaphore mAvailable;
 
+    public final static long DELAY = 2150;
 
     public RemoteTMSLayer(
             Context context,
@@ -81,7 +84,7 @@ public class RemoteTMSLayer
         mLayerType = LAYERTYPE_REMOTE_TMS;
     }
 
-    public void onPrepare(){
+    public synchronized void onPrepare(){
         int diff = getMaxThreadCount() - mAvailable.availablePermits();
         if( diff > 0 )
             mAvailable.release(diff);
@@ -92,7 +95,7 @@ public class RemoteTMSLayer
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
-        Bitmap ret;
+        Bitmap ret = null;
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
@@ -132,7 +135,11 @@ public class RemoteTMSLayer
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             mNet.setProxy(HTTPClient, url);
-            mAvailable.acquire();
+            if(!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
+                if(exist) //if exist but not reload from internet
+                    ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                return ret;
+            }
             Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
             final HttpResponse response = HTTPClient.execute(get);
             mAvailable.release();
@@ -173,7 +180,8 @@ public class RemoteTMSLayer
                        e.getLocalizedMessage());
         }
 
-        ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+        if(exist) //if exist but not reload from internet
+            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
         return ret;
     }
 
