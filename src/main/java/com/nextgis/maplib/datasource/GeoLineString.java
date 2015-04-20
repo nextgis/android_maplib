@@ -50,6 +50,11 @@ public class GeoLineString
         }
     }
 
+    public int getPointCount(){
+        if(null == mPoints)
+            return 0;
+        return mPoints.size();
+    }
 
     public List<GeoPoint> getPoints()
     {
