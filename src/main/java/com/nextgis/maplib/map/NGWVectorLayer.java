@@ -42,6 +42,7 @@ import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
@@ -786,6 +787,9 @@ public class NGWVectorLayer
             Log.d(TAG, "Get " + features.size() + " feature(s) from server");
 
             for (Feature remoteFeature : features) {
+
+                Log.d(Constants.TAG, "Remote id " + remoteFeature.getId());
+
                 Cursor cursor = query(
                         null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
                 //no local feature
@@ -945,7 +949,26 @@ public class NGWVectorLayer
                     cursor.close();
                 }
             }
-            //TODO: remove features not exist on server from local layer if no operation is in changes array
+
+            // remove features not exist on server from local layer if no operation is in changes
+            // array or change operation for local feature present
+
+            for(VectorCacheItem item : mVectorCacheItems){
+                Log.d(Constants.TAG, "Local id " + item.getId());
+                boolean bDeleteFeature = true;
+                for (Feature remoteFeature : features) {
+                    if(remoteFeature.getId() == item.getId()){
+                        bDeleteFeature = false;
+                        break;
+                    }
+                }
+
+                if(bDeleteFeature){
+                    Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
+                    delete(VectorLayer.FIELD_ID + " = " + item.getId(), null);
+                }
+            }
+
             return true;
         } catch (IOException | JSONException e) {
             e.printStackTrace();

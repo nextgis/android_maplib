@@ -881,8 +881,15 @@ public class VectorLayer
         return null;
     }
 
+    public long insertAddChanges(ContentValues contentValues){
+        long rowID = insert(contentValues);
+        if (rowID != NOT_FOUND) {
+            addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
+        }
+        return rowID;
+    }
 
-    public long insert(ContentValues contentValues)
+    protected long insert(ContentValues contentValues)
     {
         if (!contentValues.containsKey(FIELD_GEOM)) {
             return NOT_FOUND;
@@ -1006,8 +1013,16 @@ public class VectorLayer
         }
     }
 
+    public int deleteAddChanges(String id){
 
-    public int delete(
+        int result = delete(VectorLayer.FIELD_ID + " = " + id, null);
+        if (result > 0) {
+            addChange(id, ChangeFeatureItem.TYPE_DELETE);
+        }
+        return result;
+    }
+
+    protected int delete(
             String selection,
             String[] selectionArgs)
     {
@@ -1134,8 +1149,16 @@ public class VectorLayer
         }
     }
 
+    public int updateAddChanges(ContentValues values, String id){
 
-    public int update(
+        int result = update(values, VectorLayer.FIELD_ID + " = " + id, null);
+        if (result > 0) {
+            addChange(id, ChangeFeatureItem.TYPE_CHANGED);
+        }
+        return result;
+    }
+
+    protected int update(
             ContentValues values,
             String selection,
             String[] selectionArgs)
