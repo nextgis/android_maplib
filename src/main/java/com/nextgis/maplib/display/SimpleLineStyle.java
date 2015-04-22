@@ -21,7 +21,8 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
-
+import android.graphics.Path;
+import android.graphics.PathMeasure;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoMultiLineString;
@@ -32,18 +33,36 @@ import org.json.JSONObject;
 import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.*;
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 
-public class SimpleLineStyle  extends Style{
+
+public class SimpleLineStyle
+        extends Style
+{
+    public final static int LineStyleSolid       = 1;
+    public final static int LineStyleDash        = 2;
+    public final static int LineStyleEdgingSolid = 3;
+
+    protected int   mType;
     protected float mWidth;
+    protected int   mOutColor;
+
 
     public SimpleLineStyle()
     {
         super();
     }
 
-    public SimpleLineStyle(int color) {
-        super(color);
+
+    public SimpleLineStyle(
+            int fillColor,
+            int outColor,
+            int type)
+    {
+        super(fillColor);
+        mType = type;
+        mOutColor = outColor;
         mWidth = 3;
     }
 
@@ -52,26 +71,23 @@ public class SimpleLineStyle  extends Style{
             GeoLineString lineString,
             GISDisplay display)
     {
-        Paint lnPaint = new Paint();
-        lnPaint.setColor(mColor);
-        lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-        lnPaint.setStrokeCap(Paint.Cap.ROUND);
-        lnPaint.setAntiAlias(true);
-
-        List<GeoPoint> points = lineString.getPoints();
-        for (int i = 1; i < points.size(); i++) {
-            display.drawLine((float) points.get(i-1).getX(), (float) points.get(i-1).getY(),
-                             (float) points.get(i).getX(), (float) points.get(i).getY(), lnPaint);
+        if (null == lineString) {
+            return;
         }
-//        float[] pts = new float[points.size() * 2];
-//
-//        int counter = 0;
-//        for (GeoPoint pt : points) {
-//            pts[counter++] = (float) pt.getX();
-//            pts[counter++] = (float) pt.getY();
-//        }
-//
-//        display.drawLines(pts, lnPaint);
+
+        switch (mType) {
+            case LineStyleSolid:
+                drawSolidLine(lineString, display);
+                break;
+
+            case LineStyleDash:
+                drawDashLine(lineString, display);
+                break;
+
+            case LineStyleEdgingSolid:
+                drawSolidEdgingLine(lineString, display);
+                break;
+        }
     }
 
 
@@ -101,13 +117,174 @@ public class SimpleLineStyle  extends Style{
     }
 
 
+    protected void drawSolidLine(
+            GeoLineString lineString,
+            GISDisplay display)
+    {
+        Paint paint = new Paint();
+        paint.setColor(mColor);
+        paint.setAntiAlias(true);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+        paint.setStrokeWidth((float) (mWidth / display.getScale()));
+
+        List<GeoPoint> points = lineString.getPoints();
+
+        Path path = new Path();
+        path.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
+
+        for (int i = 1; i < points.size(); ++i) {
+            path.lineTo((float) points.get(i).getX(), (float) points.get(i).getY());
+        }
+
+        display.drawPath(path, paint);
+    }
+
+
+    protected void drawDashLine(
+            GeoLineString lineString,
+            GISDisplay display)
+    {
+        Paint paint = new Paint();
+        paint.setColor(mColor);
+        paint.setAntiAlias(true);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+        paint.setStrokeWidth((float) (mWidth / display.getScale()));
+
+        List<GeoPoint> points = lineString.getPoints();
+
+        // workaround for "DashPathEffect/drawLine not working properly when hardwareAccelerated="true""
+        // https://code.google.com/p/android/issues/detail?id=29944
+
+        // get all points to the main path
+        Path mainPath = new Path();
+        mainPath.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
+
+        for (int i = 1; i < points.size(); ++i) {
+            mainPath.lineTo((float) points.get(i).getX(), (float) points.get(i).getY());
+        }
+
+        // draw along the main path
+        Path dashPath = new Path();
+        dashPath.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
+
+        PathMeasure pm = new PathMeasure(mainPath, false);
+        float[] coordinates = new float[2];
+        float length = pm.getLength();
+        float dash = (float) (10 / display.getScale());
+        float gap = (float) (5 / display.getScale());
+        float distance = dash;
+        boolean isDash = true;
+
+        while (distance < length) {
+            // get a point from the main path
+            pm.getPosTan(distance, coordinates, null);
+
+            if (isDash) {
+                dashPath.lineTo(coordinates[0], coordinates[1]);
+                distance += gap;
+            } else {
+                dashPath.moveTo(coordinates[0], coordinates[1]);
+                distance += dash;
+            }
+
+            isDash = !isDash;
+        }
+
+        // add a rest from the main path
+        if (isDash) {
+            distance = distance - dash;
+            float rest = length - distance;
+
+            if (rest > (float) (1 / display.getScale())) {
+                distance += rest;
+                pm.getPosTan(distance, coordinates, null);
+                dashPath.lineTo(coordinates[0], coordinates[1]);
+            }
+        }
+
+        display.drawPath(dashPath, paint);
+    }
+
+
+    protected void drawSolidEdgingLine(
+            GeoLineString lineString,
+            GISDisplay display)
+    {
+        double scaledWidth = mWidth / display.getScale();
+
+        Paint mainPaint = new Paint();
+        mainPaint.setColor(mColor);
+        mainPaint.setAntiAlias(true);
+        mainPaint.setStyle(Paint.Style.STROKE);
+        mainPaint.setStrokeCap(Paint.Cap.BUTT);
+        mainPaint.setStrokeWidth((float) (scaledWidth));
+
+        Paint edgingPaint = new Paint(mainPaint);
+        edgingPaint.setColor(mOutColor);
+        edgingPaint.setStrokeCap(Paint.Cap.BUTT);
+        edgingPaint.setStrokeWidth((float) (scaledWidth * 3));
+
+        List<GeoPoint> points = lineString.getPoints();
+
+        Path path = new Path();
+        path.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
+
+        for (int i = 1; i < points.size(); ++i) {
+            path.lineTo((float) points.get(i).getX(), (float) points.get(i).getY());
+        }
+
+        display.drawPath(path, edgingPaint);
+        display.drawPath(path, mainPaint);
+    }
+
+
+    public int getType()
+    {
+        return mType;
+    }
+
+
+    public void setType(int type)
+    {
+        mType = type;
+    }
+
+
+    public float getWidth()
+    {
+        return mWidth;
+    }
+
+
+    public void setWidth(float width)
+    {
+        mWidth = width;
+    }
+
+
+    public int getOutColor()
+    {
+        return mOutColor;
+    }
+
+
+    public void setOutColor(int outColor)
+    {
+        mOutColor = outColor;
+    }
+
+
     @Override
     public JSONObject toJSON()
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_NAME_KEY, "SimpleLineStyle");
+        rootConfig.put(JSON_TYPE_KEY, mType);
+        rootConfig.put(JSON_WIDTH_KEY, mWidth);
+        rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
         return rootConfig;
     }
 
@@ -117,6 +294,8 @@ public class SimpleLineStyle  extends Style{
             throws JSONException
     {
         super.fromJSON(jsonObject);
+        mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
+        mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
     }
 }

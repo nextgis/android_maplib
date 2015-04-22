@@ -489,7 +489,9 @@ public class VectorLayer
                 break;
             case GTLineString:
             case GTMultiLineString:
-                mRenderer = new SimpleFeatureRenderer(this, new SimpleLineStyle(Color.GREEN));
+                mRenderer = new SimpleFeatureRenderer(
+                        this, new SimpleLineStyle(
+                        Color.GREEN, Color.BLUE, SimpleLineStyle.LineStyleSolid));
                 break;
             case GTPolygon:
             case GTMultiPolygon:

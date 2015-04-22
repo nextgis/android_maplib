@@ -82,8 +82,10 @@ public interface Constants
     String JSON_RENDERERPROPS_KEY = "renderer_properties";
     String JSON_WIDTH_KEY         = "width";
     String JSON_COLOR_KEY         = "color";
+    String JSON_OUTCOLOR_KEY      = "out_color";
     String JSON_CHANGES_KEY       = "changes";
     String JSON_VALUE_KEY         = "value";
+    String JSON_SIZE_KEY          = "size";
 
     /**
      * Layer type
@@ -251,6 +253,5 @@ public interface Constants
             "WHEN",
             "WHERE",
             "WITH",
-            "WITHOUT"
-    };
+            "WITHOUT"};
 }

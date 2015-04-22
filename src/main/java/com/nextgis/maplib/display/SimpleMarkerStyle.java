@@ -21,27 +21,20 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
-
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoPoint;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_TYPE_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 
 
 public class SimpleMarkerStyle
         extends Style
 {
-    protected int   mType;
-    protected float mSize;
-    protected float mWidth;
-    protected int   mOutColor;
-
     public final static int MarkerStylePoint      = 1;
     public final static int MarkerStyleCircle     = 2;
     public final static int MarkerStyleDiamond    = 3;
@@ -51,8 +44,10 @@ public class SimpleMarkerStyle
     public final static int MarkerEditStyleCircle = 7;
     public final static int MarkerStyleCrossedBox = 8;
 
-    public static final String JSON_OUTCOLOR_KEY = "out_color";
-    public static final String JSON_SIZE_KEY     = "size";
+    protected int   mType;
+    protected float mSize;
+    protected float mWidth;
+    protected int   mOutColor;
 
 
     public SimpleMarkerStyle()
@@ -85,29 +80,11 @@ public class SimpleMarkerStyle
 
         switch (mType) {
             case MarkerStylePoint:
-                Paint ptPaint = new Paint();
-                ptPaint.setColor(mColor);
-                ptPaint.setStrokeWidth((float) (mSize / display.getScale()));
-                ptPaint.setStrokeCap(Paint.Cap.ROUND);
-                ptPaint.setAntiAlias(true);
-
-                display.drawPoint((float) pt.getX(), (float) pt.getY(), ptPaint);
+                drawPointMarker(pt, display);
                 break;
 
             case MarkerStyleCircle:
-                Paint fillCirclePaint = new Paint();
-                fillCirclePaint.setColor(mColor);
-                fillCirclePaint.setStrokeCap(Paint.Cap.ROUND);
-
-                display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, fillCirclePaint);
-
-                Paint outCirclePaint = new Paint();
-                outCirclePaint.setColor(mOutColor);
-                outCirclePaint.setStrokeWidth((float) (mWidth / display.getScale()));
-                outCirclePaint.setStyle(Paint.Style.STROKE);
-                outCirclePaint.setAntiAlias(true);
-
-                display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, outCirclePaint);
+                drawCircleMarker(pt, display);
                 break;
 
             case MarkerStyleDiamond:
@@ -120,36 +97,11 @@ public class SimpleMarkerStyle
                 break;
 
             case MarkerStyleBox:
-                Paint fillBoxPaint = new Paint();
-                fillBoxPaint.setColor(mColor);
-                fillBoxPaint.setStrokeCap(Paint.Cap.ROUND);
-
-                display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillBoxPaint);
-
-                Paint outBoxPaint = new Paint();
-                outBoxPaint.setColor(mOutColor);
-                outBoxPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-                outBoxPaint.setStyle(Paint.Style.STROKE);
-                outBoxPaint.setAntiAlias(true);
-
-                display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, outBoxPaint);
+                drawBoxMarker(pt, display);
                 break;
 
             case MarkerStyleCrossedBox:
-                Paint fillCrossedBoxPaint = new Paint();
-                fillCrossedBoxPaint.setColor(mColor);
-                fillCrossedBoxPaint.setStrokeCap(Paint.Cap.ROUND);
-
-                display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillCrossedBoxPaint);
-
-                Paint outCrossedBoxPaint = new Paint();
-                outCrossedBoxPaint.setColor(mOutColor);
-                outCrossedBoxPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-                outCrossedBoxPaint.setStyle(Paint.Style.STROKE);
-                outCrossedBoxPaint.setAntiAlias(true);
-
-                display.drawCrossedBox(
-                        (float) pt.getX(), (float) pt.getY(), mSize, outCrossedBoxPaint);
+                drawCrossedBoxMarker(pt, display);
                 break;
         }
     }
@@ -175,6 +127,80 @@ public class SimpleMarkerStyle
                 throw new IllegalArgumentException(
                         "The input geometry type is not support by this style");
         }
+    }
+
+
+    protected void drawPointMarker(
+            GeoPoint pt,
+            GISDisplay display)
+    {
+        Paint paint = new Paint();
+        paint.setColor(mColor);
+        paint.setStrokeWidth((float) (mSize / display.getScale()));
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setAntiAlias(true);
+
+        display.drawPoint((float) pt.getX(), (float) pt.getY(), paint);
+    }
+
+
+    protected void drawCircleMarker(
+            GeoPoint pt,
+            GISDisplay display)
+    {
+        Paint fillPaint = new Paint();
+        fillPaint.setColor(mColor);
+        fillPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, fillPaint);
+
+        Paint outPaint = new Paint();
+        outPaint.setColor(mOutColor);
+        outPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        outPaint.setStyle(Paint.Style.STROKE);
+        outPaint.setAntiAlias(true);
+
+        display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, outPaint);
+    }
+
+
+    protected void drawBoxMarker(
+            GeoPoint pt,
+            GISDisplay display)
+    {
+        Paint fillPaint = new Paint();
+        fillPaint.setColor(mColor);
+        fillPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillPaint);
+
+        Paint outPaint = new Paint();
+        outPaint.setColor(mOutColor);
+        outPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        outPaint.setStyle(Paint.Style.STROKE);
+        outPaint.setAntiAlias(true);
+
+        display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, outPaint);
+    }
+
+
+    protected void drawCrossedBoxMarker(
+            GeoPoint pt,
+            GISDisplay display)
+    {
+        Paint fillPaint = new Paint();
+        fillPaint.setColor(mColor);
+        fillPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillPaint);
+
+        Paint outPaint = new Paint();
+        outPaint.setColor(mOutColor);
+        outPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        outPaint.setStyle(Paint.Style.STROKE);
+        outPaint.setAntiAlias(true);
+
+        display.drawCrossedBox((float) pt.getX(), (float) pt.getY(), mSize, outPaint);
     }
 
 
@@ -231,11 +257,11 @@ public class SimpleMarkerStyle
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
+        rootConfig.put(JSON_NAME_KEY, "SimpleMarkerStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_SIZE_KEY, mSize);
-        rootConfig.put(JSON_NAME_KEY, "SimpleMarkerStyle");
+        rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
         return rootConfig;
     }
 
@@ -245,9 +271,9 @@ public class SimpleMarkerStyle
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
+        mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
     }
 }
