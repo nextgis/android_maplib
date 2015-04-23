@@ -27,10 +27,12 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.RectF;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.util.Constants;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
@@ -171,7 +173,7 @@ public class GISDisplay
 
         //default transform matrix
         mTransformMatrix.reset();
-        mTransformMatrix.postTranslate((float) -center.getX(), (float) -center.getY());
+        mTransformMatrix.postTranslate((float) -mCenter.getX(), (float) -mCenter.getY());
         mTransformMatrix.postScale((float) mScale, (float) -mScale);
         mTransformMatrix.postTranslate((float) (mWidth * .5), (float) (mHeight * .5));
 
@@ -190,7 +192,7 @@ public class GISDisplay
         }
 
         Matrix matrix = new Matrix();
-        matrix.postTranslate((float) -center.getX(), (float) -center.getY());
+        matrix.postTranslate((float) -mCenter.getX(), (float) -mCenter.getY());
         matrix.postScale((float) mScale, (float) -mScale);
         matrix.postTranslate((float) (mMainBitmap.getWidth() * .5),
                              (float) (mMainBitmap.getHeight() * .5));
@@ -272,8 +274,7 @@ public class GISDisplay
             clearBackground(canvas);
         }
 
-        canvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX,
-                                         y - mMainBitmapOffsetY, null);
+        canvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
     }
 
 
@@ -358,6 +359,53 @@ public class GISDisplay
         }
     }
 
+    public void drawTextOnPath(String text, Path path, float hOffset, float vOffset, Paint paint)
+    {
+        PathMeasure pm = new PathMeasure(path, false);
+
+        float aCoordinates[] = {0f, 0f};
+        float aTangents[] = {0f, 0f};
+        float halfOffset = vOffset * .5f;
+        Matrix matrix = new Matrix();
+        float canvasCenterX = (float) (mMainBitmap.getWidth() * .5);
+        float canvasCenterY = (float) (mMainBitmap.getHeight() * .5);
+
+        paint.setStrokeWidth(paint.getStrokeWidth() * 5);
+
+        for(float off = hOffset; off < pm.getLength(); off += hOffset) {
+            pm.getPosTan(off, aCoordinates, aTangents);
+
+            mMainCanvas.save();
+
+
+            float rotateAngle = (float) Math.toDegrees(Math.atan2((double)aTangents[1], (double)aTangents[0]));
+
+            Log.d(Constants.TAG,
+                  "off: " + off + " Len: " + pm.getLength() + " x: " + aCoordinates[0] + " y: " +
+                  aCoordinates[1] + "rotate: " + rotateAngle);
+
+            matrix.reset();
+
+            float charCenterX = aCoordinates[0] + halfOffset;
+            float charCenterY = aCoordinates[1] - halfOffset;
+
+
+            matrix.preRotate(rotateAngle, charCenterX, charCenterY);
+            matrix.preScale(1f, -1f, charCenterX, charCenterY);
+
+            matrix.postTranslate((float) -mCenter.getX(), (float) -mCenter.getY());
+            matrix.postScale((float) mScale, (float) -mScale);
+            matrix.postTranslate(canvasCenterX, canvasCenterY);
+
+            mMainCanvas.setMatrix(matrix);
+
+            mMainCanvas.drawText(text, aCoordinates[0] - halfOffset, aCoordinates[1] + halfOffset, paint);
+
+            //mMainCanvas.drawPoint(aCoordinates[0], aCoordinates[1], paint);
+
+            mMainCanvas.restore();
+        }
+    }
 
     public void drawPoint(
             float x,

@@ -77,7 +77,8 @@ public class SimpleLineStyle
 
         switch (mType) {
             case LineStyleSolid:
-                drawSolidLine(lineString, display);
+                drawTextSolidLine(lineString, display);
+                //drawSolidLine(lineString, display);
                 break;
 
             case LineStyleDash:
@@ -239,6 +240,48 @@ public class SimpleLineStyle
         display.drawPath(path, mainPaint);
     }
 
+    protected void drawTextSolidLine(
+            GeoLineString lineString,
+            GISDisplay display)
+    {
+        float displayScale = (float) display.getScale();
+
+        Paint mainPaint = new Paint();
+        mainPaint.setColor(mColor);
+        mainPaint.setAntiAlias(true);
+        mainPaint.setStyle(Paint.Style.STROKE);
+        mainPaint.setStrokeCap(Paint.Cap.BUTT);
+        mainPaint.setStrokeWidth(mWidth / displayScale);
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(mOutColor);
+        textPaint.setAntiAlias(true);
+        textPaint.setStyle(Paint.Style.FILL);
+        textPaint.setStrokeCap(Paint.Cap.ROUND);
+        textPaint.setStrokeWidth(2 / displayScale);
+        textPaint.setTextSize(40 / displayScale);
+
+        List<GeoPoint> points = lineString.getPoints();
+
+        // get all points to the main path
+        Path mainPath = new Path();
+        mainPath.incReserve(points.size());
+        mainPath.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
+
+        for (int i = 1; i < points.size(); ++i) {
+            mainPath.lineTo((float) points.get(i).getX(), (float) points.get(i).getY());
+        }
+
+        // draw the main path
+        display.drawPath(mainPath, mainPaint);
+
+        // draw text along the main path
+        float hOffset = 100 / displayScale;
+        float vOffset = 15 / displayScale;
+
+        display.drawTextOnPath("?", mainPath, hOffset, vOffset, textPaint);
+
+    }
 
     public int getType()
     {
