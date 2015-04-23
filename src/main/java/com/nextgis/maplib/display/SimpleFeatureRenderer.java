@@ -177,6 +177,10 @@ public class SimpleFeatureRenderer extends Renderer{
                 mStyle = new SimpleLineStyle();
                 mStyle.fromJSON(styleJsonObject);
                 break;
+            case "SimpleTextLineStyle":
+                mStyle = new SimpleTextLineStyle();
+                mStyle.fromJSON(styleJsonObject);
+                break;
             case "SimplePolygonStyle":
                 mStyle = new SimplePolygonStyle();
                 mStyle.fromJSON(styleJsonObject);

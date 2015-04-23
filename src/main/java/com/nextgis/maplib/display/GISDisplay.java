@@ -474,6 +474,16 @@ public class GISDisplay
         mMainCanvas.drawPath(path, paint);
     }
 
+    public void drawTextOnPath(
+            String text,
+            Path path,
+            float hOffset,
+            float vOffset,
+            Paint paint)
+    {
+        mMainCanvas.drawTextOnPath(text, path, hOffset, vOffset, paint);
+    }
+
     public final double getScale()
     {
         return mScale;
