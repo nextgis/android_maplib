@@ -131,6 +131,8 @@ public class SimpleLineStyle
         List<GeoPoint> points = lineString.getPoints();
 
         Path path = new Path();
+        path.incReserve(points.size());
+
         path.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
 
         for (int i = 1; i < points.size(); ++i) {
@@ -159,6 +161,8 @@ public class SimpleLineStyle
 
         // get all points to the main path
         Path mainPath = new Path();
+        mainPath.incReserve(points.size());
+
         mainPath.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
 
         for (int i = 1; i < points.size(); ++i) {
@@ -166,9 +170,6 @@ public class SimpleLineStyle
         }
 
         // draw along the main path
-        Path dashPath = new Path();
-        dashPath.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
-
         PathMeasure pm = new PathMeasure(mainPath, false);
         float[] coordinates = new float[2];
         float length = pm.getLength();
@@ -176,6 +177,11 @@ public class SimpleLineStyle
         float gap = (float) (5 / display.getScale());
         float distance = dash;
         boolean isDash = true;
+
+        Path dashPath = new Path();
+        dashPath.incReserve((int) (2 * length / (dash + gap)));
+
+        dashPath.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
 
         while (distance < length) {
             // get a point from the main path
@@ -198,7 +204,7 @@ public class SimpleLineStyle
             float rest = length - distance;
 
             if (rest > (float) (1 / display.getScale())) {
-                distance += rest;
+                distance = length - 1;
                 pm.getPosTan(distance, coordinates, null);
                 dashPath.lineTo(coordinates[0], coordinates[1]);
             }
@@ -229,6 +235,8 @@ public class SimpleLineStyle
         List<GeoPoint> points = lineString.getPoints();
 
         Path path = new Path();
+        path.incReserve(points.size());
+
         path.moveTo((float) points.get(0).getX(), (float) points.get(0).getY());
 
         for (int i = 1; i < points.size(); ++i) {
