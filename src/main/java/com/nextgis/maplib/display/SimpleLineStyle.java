@@ -77,8 +77,7 @@ public class SimpleLineStyle
 
         switch (mType) {
             case LineStyleSolid:
-                drawTextSolidLine(lineString, display);
-                //drawSolidLine(lineString, display);
+                drawSolidLine(lineString, display);
                 break;
 
             case LineStyleDash:
