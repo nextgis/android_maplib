@@ -359,52 +359,58 @@ public class GISDisplay
         }
     }
 
-    public void drawTextOnPath(String text, Path path, float hOffset, float vOffset, Paint paint)
+
+    public void drawTextOnPath(
+            String text,
+            Path path,
+            float hOffset,
+            float vOffset,
+            Paint paint)
     {
         PathMeasure pm = new PathMeasure(path, false);
-
-        float aCoordinates[] = {0f, 0f};
-        float aTangents[] = {0f, 0f};
-        float halfOffset = vOffset * .5f;
         Matrix matrix = new Matrix();
-        float canvasCenterX = (float) (mMainBitmap.getWidth() * .5);
-        float canvasCenterY = (float) (mMainBitmap.getHeight() * .5);
+        Path charPath = new Path();
+        Path textPath = new Path();
 
-        paint.setStrokeWidth(paint.getStrokeWidth() * 5);
+        float pathLength = pm.getLength();
+        float coordinates[] = new float[2];
+        float tangent[] = new float[2];
 
-        for(float off = hOffset; off < pm.getLength(); off += hOffset) {
-            pm.getPosTan(off, aCoordinates, aTangents);
+        int i = 0;
+        float position = hOffset;
 
-            mMainCanvas.save();
+        while (i < text.length()) {
+            String ch = text.substring(i, i + 1);
+            float charWidth = paint.measureText(ch);
 
+            float nextPosition = position + charWidth;
+            if (nextPosition > pathLength) {
+                break;
+            }
 
-            float rotateAngle = (float) Math.toDegrees(Math.atan2((double)aTangents[1], (double)aTangents[0]));
+            pm.getPosTan(position + charWidth / 2, coordinates, tangent);
+            float rotateAngle = (float) Math.toDegrees(
+                    Math.atan2((double) tangent[1], (double) tangent[0]));
 
-            Log.d(Constants.TAG,
-                  "off: " + off + " Len: " + pm.getLength() + " x: " + aCoordinates[0] + " y: " +
-                  aCoordinates[1] + "rotate: " + rotateAngle);
+            charPath.reset();
+            paint.getTextPath(ch, 0, ch.length(), -charWidth / 2, vOffset, charPath);
+            charPath.close(); // workaround
 
             matrix.reset();
+            matrix.postScale(1, -1, 0, 0);
+            matrix.postRotate(rotateAngle, 0, 0);
+            matrix.postTranslate(coordinates[0], coordinates[1]);
 
-            float charCenterX = aCoordinates[0] + halfOffset;
-            float charCenterY = aCoordinates[1] - halfOffset;
+            textPath.addPath(charPath, matrix);
 
-
-            matrix.preRotate(rotateAngle, charCenterX, charCenterY);
-            matrix.preScale(1f, -1f, charCenterX, charCenterY);
-
-            matrix.postTranslate((float) -mCenter.getX(), (float) -mCenter.getY());
-            matrix.postScale((float) mScale, (float) -mScale);
-            matrix.postTranslate(canvasCenterX, canvasCenterY);
-
-            mMainCanvas.setMatrix(matrix);
-
-            mMainCanvas.drawText(text, aCoordinates[0] - halfOffset, aCoordinates[1] + halfOffset, paint);
-
-            //mMainCanvas.drawPoint(aCoordinates[0], aCoordinates[1], paint);
-
-            mMainCanvas.restore();
+            ++i;
+            position = nextPosition;
         }
+
+        mMainCanvas.drawPath(textPath, paint);
+
+        // for debug
+        //mMainCanvas.drawTextOnPath(text, path, hOffset, vOffset, paint);
     }
 
     public void drawPoint(
@@ -550,7 +556,6 @@ public class GISDisplay
         mInvertTransformMatrix.mapRect(rect);
         outEnv.setMin(rect.left, rect.top); // screen axis Y and geo axis Y are inverse
         outEnv.setMax(rect.right, rect.bottom);
-
 
         return outEnv;
     }

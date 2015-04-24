@@ -81,9 +81,6 @@ public class SimpleTextLineStyle
             GISDisplay display)
     {
         float scaledWidth = (float) (mWidth / display.getScale());
-        float textSize = 12 * scaledWidth;
-        float hOffset = textSize / 2;
-        float vOffset = (float) (textSize / 2.7);
 
         Paint mainPaint = new Paint();
         mainPaint.setColor(mColor);
@@ -98,16 +95,14 @@ public class SimpleTextLineStyle
         textPaint.setStyle(Paint.Style.FILL);
         textPaint.setStrokeCap(Paint.Cap.ROUND);
         textPaint.setStrokeWidth(scaledWidth);
+
+        float textSize = 12 * scaledWidth;
         textPaint.setTextSize(textSize);
-
         float textWidth = textPaint.measureText(mLineText);
-        float underlineLength = textPaint.measureText("_");
-        float gap = underlineLength;
-        float period = textWidth + gap;
-
-        List<GeoPoint> points = lineString.getPoints();
+        float vOffset = (float) (textSize / 2.7);
 
         // get all points to the main path
+        List<GeoPoint> points = lineString.getPoints();
         Path mainPath = new Path();
         mainPath.incReserve(points.size());
 
@@ -122,22 +117,20 @@ public class SimpleTextLineStyle
 
         // draw text along the main path
         PathMeasure pm = new PathMeasure(mainPath, false);
-        float[] coordinates = new float[2];
         float length = pm.getLength();
-        float startD = underlineLength;
-        float stopD = period + underlineLength;
+        float gap = textPaint.measureText("_");
+        float period = textWidth + gap;
+        float startD = gap;
+        float stopD = startD + period;
 
         Path textPath = new Path();
-        textPath.incReserve((int) (length / period));
-
-        pm.getPosTan(0, coordinates, null);
 
         while (stopD < length) {
             textPath.reset();
             pm.getSegment(startD, stopD, textPath, true);
-            textPath.rLineTo(0, 0);
+            textPath.rLineTo(0, 0); // workaround for API <= 19
 
-            display.drawTextOnPath(mLineText, textPath, hOffset, vOffset, textPaint);
+            display.drawTextOnPath(mLineText, textPath, 0, vOffset, textPaint);
 
             startD += period;
             stopD += period;
@@ -146,14 +139,14 @@ public class SimpleTextLineStyle
         stopD = startD;
         float rest = length - stopD;
 
-        if (rest > underlineLength * 2) {
-            stopD = length - underlineLength;
+        if (rest > gap * 2) {
+            stopD = length - gap;
 
             textPath.reset();
             pm.getSegment(startD, stopD, textPath, true);
-            textPath.rLineTo(0, 0);
+            textPath.rLineTo(0, 0); // workaround for API <= 19
 
-            display.drawTextOnPath(mLineText, textPath, hOffset, vOffset, textPaint);
+            display.drawTextOnPath(mLineText, textPath, 0, vOffset, textPaint);
         }
     }
 
