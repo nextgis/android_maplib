@@ -148,11 +148,13 @@ public class SimpleMarkerStyle
             GeoPoint pt,
             GISDisplay display)
     {
+        float scaledSize = (float) (mSize / display.getScale());
+
         Paint fillPaint = new Paint();
         fillPaint.setColor(mColor);
         fillPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, fillPaint);
+        display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
 
         Paint outPaint = new Paint();
         outPaint.setColor(mOutColor);
@@ -160,7 +162,7 @@ public class SimpleMarkerStyle
         outPaint.setStyle(Paint.Style.STROKE);
         outPaint.setAntiAlias(true);
 
-        display.drawCircle((float) pt.getX(), (float) pt.getY(), mSize, outPaint);
+        display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
     }
 
 
@@ -168,11 +170,13 @@ public class SimpleMarkerStyle
             GeoPoint pt,
             GISDisplay display)
     {
+        float scaledSize = (float) (mSize / display.getScale());
+
         Paint fillPaint = new Paint();
         fillPaint.setColor(mColor);
         fillPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillPaint);
+        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
 
         Paint outPaint = new Paint();
         outPaint.setColor(mOutColor);
@@ -180,7 +184,7 @@ public class SimpleMarkerStyle
         outPaint.setStyle(Paint.Style.STROKE);
         outPaint.setAntiAlias(true);
 
-        display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, outPaint);
+        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
     }
 
 
@@ -188,11 +192,13 @@ public class SimpleMarkerStyle
             GeoPoint pt,
             GISDisplay display)
     {
+        float scaledSize = (float) (mSize / display.getScale());
+
         Paint fillPaint = new Paint();
         fillPaint.setColor(mColor);
         fillPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        display.drawBox((float) pt.getX(), (float) pt.getY(), mSize, fillPaint);
+        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
 
         Paint outPaint = new Paint();
         outPaint.setColor(mOutColor);
@@ -200,7 +206,7 @@ public class SimpleMarkerStyle
         outPaint.setStyle(Paint.Style.STROKE);
         outPaint.setAntiAlias(true);
 
-        display.drawCrossedBox((float) pt.getX(), (float) pt.getY(), mSize, outPaint);
+        display.drawCrossedBox((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
     }
 
 

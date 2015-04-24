@@ -438,7 +438,7 @@ public class GISDisplay
             float radius,
             Paint paint)
     {
-        mMainCanvas.drawCircle(x, y, (float) (radius / mScale), paint);
+        mMainCanvas.drawCircle(x, y, radius, paint);
     }
 
     public void drawBox(
@@ -447,9 +447,7 @@ public class GISDisplay
             float size,
             Paint paint)
     {
-        mMainCanvas.drawRect(
-                (float) (x - size / mScale), (float) (y - size / mScale),
-                (float) (x + size / mScale), (float) (y + size / mScale), paint);
+        mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
     }
 
     public void drawCrossedBox(
@@ -458,15 +456,9 @@ public class GISDisplay
             float size,
             Paint paint)
     {
-        mMainCanvas.drawRect(
-                (float) (x - size / mScale), (float) (y - size / mScale),
-                (float) (x + size / mScale), (float) (y + size / mScale), paint);
-        mMainCanvas.drawLine(
-                (float) (x - size / mScale), (float) (y - size / mScale),
-                (float) (x + size / mScale), (float) (y + size / mScale), paint);
-        mMainCanvas.drawLine(
-                (float) (x - size / mScale), (float) (y + size / mScale),
-                (float) (x + size / mScale), (float) (y - size / mScale), paint);
+        mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
+        mMainCanvas.drawLine(x - size, y - size, x + size, y + size, paint);
+        mMainCanvas.drawLine(x - size, y + size, x + size, y - size, paint);
     }
 
     public void drawPath(Path path, Paint paint)

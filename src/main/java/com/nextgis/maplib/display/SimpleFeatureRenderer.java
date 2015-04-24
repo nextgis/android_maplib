@@ -23,7 +23,6 @@ package com.nextgis.maplib.display;
 
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
-
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
@@ -171,6 +170,10 @@ public class SimpleFeatureRenderer extends Renderer{
         {
             case "SimpleMarkerStyle":
                 mStyle = new SimpleMarkerStyle();
+                mStyle.fromJSON(styleJsonObject);
+                break;
+            case "SimpleTextMarkerStyle":
+                mStyle = new SimpleTextMarkerStyle();
                 mStyle.fromJSON(styleJsonObject);
                 break;
             case "SimpleLineStyle":
