@@ -574,7 +574,7 @@ public class NGWVectorLayer
                         break;
                     attachItems.remove(j);
                     j--;
-                    Log.d(TAG, "proceed attache change. leave " + attachItems.size());
+                    // Log.d(TAG, "proceed attache change. leave " + attachItems.size());
                 }
 
                 if(hasErrors)
@@ -583,7 +583,7 @@ public class NGWVectorLayer
 
             mChanges.remove(i);
             i--;
-            Log.d(TAG, "proceed change. leave " + mChanges.size());
+            // Log.d(TAG, "proceed change. leave " + mChanges.size());
         }
 
         if (changesCount != mChanges.size()) {
@@ -988,7 +988,7 @@ public class NGWVectorLayer
 
             if(bDeleteFeature){
                 Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
-                delete(VectorLayer.FIELD_ID + " = " + item.getId(), null);
+                delete(item.getId(), VectorLayer.FIELD_ID + " = " + item.getId(), null);
             }
         }
 

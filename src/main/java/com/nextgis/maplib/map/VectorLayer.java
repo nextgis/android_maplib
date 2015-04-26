@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
@@ -50,6 +51,7 @@ import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
@@ -93,8 +95,18 @@ public class VectorLayer
     protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
     protected static final String JSON_FIELDS_KEY         = "fields";
 
-    public static final String FIELD_ID   = "_id";
-    public static final String FIELD_GEOM = "_geom";
+    public static final String FIELD_ID     = "_id";
+    public static final String FIELD_OLD_ID = "old_id";
+    public static final String FIELD_GEOM   = "_geom";
+
+    public static final String NOTIFY_DELETE        = "com.nextgis.maplib.notify_delete";
+    public static final String NOTIFY_DELETE_ALL    = "com.nextgis.maplib.notify_delete_all";
+    public static final String NOTIFY_INSERT        = "com.nextgis.maplib.notify_insert";
+    public static final String NOTIFY_UPDATE        = "com.nextgis.maplib.notify_update";
+    public static final String NOTIFY_UPDATE_ALL    = "com.nextgis.maplib.notify_update_all";
+    public static final String NOTIFY_FEATURE_ID_CHANGE = "com.nextgis.maplib.notify_change_id";
+    public static final String NOTIFY_LAYER_NAME    = "layer_name";
+
 
     protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
     protected static final String NO_SYNC             = "no_sync";
@@ -904,27 +916,15 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         long rowID = db.insert(mPath.getName(), null, contentValues);
         if (rowID != NOT_FOUND) {
-            try {
-                GeoGeometry geom = GeoGeometryFactory.fromBlob( contentValues.getAsByteArray(
-                                FIELD_GEOM));
-                if(null != geom) {
-                    mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
-
-                    //update extent
-                    updateExtenst(geom.getEnvelope());
-                }
-
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-                return NOT_FOUND;
-            }
-
-            notifyLayerChanged(); // TODO: notify about changes from service to applications or reload cache from disk periodically
+            Intent notify = new Intent(NOTIFY_INSERT);
+            notify.putExtra(FIELD_ID, rowID);
+            notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            getContext().sendBroadcast(notify);
         }
         return rowID;
     }
 
-    protected void updateExtenst(GeoEnvelope env){
+    protected void updateExtent(GeoEnvelope env){
         //update extent
         if(mExtents.isInit())
             mExtents.merge(env);
@@ -1017,7 +1017,7 @@ public class VectorLayer
 
     public int deleteAddChanges(String id){
 
-        int result = delete(VectorLayer.FIELD_ID + " = " + id, null);
+        int result = delete(Long.parseLong(id), VectorLayer.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, ChangeFeatureItem.TYPE_DELETE);
         }
@@ -1025,6 +1025,7 @@ public class VectorLayer
     }
 
     protected int delete(
+            long rowID,
             String selection,
             String[] selectionArgs)
     {
@@ -1036,7 +1037,16 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
         if (result > 0) {
-            notifyLayerChanged(); // TODO: notify about changes from service to applications or reload cache from disk periodically
+            Intent notify;
+            if(rowID == Constants.NOT_FOUND) {
+                notify = new Intent(NOTIFY_DELETE_ALL);
+            }
+            else {
+                notify = new Intent(NOTIFY_DELETE);
+                notify.putExtra(FIELD_ID, rowID);
+            }
+            notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            getContext().sendBroadcast(notify);
         }
         return result;
     }
@@ -1055,7 +1065,7 @@ public class VectorLayer
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_TABLE:
-                result = delete(selection, selectionArgs);
+                result = delete(Constants.NOT_FOUND, selection, selectionArgs);
                 if (result > 0) {
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
@@ -1065,9 +1075,6 @@ public class VectorLayer
                         addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
-
-                    //clear cache
-                    mVectorCacheItems.clear();
                 }
                 return result;
             case TYPE_FEATURE:
@@ -1077,18 +1084,9 @@ public class VectorLayer
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
-                result = delete(selection, selectionArgs);
+                result = delete(Long.parseLong(featureId), selection, selectionArgs);
 
                 if (result > 0) {
-                    //remove cached item
-                    int id = Integer.parseInt(featureId);
-                    for (VectorCacheItem item : mVectorCacheItems) {
-                        if (item.getId() == id) {
-                            mVectorCacheItems.remove(item);
-                            break;
-                        }
-                    }
-
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
@@ -1153,7 +1151,7 @@ public class VectorLayer
 
     public int updateAddChanges(ContentValues values, String id){
 
-        int result = update(values, VectorLayer.FIELD_ID + " = " + id, null);
+        int result = update(Long.parseLong(id), values, VectorLayer.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, ChangeFeatureItem.TYPE_CHANGED);
         }
@@ -1161,6 +1159,7 @@ public class VectorLayer
     }
 
     protected int update(
+            long rowID,
             ContentValues values,
             String selection,
             String[] selectionArgs)
@@ -1173,18 +1172,32 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         int result = values != null && values.size() > 0 ? db.update(mPath.getName(), values, selection, selectionArgs) : 0;
         if (result > 0) {
-            //update extent
-            if (values.containsKey(FIELD_GEOM)) {
-                try {
-                    GeoGeometry geom = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
-                    if(null != geom)
-                        updateExtenst(geom.getEnvelope());
+            Intent notify;
+            if (rowID == Constants.NOT_FOUND) {
+                if(values.containsKey(FIELD_GEOM)) {
+                    notify = new Intent(NOTIFY_UPDATE_ALL);
+                    notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                    getContext().sendBroadcast(notify);
                 }
-                catch (IOException | ClassNotFoundException e){
-                    e.printStackTrace();
+            } else {
+                notify = new Intent(NOTIFY_UPDATE);
+                boolean bNotify = false;
+                if(values.containsKey(FIELD_GEOM)) {
+                    notify.putExtra(FIELD_ID, rowID);
+                    bNotify = true;
+                }
+
+                if(values.containsKey(FIELD_ID)) {
+                    notify.putExtra(FIELD_OLD_ID, rowID);
+                    notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
+                    bNotify = true;
+                }
+
+                if(bNotify) {
+                    notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                    getContext().sendBroadcast(notify);
                 }
             }
-            notifyLayerChanged(); // TODO: notify about changes from service to applications or reload cache from disk periodically
         }
         return result;
     }
@@ -1205,7 +1218,7 @@ public class VectorLayer
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_TABLE:
-                result = update(values, selection, selectionArgs);
+                result = update(Constants.NOT_FOUND, values, selection, selectionArgs);
 
                 if (result > 0) {
                     String fragment = uri.getFragment();
@@ -1217,9 +1230,7 @@ public class VectorLayer
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
-                if (values.containsKey(FIELD_GEOM)) {
-                    reloadCache();
-                }
+
                 return result;
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
@@ -1229,26 +1240,9 @@ public class VectorLayer
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
 
-                result = update(values, selection, selectionArgs);
+                result = update(Long.parseLong(featureId), values, selection, selectionArgs);
 
                 if (result > 0) {
-                    //change cached item
-                    if (values.containsKey(FIELD_GEOM)) {
-                        int id = Integer.parseInt(featureId);
-                        for (VectorCacheItem item : mVectorCacheItems) {
-                            if (item.getId() == id) {
-                                try {
-                                    item.setGeoGeometry(
-                                            GeoGeometryFactory.fromBlob(
-                                                    values.getAsByteArray(FIELD_GEOM)));
-
-                                } catch (IOException | ClassNotFoundException e) {
-                                    e.printStackTrace();
-                                }
-                                break;
-                            }
-                        }
-                    }
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
@@ -1589,5 +1583,84 @@ public class VectorLayer
         item.setAttachId(newAttachId);
         attaches.put(item.getAttachId(), item);
         saveAttach(featureId);
+    }
+
+    public void notifyDelete(long rowID){
+        //remove cached item
+        for (VectorCacheItem item : mVectorCacheItems) {
+            if (item.getId() == rowID) {
+                mVectorCacheItems.remove(item);
+                break;
+            }
+        }
+        notifyLayerChanged();
+    }
+
+    public void notifyDeleteAll(){
+        //clear cache
+        mVectorCacheItems.clear();
+        notifyLayerChanged();
+    }
+
+    public void notifyInsert(long rowID){
+        GeoGeometry geom = getGeometryForID(rowID);
+        if(null != geom) {
+            mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
+
+            updateExtent(geom.getEnvelope());
+
+            notifyLayerChanged();
+        }
+    }
+
+    public void notifyUpdate(long rowID, long rowOldID){
+        GeoGeometry geom = getGeometryForID(rowID);
+        if(null != geom) {
+            for (VectorCacheItem item : mVectorCacheItems) {
+                if(rowOldID != Constants.NOT_FOUND)
+                {
+                    if (item.getId() == rowOldID) {
+                        item.setId(rowID);
+                        item.setGeoGeometry(geom);
+                        break;
+                    }
+                }
+                else {
+                    if (item.getId() == rowID) {
+                        item.setGeoGeometry(geom);
+                        break;
+                    }
+                }
+            }
+
+            updateExtent(geom.getEnvelope());
+
+            notifyLayerChanged();
+        }
+    }
+
+    public void notifyUpdateAll(){
+        reloadCache();
+        notifyLayerChanged();
+    }
+
+    protected GeoGeometry getGeometryForID(long rowID){
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
+        String[] columns = new String[] {FIELD_GEOM};
+        String selection = FIELD_ID + " = " + rowID;
+        Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
+        if (null != cursor) {
+            if (cursor.moveToFirst()) {
+                try {
+                    return GeoGeometryFactory.fromBlob(cursor.getBlob(0));
+                } catch (IOException | ClassNotFoundException e) {
+                    // e.printStackTrace();
+                }
+            }
+            cursor.close();
+        }
+
+        return null;
     }
 }
