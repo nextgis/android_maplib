@@ -40,10 +40,10 @@ import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
  */
 public class ChangeFeatureItem implements IJSONStore
 {
-    public static final int TYPE_NEW     = 1 << 1;
-    public static final int TYPE_CHANGED = 1 << 2;
-    public static final int TYPE_DELETE  = 1 << 3;
-    public static final int TYPE_ATTACH  = 1 << 4;
+    public static final int TYPE_NEW     = 1 << 1; // 2
+    public static final int TYPE_CHANGED = 1 << 2; // 4
+    public static final int TYPE_DELETE  = 1 << 3; // 8
+    public static final int TYPE_ATTACH  = 1 << 4; // 16
 
     protected static final String JSON_OPERATION_KEY = "operation";
 

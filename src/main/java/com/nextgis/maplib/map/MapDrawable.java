@@ -239,8 +239,6 @@ public class MapDrawable
     @Override
     public void runDraw(final GISDisplay display)
     {
-        Log.d(Constants.TAG, "runDraw");
-
         onLayerDrawStarted();
 
         mLayerDrawIndex = 0;

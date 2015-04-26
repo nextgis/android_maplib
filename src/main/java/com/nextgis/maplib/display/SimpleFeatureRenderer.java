@@ -65,8 +65,6 @@ public class SimpleFeatureRenderer extends Renderer{
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
         GeoEnvelope layerEnv = vectorLayer.getExtents();
 
-        Log.d(Constants.TAG, "Layer: " + vectorLayer.getName() + " id: " + vectorLayer.getId());
-
         if (null == layerEnv || !env.intersects(layerEnv)) {
             vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
             return;
@@ -121,7 +119,8 @@ public class SimpleFeatureRenderer extends Renderer{
                         mGeomCompleteCount++;
                         float percent = (float) (mGeomCompleteCount) / cache.size();
                         vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
-                        Log.d(TAG, "Vector percent: " + percent + " complete: " + mGeomCompleteCount + " geom count: " + cache.size() + " layer :" + mLayer.getName());
+
+                        // Log.d(TAG, "Vector percent: " + percent + " complete: " + mGeomCompleteCount + " geom count: " + cache.size() + " layer :" + mLayer.getName());
                     }
                     //vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
                 }

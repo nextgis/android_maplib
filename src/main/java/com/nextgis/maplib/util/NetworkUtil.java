@@ -181,7 +181,7 @@ public class NetworkUtil
         // Check to see if we got success
         final org.apache.http.StatusLine line = response.getStatusLine();
         if (line.getStatusCode() != 200) {
-            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " + line);
             return null;
         }
 
@@ -215,7 +215,7 @@ public class NetworkUtil
         // Check to see if we got success
         final org.apache.http.StatusLine line = response.getStatusLine();
         if (line.getStatusCode() != 200) {
-            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            Log.d(TAG, "Problem execute insert: " + targetURL + " HTTP response: " + line);
             return null;
         }
 
@@ -246,7 +246,7 @@ public class NetworkUtil
         // Check to see if we got success
         final org.apache.http.StatusLine line = response.getStatusLine();
         if (line.getStatusCode() != 200) {
-            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " + line);
             return false;
         }
 
@@ -275,7 +275,7 @@ public class NetworkUtil
         // Check to see if we got success
         final org.apache.http.StatusLine line = response.getStatusLine();
         if (line.getStatusCode() != 200) {
-            Log.d(TAG, "Problem execute: " + targetURL + " HTTP response: " + line);
+            Log.d(TAG, "Problem execute update: " + targetURL + " HTTP response: " + line);
             return null;
         }
 

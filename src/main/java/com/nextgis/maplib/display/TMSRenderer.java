@@ -170,8 +170,6 @@ public class TMSRenderer
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
 
-        Log.d(Constants.TAG, "run draw Layer: " + tmsLayer.getName() + " id: " + tmsLayer.getId());
-
         if(tmsLayer instanceof RemoteTMSLayer){
             RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer)tmsLayer;
             remoteTMSLayer.onPrepare();
@@ -236,7 +234,7 @@ public class TMSRenderer
 
                         tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
 
-                        Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tiles.size() + " layer: " + mLayer.getName());
+                        // Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tiles.size() + " layer: " + mLayer.getName());
                     }
 
                 }

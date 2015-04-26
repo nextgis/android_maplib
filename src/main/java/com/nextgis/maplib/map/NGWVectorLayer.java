@@ -774,207 +774,253 @@ public class NGWVectorLayer
 
         Log.d(TAG, "The network is available. Get changes from server");
 
+        // read layer contents as string
+        String data;
         try {
-            String data = mNet.get(NGWUtil.getVectorDataUrl(mURL, mRemoteId), mLogin, mPassword);
+            data = mNet.get(NGWUtil.getVectorDataUrl(mURL, mRemoteId), mLogin, mPassword);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            syncResult.stats.numParseExceptions++;
+            return false;
+        }
 
-            if (null == data) {
-                return false;
-            }
+        if (null == data) {
+            return false;
+        }
 
+        // parse layer contents to Feature list
+        List<Feature> features;
+        try {
             JSONArray featuresJSONArray = new JSONArray(data);
-            List<Feature> features =
-                    jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
-            Log.d(TAG, "Get " + features.size() + " feature(s) from server");
+            features = jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+            syncResult.stats.numParseExceptions++;
+            return false;
+        }
 
-            for (Feature remoteFeature : features) {
+        Log.d(TAG, "Get " + features.size() + " feature(s) from server");
 
-                Log.d(Constants.TAG, "Remote id " + remoteFeature.getId());
+        // analyse feature
+        for (Feature remoteFeature : features) {
 
-                Cursor cursor = query(
-                        null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
-                //no local feature
-                if (null == cursor || cursor.getCount() == 0) {
+            Cursor cursor = query( null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
+            //no local feature
+            if (null == cursor || cursor.getCount() == 0) {
 
-                    boolean createNewFeature = true;
-                    for (ChangeFeatureItem change : mChanges) {
-                        if (change.getFeatureId() == remoteFeature.getId()) {
-                            createNewFeature = false; //if have changes (delete) not create new feature
-                            break;
-                        }
-                    }
-                    //create new feature with remoteId
-                    if (createNewFeature) {
-                        ContentValues values = remoteFeature.getContentValues(true);
-                        Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
-                        //prevent add changes and events
-                        uri = uri.buildUpon().fragment(NO_SYNC).build();
-                        Uri newFeatureUri = insert(uri, values);
-                        Log.d(TAG, "Add new feature from server - " + newFeatureUri.toString());
-                    }
-                } else {
-                    cursor.moveToFirst();
-                    Feature currentFeature = cursorToFeature(cursor);
-                    //compare features
-
-                    boolean eqData = remoteFeature.equalsData(currentFeature);
-                    boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
-
-                    //process data
-                    if (eqData) {
-                        //remove from changes
-                        for (int i = 0; i < mChanges.size(); i++) {
-                            ChangeFeatureItem change = mChanges.get(i);
-                            if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH))) {
-                                boolean isDelete = false;
-                                for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
-                                    if(attachItem.getOperation() == ChangeFeatureItem.TYPE_DELETE){
-                                        isDelete = true;
-                                        break;
-                                    }
-                                }
-                                if(!isDelete) {
-                                    Log.d(TAG, "The feature " + change.getFeatureId() +
-                                               " already changed on server. Remove change set #" +
-                                               i);
-                                    mChanges.remove(i);
-                                    i--;
-                                }
-                            }
-                        }
-                    } else {
-                        boolean isChangedLocal = false;
-                        for (ChangeFeatureItem change : mChanges) {
-                            if (change.getFeatureId() == remoteFeature.getId()) {
-                                isChangedLocal = true; //we have local changes ready for sent to server
-                                break;
-                            }
-                        }
-
-                        //no local changes - update local feature
-                        if (!isChangedLocal) {
-                            ContentValues values = remoteFeature.getContentValues(false);
-
-                            Uri uri =
-                                    Uri.parse("content://" + authority + "/" + getPath().getName());
-                            Uri updateUri = ContentUris.withAppendedId(uri, remoteFeature.getId());
-                            updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
-                            //prevent add changes
-                            int count = update(updateUri, values, null, null);
-                            Log.d(TAG, "Update feature (" + count + ") from server - " +
-                                         remoteFeature.getId());
-                        }
-                    }
-
-                    //process attachments
-                    if(eqAttach){
-                        for (int i = 0; i < mChanges.size(); i++) {
-                            ChangeFeatureItem change = mChanges.get(i);
-                            if (change.getFeatureId() == remoteFeature.getId() && (eqData || change.getOperation() == ChangeFeatureItem.TYPE_ATTACH)) {
-                                Log.d(TAG, "The feature " + change.getFeatureId() +
-                                           " already changed on server. Remove change set #" + i);
-                                mChanges.remove(i);
-                                i--;
-                            }
-                        }
-
-                    } else {
-                        boolean isChangedLocal = false;
-
-                        for (ChangeFeatureItem change : mChanges) {
-                            if (change.getFeatureId() == remoteFeature.getId() &&
-                                0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
-                                //we have local changes ready for sent to server
-                                isChangedLocal = true;
-                                break;
-                            }
-                        }
-
-                        if (!isChangedLocal) {
-                            Iterator<String> iterator =
-                                    currentFeature.getAttachments().keySet().iterator();
-
-                            while (iterator.hasNext()) {
-                                String attachId = iterator.next();
-
-                                //delete attachment which not exist on server
-                                if (!remoteFeature.getAttachments().containsKey(attachId)) {
-                                    iterator.remove();
-                                    saveAttach("" + currentFeature.getId());
-
-                                } else { //or change attachment properties
-                                    AttachItem currentItem =
-                                            currentFeature.getAttachments().get(attachId);
-                                    AttachItem remoteItem =
-                                            remoteFeature.getAttachments().get(attachId);
-
-                                    if (null != currentItem && !currentItem.equals(remoteItem)) {
-                                        boolean changeOnServer = true;
-
-                                        // check if we have change attach properties local
-                                        for (ChangeFeatureItem change : mChanges) {
-                                            //check if this is our record
-                                            if (change.getFeatureId() == remoteFeature.getId() &&
-                                                0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
-                                                for (ChangeFeatureItem.ChangeAttachItem attachItem : change
-                                                        .getAttachItems()) {
-
-                                                    if (remoteItem.getAttachId()
-                                                                  .equals("" +
-                                                                          attachItem.getAttachId())) {
-                                                        changeOnServer = false;
-                                                    }
-                                                }
-                                            }
-
-                                            if (!changeOnServer) {
-                                                break;
-                                            }
-                                        }
-
-                                        if (changeOnServer) {
-                                            currentItem.setDescription(remoteItem.getDescription());
-                                            currentItem.setMimetype(remoteItem.getMimetype());
-                                            currentItem.setDisplayName(remoteItem.getDisplayName());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        saveAttach("" + currentFeature.getId());
-                    }
-                }
-
-                if (null != cursor) {
-                    cursor.close();
-                }
-            }
-
-            // remove features not exist on server from local layer if no operation is in changes
-            // array or change operation for local feature present
-
-            for(VectorCacheItem item : mVectorCacheItems){
-                Log.d(Constants.TAG, "Local id " + item.getId());
-                boolean bDeleteFeature = true;
-                for (Feature remoteFeature : features) {
-                    if(remoteFeature.getId() == item.getId()){
-                        bDeleteFeature = false;
+                boolean createNewFeature = true;
+                for (ChangeFeatureItem change : mChanges) {
+                    if (change.getFeatureId() == remoteFeature.getId()) {
+                        createNewFeature = false; //if have changes (delete) not create new feature
                         break;
                     }
                 }
 
-                if(bDeleteFeature){
-                    Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
-                    delete(VectorLayer.FIELD_ID + " = " + item.getId(), null);
+                //create new feature with remoteId
+                if (createNewFeature) {
+                    ContentValues values = remoteFeature.getContentValues(true);
+                    Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
+                    //prevent add changes and events
+                    uri = uri.buildUpon().fragment(NO_SYNC).build();
+                    Uri newFeatureUri = insert(uri, values);
+                    Log.d(TAG, "Add new feature from server - " + newFeatureUri.toString());
+                }
+            } else {
+                cursor.moveToFirst();
+                Feature currentFeature = cursorToFeature(cursor);
+                //compare features
+
+                boolean eqData = remoteFeature.equalsData(currentFeature);
+                boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
+
+                //process data
+                if (eqData) {
+                    //remove from changes
+                    for (int i = 0; i < mChanges.size(); i++) {
+                        ChangeFeatureItem change = mChanges.get(i);
+                        if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH))) {
+                            boolean isDelete = false;
+                            for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
+                                if(attachItem.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                                    isDelete = true;
+                                    break;
+                                }
+                            }
+                            if(!isDelete) {
+                                Log.d(TAG, "The feature " + change.getFeatureId() +
+                                           " already changed on server. Remove change set #" +
+                                           i);
+                                mChanges.remove(i);
+                                i--;
+                            }
+                        }
+                    }
+                } else {
+                    boolean isChangedLocal = false;
+                    for (ChangeFeatureItem change : mChanges) {
+                        if (change.getFeatureId() == remoteFeature.getId()) {
+                            isChangedLocal = true; //we have local changes ready for sent to server
+                            break;
+                        }
+                    }
+
+                    //no local changes - update local feature
+                    if (!isChangedLocal) {
+                        ContentValues values = remoteFeature.getContentValues(false);
+
+                        Uri uri =
+                                Uri.parse("content://" + authority + "/" + getPath().getName());
+                        Uri updateUri = ContentUris.withAppendedId(uri, remoteFeature.getId());
+                        updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
+                        //prevent add changes
+                        int count = update(updateUri, values, null, null);
+                        Log.d(TAG, "Update feature (" + count + ") from server - " +
+                                     remoteFeature.getId());
+                    }
+                }
+
+                //process attachments
+                if(eqAttach){
+                    for (int i = 0; i < mChanges.size(); i++) {
+                        ChangeFeatureItem change = mChanges.get(i);
+                        if (change.getFeatureId() == remoteFeature.getId() && (eqData || change.getOperation() == ChangeFeatureItem.TYPE_ATTACH)) {
+                            Log.d(TAG, "The feature " + change.getFeatureId() +
+                                       " already changed on server. Remove change set #" + i);
+                            mChanges.remove(i);
+                            i--;
+                        }
+                    }
+
+                } else {
+                    boolean isChangedLocal = false;
+
+                    for (ChangeFeatureItem change : mChanges) {
+                        if (change.getFeatureId() == remoteFeature.getId() &&
+                            0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
+                            //we have local changes ready for sent to server
+                            isChangedLocal = true;
+                            break;
+                        }
+                    }
+
+                    if (!isChangedLocal) {
+                        Iterator<String> iterator =
+                                currentFeature.getAttachments().keySet().iterator();
+
+                        while (iterator.hasNext()) {
+                            String attachId = iterator.next();
+
+                            //delete attachment which not exist on server
+                            if (!remoteFeature.getAttachments().containsKey(attachId)) {
+                                iterator.remove();
+                                saveAttach("" + currentFeature.getId());
+
+                            } else { //or change attachment properties
+                                AttachItem currentItem =
+                                        currentFeature.getAttachments().get(attachId);
+                                AttachItem remoteItem =
+                                        remoteFeature.getAttachments().get(attachId);
+
+                                if (null != currentItem && !currentItem.equals(remoteItem)) {
+                                    boolean changeOnServer = true;
+
+                                    // check if we have change attach properties local
+                                    for (ChangeFeatureItem change : mChanges) {
+                                        //check if this is our record
+                                        if (change.getFeatureId() == remoteFeature.getId() &&
+                                            0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
+                                            for (ChangeFeatureItem.ChangeAttachItem attachItem : change
+                                                    .getAttachItems()) {
+
+                                                if (remoteItem.getAttachId()
+                                                              .equals("" +
+                                                                      attachItem.getAttachId())) {
+                                                    changeOnServer = false;
+                                                }
+                                            }
+                                        }
+
+                                        if (!changeOnServer) {
+                                            break;
+                                        }
+                                    }
+
+                                    if (changeOnServer) {
+                                        currentItem.setDescription(remoteItem.getDescription());
+                                        currentItem.setMimetype(remoteItem.getMimetype());
+                                        currentItem.setDisplayName(remoteItem.getDisplayName());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    saveAttach("" + currentFeature.getId());
                 }
             }
 
-            return true;
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-            syncResult.stats.numParseExceptions++;
+            if (null != cursor) {
+                cursor.close();
+            }
         }
-        return false;
+
+        // remove features not exist on server from local layer if no operation is in changes
+        // array or change operation for local feature present
+
+        for(VectorCacheItem item : mVectorCacheItems){
+            boolean bDeleteFeature = true;
+            for (Feature remoteFeature : features) {
+                if(remoteFeature.getId() == item.getId()){
+                    bDeleteFeature = false;
+                    break;
+                }
+            }
+
+            // if local item is in update list and state ADD_NEW skip delete
+            for (ChangeFeatureItem change : mChanges) {
+                if (change.getFeatureId() == item.getId() && 0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                    bDeleteFeature = false;
+                    break;
+                }
+            }
+
+            if(bDeleteFeature){
+                Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
+                delete(VectorLayer.FIELD_ID + " = " + item.getId(), null);
+            }
+        }
+
+        // remove changes already applied on server (delete already deleted id or add already added)
+        for (int i = 0; i < mChanges.size(); i++) {
+            ChangeFeatureItem change = mChanges.get(i);
+            boolean bDeleteChange = true; // if feature not exist on server
+            for (Feature remoteFeature : features) {
+                if(remoteFeature.getId() == change.getFeatureId()){
+                    if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                        // if feature already exist, just change it
+                        if(!change.getAttachItems().isEmpty())
+                            change.setOperation(ChangeFeatureItem.TYPE_CHANGED | ChangeFeatureItem.TYPE_ATTACH);
+                        else
+                            change.setOperation(ChangeFeatureItem.TYPE_CHANGED);
+                    }
+                    bDeleteChange = false; // in other cases just apply
+                    break;
+               }
+            }
+
+            if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW) && bDeleteChange)
+                bDeleteChange = false;
+
+            if (bDeleteChange) {
+                Log.d(Constants.TAG, "Delete change for feature #" + change.getFeatureId() + " operation " + change.getOperation());
+                mChanges.remove(i);
+                i--;
+            }
+        }
+
+        return true;
     }
 
 

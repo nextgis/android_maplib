@@ -338,7 +338,7 @@ public class LayerGroup
         if(layer.isValid() && layer instanceof ILayerView){
             ILayerView layerView = (ILayerView)layer;
             if(layerView.isVisible() && layer instanceof IRenderer) {
-                Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
+                // Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
 
                 IRenderer renderer = (IRenderer) layer;
                 renderer.runDraw(display);

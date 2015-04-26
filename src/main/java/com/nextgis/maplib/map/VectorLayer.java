@@ -591,7 +591,7 @@ public class VectorLayer
                             mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
                         }
                     } catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
+                        // e.printStackTrace();
                     }
                 } while (cursor.moveToNext());
             }
@@ -904,10 +904,8 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         long rowID = db.insert(mPath.getName(), null, contentValues);
         if (rowID != NOT_FOUND) {
-            notifyLayerChanged();
             try {
-                GeoGeometry geom = GeoGeometryFactory.fromBlob(
-                        contentValues.getAsByteArray(
+                GeoGeometry geom = GeoGeometryFactory.fromBlob( contentValues.getAsByteArray(
                                 FIELD_GEOM));
                 if(null != geom) {
                     mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
@@ -920,6 +918,8 @@ public class VectorLayer
                 e.printStackTrace();
                 return NOT_FOUND;
             }
+
+            notifyLayerChanged(); // TODO: notify about changes from service to applications or reload cache from disk periodically
         }
         return rowID;
     }
@@ -1036,7 +1036,7 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
         if (result > 0) {
-            notifyLayerChanged();
+            notifyLayerChanged(); // TODO: notify about changes from service to applications or reload cache from disk periodically
         }
         return result;
     }
@@ -1173,8 +1173,6 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         int result = values != null && values.size() > 0 ? db.update(mPath.getName(), values, selection, selectionArgs) : 0;
         if (result > 0) {
-            notifyLayerChanged();
-
             //update extent
             if (values.containsKey(FIELD_GEOM)) {
                 try {
@@ -1186,6 +1184,7 @@ public class VectorLayer
                     e.printStackTrace();
                 }
             }
+            notifyLayerChanged(); // TODO: notify about changes from service to applications or reload cache from disk periodically
         }
         return result;
     }
@@ -1491,7 +1490,7 @@ public class VectorLayer
             }
             mAttaches.put(featureId, attach);
         } catch (IOException | JSONException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 
     }
