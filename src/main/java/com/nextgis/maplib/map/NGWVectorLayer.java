@@ -56,6 +56,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.ConcurrentModificationException;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
@@ -969,55 +970,63 @@ public class NGWVectorLayer
         // remove features not exist on server from local layer if no operation is in changes
         // array or change operation for local feature present
 
-        for(VectorCacheItem item : mVectorCacheItems){
-            boolean bDeleteFeature = true;
-            for (Feature remoteFeature : features) {
-                if(remoteFeature.getId() == item.getId()){
-                    bDeleteFeature = false;
-                    break;
+        try {
+
+            for (VectorCacheItem item : mVectorCacheItems) {
+                boolean bDeleteFeature = true;
+                for (Feature remoteFeature : features) {
+                    if (remoteFeature.getId() == item.getId()) {
+                        bDeleteFeature = false;
+                        break;
+                    }
+                }
+
+                // if local item is in update list and state ADD_NEW skip delete
+                for (ChangeFeatureItem change : mChanges) {
+                    if (change.getFeatureId() == item.getId() &&
+                        0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                        bDeleteFeature = false;
+                        break;
+                    }
+                }
+
+                if (bDeleteFeature) {
+                    Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
+                    delete(item.getId(), VectorLayer.FIELD_ID + " = " + item.getId(), null);
                 }
             }
 
-            // if local item is in update list and state ADD_NEW skip delete
-            for (ChangeFeatureItem change : mChanges) {
-                if (change.getFeatureId() == item.getId() && 0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
-                    bDeleteFeature = false;
-                    break;
+            // remove changes already applied on server (delete already deleted id or add already added)
+            for (int i = 0; i < mChanges.size(); i++) {
+                ChangeFeatureItem change = mChanges.get(i);
+                boolean bDeleteChange = true; // if feature not exist on server
+                for (Feature remoteFeature : features) {
+                    if(remoteFeature.getId() == change.getFeatureId()){
+                        if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                            // if feature already exist, just change it
+                            if(!change.getAttachItems().isEmpty())
+                                change.setOperation(ChangeFeatureItem.TYPE_CHANGED | ChangeFeatureItem.TYPE_ATTACH);
+                            else
+                                change.setOperation(ChangeFeatureItem.TYPE_CHANGED);
+                        }
+                        bDeleteChange = false; // in other cases just apply
+                        break;
+                   }
                 }
-            }
 
-            if(bDeleteFeature){
-                Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
-                delete(item.getId(), VectorLayer.FIELD_ID + " = " + item.getId(), null);
+                if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW) && bDeleteChange)
+                    bDeleteChange = false;
+
+                if (bDeleteChange) {
+                    Log.d(Constants.TAG, "Delete change for feature #" + change.getFeatureId() + " operation " + change.getOperation());
+                    mChanges.remove(i);
+                    i--;
+                }
             }
         }
-
-        // remove changes already applied on server (delete already deleted id or add already added)
-        for (int i = 0; i < mChanges.size(); i++) {
-            ChangeFeatureItem change = mChanges.get(i);
-            boolean bDeleteChange = true; // if feature not exist on server
-            for (Feature remoteFeature : features) {
-                if(remoteFeature.getId() == change.getFeatureId()){
-                    if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
-                        // if feature already exist, just change it
-                        if(!change.getAttachItems().isEmpty())
-                            change.setOperation(ChangeFeatureItem.TYPE_CHANGED | ChangeFeatureItem.TYPE_ATTACH);
-                        else
-                            change.setOperation(ChangeFeatureItem.TYPE_CHANGED);
-                    }
-                    bDeleteChange = false; // in other cases just apply
-                    break;
-               }
-            }
-
-            if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW) && bDeleteChange)
-                bDeleteChange = false;
-
-            if (bDeleteChange) {
-                Log.d(Constants.TAG, "Delete change for feature #" + change.getFeatureId() + " operation " + change.getOperation());
-                mChanges.remove(i);
-                i--;
-            }
+        catch (ConcurrentModificationException e){
+            e.printStackTrace();
+            return false;
         }
 
         return true;
