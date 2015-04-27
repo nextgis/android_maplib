@@ -1228,8 +1228,10 @@ public class NGWVectorLayer
             return;
         }
         if (syncType == SYNC_NONE) {
+            mSyncType = syncType;
             mChanges.clear();
         } else if (mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA)) {
+            mSyncType = syncType;
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
                 addChange("" + id, ChangeFeatureItem.TYPE_NEW);
@@ -1247,7 +1249,8 @@ public class NGWVectorLayer
                 }
             }
         }
-
-        mSyncType = syncType;
+        else {
+            mSyncType = syncType;
+        }
     }
 }
