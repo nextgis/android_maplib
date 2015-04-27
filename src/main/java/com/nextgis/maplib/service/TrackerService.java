@@ -103,9 +103,9 @@ public class TrackerService
         mSharedPreferencesTemp = getSharedPreferences(TEMP_PREFERENCES, MODE_PRIVATE);
 
         String minTimeStr =
-                sharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_TIME, "0");
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_TIME, "20");
         String minDistanceStr =
-                sharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_DISTANCE, "2");
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_TRACKS_MIN_DISTANCE, "25");
         long minTime = Long.parseLong(minTimeStr) * 1000;
         float minDistance = Float.parseFloat(minDistanceStr);
 
