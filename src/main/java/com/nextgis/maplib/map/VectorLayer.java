@@ -216,7 +216,7 @@ public class VectorLayer
                 GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
                 if (geometryType == GTNone) {
                     geometryType = geometry.getType();
-                } else if (!Geo.isGeometryTypeSame(geometryType, geometry.getType())) {
+                } else if (geometryType != geometry.getType()) {
                     //skip different geometry type
                     continue;
                 }
@@ -304,7 +304,7 @@ public class VectorLayer
                 //get geometry
                 JSONObject jsonGeometry = jsonFeature.getJSONObject(GEOJSON_GEOMETRY);
                 GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
-                if (!Geo.isGeometryTypeSame(geometryType, geometry.getType())) {
+                if (geometryType != geometry.getType()) {
                     //skip different geometry type
                     continue;
                 }
