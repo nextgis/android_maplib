@@ -68,7 +68,7 @@ public class MapDrawable
     }
 
     @Override
-    public synchronized void draw(Canvas canvas,
+    public void draw(Canvas canvas,
                                     float x,
             float y,
             boolean clearBackground)
@@ -79,13 +79,21 @@ public class MapDrawable
     }
 
     @Override
-    public synchronized void draw(Canvas canvas,
+    public void draw(Canvas canvas,
             float x,
             float y,
             float scale)
     {
         if (mDisplay != null) {
             mDisplay.draw(canvas, x, y, scale);
+        }
+    }
+
+    @Override
+    public void buffer(float x, float y, float scale)
+    {
+        if (mDisplay != null) {
+            mDisplay.buffer(x, y, scale);
         }
     }
 

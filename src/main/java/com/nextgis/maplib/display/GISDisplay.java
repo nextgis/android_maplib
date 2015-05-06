@@ -46,6 +46,8 @@ public class GISDisplay
     protected final Paint       mRasterPaint;
     protected       Canvas      mMainCanvas;
     protected       Bitmap      mMainBitmap;
+    protected       Canvas      mDoubleBufferCanvas;
+    protected       Bitmap      mDoubleBufferBitmap;
     protected       GeoEnvelope mFullBounds;
     protected       GeoEnvelope mGeoLimits;
     protected       GeoEnvelope mCurrentBounds;
@@ -133,6 +135,11 @@ public class GISDisplay
         if (mZoomLevel < mMinZoomLevel) {
             mZoomLevel = mMinZoomLevel;
         }
+
+        // create double buffer
+        mDoubleBufferBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        mDoubleBufferCanvas = new Canvas(mDoubleBufferBitmap);
+
         //default zoom and center
         setZoomAndCenter(mZoomLevel, mCenter);
     }
@@ -274,11 +281,16 @@ public class GISDisplay
             clearBackground(canvas);
         }
 
-        canvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
+        if(x == 0 && y == 0){
+            canvas.drawBitmap(mDoubleBufferBitmap, 0, 0, null);
+        }
+        else {
+            canvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
+        }
     }
 
 
-    public synchronized void clearBackground(Canvas canvas)
+    public void clearBackground(Canvas canvas)
     {
         //Log.d(TAG, "clearBackground(), w: " + mBackgroundBitmap.getWidth() + " h: " + mBackgroundBitmap.getHeight());
 
@@ -307,9 +319,7 @@ public class GISDisplay
         matrix.postTranslate(-mainBitmapOffsetX, -mainBitmapOffsetY);
         //Log.d(TAG, "matix: " + matrix.toShortString());
 
-        synchronized (mMainBitmap) {
-            canvas.drawBitmap(mMainBitmap, matrix, mRasterPaint);
-        }
+        canvas.drawBitmap(mMainBitmap, matrix, mRasterPaint);
     }
 
 
@@ -424,7 +434,8 @@ public class GISDisplay
 
     public void drawLine(
             float x0, float y0,
-            float x1, float y1,
+            float x1,
+            float y1,
             Paint paint)
     {
         mMainCanvas.drawLine(x0, y0, x1, y1, paint);
@@ -609,5 +620,26 @@ public class GISDisplay
     public int getLimitType()
     {
         return mLimitType;
+    }
+
+    public void buffer( float x, float y, float scale)
+    {
+        mDoubleBufferBitmap.eraseColor(Color.TRANSPARENT);
+
+        if(scale == 1){
+            mDoubleBufferCanvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
+        }
+        else {
+            GeoPoint pt = getScaledOffset(x, y, scale);
+
+            float mainBitmapOffsetX = (float) pt.getX();
+            float mainBitmapOffsetY = (float) pt.getY();
+
+            Matrix matrix = new Matrix();
+            matrix.postScale(scale, scale);
+            matrix.postTranslate(-mainBitmapOffsetX, -mainBitmapOffsetY);
+
+            mDoubleBufferCanvas.drawBitmap(mMainBitmap, matrix, mRasterPaint);
+        }
     }
 }

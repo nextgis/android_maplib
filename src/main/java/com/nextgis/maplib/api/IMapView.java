@@ -46,6 +46,8 @@ public interface IMapView
             int w,
             int h);
 
+    void buffer(float x, float y, float scale);
+
     float getZoomLevel();
 
     /**
