@@ -626,7 +626,6 @@ public class GISDisplay
             float scale)
     {
         mDoubleBufferBitmap.eraseColor(Color.TRANSPARENT);
-        Log.d(TAG, "buffer x - " + x + " y - " + y);
 
         if(scale == 1){
             mDoubleBufferCanvas.drawBitmap(mMainBitmap, x, y, null);
