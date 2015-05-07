@@ -205,7 +205,6 @@ public class MapEventSource
         Message msg = new Message();
         msg.setData(bundle);
         mHandler.sendMessage(msg);
-
     }
 
 

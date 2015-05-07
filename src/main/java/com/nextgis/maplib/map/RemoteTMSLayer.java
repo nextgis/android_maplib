@@ -35,8 +35,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.CoreConnectionPNames;
-import org.apache.http.params.CoreProtocolPNames;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,7 +44,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -68,9 +68,12 @@ public class RemoteTMSLayer
     protected       int          mCurrentSubdomain;
     protected       String       mLogin;
     protected       String       mPassword;
-    protected Semaphore mAvailable;
+    protected       Semaphore    mAvailable;
+
+    protected final Map<String, Bitmap> mBitmapCache;
 
     public final static long DELAY = 2150;
+
 
     public RemoteTMSLayer(
             Context context,
@@ -82,20 +85,37 @@ public class RemoteTMSLayer
         mSubdomains = new ArrayList<>();
         mCurrentSubdomain = 0;
         mLayerType = LAYERTYPE_REMOTE_TMS;
+
+        mBitmapCache = lruCache(Constants.TILE_CACHE_SIZE);
     }
 
-    public synchronized void onPrepare(){
+
+    public synchronized void onPrepare()
+    {
         int diff = getMaxThreadCount() - mAvailable.availablePermits();
-        if( diff > 0 )
+        if (diff > 0)
             mAvailable.release(diff);
-        Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " + getMaxThreadCount());
+        Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
+                   getMaxThreadCount());
     }
 
+    protected synchronized void putBitmapToCache(
+            String tileHash,
+            Bitmap bitmap){
+        //if(mBitmapCache.containsKey(tile.getHash()))
+        //    return;
+        mBitmapCache.put(tileHash, bitmap);
+    }
 
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
         Bitmap ret = null;
+        ret = mBitmapCache.get(tile.getHash());
+
+        if(null != ret)
+            return ret;
+
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
@@ -104,6 +124,7 @@ public class RemoteTMSLayer
                      DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             if (ret != null) {
+                putBitmapToCache(tile.getHash(), ret);
                 return ret;
             }
         }
@@ -111,6 +132,7 @@ public class RemoteTMSLayer
         if (!mNet.isNetworkAvailable()) { //return tile from cache
             if (exist) {
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                putBitmapToCache(tile.getHash(), ret);
                 return ret;
             } else {
                 return null;
@@ -138,6 +160,8 @@ public class RemoteTMSLayer
             if(!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
                 if(exist) //if exist but not reload from internet
                     ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+
+                putBitmapToCache(tile.getHash(), ret);
                 return ret;
             }
             Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
@@ -151,6 +175,7 @@ public class RemoteTMSLayer
                       "Problem downloading MapTile: " + url + " HTTP response: " +
                       line);
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                putBitmapToCache(tile.getHash(), ret);
                 return ret;
             }
 
@@ -158,6 +183,7 @@ public class RemoteTMSLayer
             if (entity == null) {
                 Log.d(TAG, "No content downloading MapTile: " + url);
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                putBitmapToCache(tile.getHash(), ret);
                 return ret;
             }
 
@@ -172,6 +198,7 @@ public class RemoteTMSLayer
             output.close();
             input.close();
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+            putBitmapToCache(tile.getHash(), ret);
             return ret;
 
         } catch (InterruptedException | IOException | IllegalArgumentException e) {
@@ -182,6 +209,7 @@ public class RemoteTMSLayer
 
         if(exist) //if exist but not reload from internet
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+        putBitmapToCache(tile.getHash(), ret);
         return ret;
     }
 
@@ -317,5 +345,17 @@ public class RemoteTMSLayer
     public void setPassword(String password)
     {
         mPassword = password;
+    }
+
+    protected static <K,V> Map<K,V> lruCache(final int maxSize)
+    {
+        return new LinkedHashMap<K, V>(maxSize * 4 / 3, 0.75f, true)
+        {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<K, V> eldest)
+            {
+                return size() > maxSize;
+            }
+        };
     }
 }

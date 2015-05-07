@@ -216,7 +216,7 @@ public class TMSRenderer
                 @Override
                 public void run()
                 {
-                    //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    android.os.Process.setThreadPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
                     final Bitmap bmp = tmsLayer.getBitmap(tile);
                     if (bmp != null) {

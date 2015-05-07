@@ -108,7 +108,7 @@ public class SimpleFeatureRenderer extends Renderer{
                 @Override
                 public void run()
                 {
-                    //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    android.os.Process.setThreadPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
                     GeoGeometry geometry = item.getGeoGeometry();
                     if (null != geometry) {

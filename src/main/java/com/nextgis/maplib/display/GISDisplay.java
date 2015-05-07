@@ -22,6 +22,7 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -78,6 +79,7 @@ public class GISDisplay
         mLimitType = MAP_LIMITS_Y;
 
         mMainBitmap = null;
+        mDoubleBufferBitmap = null;
 
         // default extent
         // set full Mercator bounds
@@ -137,7 +139,10 @@ public class GISDisplay
         }
 
         // create double buffer
-        mDoubleBufferBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        mDoubleBufferBitmap = Bitmap.createBitmap((int) (w * OFFSCREEN_EXTRASIZE_RATIO),
+                                                  (int) (h * OFFSCREEN_EXTRASIZE_RATIO),
+                                                  Bitmap.Config.ARGB_8888);
+
         mDoubleBufferCanvas = new Canvas(mDoubleBufferBitmap);
 
         //default zoom and center
@@ -281,12 +286,7 @@ public class GISDisplay
             clearBackground(canvas);
         }
 
-        if(x == 0 && y == 0){
-            canvas.drawBitmap(mDoubleBufferBitmap, 0, 0, null);
-        }
-        else {
-            canvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
-        }
+        canvas.drawBitmap(mDoubleBufferBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
     }
 
 
@@ -319,7 +319,7 @@ public class GISDisplay
         matrix.postTranslate(-mainBitmapOffsetX, -mainBitmapOffsetY);
         //Log.d(TAG, "matix: " + matrix.toShortString());
 
-        canvas.drawBitmap(mMainBitmap, matrix, mRasterPaint);
+        canvas.drawBitmap(mDoubleBufferBitmap, matrix, mRasterPaint);
     }
 
 
@@ -360,12 +360,10 @@ public class GISDisplay
         matrix1.postScale(scale, scale);
         matrix.preConcat(matrix1);
 
-        synchronized (mMainBitmap) {
-            if (paint == null) {
-                mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
-            } else {
-                mMainCanvas.drawBitmap(bitmap, matrix, paint);
-            }
+        if (paint == null) {
+            mMainCanvas.drawBitmap(bitmap, matrix, mRasterPaint);
+        } else {
+            mMainCanvas.drawBitmap(bitmap, matrix, paint);
         }
     }
 
@@ -622,12 +620,16 @@ public class GISDisplay
         return mLimitType;
     }
 
-    public void buffer( float x, float y, float scale)
+    public void buffer(
+            float x,
+            float y,
+            float scale)
     {
         mDoubleBufferBitmap.eraseColor(Color.TRANSPARENT);
+        Log.d(TAG, "buffer x - " + x + " y - " + y);
 
         if(scale == 1){
-            mDoubleBufferCanvas.drawBitmap(mMainBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
+            mDoubleBufferCanvas.drawBitmap(mMainBitmap, x, y, null);
         }
         else {
             GeoPoint pt = getScaledOffset(x, y, scale);
