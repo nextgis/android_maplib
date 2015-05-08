@@ -442,4 +442,20 @@ public class LayerGroup
         layerDir += r.nextInt(99);
         return new File(mPath, layerDir);
     }
+
+
+    @Override
+    public void setViewSize(
+            int w,
+            int h)
+    {
+        super.setViewSize(w, h);
+
+        for(ILayer layer : mLayers) {
+            if (layer instanceof ILayerView) {
+                ILayerView lv = (ILayerView)layer;
+                lv.setViewSize(w, h);
+            }
+        }
+    }
 }

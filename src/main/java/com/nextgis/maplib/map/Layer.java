@@ -263,6 +263,15 @@ public class Layer
 
 
     @Override
+    public void setViewSize(
+            int w,
+            int h)
+    {
+
+    }
+
+
+    @Override
     public GeoEnvelope getExtents()
     {
         return mExtents;

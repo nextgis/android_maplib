@@ -56,7 +56,8 @@ public interface Constants
     //As more than more memory needed
     float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
     int DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
-    int TILE_CACHE_SIZE = 56;
+
+    int DEFAULT_TILE_SIZE = 256;
 
     String CONFIG       = "config.json";
     String LAYER_PREFIX = "layer_";

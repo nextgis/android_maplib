@@ -102,6 +102,8 @@ public class MapDrawable
             int w,
             int h)
     {
+        super.setViewSize(w, h);
+
         if (mDisplay != null) {
             mDisplay.setSize(w, h);
             onExtentChanged((int) mDisplay.getZoomLevel(), mDisplay.getCenter());

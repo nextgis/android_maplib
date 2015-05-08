@@ -23,19 +23,23 @@ package com.nextgis.maplib.api;
 
 public interface ILayerView
 {
-    public boolean isVisible();
+    boolean isVisible();
 
-    public void setVisible(boolean visible);
+    void setVisible(boolean visible);
 
-    public float getMaxZoom();
+    float getMaxZoom();
 
-    public void setMaxZoom(float maxZoom);
+    void setMaxZoom(float maxZoom);
 
-    public float getMinZoom();
+    float getMinZoom();
 
-    public void setMinZoom(float minZoom);
+    void setMinZoom(float minZoom);
 
-    public void onDrawFinished(
+    void onDrawFinished(
             int id,
             float percent);
+
+    void setViewSize(
+            int w,
+            int h);
 }

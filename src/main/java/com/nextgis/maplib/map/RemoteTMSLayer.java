@@ -70,7 +70,8 @@ public class RemoteTMSLayer
     protected       String       mPassword;
     protected       Semaphore    mAvailable;
 
-    protected final Map<String, Bitmap> mBitmapCache;
+    protected       Map<String, Bitmap> mBitmapCache;
+    protected       int          mCacheSize;
 
     public final static long DELAY = 2150;
 
@@ -86,7 +87,7 @@ public class RemoteTMSLayer
         mCurrentSubdomain = 0;
         mLayerType = LAYERTYPE_REMOTE_TMS;
 
-        mBitmapCache = lruCache(Constants.TILE_CACHE_SIZE);
+        setViewSize(100, 100);
     }
 
 
@@ -357,5 +358,25 @@ public class RemoteTMSLayer
                 return size() > maxSize;
             }
         };
+    }
+
+
+    @Override
+    public void setViewSize(
+            int w,
+            int h)
+    {
+        super.setViewSize(w, h);
+
+        // calc new hash size
+        int nTileCount = (int) (w * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) *
+                         (int) (h * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) * 3;
+
+        if(null != mBitmapCache && mCacheSize >= nTileCount)
+            return;
+        if(nTileCount < 30)
+            nTileCount = 30;
+        mBitmapCache = lruCache(nTileCount);
+        mCacheSize = nTileCount;
     }
 }

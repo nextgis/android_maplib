@@ -43,7 +43,7 @@ import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 public class GISDisplay
 {
     protected final Bitmap mBkBitmap;
-    protected final int mTileSize = 256;
+    protected final int mTileSize = DEFAULT_TILE_SIZE;
     protected final Paint       mRasterPaint;
     protected       Canvas      mMainCanvas;
     protected       Bitmap      mMainBitmap;
