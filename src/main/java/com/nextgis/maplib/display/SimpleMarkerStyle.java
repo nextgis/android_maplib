@@ -123,9 +123,9 @@ public class SimpleMarkerStyle
                     onDraw(multiPoint.get(i), display);
                 }
                 break;
-            default:
-                throw new IllegalArgumentException(
-                        "The input geometry type is not support by this style");
+
+                //throw new IllegalArgumentException(
+                //        "The input geometry type is not support by this style");
         }
     }
 
