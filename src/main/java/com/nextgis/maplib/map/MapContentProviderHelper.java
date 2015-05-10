@@ -26,12 +26,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
-import com.nextgis.maplib.datasource.DatabaseManager;
+import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
@@ -43,6 +44,8 @@ import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 
 public class MapContentProviderHelper extends MapBase
 {
+    protected DatabaseHelper mDatabaseHelper;
+
     protected static final String DBNAME           = "layers";
     protected static final int    DATABASE_VERSION = 1;
 
@@ -64,13 +67,11 @@ public class MapContentProviderHelper extends MapBase
             dbFullName = context.getDatabasePath(DBNAME);
         }
 
-        DatabaseManager.initializeInstance(
-                new DatabaseHelper(
-                        context,          // the application context
-                        dbFullName,       // the name of the database
-                        null,             // uses the default SQLite cursor
-                        DATABASE_VERSION  // the version number
-                ));
+        mDatabaseHelper = new DatabaseHelper(context,          // the application context
+                                             dbFullName,       // the name of the database
+                                             null,             // uses the default SQLite cursor
+                                             DATABASE_VERSION  // the version number
+        );
 
         // register events from layers modify in services or other applications
         IntentFilter intentFilter = new IntentFilter();
@@ -79,6 +80,14 @@ public class MapContentProviderHelper extends MapBase
         intentFilter.addAction(VectorLayer.NOTIFY_INSERT);
         intentFilter.addAction(VectorLayer.NOTIFY_UPDATE);
         context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
+    }
+
+    public SQLiteDatabase getDatabase(boolean readOnly)
+    {
+        if(readOnly)
+            return mDatabaseHelper.getReadableDatabase();
+        else
+            return mDatabaseHelper.getWritableDatabase();
     }
 
     public static Layer getVectorLayerByPath(LayerGroup layerGroup, String path)

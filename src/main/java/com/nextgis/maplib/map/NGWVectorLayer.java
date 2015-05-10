@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SyncResult;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -739,13 +740,10 @@ public class NGWVectorLayer
         }
         //update id in DB
         Log.d(TAG, "old id: " + oldFeatureId + " new id: " + newFeatureId);
+        SQLiteDatabase db = map.getDatabase(false);
         ContentValues values = new ContentValues();
         values.put(FIELD_ID, newFeatureId);
-
-        Uri updateUri = ContentUris.withAppendedId(mContentUri, oldFeatureId);
-        updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
-
-        if (mContext.getContentResolver().update(updateUri, values, null, null) != 1) {
+        if (db.update(mPath.getName(), values, FIELD_ID + " = " + oldFeatureId, null) != 1) {
             Log.d(TAG, "failed to set new id");
         }
 
@@ -809,8 +807,7 @@ public class NGWVectorLayer
         // analyse feature
         for (Feature remoteFeature : features) {
 
-            Uri uri = ContentUris.withAppendedId(mContentUri, remoteFeature.getId());
-            Cursor cursor = mContext.getContentResolver().query(uri, null, null, null, null);
+            Cursor cursor = query( null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
             //no local feature
             if (null == cursor || cursor.getCount() == 0) {
 
@@ -825,10 +822,10 @@ public class NGWVectorLayer
                 //create new feature with remoteId
                 if (createNewFeature) {
                     ContentValues values = remoteFeature.getContentValues(true);
-                    Uri insertUri = Uri.parse("content://" + authority + "/" + getPath().getName());
+                    Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
                     //prevent add changes and events
-                    insertUri = insertUri.buildUpon().fragment(NO_SYNC).build();
-                    Uri newFeatureUri = mContext.getContentResolver().insert(insertUri, values);
+                    uri = uri.buildUpon().fragment(NO_SYNC).build();
+                    Uri newFeatureUri = insert(uri, values);
                     Log.d(TAG, "Add new feature from server - " + newFeatureUri.toString());
                 }
             } else {
@@ -874,13 +871,12 @@ public class NGWVectorLayer
                     if (!isChangedLocal) {
                         ContentValues values = remoteFeature.getContentValues(false);
 
-                        Uri updateUri =
+                        Uri uri =
                                 Uri.parse("content://" + authority + "/" + getPath().getName());
-                        updateUri = ContentUris.withAppendedId(updateUri, remoteFeature.getId());
+                        Uri updateUri = ContentUris.withAppendedId(uri, remoteFeature.getId());
                         updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
                         //prevent add changes
-                        int count = mContext.getContentResolver().update(
-                                updateUri, values, null, null);
+                        int count = update(updateUri, values, null, null);
                         Log.d(TAG, "Update feature (" + count + ") from server - " +
                                      remoteFeature.getId());
                     }
@@ -1058,7 +1054,7 @@ public class NGWVectorLayer
         Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
-        Cursor cursor = mContext.getContentResolver().query(uri, null, null, null, null);
+        Cursor cursor = query(uri, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "addFeatureOnServer: Get cursor failed");
             if (null != cursor) {
@@ -1124,7 +1120,7 @@ public class NGWVectorLayer
         Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
-        Cursor cursor = mContext.getContentResolver().query(uri, null, null, null, null);
+        Cursor cursor = query(uri, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "empty cursor for uri: " + uri);
             if (null != cursor) {

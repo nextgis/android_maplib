@@ -39,9 +39,9 @@ import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.datasource.DatabaseManager;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
+import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
@@ -403,8 +403,8 @@ public class VectorLayer
         Log.d(TAG, "create layer table: " + tableCreate);
 
         //1. create table and populate with values
-        // TODO: to ContentResolver
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
         db.execSQL(tableCreate);
 
         for (Feature feature : features) {
@@ -449,7 +449,6 @@ public class VectorLayer
                 }
             }
 
-            // TODO: to ContentResolver
             db.insert(mPath.getName(), "", values);
         }
 
@@ -589,9 +588,10 @@ public class VectorLayer
             throws SQLiteException
     {
         //load vector cache
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
-        Cursor cursor = mContext.getContentResolver().query(mContentUri, columns, null, null, null);
-
+        Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
         if (null != cursor) {
             if (cursor.moveToFirst()) {
                 do {
@@ -617,8 +617,8 @@ public class VectorLayer
             throws SQLiteException
     {
         //drop table
-        // TODO: to ContentResolver
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
         String tableDrop = "DROP TABLE IF EXISTS " + mPath.getName();
         db.execSQL(tableDrop);
 
@@ -645,7 +645,14 @@ public class VectorLayer
             String[] selectionArgs,
             String sortOrder)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            Log.d(TAG, "The map should extends MapContentProviderHelper or inherited");
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+
+        SQLiteDatabase db = map.getDatabase(true);
 
         try {
             return db.query(
@@ -889,7 +896,6 @@ public class VectorLayer
     }
 
     public long insertAddChanges(ContentValues contentValues){
-        // TODO: to ContentResolver
         long rowID = insert(contentValues);
         if (rowID != NOT_FOUND) {
             addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
@@ -902,7 +908,12 @@ public class VectorLayer
         if (!contentValues.containsKey(FIELD_GEOM)) {
             return NOT_FOUND;
         }
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+        SQLiteDatabase db = map.getDatabase(false);
         long rowID = db.insert(mPath.getName(), null, contentValues);
         if (rowID != NOT_FOUND) {
             Intent notify = new Intent(NOTIFY_INSERT);
@@ -1006,8 +1017,7 @@ public class VectorLayer
 
     public int deleteAddChanges(String id){
 
-        int result = mContext.getContentResolver()
-                .delete(mContentUri, VectorLayer.FIELD_ID + " = " + id, null);
+        int result = delete(Long.parseLong(id), VectorLayer.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, ChangeFeatureItem.TYPE_DELETE);
         }
@@ -1019,7 +1029,12 @@ public class VectorLayer
             String selection,
             String[] selectionArgs)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+        SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
         if (result > 0) {
             Intent notify;
@@ -1136,7 +1151,6 @@ public class VectorLayer
 
     public int updateAddChanges(ContentValues values, String id){
 
-        // TODO: to ContentResolver
         int result = update(Long.parseLong(id), values, VectorLayer.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, ChangeFeatureItem.TYPE_CHANGED);
@@ -1150,9 +1164,13 @@ public class VectorLayer
             String selection,
             String[] selectionArgs)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
-        int result = values != null && values.size() > 0 ? db.update(
-                mPath.getName(), values, selection, selectionArgs) : 0;
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+        SQLiteDatabase db = map.getDatabase(false);
+        int result = values != null && values.size() > 0 ? db.update(mPath.getName(), values, selection, selectionArgs) : 0;
         if (result > 0) {
             Intent notify;
             if (rowID == Constants.NOT_FOUND) {
@@ -1627,11 +1645,11 @@ public class VectorLayer
     }
 
     protected GeoGeometry getGeometryForID(long rowID){
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_GEOM};
         String selection = FIELD_ID + " = " + rowID;
-        Cursor cursor =
-                mContext.getContentResolver().query(mContentUri, columns, selection, null, null);
-
+        Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
         if (null != cursor) {
             if (cursor.moveToFirst()) {
                 try {

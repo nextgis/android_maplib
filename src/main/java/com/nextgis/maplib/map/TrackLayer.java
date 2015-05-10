@@ -30,7 +30,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.text.TextUtils;
 import com.nextgis.maplib.api.IGISApplication;
-import com.nextgis.maplib.datasource.DatabaseManager;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.TrackRenderer;
@@ -99,6 +98,7 @@ public class TrackLayer
     protected int    mColor;
     protected Cursor mCursor;
     String         mAuthority;
+    SQLiteDatabase mSQLiteDatabase;
     private UriMatcher mUriMatcher;
     private Uri        mContentUriTracks, mContentUriTrackpoints;
     private MapContentProviderHelper    mMap;
@@ -276,14 +276,13 @@ public class TrackLayer
 
     private void initDB()
     {
-        // TODO: to ContentResolver
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        mSQLiteDatabase = mMap.getDatabase(false);
 
 //        mSQLiteDatabase.execSQL("DROP TABLE IF EXISTS TRACKPOINTS;");
 //        mSQLiteDatabase.execSQL("DROP TABLE IF EXISTS TRACKS;");
 
-        db.execSQL(DB_CREATE_TRACKS);
-        db.execSQL(DB_CREATE_TRACKPOINTS);
+        mSQLiteDatabase.execSQL(DB_CREATE_TRACKS);
+        mSQLiteDatabase.execSQL(DB_CREATE_TRACKPOINTS);
     }
 
 
@@ -294,23 +293,21 @@ public class TrackLayer
             String[] selectionArgs,
             String sortOrder)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        mSQLiteDatabase = mMap.getDatabase(true);
         Cursor cursor;
 
         switch (mUriMatcher.match(uri)) {
             case TYPE_TRACKS:
-                cursor = db.query(
-                        TABLE_TRACKS, projection, selection, selectionArgs,
+                cursor = mSQLiteDatabase.query(TABLE_TRACKS, projection, selection, selectionArgs,
                                                null, null, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), mContentUriTracks);
                 return cursor;
             case TYPE_TRACKPOINTS:
-                cursor = db.query(
-                        TABLE_TRACKPOINTS, projection, selection,
+                cursor = mSQLiteDatabase.query(TABLE_TRACKPOINTS, projection, selection,
                                                selectionArgs, null, null, sortOrder);
 
-                cursor.setNotificationUri(
-                        getContext().getContentResolver(), mContentUriTrackpoints);
+                cursor.setNotificationUri(getContext().getContentResolver(),
+                                          mContentUriTrackpoints);
                 return cursor;
             case TYPE_SINGLE_TRACK:
                 String id = uri.getLastPathSegment();
@@ -321,8 +318,7 @@ public class TrackLayer
                     selection = selection + " AND " + FIELD_SESSION + " = " + id;
                 }
 
-                cursor = db.query(
-                        TABLE_TRACKPOINTS, projection, selection,
+                cursor = mSQLiteDatabase.query(TABLE_TRACKPOINTS, projection, selection,
                                                selectionArgs, null, null, sortOrder);
                 return cursor;
             default:
@@ -335,7 +331,7 @@ public class TrackLayer
             Uri uri,
             ContentValues values)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        mSQLiteDatabase = mMap.getDatabase(false);
         long id;
         Uri inserted;
 
@@ -343,11 +339,11 @@ public class TrackLayer
             case TYPE_SINGLE_TRACK:
                 values.remove(FIELD_ID);
             case TYPE_TRACKS:
-                id = db.insert(TABLE_TRACKS, null, values);
+                id = mSQLiteDatabase.insert(TABLE_TRACKS, null, values);
                 inserted = ContentUris.withAppendedId(mContentUriTracks, id);
                 break;
             case TYPE_TRACKPOINTS:
-                id = db.insert(TABLE_TRACKPOINTS, null, values);
+                id = mSQLiteDatabase.insert(TABLE_TRACKPOINTS, null, values);
                 inserted = ContentUris.withAppendedId(mContentUriTrackpoints, id);
                 break;
             default:
@@ -369,12 +365,12 @@ public class TrackLayer
             String selection,
             String[] selectionArgs)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        mSQLiteDatabase = mMap.getDatabase(false);
 
         switch (mUriMatcher.match(uri)) {
             case TYPE_TRACKS:
                 String trackpointsSel = selection.replace(FIELD_ID, FIELD_SESSION);
-                db.delete(TABLE_TRACKPOINTS, trackpointsSel, selectionArgs);
+                mSQLiteDatabase.delete(TABLE_TRACKPOINTS, trackpointsSel, selectionArgs);
                 break;
             case TYPE_SINGLE_TRACK:
             case TYPE_TRACKPOINTS:
@@ -384,7 +380,7 @@ public class TrackLayer
                 throw new IllegalArgumentException("Wrong tracks URI: " + uri);
         }
 
-        int deleted = db.delete(TABLE_TRACKS, selection, selectionArgs);
+        int deleted = mSQLiteDatabase.delete(TABLE_TRACKS, selection, selectionArgs);
 
         if (deleted > 0) {
 //            notifyLayerChanged();
@@ -402,7 +398,7 @@ public class TrackLayer
             String selection,
             String[] selectionArgs)
     {
-        SQLiteDatabase db = DatabaseManager.getInstance().openDatabase();
+        mSQLiteDatabase = mMap.getDatabase(false);
         int updated;
 
         switch (mUriMatcher.match(uri)) {
@@ -424,7 +420,7 @@ public class TrackLayer
                 throw new IllegalArgumentException("Wrong tracks URI: " + uri);
         }
 
-        updated = db.update(TABLE_TRACKS, values, selection, selectionArgs);
+        updated = mSQLiteDatabase.update(TABLE_TRACKS, values, selection, selectionArgs);
 
         if (updated > 0) {
             reloadTracks(UPDATE);
