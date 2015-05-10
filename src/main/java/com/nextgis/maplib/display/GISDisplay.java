@@ -107,6 +107,11 @@ public class GISDisplay
     {
         if((mWidth == w && mHeight == h) || w == 0 || h == 0)
             return;
+        mMainBitmap = null;
+        mMainCanvas = null;
+        mDoubleBufferBitmap = null;
+        mDoubleBufferCanvas = null;
+
         mWidth = w;
         mHeight = h;
 

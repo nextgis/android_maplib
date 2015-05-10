@@ -370,7 +370,7 @@ public class RemoteTMSLayer
 
         // calc new hash size
         int nTileCount = (int) (w * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) *
-                         (int) (h * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) * 3;
+                         (int) (h * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) * 2;
 
         if(null != mBitmapCache && mCacheSize >= nTileCount)
             return;
