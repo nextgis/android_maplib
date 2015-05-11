@@ -149,11 +149,15 @@ public class NGWVectorLayer
         rootConfig.put(JSON_LOGIN_KEY, mLogin);
         rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
-        JSONArray changes = new JSONArray();
-        for (ChangeFeatureItem change : mChanges) {
-            changes.put(change.toJSON());
+
+        if (mChanges.size() > 0) {
+            JSONArray changes = new JSONArray();
+            for (ChangeFeatureItem change : mChanges) {
+                changes.put(change.toJSON());
+            }
+            rootConfig.put(JSON_CHANGES_KEY, changes);
         }
-        rootConfig.put(JSON_CHANGES_KEY, changes);
+
         return rootConfig;
     }
 
@@ -193,7 +197,7 @@ public class NGWVectorLayer
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
                 JSONObject change = array.getJSONObject(i);
-                ChangeFeatureItem item = new ChangeFeatureItem(0, 0);
+                ChangeFeatureItem item = new ChangeFeatureItem();
                 item.fromJSON(change);
                 mChanges.add(item);
             }
@@ -398,7 +402,7 @@ public class NGWVectorLayer
 
     @Override
     protected void addChange(
-            String featureId,
+            long featureId,
             int operation)
     {
         if (0 == (mSyncType & SYNC_DATA)) {
@@ -406,14 +410,13 @@ public class NGWVectorLayer
         }
 
         //1. if featureId == NOT_FOUND remove all changes and add this one
-        if (featureId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
+        if (featureId == NOT_FOUND && operation == ChangeFeatureItem.TYPE_DELETE) {
             mChanges.clear();
             mChanges.add(new ChangeFeatureItem(NOT_FOUND, operation));
         } else {
-            int id = Integer.parseInt(featureId);
             for (int i = 0; i < mChanges.size(); i++) {
                 ChangeFeatureItem item = mChanges.get(i);
-                if (item.getFeatureId() == id) {
+                if (item.getFeatureId() == featureId) {
                     //2. if featureId == some id and op is delete - remove and other operations
                     if (operation == ChangeFeatureItem.TYPE_DELETE) {
                         if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_DELETE)) {
@@ -444,7 +447,7 @@ public class NGWVectorLayer
                     }
                 }
             }
-            mChanges.add(new ChangeFeatureItem(id, operation));
+            mChanges.add(new ChangeFeatureItem(featureId, operation));
         }
         save();
     }
@@ -452,18 +455,17 @@ public class NGWVectorLayer
 
     @Override
     protected void addChange(
-            String featureId,
-            String attachId,
+            long featureId,
+            long attachId,
             int operation)
     {
         if (0 == (mSyncType & SYNC_ATTACH)) {
             return;
         }
 
-        int id = Integer.parseInt(featureId);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem item = mChanges.get(i);
-            if (item.getFeatureId() == id) {
+            if (item.getFeatureId() == featureId) {
                 if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
                     return;
                 } else {
@@ -473,7 +475,7 @@ public class NGWVectorLayer
                 }
             }
         }
-        ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_ATTACH);
+        ChangeFeatureItem item = new ChangeFeatureItem(featureId, ChangeFeatureItem.TYPE_ATTACH);
         item.addAttachChange(attachId, operation);
         mChanges.add(item);
         save();
@@ -597,7 +599,7 @@ public class NGWVectorLayer
 
 
     private boolean changeAttachOnServer(
-            int featureId,
+            long featureId,
             ChangeFeatureItem.ChangeAttachItem attachItem,
             SyncResult syncResult)
     {
@@ -635,7 +637,7 @@ public class NGWVectorLayer
 
 
     private boolean deleteAttachOnServer(
-            int featureId,
+            long featureId,
             ChangeFeatureItem.ChangeAttachItem attachItem,
             SyncResult syncResult)
     {
@@ -660,7 +662,7 @@ public class NGWVectorLayer
     }
 
 
-    protected boolean sendAttachOnServer(int featureId,
+    protected boolean sendAttachOnServer(long featureId,
             ChangeFeatureItem.ChangeAttachItem attachItem,
             SyncResult syncResult)
     {
@@ -1234,7 +1236,7 @@ public class NGWVectorLayer
             mSyncType = syncType;
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
-                addChange("" + id, ChangeFeatureItem.TYPE_NEW);
+                addChange(id, ChangeFeatureItem.TYPE_NEW);
                 //add attach
                 File attacheFolder = new File(mPath, "" + id);
                 if(attacheFolder.isDirectory()){
@@ -1244,7 +1246,7 @@ public class NGWVectorLayer
                             continue;
                         Long attachIdL = Long.parseLong(attachId);
                         if(attachIdL >= 1000)
-                            addChange("" + id, attachId, ChangeFeatureItem.TYPE_NEW);
+                            addChange(id, attachIdL, ChangeFeatureItem.TYPE_NEW);
                     }
                 }
             }
