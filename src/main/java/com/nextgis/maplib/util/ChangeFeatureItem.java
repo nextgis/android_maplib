@@ -39,10 +39,6 @@ import static com.nextgis.maplib.util.Constants.*;
 public class ChangeFeatureItem
         implements IJSONStore
 {
-    public static final int TYPE_NEW     = 1 << 1; // 2
-    public static final int TYPE_CHANGED = 1 << 2; // 4
-    public static final int TYPE_DELETE  = 1 << 3; // 8
-    public static final int TYPE_ATTACH  = 1 << 4; // 16
 
     protected static final String JSON_OPERATION_KEY = "operation";
 
@@ -155,7 +151,7 @@ public class ChangeFeatureItem
     {
         mOperation = operation;
         if (!mAttachItems.isEmpty()) {
-            mOperation |= TYPE_ATTACH;
+            mOperation |= CHANGE_OPERATION_ATTACH;
         }
     }
 
@@ -203,11 +199,11 @@ public class ChangeFeatureItem
             long attachId,
             int operation)
     {
-        if(0 == (mOperation & ChangeFeatureItem.TYPE_ATTACH))
-            mOperation |= ChangeFeatureItem.TYPE_ATTACH;
+        if(0 == (mOperation & CHANGE_OPERATION_ATTACH))
+            mOperation |= CHANGE_OPERATION_ATTACH;
 
         //1. if featureId == NOT_FOUND remove all changes and add this one
-        if (attachId == NOT_FOUND && operation == ChangeFeatureItem.TYPE_DELETE) {
+        if (attachId == NOT_FOUND && operation == CHANGE_OPERATION_DELETE) {
             mAttachItems.clear();
             mAttachItems.add(new ChangeAttachItem(NOT_FOUND, operation));
         } else {
@@ -215,17 +211,17 @@ public class ChangeFeatureItem
                 ChangeAttachItem item = mAttachItems.get(i);
                 if (item.getAttachId() == attachId) {
                     //2. if featureId == some id and op is delete - remove and other operations
-                    if (operation == ChangeFeatureItem.TYPE_DELETE) {
-                        if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
+                    if (operation == CHANGE_OPERATION_DELETE) {
+                        if (item.getOperation() == CHANGE_OPERATION_DELETE) {
                             return;
                         }
                         mAttachItems.remove(i);
                         i--;
                     }
                     //3. if featureId == some id and op is update and previous op was add or update - skip
-                    else if (operation == ChangeFeatureItem.TYPE_CHANGED) {
-                        if (item.getOperation() == ChangeFeatureItem.TYPE_CHANGED ||
-                            item.getOperation() == ChangeFeatureItem.TYPE_NEW) {
+                    else if (operation == CHANGE_OPERATION_CHANGED) {
+                        if (item.getOperation() == CHANGE_OPERATION_CHANGED ||
+                            item.getOperation() == CHANGE_OPERATION_NEW) {
                             return;
                         } else {
                             item.setOperation(operation);
@@ -233,7 +229,7 @@ public class ChangeFeatureItem
                         }
                     }
                     //4. if featureId == some id and op is add and value present - warning
-                    else if (0 != (operation & ChangeFeatureItem.TYPE_NEW)) {
+                    else if (0 != (operation & CHANGE_OPERATION_NEW)) {
                         Log.w(TAG, "Something wrong. Should nether get here");
                         return;
                     }

@@ -92,6 +92,13 @@ public interface Constants
     String JSON_SIZE_KEY          = "size";
 
     /**
+     * database fields
+     */
+    String FIELD_ID     = "_id";
+    String FIELD_OLD_ID = "old_id";
+    String FIELD_GEOM   = "_geom";
+
+    /**
      * Layer type
      */
     int LAYERTYPE_REMOTE_TMS   = 1 << 0;
@@ -130,6 +137,11 @@ public interface Constants
     int SYNC_DATA       = SYNC_GEOMETRY | SYNC_ATTRIBUTES;
     int SYNC_ATTACH     = 1 << 3;
     int SYNC_ALL        = SYNC_DATA | SYNC_ATTACH;
+
+    int CHANGE_OPERATION_NEW     = 1 << 1; // 2
+    int CHANGE_OPERATION_CHANGED = 1 << 2; // 4
+    int CHANGE_OPERATION_DELETE  = 1 << 3; // 8
+    int CHANGE_OPERATION_ATTACH  = 1 << 4; // 16
 
     int DRAWING_SEPARATE_THREADS = 6;
 

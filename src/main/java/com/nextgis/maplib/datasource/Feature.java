@@ -25,7 +25,6 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.util.Log;
 import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.AttachItem;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -211,12 +210,12 @@ public class Feature implements IJSONStore
     {
         ContentValues returnValues = new ContentValues();
         if(withId) {
-            returnValues.put(VectorLayer.FIELD_ID, mId);
+            returnValues.put(FIELD_ID, mId);
         }
 
         try {
             if(null != mGeometry)
-                returnValues.put(VectorLayer.FIELD_GEOM, mGeometry.toBlob());
+                returnValues.put(FIELD_GEOM, mGeometry.toBlob());
         }
         catch (IOException e){ //if exception - not create geom
             e.printStackTrace();
@@ -264,10 +263,10 @@ public class Feature implements IJSONStore
     {
         if(null == cursor)
             return;
-        mId = cursor.getLong(cursor.getColumnIndex(VectorLayer.FIELD_ID));
+        mId = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
 
         try {
-            mGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(VectorLayer.FIELD_GEOM)));
+            mGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
         }
         catch (ClassNotFoundException | IOException e){ //let it be empty geometry
             e.printStackTrace();
