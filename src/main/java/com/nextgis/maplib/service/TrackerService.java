@@ -53,6 +53,7 @@ import com.nextgis.maplib.util.SettingsConstants;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 
 public class TrackerService
@@ -119,7 +120,7 @@ public class TrackerService
         }
 
         provider = LocationManager.NETWORK_PROVIDER;
-        if (LocationUtil.isProviderEnabled(this, provider, false) &&
+        if (LocationUtil.isProviderEnabled(this, provider, true) &&
             mLocationManager.getAllProviders().contains(provider)) {
             mLocationManager.requestLocationUpdates(provider, minTime, minDistance, this);
         }
@@ -223,7 +224,7 @@ public class TrackerService
         today.set(Calendar.MILLISECOND, 0);
 
         // get track name date unique appendix
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-");
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-", Locale.getDefault());
         String append = "1";
 
         // there is at least one track

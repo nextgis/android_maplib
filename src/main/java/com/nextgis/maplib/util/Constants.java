@@ -25,9 +25,10 @@ import java.util.concurrent.TimeUnit;
 
 public interface Constants
 {
-    String TAG         = "nextgismobile";
-    String PREFERENCES = "nextgismobile";
-    int    NOT_FOUND   = -1;
+    String TAG                = "nextgismobile";
+    String PREFERENCES        = "nextgismobile";
+    int    MODE_MULTI_PROCESS = 0x4;
+    int    NOT_FOUND          = -1;
 
     /**
      * HTTP parameters
@@ -54,8 +55,8 @@ public interface Constants
     //the additional size to off screen drawing
     //from 1 and higher
     //As more than more memory needed
-    float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
-    int DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
+    float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
+    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
 
     int DEFAULT_TILE_SIZE = 256;
 
