@@ -30,15 +30,14 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_CHANGES_KEY;
+import static com.nextgis.maplib.util.Constants.*;
+
 
 /**
  * A class to store changes in feature of vector layer
  */
-public class ChangeFeatureItem implements IJSONStore
+public class ChangeFeatureItem
+        implements IJSONStore
 {
     public static final int TYPE_NEW     = 1 << 1; // 2
     public static final int TYPE_CHANGED = 1 << 2; // 4
@@ -47,19 +46,28 @@ public class ChangeFeatureItem implements IJSONStore
 
     protected static final String JSON_OPERATION_KEY = "operation";
 
-    protected int mFeatureId;
-    protected int mOperation;
+    protected long mFeatureId;
+    protected int  mOperation;
+
+    protected List<ChangeAttachItem> mAttachItems;
 
 
     public class ChangeAttachItem
             implements IJSONStore
     {
-        protected int mAttachId;
-        protected int mOperation;
+        protected long mAttachId;
+        protected int  mOperation;
+
+
+        public ChangeAttachItem()
+        {
+            mAttachId = 0;
+            mOperation = 0;
+        }
 
 
         public ChangeAttachItem(
-                int attachId,
+                long attachId,
                 int operation)
         {
             mAttachId = attachId;
@@ -67,7 +75,7 @@ public class ChangeFeatureItem implements IJSONStore
         }
 
 
-        public int getAttachId()
+        public long getAttachId()
         {
             return mAttachId;
         }
@@ -100,17 +108,22 @@ public class ChangeFeatureItem implements IJSONStore
         public void fromJSON(JSONObject jsonObject)
                 throws JSONException
         {
-            mAttachId = jsonObject.getInt(JSON_ID_KEY);
+            mAttachId = jsonObject.getLong(JSON_ID_KEY);
             mOperation = jsonObject.getInt(JSON_OPERATION_KEY);
         }
     }
 
 
-    protected List<ChangeAttachItem> mAttachItems;
+    public ChangeFeatureItem()
+    {
+        mFeatureId = 0;
+        mOperation = 0;
+        mAttachItems = new ArrayList<>();
+    }
 
 
     public ChangeFeatureItem(
-            int featureId,
+            long featureId,
             int operation)
     {
         mFeatureId = featureId;
@@ -120,7 +133,7 @@ public class ChangeFeatureItem implements IJSONStore
     }
 
 
-    public int getFeatureId()
+    public long getFeatureId()
     {
         return mFeatureId;
     }
@@ -141,8 +154,9 @@ public class ChangeFeatureItem implements IJSONStore
     public void setOperation(int operation)
     {
         mOperation = operation;
-        if(!mAttachItems.isEmpty())
+        if (!mAttachItems.isEmpty()) {
             mOperation |= TYPE_ATTACH;
+        }
     }
 
 
@@ -153,11 +167,15 @@ public class ChangeFeatureItem implements IJSONStore
         JSONObject rootObject = new JSONObject();
         rootObject.put(JSON_ID_KEY, mFeatureId);
         rootObject.put(JSON_OPERATION_KEY, mOperation);
-        JSONArray changes = new JSONArray();
-        for (ChangeAttachItem attachItem : mAttachItems) {
-            changes.put(attachItem.toJSON());
+
+        if (mAttachItems.size() > 0) {
+            JSONArray changes = new JSONArray();
+            for (ChangeAttachItem attachItem : mAttachItems) {
+                changes.put(attachItem.toJSON());
+            }
+            rootObject.put(JSON_CHANGES_KEY, changes);
         }
-        rootObject.put(JSON_CHANGES_KEY, changes);
+
         return rootObject;
     }
 
@@ -166,14 +184,14 @@ public class ChangeFeatureItem implements IJSONStore
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        mFeatureId = jsonObject.getInt(JSON_ID_KEY);
+        mFeatureId = jsonObject.getLong(JSON_ID_KEY);
         mOperation = jsonObject.getInt(JSON_OPERATION_KEY);
 
         if (jsonObject.has(JSON_CHANGES_KEY)) {
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
                 JSONObject change = array.getJSONObject(i);
-                ChangeAttachItem item = new ChangeAttachItem(0, 0);
+                ChangeAttachItem item = new ChangeAttachItem();
                 item.fromJSON(change);
                 mAttachItems.add(item);
             }
@@ -182,21 +200,20 @@ public class ChangeFeatureItem implements IJSONStore
 
 
     public void addAttachChange(
-            String attachId,
+            long attachId,
             int operation)
     {
         if(0 == (mOperation & ChangeFeatureItem.TYPE_ATTACH))
             mOperation |= ChangeFeatureItem.TYPE_ATTACH;
 
         //1. if featureId == NOT_FOUND remove all changes and add this one
-        if (attachId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
+        if (attachId == NOT_FOUND && operation == ChangeFeatureItem.TYPE_DELETE) {
             mAttachItems.clear();
             mAttachItems.add(new ChangeAttachItem(NOT_FOUND, operation));
         } else {
-            int id = Integer.parseInt(attachId);
             for (int i = 0; i < mAttachItems.size(); i++) {
                 ChangeAttachItem item = mAttachItems.get(i);
-                if (item.getAttachId() == id) {
+                if (item.getAttachId() == attachId) {
                     //2. if featureId == some id and op is delete - remove and other operations
                     if (operation == ChangeFeatureItem.TYPE_DELETE) {
                         if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
@@ -222,7 +239,7 @@ public class ChangeFeatureItem implements IJSONStore
                     }
                 }
             }
-            mAttachItems.add(new ChangeAttachItem(id, operation));
+            mAttachItems.add(new ChangeAttachItem(attachId, operation));
         }
     }
 }

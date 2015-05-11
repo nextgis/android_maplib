@@ -166,7 +166,7 @@ public class NGWUtil
     public static String getFeatureAttachmentUrl(
             String server,
             long remoteId,
-            int featureId)
+            long featureId)
     {
         if (!server.startsWith("http"))
             server = "http://" + server;

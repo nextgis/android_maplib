@@ -41,7 +41,6 @@ import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
-import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
@@ -898,7 +897,7 @@ public class VectorLayer
     public long insertAddChanges(ContentValues contentValues){
         long rowID = insert(contentValues);
         if (rowID != NOT_FOUND) {
-            addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
+            addChange(rowID, ChangeFeatureItem.TYPE_NEW);
         }
         return rowID;
     }
@@ -948,7 +947,7 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(resultUri, null, false);
                     } else {
-                        addChange("" + rowID, ChangeFeatureItem.TYPE_NEW);
+                        addChange(rowID, ChangeFeatureItem.TYPE_NEW);
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
                     }
                     return resultUri;
@@ -958,6 +957,7 @@ public class VectorLayer
                 if(contentValues.containsKey(ATTACH_DISPLAY_NAME) && contentValues.containsKey(ATTACH_MIME_TYPE)) {
                     List<String> pathSegments = uri.getPathSegments();
                     String featureId = pathSegments.get(pathSegments.size() - 2);
+                    long featureIdL = Long.parseLong(featureId);
                     //get attach path
                     File attachFolder = new File(mPath, featureId);
                     long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
@@ -996,7 +996,7 @@ public class VectorLayer
                                 getContext().getContentResolver()
                                             .notifyChange(resultUri, null, false);
                             } else {
-                                addChange(featureId, "" + maxId, ChangeFeatureItem.TYPE_NEW);
+                                addChange(featureIdL, maxId, ChangeFeatureItem.TYPE_NEW);
                                 getContext().getContentResolver()
                                             .notifyChange(resultUri, null, true);
                             }
@@ -1015,9 +1015,10 @@ public class VectorLayer
         }
     }
 
-    public int deleteAddChanges(String id){
 
-        int result = delete(Long.parseLong(id), VectorLayer.FIELD_ID + " = " + id, null);
+    public int deleteAddChanges(long id)
+    {
+        int result = delete(id, VectorLayer.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, ChangeFeatureItem.TYPE_DELETE);
         }
@@ -1058,6 +1059,7 @@ public class VectorLayer
             String[] selectionArgs)
     {
         String featureId;
+        long featureIdL;
         String attachId;
         List<String> pathSegments;
         int result;
@@ -1072,19 +1074,20 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
+                        addChange(NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
                 }
                 return result;
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
+                featureIdL = Long.parseLong(featureId);
                 if (TextUtils.isEmpty(selection)) {
                     selection = FIELD_ID + " = " + featureId;
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
-                result = delete(Long.parseLong(featureId), selection, selectionArgs);
+                result = delete(featureIdL, selection, selectionArgs);
 
                 if (result > 0) {
                     String fragment = uri.getFragment();
@@ -1092,7 +1095,7 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureId, ChangeFeatureItem.TYPE_DELETE);
+                        addChange(featureIdL, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
                 }
@@ -1117,7 +1120,8 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureId, "" + NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
+                        featureIdL = Long.parseLong(featureId);
+                        addChange(featureIdL, NOT_FOUND, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
@@ -1125,7 +1129,9 @@ public class VectorLayer
             case TYPE_ATTACH_ID:
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 3);
+                featureIdL = Long.parseLong(featureId);
                 attachId = uri.getLastPathSegment();
+                long attachIdL = Long.parseLong(attachId);
 
                 //get attach path
                 File attachFile = new File( mPath, featureId + "/" + attachId);
@@ -1138,7 +1144,7 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureId, attachId, ChangeFeatureItem.TYPE_DELETE);
+                        addChange(featureIdL, attachIdL, ChangeFeatureItem.TYPE_DELETE);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                     return 1;
@@ -1149,9 +1155,12 @@ public class VectorLayer
         }
     }
 
-    public int updateAddChanges(ContentValues values, String id){
 
-        int result = update(Long.parseLong(id), values, VectorLayer.FIELD_ID + " = " + id, null);
+    public int updateAddChanges(
+            ContentValues values,
+            long id)
+    {
+        int result = update(id, values, VectorLayer.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, ChangeFeatureItem.TYPE_CHANGED);
         }
@@ -1210,7 +1219,9 @@ public class VectorLayer
             String[] selectionArgs)
     {
         String featureId;
+        long featureIdL;
         String attachId;
+        long attachIdL;
         List<String> pathSegments;
 
         int result;
@@ -1226,7 +1237,7 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange("" + NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
+                        addChange(NOT_FOUND, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
@@ -1234,13 +1245,14 @@ public class VectorLayer
                 return result;
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
+                featureIdL = Long.parseLong(featureId);
                 if (TextUtils.isEmpty(selection)) {
                     selection = FIELD_ID + " = " + featureId;
                 } else {
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
 
-                result = update(Long.parseLong(featureId), values, selection, selectionArgs);
+                result = update(featureIdL, values, selection, selectionArgs);
 
                 if (result > 0) {
                     String fragment = uri.getFragment();
@@ -1248,7 +1260,7 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureId, ChangeFeatureItem.TYPE_CHANGED);
+                        addChange(featureIdL, ChangeFeatureItem.TYPE_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
@@ -1258,12 +1270,14 @@ public class VectorLayer
                     //set the same description to all items
                     pathSegments = uri.getPathSegments();
                     featureId = pathSegments.get(pathSegments.size() - 2);
+                    featureIdL = Long.parseLong(featureId);
                     Map<String, AttachItem> attaches = getAttachMap(featureId);
                     int changed = 0;
                     if(null != attaches) {
                         for(AttachItem item : attaches.values()){
                             item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
-                            addChange(featureId, item.getAttachId(), ChangeFeatureItem.TYPE_CHANGED);
+                            attachIdL = Long.parseLong(item.getAttachId());
+                            addChange(featureIdL, attachIdL, ChangeFeatureItem.TYPE_CHANGED);
                             changed++;
                         }
                         return changed;
@@ -1274,7 +1288,9 @@ public class VectorLayer
                 if(values.containsKey(ATTACH_ID) || values.containsKey(ATTACH_DESCRIPTION) || values.containsKey(ATTACH_DISPLAY_NAME) || values.containsKey(ATTACH_MIME_TYPE)){
                     pathSegments = uri.getPathSegments();
                     featureId = pathSegments.get(pathSegments.size() - 3);
+                    featureIdL = Long.parseLong(featureId);
                     attachId = uri.getLastPathSegment();
+                    attachIdL = Long.parseLong(attachId);
 
                     AttachItem item = getAttach(featureId, attachId);
                     if(null != item) {
@@ -1293,7 +1309,7 @@ public class VectorLayer
                         if (bFromNetwork) {
                             getContext().getContentResolver().notifyChange(uri, null, false);
                         } else {
-                            addChange(featureId, attachId, ChangeFeatureItem.TYPE_CHANGED);
+                            addChange(featureIdL, attachIdL, ChangeFeatureItem.TYPE_CHANGED);
                             getContext().getContentResolver().notifyChange(uri, null);
                         }
                         return 1;
@@ -1401,7 +1417,7 @@ public class VectorLayer
 
 
     protected void addChange(
-            String featureId,
+            long featureId,
             int operation)
     {
         //nothing to do
@@ -1409,8 +1425,8 @@ public class VectorLayer
 
 
     protected void addChange(
-            String featureId,
-            String attachId,
+            long featureId,
+            long attachId,
             int operation)
     {
         //nothing to do
