@@ -105,14 +105,19 @@ public class RemoteTMSLayer
             Bitmap bitmap){
         //if(mBitmapCache.containsKey(tile.getHash()))
         //    return;
-        mBitmapCache.put(tileHash, bitmap);
+        if(mBitmapCache != null)
+            mBitmapCache.put(tileHash, bitmap);
     }
 
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
+        if(null == tile)
+            return null;
+
         Bitmap ret = null;
-        ret = mBitmapCache.get(tile.getHash());
+        if(mBitmapCache != null)
+            ret = mBitmapCache.get(tile.getHash());
 
         if(null != ret)
             return ret;
