@@ -25,9 +25,10 @@ import java.util.concurrent.TimeUnit;
 
 public interface Constants
 {
-    String TAG         = "nextgismobile";
-    String PREFERENCES = "nextgismobile";
-    int    NOT_FOUND   = -1;
+    String TAG                = "nextgismobile";
+    String PREFERENCES        = "nextgismobile";
+    int    MODE_MULTI_PROCESS = 0x4;
+    int    NOT_FOUND          = -1;
 
     /**
      * HTTP parameters
@@ -54,8 +55,8 @@ public interface Constants
     //the additional size to off screen drawing
     //from 1 and higher
     //As more than more memory needed
-    float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
-    int DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
+    float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
+    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
 
     int DEFAULT_TILE_SIZE = 256;
 
@@ -89,6 +90,13 @@ public interface Constants
     String JSON_CHANGES_KEY       = "changes";
     String JSON_VALUE_KEY         = "value";
     String JSON_SIZE_KEY          = "size";
+
+    /**
+     * database fields
+     */
+    String FIELD_ID     = "_id";
+    String FIELD_OLD_ID = "old_id";
+    String FIELD_GEOM   = "_geom";
 
     /**
      * Layer type
@@ -129,6 +137,11 @@ public interface Constants
     int SYNC_DATA       = SYNC_GEOMETRY | SYNC_ATTRIBUTES;
     int SYNC_ATTACH     = 1 << 3;
     int SYNC_ALL        = SYNC_DATA | SYNC_ATTACH;
+
+    int CHANGE_OPERATION_NEW     = 1 << 1; // 2
+    int CHANGE_OPERATION_CHANGED = 1 << 2; // 4
+    int CHANGE_OPERATION_DELETE  = 1 << 3; // 8
+    int CHANGE_OPERATION_ATTACH  = 1 << 4; // 16
 
     int DRAWING_SEPARATE_THREADS = 6;
 

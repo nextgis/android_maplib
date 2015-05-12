@@ -32,12 +32,11 @@ import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
-import com.nextgis.maplib.datasource.ngw.SyncAdapter;
-import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
 import java.util.List;
 
+import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 
@@ -145,13 +144,13 @@ public class MapContentProviderHelper extends MapBase
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            Log.d(Constants.TAG, "Receive notify: " + intent.getAction());
+            Log.d(TAG, "Receive notify: " + intent.getAction());
 
             if (intent.getAction().equals(VectorLayer.NOTIFY_DELETE)) {
                 VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
                 if(null != layer){
                     layer.notifyDelete(
-                            intent.getLongExtra(VectorLayer.FIELD_ID, Constants.NOT_FOUND));
+                            intent.getLongExtra(FIELD_ID, NOT_FOUND));
                 }
             }
             else if (intent.getAction().equals(VectorLayer.NOTIFY_DELETE_ALL)) {
@@ -164,8 +163,8 @@ public class MapContentProviderHelper extends MapBase
                 VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
                 if(null != layer){
                     layer.notifyUpdate(
-                            intent.getLongExtra(VectorLayer.FIELD_ID, Constants.NOT_FOUND),
-                            intent.getLongExtra(VectorLayer.FIELD_OLD_ID, Constants.NOT_FOUND));
+                            intent.getLongExtra(FIELD_ID, NOT_FOUND),
+                            intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND));
                 }
             }
             else if (intent.getAction().equals(VectorLayer.NOTIFY_UPDATE_ALL)) {
@@ -177,7 +176,7 @@ public class MapContentProviderHelper extends MapBase
             else if (intent.getAction().equals(VectorLayer.NOTIFY_INSERT)) {
                 VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
                 if(null != layer){
-                    layer.notifyInsert(intent.getLongExtra(VectorLayer.FIELD_ID, Constants.NOT_FOUND));
+                    layer.notifyInsert(intent.getLongExtra(FIELD_ID, NOT_FOUND));
                 }
             }
         }

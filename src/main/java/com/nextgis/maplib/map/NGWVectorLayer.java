@@ -42,7 +42,6 @@ import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.ChangeFeatureItem;
-import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
@@ -149,11 +148,15 @@ public class NGWVectorLayer
         rootConfig.put(JSON_LOGIN_KEY, mLogin);
         rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
-        JSONArray changes = new JSONArray();
-        for (ChangeFeatureItem change : mChanges) {
-            changes.put(change.toJSON());
+
+        if (mChanges.size() > 0) {
+            JSONArray changes = new JSONArray();
+            for (ChangeFeatureItem change : mChanges) {
+                changes.put(change.toJSON());
+            }
+            rootConfig.put(JSON_CHANGES_KEY, changes);
         }
-        rootConfig.put(JSON_CHANGES_KEY, changes);
+
         return rootConfig;
     }
 
@@ -193,7 +196,7 @@ public class NGWVectorLayer
             JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
             for (int i = 0; i < array.length(); i++) {
                 JSONObject change = array.getJSONObject(i);
-                ChangeFeatureItem item = new ChangeFeatureItem(0, 0);
+                ChangeFeatureItem item = new ChangeFeatureItem();
                 item.fromJSON(change);
                 mChanges.add(item);
             }
@@ -398,7 +401,7 @@ public class NGWVectorLayer
 
     @Override
     protected void addChange(
-            String featureId,
+            long featureId,
             int operation)
     {
         if (0 == (mSyncType & SYNC_DATA)) {
@@ -406,30 +409,29 @@ public class NGWVectorLayer
         }
 
         //1. if featureId == NOT_FOUND remove all changes and add this one
-        if (featureId.equals("" + NOT_FOUND) && operation == ChangeFeatureItem.TYPE_DELETE) {
+        if (featureId == NOT_FOUND && operation == CHANGE_OPERATION_DELETE) {
             mChanges.clear();
             mChanges.add(new ChangeFeatureItem(NOT_FOUND, operation));
         } else {
-            int id = Integer.parseInt(featureId);
             for (int i = 0; i < mChanges.size(); i++) {
                 ChangeFeatureItem item = mChanges.get(i);
-                if (item.getFeatureId() == id) {
+                if (item.getFeatureId() == featureId) {
                     //2. if featureId == some id and op is delete - remove and other operations
-                    if (operation == ChangeFeatureItem.TYPE_DELETE) {
-                        if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_DELETE)) {
+                    if (operation == CHANGE_OPERATION_DELETE) {
+                        if (0 != (item.getOperation() & CHANGE_OPERATION_DELETE)) {
                             return;
                         }
                         mChanges.remove(i);
-                        if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                        if (0 != (item.getOperation() & CHANGE_OPERATION_NEW)) {
                             save();
                             return;
                         }
                         i--;
                     }
                     //3. if featureId == some id and op is update and previous op was add or update - skip
-                    else if (operation == ChangeFeatureItem.TYPE_CHANGED) {
-                        if (0 != (item.getOperation() & ChangeFeatureItem.TYPE_CHANGED) ||
-                            0 != (item.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                    else if (operation == CHANGE_OPERATION_CHANGED) {
+                        if (0 != (item.getOperation() & CHANGE_OPERATION_CHANGED) ||
+                            0 != (item.getOperation() & CHANGE_OPERATION_NEW)) {
                             return;
                         } else {
                             item.setOperation(operation);
@@ -438,13 +440,13 @@ public class NGWVectorLayer
                         }
                     }
                     //4. if featureId == some id and op is add and value present - warning
-                    else if (operation == ChangeFeatureItem.TYPE_NEW) {
+                    else if (operation == CHANGE_OPERATION_NEW) {
                         Log.w(TAG, "Something wrong. Should nether get here");
                         return;
                     }
                 }
             }
-            mChanges.add(new ChangeFeatureItem(id, operation));
+            mChanges.add(new ChangeFeatureItem(featureId, operation));
         }
         save();
     }
@@ -452,19 +454,18 @@ public class NGWVectorLayer
 
     @Override
     protected void addChange(
-            String featureId,
-            String attachId,
+            long featureId,
+            long attachId,
             int operation)
     {
         if (0 == (mSyncType & SYNC_ATTACH)) {
             return;
         }
 
-        int id = Integer.parseInt(featureId);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem item = mChanges.get(i);
-            if (item.getFeatureId() == id) {
-                if (item.getOperation() == ChangeFeatureItem.TYPE_DELETE) {
+            if (item.getFeatureId() == featureId) {
+                if (item.getOperation() == CHANGE_OPERATION_DELETE) {
                     return;
                 } else {
                     item.addAttachChange(attachId, operation);
@@ -473,7 +474,7 @@ public class NGWVectorLayer
                 }
             }
         }
-        ChangeFeatureItem item = new ChangeFeatureItem(id, ChangeFeatureItem.TYPE_ATTACH);
+        ChangeFeatureItem item = new ChangeFeatureItem(featureId, CHANGE_OPERATION_ATTACH);
         item.addAttachChange(attachId, operation);
         mChanges.add(item);
         save();
@@ -528,43 +529,43 @@ public class NGWVectorLayer
         Log.d(TAG, "sendLocalChanges: " + changesCount);
         for (int i = 0; i < mChanges.size(); i++) {
             ChangeFeatureItem change = mChanges.get(i);
-            if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)){
+            if(0 != (change.getOperation() & CHANGE_OPERATION_NEW)){
                 if (!addFeatureOnServer(change.getFeatureId(), syncResult)) {
                     Log.d(TAG, "proceed change failed");
                     continue;
                 }
             }
-            else if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_CHANGED)) {
+            else if(0 != (change.getOperation() & CHANGE_OPERATION_CHANGED)) {
                 if (!changeFeatureOnServer(change.getFeatureId(), syncResult)) {
                     Log.d(TAG, "proceed change failed");
                     continue;
                 }
             }
-            else if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_DELETE)) {
+            else if(0 != (change.getOperation() & CHANGE_OPERATION_DELETE)) {
                 if (!deleteFeatureOnServer(change.getFeatureId(), syncResult)) {
                     Log.d(TAG, "proceed change failed");
                     continue;
                 }
             }
             //process attachments
-            if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
+            if(0 != (change.getOperation() & CHANGE_OPERATION_ATTACH)) {
                 boolean hasErrors = false;
                 List<ChangeFeatureItem.ChangeAttachItem> attachItems = change.getAttachItems();
                 for(int j = 0; j < attachItems.size(); j++){
                     ChangeFeatureItem.ChangeAttachItem attachItem = attachItems.get(j);
-                    if(attachItem.getOperation() == ChangeFeatureItem.TYPE_NEW){
+                    if(attachItem.getOperation() == CHANGE_OPERATION_NEW){
                         if(!sendAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
                             hasErrors = true;
                             Log.d(TAG, "proceed change failed");
                         }
                     }
-                    else if(attachItem.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                    else if(attachItem.getOperation() == CHANGE_OPERATION_DELETE){
                         if(!deleteAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
                             hasErrors = true;
                             Log.d(TAG, "proceed change failed");
                         }
                     }
-                    else if(attachItem.getOperation() == ChangeFeatureItem.TYPE_CHANGED){
+                    else if(attachItem.getOperation() == CHANGE_OPERATION_CHANGED){
                         if(!changeAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
                             hasErrors = true;
                             Log.d(TAG, "proceed change failed");
@@ -597,7 +598,7 @@ public class NGWVectorLayer
 
 
     private boolean changeAttachOnServer(
-            int featureId,
+            long featureId,
             ChangeFeatureItem.ChangeAttachItem attachItem,
             SyncResult syncResult)
     {
@@ -635,7 +636,7 @@ public class NGWVectorLayer
 
 
     private boolean deleteAttachOnServer(
-            int featureId,
+            long featureId,
             ChangeFeatureItem.ChangeAttachItem attachItem,
             SyncResult syncResult)
     {
@@ -660,7 +661,7 @@ public class NGWVectorLayer
     }
 
 
-    protected boolean sendAttachOnServer(int featureId,
+    protected boolean sendAttachOnServer(long featureId,
             ChangeFeatureItem.ChangeAttachItem attachItem,
             SyncResult syncResult)
     {
@@ -807,7 +808,7 @@ public class NGWVectorLayer
         // analyse feature
         for (Feature remoteFeature : features) {
 
-            Cursor cursor = query( null, VectorLayer.FIELD_ID + " = " + remoteFeature.getId(), null, null);
+            Cursor cursor = query( null, FIELD_ID + " = " + remoteFeature.getId(), null, null);
             //no local feature
             if (null == cursor || cursor.getCount() == 0) {
 
@@ -841,10 +842,10 @@ public class NGWVectorLayer
                     //remove from changes
                     for (int i = 0; i < mChanges.size(); i++) {
                         ChangeFeatureItem change = mChanges.get(i);
-                        if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH))) {
+                        if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & CHANGE_OPERATION_ATTACH))) {
                             boolean isDelete = false;
                             for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
-                                if(attachItem.getOperation() == ChangeFeatureItem.TYPE_DELETE){
+                                if(attachItem.getOperation() == CHANGE_OPERATION_DELETE){
                                     isDelete = true;
                                     break;
                                 }
@@ -886,7 +887,7 @@ public class NGWVectorLayer
                 if(eqAttach){
                     for (int i = 0; i < mChanges.size(); i++) {
                         ChangeFeatureItem change = mChanges.get(i);
-                        if (change.getFeatureId() == remoteFeature.getId() && (eqData || change.getOperation() == ChangeFeatureItem.TYPE_ATTACH)) {
+                        if (change.getFeatureId() == remoteFeature.getId() && (eqData || change.getOperation() == CHANGE_OPERATION_ATTACH)) {
                             Log.d(TAG, "The feature " + change.getFeatureId() +
                                        " already changed on server. Remove change set #" + i);
                             mChanges.remove(i);
@@ -899,7 +900,7 @@ public class NGWVectorLayer
 
                     for (ChangeFeatureItem change : mChanges) {
                         if (change.getFeatureId() == remoteFeature.getId() &&
-                            0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
+                            0 != (change.getOperation() & CHANGE_OPERATION_ATTACH)) {
                             //we have local changes ready for sent to server
                             isChangedLocal = true;
                             break;
@@ -931,7 +932,7 @@ public class NGWVectorLayer
                                     for (ChangeFeatureItem change : mChanges) {
                                         //check if this is our record
                                         if (change.getFeatureId() == remoteFeature.getId() &&
-                                            0 != (change.getOperation() & ChangeFeatureItem.TYPE_ATTACH)) {
+                                            0 != (change.getOperation() & CHANGE_OPERATION_ATTACH)) {
                                             for (ChangeFeatureItem.ChangeAttachItem attachItem : change
                                                     .getAttachItems()) {
 
@@ -984,15 +985,15 @@ public class NGWVectorLayer
                 // if local item is in update list and state ADD_NEW skip delete
                 for (ChangeFeatureItem change : mChanges) {
                     if (change.getFeatureId() == item.getId() &&
-                        0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                        0 != (change.getOperation() & CHANGE_OPERATION_NEW)) {
                         bDeleteFeature = false;
                         break;
                     }
                 }
 
                 if (bDeleteFeature) {
-                    Log.d(Constants.TAG, "Delete feature #" + item.getId() + " not exist on server");
-                    delete(item.getId(), VectorLayer.FIELD_ID + " = " + item.getId(), null);
+                    Log.d(TAG, "Delete feature #" + item.getId() + " not exist on server");
+                    delete(item.getId(), FIELD_ID + " = " + item.getId(), null);
                 }
             }
 
@@ -1002,23 +1003,23 @@ public class NGWVectorLayer
                 boolean bDeleteChange = true; // if feature not exist on server
                 for (Feature remoteFeature : features) {
                     if(remoteFeature.getId() == change.getFeatureId()){
-                        if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW)) {
+                        if(0 != (change.getOperation() & CHANGE_OPERATION_NEW)) {
                             // if feature already exist, just change it
                             if(!change.getAttachItems().isEmpty())
-                                change.setOperation(ChangeFeatureItem.TYPE_CHANGED | ChangeFeatureItem.TYPE_ATTACH);
+                                change.setOperation(CHANGE_OPERATION_CHANGED | CHANGE_OPERATION_ATTACH);
                             else
-                                change.setOperation(ChangeFeatureItem.TYPE_CHANGED);
+                                change.setOperation(CHANGE_OPERATION_CHANGED);
                         }
                         bDeleteChange = false; // in other cases just apply
                         break;
                    }
                 }
 
-                if(0 != (change.getOperation() & ChangeFeatureItem.TYPE_NEW) && bDeleteChange)
+                if(0 != (change.getOperation() & CHANGE_OPERATION_NEW) && bDeleteChange)
                     bDeleteChange = false;
 
                 if (bDeleteChange) {
-                    Log.d(Constants.TAG, "Delete change for feature #" + change.getFeatureId() + " operation " + change.getOperation());
+                    Log.d(TAG, "Delete change for feature #" + change.getFeatureId() + " operation " + change.getOperation());
                     mChanges.remove(i);
                     i--;
                 }
@@ -1234,7 +1235,7 @@ public class NGWVectorLayer
             mSyncType = syncType;
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
-                addChange("" + id, ChangeFeatureItem.TYPE_NEW);
+                addChange(id, CHANGE_OPERATION_NEW);
                 //add attach
                 File attacheFolder = new File(mPath, "" + id);
                 if(attacheFolder.isDirectory()){
@@ -1244,7 +1245,7 @@ public class NGWVectorLayer
                             continue;
                         Long attachIdL = Long.parseLong(attachId);
                         if(attachIdL >= 1000)
-                            addChange("" + id, attachId, ChangeFeatureItem.TYPE_NEW);
+                            addChange(id, attachIdL, CHANGE_OPERATION_NEW);
                     }
                 }
             }
