@@ -1421,7 +1421,7 @@ public class VectorLayer
     protected void addChange(
             long featureId,
             long attachId,
-            int operation)
+            int attachOperation)
     {
         //nothing to do
     }
