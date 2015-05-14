@@ -78,9 +78,6 @@ public class GISDisplay
         mMaxZoomLevel = DEFAULT_MAX_ZOOM;
         mLimitType = MAP_LIMITS_Y;
 
-        mMainBitmap = null;
-        mDoubleBufferBitmap = null;
-
         // default extent
         // set full Mercator bounds
         mFullBounds = new GeoEnvelope(-MERCATOR_MAX, MERCATOR_MAX, -MERCATOR_MAX, MERCATOR_MAX);
@@ -92,7 +89,7 @@ public class GISDisplay
         mInvertTransformMatrix = new Matrix();
         mMapTileSize = new GeoPoint();
 
-        setSize(100, 100);
+        setSize(300, 300);
 
         mRasterPaint = new Paint();
         mRasterPaint.setAntiAlias(true);
@@ -105,7 +102,7 @@ public class GISDisplay
             int w,
             int h)
     {
-        if((mWidth == w && mHeight == h) || w == 0 || h == 0)
+        if((mWidth == w && mHeight == h) || w < 1 || h < 1)
             return;
         mMainBitmap = null;
         mMainCanvas = null;
@@ -291,12 +288,18 @@ public class GISDisplay
             clearBackground(canvas);
         }
 
+        if(null == canvas)
+            return;
+
         canvas.drawBitmap(mDoubleBufferBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
     }
 
 
     public void clearBackground(Canvas canvas)
     {
+        if(null == canvas)
+            return;
+
         //Log.d(TAG, "clearBackground(), w: " + mBackgroundBitmap.getWidth() + " h: " + mBackgroundBitmap.getHeight());
 
         for (int i = 0; i < mWidth; i += mBkBitmap.getWidth()) {
@@ -313,6 +316,9 @@ public class GISDisplay
             float scale)
     {
         clearBackground(canvas);
+
+        if(null == canvas)
+            return;
 
         GeoPoint pt = getScaledOffset(x, y, scale);
 
@@ -351,6 +357,9 @@ public class GISDisplay
             final GeoPoint pt,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
+
         Matrix matrix = new Matrix();
 
         matrix.postScale((float) mInvertScale, (float) -mInvertScale);
@@ -380,6 +389,9 @@ public class GISDisplay
             float vOffset,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
+
         PathMeasure pm = new PathMeasure(path, false);
         Matrix matrix = new Matrix();
         Path charPath = new Path();
@@ -431,6 +443,8 @@ public class GISDisplay
             float y,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawPoint(x, y, paint);
     }
 
@@ -441,6 +455,8 @@ public class GISDisplay
             float y1,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawLine(x0, y0, x1, y1, paint);
     }
 
@@ -448,6 +464,8 @@ public class GISDisplay
             float[] pts,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawLines(pts, paint);
     }
 
@@ -458,6 +476,8 @@ public class GISDisplay
             float radius,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawCircle(x, y, radius, paint);
     }
 
@@ -467,6 +487,8 @@ public class GISDisplay
             float size,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
     }
 
@@ -476,6 +498,8 @@ public class GISDisplay
             float size,
             Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
         mMainCanvas.drawLine(x - size, y - size, x + size, y + size, paint);
         mMainCanvas.drawLine(x - size, y + size, x + size, y - size, paint);
@@ -483,6 +507,8 @@ public class GISDisplay
 
     public void drawPath(Path path, Paint paint)
     {
+        if(null == mMainCanvas)
+            return;
         mMainCanvas.drawPath(path, paint);
     }
 

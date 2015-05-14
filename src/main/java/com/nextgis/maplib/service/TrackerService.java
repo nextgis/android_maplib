@@ -60,7 +60,6 @@ public class TrackerService
         extends Service
         implements LocationListener, GpsStatus.Listener
 {
-    //    private final       String TAG          = "com.nextgis.mobile";
     public static final  String TEMP_PREFERENCES      = "tracks_temp";
     public static final  String TARGET_CLASS          = "target_class";
     private static final String TRACK_URI             = "track_uri";
