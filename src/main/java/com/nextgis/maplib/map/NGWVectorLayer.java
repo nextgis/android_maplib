@@ -1261,4 +1261,14 @@ public class NGWVectorLayer
             mSyncType = syncType;
         }
     }
+
+
+    @Override
+    public boolean delete()
+            throws SQLiteException
+    {
+        FeatureChanges.delete(mChangeTableName);
+
+        return super.delete();
+    }
 }

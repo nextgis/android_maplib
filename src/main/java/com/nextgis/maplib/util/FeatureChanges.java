@@ -62,7 +62,13 @@ public class FeatureChanges
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
 
-        return DatabaseUtils.queryNumEntries(db, tableName);
+        try {
+            return DatabaseUtils.queryNumEntries(db, tableName);
+        }
+        catch (SQLiteException e) {
+            e.printStackTrace();
+            return 0;
+        }
     }
 
 
@@ -518,4 +524,12 @@ public class FeatureChanges
         SQLiteDatabase db = map.getDatabase(true);
         return db.delete(tableName, selection, null);
     }
+
+    public static void delete(String tableName){
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+        String tableDrop = "DROP TABLE IF EXISTS " + tableName;
+        db.execSQL(tableDrop);
+    }
+
 }
