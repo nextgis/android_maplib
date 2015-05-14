@@ -526,8 +526,13 @@ public class NGWVectorLayer
             changeCursor =
                     FeatureChanges.getFirstChangeFromRecordId(mChangeTableName, nextChangeRecordId);
 
-            if (null == changeCursor || !changeCursor.moveToFirst()) {
+            if (null == changeCursor) {
+                break;
+            }
+
+            if (!changeCursor.moveToFirst()) {
                 // no more change records
+                changeCursor.close();
                 break;
             }
 

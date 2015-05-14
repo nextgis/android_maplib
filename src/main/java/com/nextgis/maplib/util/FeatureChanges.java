@@ -80,20 +80,19 @@ public class FeatureChanges
     public static long getLastChangeRecordId(String tableName)
     {
         String sortOrder = FIELD_ID + " DESC";
-
         Cursor cursor = query(tableName, null, sortOrder, "1");
+        long ret = NOT_FOUND;
 
         if (null == cursor) {
-            return -1;
+            return ret;
         }
 
         if (cursor.moveToFirst()) {
-            long ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
-            cursor.close();
-            return ret;
-        } else {
-            return -1;
+             ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
         }
+
+        cursor.close();
+        return ret;
     }
 
 
@@ -254,13 +253,16 @@ public class FeatureChanges
             String selection)
     {
         Cursor cursor = query(tableName, selection, null, "1");
+        boolean ret = false;
 
-        if (null != cursor && cursor.getCount() > 0) {
+        if (null != cursor) {
+            if (cursor.getCount() > 0) {
+                ret = true;
+            }
             cursor.close();
-            return true;
         }
 
-        return false;
+        return ret;
     }
 
 
