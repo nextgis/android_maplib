@@ -94,9 +94,13 @@ public interface Constants
     /**
      * database fields
      */
-    String FIELD_ID     = "_id";
-    String FIELD_OLD_ID = "old_id";
-    String FIELD_GEOM   = "_geom";
+    String FIELD_ID               = "_id";
+    String FIELD_OLD_ID           = "old_id";
+    String FIELD_GEOM             = "_geom";
+    String FIELD_FEATURE_ID       = "feature_id";
+    String FIELD_OPERATION        = "operation";
+    String FIELD_ATTACH_ID        = "attach_id";
+    String FIELD_ATTACH_OPERATION = "attach_operation";
 
     /**
      * Layer type

@@ -41,8 +41,7 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
-import com.nextgis.maplib.util.ChangeFeatureItem;
-import com.nextgis.maplib.util.FileUtil;
+import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -77,7 +76,7 @@ public class NGWVectorLayer
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/attachments
 
-    protected List<ChangeFeatureItem> mChanges;
+    protected String mChangeTableName;
 
     protected static final String JSON_ACCOUNT_KEY   = "account";
     protected static final String JSON_URL_KEY       = "url";
@@ -94,7 +93,8 @@ public class NGWVectorLayer
 
         mNet = new NetworkUtil(context);
 
-        mChanges = new ArrayList<>();
+        // table name is the same as the folder name of the layer + "_changes"
+        mChangeTableName = mPath.getName() + "_changes";
         mSyncType = SYNC_NONE;
         mLayerType = LAYERTYPE_NGW_VECTOR;
     }
@@ -149,14 +149,6 @@ public class NGWVectorLayer
         rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
 
-        if (mChanges.size() > 0) {
-            JSONArray changes = new JSONArray();
-            for (ChangeFeatureItem change : mChanges) {
-                changes.put(change.toJSON());
-            }
-            rootConfig.put(JSON_CHANGES_KEY, changes);
-        }
-
         return rootConfig;
     }
 
@@ -179,27 +171,9 @@ public class NGWVectorLayer
             mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
         }
 
-        loadChanges(jsonObject);
-
         if (!mIsInitialized) {
             //init in separate thread
             downloadAsync();
-        }
-    }
-
-
-    protected void loadChanges(JSONObject jsonObject)
-            throws JSONException, SQLiteException
-    {
-        if (jsonObject.has(JSON_CHANGES_KEY)) {
-            mChanges.clear();
-            JSONArray array = jsonObject.getJSONArray(JSON_CHANGES_KEY);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject change = array.getJSONObject(i);
-                ChangeFeatureItem item = new ChangeFeatureItem();
-                item.fromJSON(change);
-                mChanges.add(item);
-            }
         }
     }
 
@@ -293,6 +267,18 @@ public class NGWVectorLayer
             e.printStackTrace();
             return getContext().getString(R.string.error_download_data);
         }
+    }
+
+
+    @Override
+    public String initialize(
+            List<Field> fields,
+            List<Feature> features,
+            int geometryType)
+            throws SQLiteException
+    {
+        FeatureChanges.initialize(mChangeTableName);
+        return super.initialize(fields, features, geometryType);
     }
 
 
@@ -408,47 +394,35 @@ public class NGWVectorLayer
             return;
         }
 
-        //1. if featureId == NOT_FOUND remove all changes and add this one
-        if (featureId == NOT_FOUND && operation == CHANGE_OPERATION_DELETE) {
-            mChanges.clear();
-            mChanges.add(new ChangeFeatureItem(NOT_FOUND, operation));
-        } else {
-            for (int i = 0; i < mChanges.size(); i++) {
-                ChangeFeatureItem item = mChanges.get(i);
-                if (item.getFeatureId() == featureId) {
-                    //2. if featureId == some id and op is delete - remove and other operations
-                    if (operation == CHANGE_OPERATION_DELETE) {
-                        if (0 != (item.getOperation() & CHANGE_OPERATION_DELETE)) {
-                            return;
-                        }
-                        mChanges.remove(i);
-                        if (0 != (item.getOperation() & CHANGE_OPERATION_NEW)) {
-                            save();
-                            return;
-                        }
-                        i--;
-                    }
-                    //3. if featureId == some id and op is update and previous op was add or update - skip
-                    else if (operation == CHANGE_OPERATION_CHANGED) {
-                        if (0 != (item.getOperation() & CHANGE_OPERATION_CHANGED) ||
-                            0 != (item.getOperation() & CHANGE_OPERATION_NEW)) {
-                            return;
-                        } else {
-                            item.setOperation(operation);
-                            save();
-                            return;
-                        }
-                    }
-                    //4. if featureId == some id and op is add and value present - warning
-                    else if (operation == CHANGE_OPERATION_NEW) {
-                        Log.w(TAG, "Something wrong. Should nether get here");
-                        return;
-                    }
-                }
+        boolean canAddChanges = true;
+
+        // for delete operation
+        if (operation == CHANGE_OPERATION_DELETE) {
+
+            // if featureId == NOT_FOUND remove all changes for all features
+            if (featureId == NOT_FOUND) {
+                FeatureChanges.removeAllChanges(mChangeTableName);
+
+                // if feature has changes then remove them for the feature
+            } else if (FeatureChanges.isChanges(mChangeTableName, featureId)) {
+                // if feature was new then just remove its changes
+                canAddChanges = !FeatureChanges.isChanges(
+                        mChangeTableName, featureId, CHANGE_OPERATION_NEW);
+                FeatureChanges.removeChanges(mChangeTableName, featureId);
             }
-            mChanges.add(new ChangeFeatureItem(featureId, operation));
         }
-        save();
+
+        // we are trying to re-create feature - warning
+        if (operation == CHANGE_OPERATION_NEW &&
+                FeatureChanges.isChanges(mChangeTableName, featureId)) {
+            Log.w(TAG, "Something wrong. Should nether get here");
+            canAddChanges = false;
+        }
+
+        // if can then add change
+        if (canAddChanges) {
+            FeatureChanges.add(mChangeTableName, featureId, operation);
+        }
     }
 
 
@@ -456,28 +430,41 @@ public class NGWVectorLayer
     protected void addChange(
             long featureId,
             long attachId,
-            int operation)
+            int attachOperation)
     {
         if (0 == (mSyncType & SYNC_ATTACH)) {
             return;
         }
 
-        for (int i = 0; i < mChanges.size(); i++) {
-            ChangeFeatureItem item = mChanges.get(i);
-            if (item.getFeatureId() == featureId) {
-                if (item.getOperation() == CHANGE_OPERATION_DELETE) {
-                    return;
-                } else {
-                    item.addAttachChange(attachId, operation);
-                    save();
-                    return;
-                }
+        boolean canAddChanges = true;
+
+        // for delete operation
+        if (attachOperation == CHANGE_OPERATION_DELETE) {
+
+            // if attachId == NOT_FOUND remove all attach changes for the feature
+            if (attachId == NOT_FOUND) {
+                FeatureChanges.removeAllAttachChanges(mChangeTableName, featureId);
+
+                // if attachment has changes then remove them for the attachment
+            } else if (FeatureChanges.isAttachChanges(mChangeTableName, featureId, attachId)) {
+                // if attachment was new then just remove its changes
+                canAddChanges = !FeatureChanges.isAttachChanges(
+                        mChangeTableName, featureId, attachId, CHANGE_OPERATION_NEW);
+                FeatureChanges.removeAttachChanges(mChangeTableName, featureId, attachId);
             }
         }
-        ChangeFeatureItem item = new ChangeFeatureItem(featureId, CHANGE_OPERATION_ATTACH);
-        item.addAttachChange(attachId, operation);
-        mChanges.add(item);
-        save();
+
+        // we are trying to re-create the attach - warning
+        // TODO: replace to attachOperation == CHANGE_OPERATION_NEW ???
+        if (0 != (attachOperation & CHANGE_OPERATION_NEW) &&
+                FeatureChanges.isAttachChanges(mChangeTableName, featureId, attachId)) {
+            Log.w(TAG, "Something wrong. Should nether get here");
+            canAddChanges = false;
+        }
+
+        if (canAddChanges) {
+            FeatureChanges.add(mChangeTableName, featureId, attachId, attachOperation);
+        }
     }
 
 
@@ -496,28 +483,16 @@ public class NGWVectorLayer
             return;
         }
 
-        try {
-            //0. get changes from layer config file
-            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
-            loadChanges(jsonObject);
+        // 1. get remote changes
+        if (!getChangesFromServer(authority, syncResult)) {
+            Log.d(TAG, "Get remote changes failed");
+            return;
+        }
 
-            //1. get remote changes
-            if (!getChangesFromServer(authority, syncResult)) {
-                Log.d(TAG, "Get remote changes failed");
-                return;
-            }
-
-            //2. send current changes
-            if (!sendLocalChanges(syncResult)) {
-                Log.d(TAG, "Set local changes failed");
-                return;
-            }
-
-            Log.d(TAG, "save sendLocalChanges: " + mChanges.size());
-            save();
-
-        } catch (JSONException | IOException | SQLiteException e) {
-            e.printStackTrace();
+        // 2. send current changes
+        if (!sendLocalChanges(syncResult)) {
+            Log.d(TAG, "Set local changes failed");
+            return;
         }
     }
 
@@ -525,70 +500,119 @@ public class NGWVectorLayer
     protected boolean sendLocalChanges(SyncResult syncResult)
             throws SQLiteException
     {
-        int changesCount = mChanges.size();
+        long changesCount = FeatureChanges.getChangeCount(mChangeTableName);
         Log.d(TAG, "sendLocalChanges: " + changesCount);
-        for (int i = 0; i < mChanges.size(); i++) {
-            ChangeFeatureItem change = mChanges.get(i);
-            if(0 != (change.getOperation() & CHANGE_OPERATION_NEW)){
-                if (!addFeatureOnServer(change.getFeatureId(), syncResult)) {
-                    Log.d(TAG, "proceed change failed");
-                    continue;
-                }
-            }
-            else if(0 != (change.getOperation() & CHANGE_OPERATION_CHANGED)) {
-                if (!changeFeatureOnServer(change.getFeatureId(), syncResult)) {
-                    Log.d(TAG, "proceed change failed");
-                    continue;
-                }
-            }
-            else if(0 != (change.getOperation() & CHANGE_OPERATION_DELETE)) {
-                if (!deleteFeatureOnServer(change.getFeatureId(), syncResult)) {
-                    Log.d(TAG, "proceed change failed");
-                    continue;
-                }
-            }
-            //process attachments
-            if(0 != (change.getOperation() & CHANGE_OPERATION_ATTACH)) {
-                boolean hasErrors = false;
-                List<ChangeFeatureItem.ChangeAttachItem> attachItems = change.getAttachItems();
-                for(int j = 0; j < attachItems.size(); j++){
-                    ChangeFeatureItem.ChangeAttachItem attachItem = attachItems.get(j);
-                    if(attachItem.getOperation() == CHANGE_OPERATION_NEW){
-                        if(!sendAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
-                            hasErrors = true;
-                            Log.d(TAG, "proceed change failed");
-                        }
-                    }
-                    else if(attachItem.getOperation() == CHANGE_OPERATION_DELETE){
-                        if(!deleteAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
-                            hasErrors = true;
-                            Log.d(TAG, "proceed change failed");
-                        }
-                    }
-                    else if(attachItem.getOperation() == CHANGE_OPERATION_CHANGED){
-                        if(!changeAttachOnServer(change.getFeatureId(), attachItem, syncResult)){
-                            hasErrors = true;
-                            Log.d(TAG, "proceed change failed");
-                        }
-                    }
 
-                    if(hasErrors)
-                        break;
-                    attachItems.remove(j);
-                    j--;
-                    // Log.d(TAG, "proceed attache change. leave " + attachItems.size());
-                }
-
-                if(hasErrors)
-                    continue;
-            }
-
-            mChanges.remove(i);
-            i--;
-            // Log.d(TAG, "proceed change. leave " + mChanges.size());
+        if (0 == changesCount) {
+            return true;
         }
 
-        if (changesCount != mChanges.size()) {
+        // get column's IDs, there is at least one entry
+        Cursor changeCursor = FeatureChanges.getFirstChangeFromRecordId(mChangeTableName, 0);
+        changeCursor.moveToFirst();
+
+        int recordIdColumn = changeCursor.getColumnIndex(FIELD_ID);
+        int featureIdColumn = changeCursor.getColumnIndex(FIELD_FEATURE_ID);
+        int operationColumn = changeCursor.getColumnIndex(FIELD_OPERATION);
+        int attachIdColumn = changeCursor.getColumnIndex(FIELD_ATTACH_ID);
+        int attachOperationColumn = changeCursor.getColumnIndex(FIELD_ATTACH_OPERATION);
+
+        long nextChangeRecordId = changeCursor.getLong(recordIdColumn);
+
+        changeCursor.close();
+
+        while (true) {
+
+            changeCursor =
+                    FeatureChanges.getFirstChangeFromRecordId(mChangeTableName, nextChangeRecordId);
+
+            if (null == changeCursor) {
+                break;
+            }
+
+            if (!changeCursor.moveToFirst()) {
+                // no more change records
+                changeCursor.close();
+                break;
+            }
+
+            long changeRecordId = changeCursor.getLong(recordIdColumn);
+            nextChangeRecordId = changeRecordId + 1;
+
+            long changeFeatureId = changeCursor.getLong(featureIdColumn);
+            int changeOperation = changeCursor.getInt(operationColumn);
+            long changeAttachId = changeCursor.getLong(attachIdColumn);
+            int changeAttachOperation = changeCursor.getInt(attachOperationColumn);
+
+            changeCursor.close();
+
+            long lastChangeRecordId = FeatureChanges.getLastChangeRecordId(mChangeTableName);
+
+            if (0 == (changeOperation & CHANGE_OPERATION_ATTACH)) {
+
+                if (0 != (changeOperation & CHANGE_OPERATION_DELETE)) {
+                    if (deleteFeatureOnServer(changeFeatureId, syncResult)) {
+                        FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                    } else {
+                        Log.d(TAG, "proceed change failed");
+                    }
+
+                } else if (0 != (changeOperation & CHANGE_OPERATION_NEW)) {
+                    if (addFeatureOnServer(changeFeatureId, syncResult)) {
+                        FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                        FeatureChanges.removeChangesToLast(
+                                mChangeTableName, changeFeatureId, CHANGE_OPERATION_CHANGED,
+                                lastChangeRecordId);
+                    } else {
+                        Log.d(TAG, "proceed change failed");
+                    }
+
+                } else if (0 != (changeOperation & CHANGE_OPERATION_CHANGED)) {
+                    if (changeFeatureOnServer(changeFeatureId, syncResult)) {
+                        FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                        FeatureChanges.removeChangesToLast(
+                                mChangeTableName, changeFeatureId, CHANGE_OPERATION_CHANGED,
+                                lastChangeRecordId);
+                    } else {
+                        Log.d(TAG, "proceed change failed");
+                    }
+                }
+            }
+
+            //process attachments
+            else { // 0 != (changeOperation & CHANGE_OPERATION_ATTACH)
+
+                if (changeAttachOperation == CHANGE_OPERATION_DELETE) {
+                    if (deleteAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+                        FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                    } else {
+                        Log.d(TAG, "proceed change failed");
+                    }
+
+                } else if (changeAttachOperation == CHANGE_OPERATION_NEW) {
+                    if (sendAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+                        FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                        FeatureChanges.removeAttachChangesToLast(
+                                mChangeTableName, changeFeatureId, changeAttachId,
+                                CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                    } else {
+                        Log.d(TAG, "proceed change failed");
+                    }
+
+                } else if (changeAttachOperation == CHANGE_OPERATION_CHANGED) {
+                    if (changeAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+                        FeatureChanges.removeAttachChangesToLast(
+                                mChangeTableName, changeFeatureId, changeAttachId,
+                                CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                    } else {
+                        Log.d(TAG, "proceed change failed");
+                    }
+                }
+            }
+        }
+
+        // check records count changing
+        if (changesCount != FeatureChanges.getChangeCount(mChangeTableName)) {
             //notify to reload changes
             getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
         }
@@ -599,14 +623,14 @@ public class NGWVectorLayer
 
     private boolean changeAttachOnServer(
             long featureId,
-            ChangeFeatureItem.ChangeAttachItem attachItem,
+            long attachId,
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
-        AttachItem attach = getAttach("" + featureId, "" + attachItem.getAttachId());
+        AttachItem attach = getAttach("" + featureId, "" + attachId);
         if(null == attach) //just remove buggy item
             return true;
 
@@ -617,8 +641,10 @@ public class NGWVectorLayer
             //putData.put("mime_type", attach.getMimetype());
             putData.put("description", attach.getDescription());
 
-            String data = mNet.put(NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId) + attachItem.getAttachId(),
-                                   putData.toString(), mLogin, mPassword);
+            String data = mNet.put(
+                    NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId) + attachId,
+                    putData.toString(), mLogin, mPassword);
+
             if(null == data){
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -637,7 +663,7 @@ public class NGWVectorLayer
 
     private boolean deleteAttachOnServer(
             long featureId,
-            ChangeFeatureItem.ChangeAttachItem attachItem,
+            long attachId,
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
@@ -645,7 +671,11 @@ public class NGWVectorLayer
         }
 
         try{
-            if(!mNet.delete(NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId) + attachItem.getAttachId(), mLogin, mPassword)){
+
+            if (!mNet.delete(
+                    NGWUtil.getFeatureAttachmentUrl(mURL, mRemoteId, featureId) + attachId, mLogin,
+                    mPassword)) {
+
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -662,14 +692,14 @@ public class NGWVectorLayer
 
 
     protected boolean sendAttachOnServer(long featureId,
-            ChangeFeatureItem.ChangeAttachItem attachItem,
+            long attachId,
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
-        AttachItem attach = getAttach("" + featureId, "" + attachItem.getAttachId());
+        AttachItem attach = getAttach("" + featureId, "" + attachId);
         if(null == attach) //just remove buggy item
             return true;
         String fileName = attach.getDisplayName();
@@ -808,17 +838,13 @@ public class NGWVectorLayer
         // analyse feature
         for (Feature remoteFeature : features) {
 
-            Cursor cursor = query( null, FIELD_ID + " = " + remoteFeature.getId(), null, null);
+            Cursor cursor = query(null, FIELD_ID + " = " + remoteFeature.getId(), null, null);
             //no local feature
             if (null == cursor || cursor.getCount() == 0) {
 
-                boolean createNewFeature = true;
-                for (ChangeFeatureItem change : mChanges) {
-                    if (change.getFeatureId() == remoteFeature.getId()) {
-                        createNewFeature = false; //if have changes (delete) not create new feature
-                        break;
-                    }
-                }
+                //if we have changes (delete) not create new feature
+                boolean createNewFeature =
+                        !FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId());
 
                 //create new feature with remoteId
                 if (createNewFeature) {
@@ -829,44 +855,36 @@ public class NGWVectorLayer
                     Uri newFeatureUri = insert(uri, values);
                     Log.d(TAG, "Add new feature from server - " + newFeatureUri.toString());
                 }
+
             } else {
                 cursor.moveToFirst();
+                // with the given ID (remoteFeature.getId()) must be only one feature
                 Feature currentFeature = cursorToFeature(cursor);
-                //compare features
 
+                //compare features
                 boolean eqData = remoteFeature.equalsData(currentFeature);
                 boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
 
                 //process data
                 if (eqData) {
                     //remove from changes
-                    for (int i = 0; i < mChanges.size(); i++) {
-                        ChangeFeatureItem change = mChanges.get(i);
-                        if (change.getFeatureId() == remoteFeature.getId() && (eqAttach || 0 == (change.getOperation() & CHANGE_OPERATION_ATTACH))) {
-                            boolean isDelete = false;
-                            for(ChangeFeatureItem.ChangeAttachItem attachItem : change.getAttachItems()){
-                                if(attachItem.getOperation() == CHANGE_OPERATION_DELETE){
-                                    isDelete = true;
-                                    break;
-                                }
-                            }
-                            if(!isDelete) {
-                                Log.d(TAG, "The feature " + change.getFeatureId() +
-                                           " already changed on server. Remove change set #" +
-                                           i);
-                                mChanges.remove(i);
-                                i--;
-                            }
+
+                    if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId())) {
+
+                        if (eqAttach && !FeatureChanges.isAttachesForDelete(
+                                mChangeTableName, remoteFeature.getId()) ||
+                                !FeatureChanges.isAttachChanges(
+                                        mChangeTableName, remoteFeature.getId())) {
+
+                            FeatureChanges.removeChanges(mChangeTableName, remoteFeature.getId());
                         }
                     }
+
                 } else {
-                    boolean isChangedLocal = false;
-                    for (ChangeFeatureItem change : mChanges) {
-                        if (change.getFeatureId() == remoteFeature.getId()) {
-                            isChangedLocal = true; //we have local changes ready for sent to server
-                            break;
-                        }
-                    }
+
+                    // we have local changes ready for sent to server
+                    boolean isChangedLocal =
+                            FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId());
 
                     //no local changes - update local feature
                     if (!isChangedLocal) {
@@ -885,27 +903,20 @@ public class NGWVectorLayer
 
                 //process attachments
                 if(eqAttach){
-                    for (int i = 0; i < mChanges.size(); i++) {
-                        ChangeFeatureItem change = mChanges.get(i);
-                        if (change.getFeatureId() == remoteFeature.getId() && (eqData || change.getOperation() == CHANGE_OPERATION_ATTACH)) {
-                            Log.d(TAG, "The feature " + change.getFeatureId() +
-                                       " already changed on server. Remove change set #" + i);
-                            mChanges.remove(i);
-                            i--;
-                        }
+
+                    if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId()) &&
+                            (eqData || FeatureChanges.isAttachChanges(
+                                    mChangeTableName, remoteFeature.getId()))) {
+
+                        Log.d(TAG, "The feature " + remoteFeature.getId() +
+                                      " already changed on server. Remove changes for it");
+
+                        FeatureChanges.removeChanges(mChangeTableName, remoteFeature.getId());
                     }
 
                 } else {
-                    boolean isChangedLocal = false;
-
-                    for (ChangeFeatureItem change : mChanges) {
-                        if (change.getFeatureId() == remoteFeature.getId() &&
-                            0 != (change.getOperation() & CHANGE_OPERATION_ATTACH)) {
-                            //we have local changes ready for sent to server
-                            isChangedLocal = true;
-                            break;
-                        }
-                    }
+                    boolean isChangedLocal =
+                            FeatureChanges.isAttachChanges(mChangeTableName, remoteFeature.getId());
 
                     if (!isChangedLocal) {
                         Iterator<String> iterator =
@@ -926,28 +937,9 @@ public class NGWVectorLayer
                                         remoteFeature.getAttachments().get(attachId);
 
                                 if (null != currentItem && !currentItem.equals(remoteItem)) {
-                                    boolean changeOnServer = true;
-
-                                    // check if we have change attach properties local
-                                    for (ChangeFeatureItem change : mChanges) {
-                                        //check if this is our record
-                                        if (change.getFeatureId() == remoteFeature.getId() &&
-                                            0 != (change.getOperation() & CHANGE_OPERATION_ATTACH)) {
-                                            for (ChangeFeatureItem.ChangeAttachItem attachItem : change
-                                                    .getAttachItems()) {
-
-                                                if (remoteItem.getAttachId()
-                                                              .equals("" +
-                                                                      attachItem.getAttachId())) {
-                                                    changeOnServer = false;
-                                                }
-                                            }
-                                        }
-
-                                        if (!changeOnServer) {
-                                            break;
-                                        }
-                                    }
+                                    long attachIdL = Long.parseLong(remoteItem.getAttachId());
+                                    boolean changeOnServer = !FeatureChanges.isAttachChanges(
+                                            mChangeTableName, remoteFeature.getId(), attachIdL);
 
                                     if (changeOnServer) {
                                         currentItem.setDescription(remoteItem.getDescription());
@@ -968,8 +960,8 @@ public class NGWVectorLayer
             }
         }
 
-        // remove features not exist on server from local layer if no operation is in changes
-        // array or change operation for local feature present
+        // remove features not exist on server from local layer
+        // if no operation is in changes array or change operation for local feature present
 
         try {
 
@@ -983,13 +975,8 @@ public class NGWVectorLayer
                 }
 
                 // if local item is in update list and state ADD_NEW skip delete
-                for (ChangeFeatureItem change : mChanges) {
-                    if (change.getFeatureId() == item.getId() &&
-                        0 != (change.getOperation() & CHANGE_OPERATION_NEW)) {
-                        bDeleteFeature = false;
-                        break;
-                    }
-                }
+                bDeleteFeature = bDeleteFeature && !FeatureChanges.isChanges(
+                        mChangeTableName, item.getId(), CHANGE_OPERATION_NEW);
 
                 if (bDeleteFeature) {
                     Log.d(TAG, "Delete feature #" + item.getId() + " not exist on server");
@@ -997,32 +984,51 @@ public class NGWVectorLayer
                 }
             }
 
+            Cursor changeCursor = FeatureChanges.getChanges(mChangeTableName);
+
             // remove changes already applied on server (delete already deleted id or add already added)
-            for (int i = 0; i < mChanges.size(); i++) {
-                ChangeFeatureItem change = mChanges.get(i);
-                boolean bDeleteChange = true; // if feature not exist on server
-                for (Feature remoteFeature : features) {
-                    if(remoteFeature.getId() == change.getFeatureId()){
-                        if(0 != (change.getOperation() & CHANGE_OPERATION_NEW)) {
-                            // if feature already exist, just change it
-                            if(!change.getAttachItems().isEmpty())
-                                change.setOperation(CHANGE_OPERATION_CHANGED | CHANGE_OPERATION_ATTACH);
-                            else
-                                change.setOperation(CHANGE_OPERATION_CHANGED);
+            if (null != changeCursor) {
+
+                if (changeCursor.moveToFirst()) {
+                    int recordIdColumn = changeCursor.getColumnIndex(FIELD_ID);
+                    int featureIdColumn = changeCursor.getColumnIndex(FIELD_FEATURE_ID);
+                    int operationColumn = changeCursor.getColumnIndex(FIELD_OPERATION);
+
+                    do {
+                        long changeRecordId = changeCursor.getLong(recordIdColumn);
+                        long changeFeatureId = changeCursor.getLong(featureIdColumn);
+                        int changeOperation = changeCursor.getInt(operationColumn);
+
+                        boolean bDeleteChange = true; // if feature not exist on server
+                        for (Feature remoteFeature : features) {
+                            if(remoteFeature.getId() == changeFeatureId){
+                                if (0 != (changeOperation & CHANGE_OPERATION_NEW)) {
+                                    // if feature already exist, just change it
+                                    FeatureChanges.setOperation(
+                                            mChangeTableName, changeRecordId,
+                                            CHANGE_OPERATION_CHANGED);
+                                }
+                                bDeleteChange = false; // in other cases just apply
+                                break;
+                            }
                         }
-                        bDeleteChange = false; // in other cases just apply
-                        break;
-                   }
+
+                        if (0 != (changeOperation & CHANGE_OPERATION_NEW) && bDeleteChange) {
+                            bDeleteChange = false;
+                        }
+
+                        if (bDeleteChange) {
+                            Log.d(TAG,
+                                  "Delete change for feature #" + changeFeatureId + " operation " +
+                                          changeOperation);
+                            // TODO: analise for operation, remove all equal
+                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                        }
+
+                    } while (changeCursor.moveToNext());
                 }
 
-                if(0 != (change.getOperation() & CHANGE_OPERATION_NEW) && bDeleteChange)
-                    bDeleteChange = false;
-
-                if (bDeleteChange) {
-                    Log.d(TAG, "Delete change for feature #" + change.getFeatureId() + " operation " + change.getOperation());
-                    mChanges.remove(i);
-                    i--;
-                }
+                changeCursor.close();
             }
         }
         catch (ConcurrentModificationException e){
@@ -1230,7 +1236,7 @@ public class NGWVectorLayer
         }
         if (syncType == SYNC_NONE) {
             mSyncType = syncType;
-            mChanges.clear();
+            FeatureChanges.removeAllChanges(mChangeTableName);
         } else if (mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA)) {
             mSyncType = syncType;
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
@@ -1244,8 +1250,9 @@ public class NGWVectorLayer
                         if(attachId.equals(META))
                             continue;
                         Long attachIdL = Long.parseLong(attachId);
-                        if(attachIdL >= 1000)
+                        if (attachIdL >= 1000) {
                             addChange(id, attachIdL, CHANGE_OPERATION_NEW);
+                        }
                     }
                 }
             }
