@@ -39,7 +39,7 @@ import java.util.List;
 
 public class GpsEventSource
 {
-    private static final   int MIN_SATELLITES_IN_FIX = 3;
+    public static final   int MIN_SATELLITES_IN_FIX = 3;
     protected List<GpsEventListener> mListeners;
 
     protected LocationManager     mLocationManager;
@@ -116,26 +116,26 @@ public class GpsEventSource
 
     public Location getLastKnownLocation()
     {
-//        if (null != mLastLocation) {
+        if (null != mLastLocation) {
             return mLastLocation;
-//        }
-//        if (null != mLocationManager) {
-//            if (0 != (mListenProviders & GPS_PROVIDER)) {
-//                mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-//                if (null != mLastLocation) {
-//                    return mLastLocation;
-//                }
-//            }
-//
-//            if (0 != (mListenProviders & NETWORK_PROVIDER)) {
-//                mLastLocation =
-//                        mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-//                if (null != mLastLocation) {
-//                    return mLastLocation;
-//                }
-//            }
-//        }
-//        return null;
+        }
+        if (null != mLocationManager) {
+            if (0 != (mListenProviders & GPS_PROVIDER)) {
+                mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (null != mLastLocation) {
+                    return mLastLocation;
+                }
+            }
+
+            if (0 != (mListenProviders & NETWORK_PROVIDER)) {
+                mLastLocation =
+                        mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (null != mLastLocation) {
+                    return mLastLocation;
+                }
+            }
+        }
+        return null;
     }
 
 
@@ -185,13 +185,6 @@ public class GpsEventSource
         public void onLocationChanged(Location location)
         {
             mLastLocation = location;
-
-            if (location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
-                int satellites = location.getExtras().getInt("satellites");
-
-                if (satellites < MIN_SATELLITES_IN_FIX)
-                    mLastLocation = null;
-            }
 
             for (GpsEventListener listener : mListeners) {
                 listener.onLocationChanged(mLastLocation);
