@@ -74,6 +74,7 @@ public class RemoteTMSLayer
     protected       int          mCacheSize;
 
     public final static long DELAY = 2150;
+    protected final Object lock = new Object();
 
 
     public RemoteTMSLayer(
@@ -100,13 +101,24 @@ public class RemoteTMSLayer
                    getMaxThreadCount());
     }
 
-    protected synchronized void putBitmapToCache(
+    protected void putBitmapToCache(
             String tileHash,
             Bitmap bitmap){
-        //if(mBitmapCache.containsKey(tile.getHash()))
-        //    return;
-        if(mBitmapCache != null)
-            mBitmapCache.put(tileHash, bitmap);
+
+        synchronized (lock) {
+            if(mBitmapCache != null) {
+                mBitmapCache.put(tileHash, bitmap);
+            }
+        }
+    }
+
+    protected Bitmap getBitmapFromCache(String tileHash){
+        synchronized (lock) {
+            if(mBitmapCache != null) {
+                return mBitmapCache.get(tileHash);
+            }
+        }
+        return null;
     }
 
     @Override
@@ -115,10 +127,7 @@ public class RemoteTMSLayer
         if(null == tile)
             return null;
 
-        Bitmap ret = null;
-        if(mBitmapCache != null)
-            ret = mBitmapCache.get(tile.getHash());
-
+        Bitmap ret = getBitmapFromCache(tile.getHash());
         if(null != ret)
             return ret;
 
@@ -381,7 +390,11 @@ public class RemoteTMSLayer
             return;
         if(nTileCount < 30)
             nTileCount = 30;
-        mBitmapCache = lruCache(nTileCount);
+
+        synchronized (lock) {
+            mBitmapCache = lruCache(nTileCount);
+        }
+
         mCacheSize = nTileCount;
     }
 }
