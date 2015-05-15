@@ -164,9 +164,12 @@ public class FileUtil
         try {
             if (uri.getScheme().compareTo("content") == 0) {
                 Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
-                if (cursor.moveToFirst()) {
-                    int column_index = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
-                    fileName = cursor.getString(column_index);
+                if (null != cursor) {
+                    if (cursor.moveToFirst()) {
+                        int column_index = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
+                        fileName = cursor.getString(column_index);
+                    }
+                    cursor.close();
                 }
             } else if (uri.getScheme().compareTo("file") == 0) {
                 fileName = uri.getLastPathSegment();

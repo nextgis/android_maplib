@@ -182,13 +182,16 @@ public class VectorLayer
                 JSONObject crsPropertiesJSONObject =
                         crsJSONObject.getJSONObject(GEOJSON_PROPERTIES);
                 String crsName = crsPropertiesJSONObject.getString(GEOJSON_NAME);
-                if (crsName.equals("urn:ogc:def:crs:OGC:1.3:CRS84")) { // WGS84
-                    isWGS84 = true;
-                } else if (crsName.equals("urn:ogc:def:crs:EPSG::3857") ||
-                        crsName.equals("EPSG:3857")) { //Web Mercator
-                    isWGS84 = false;
-                } else {
-                    return mContext.getString(R.string.error_crs_unsupported);
+                switch (crsName) {
+                    case "urn:ogc:def:crs:OGC:1.3:CRS84":  // WGS84
+                        isWGS84 = true;
+                        break;
+                    case "urn:ogc:def:crs:EPSG::3857":
+                    case "EPSG:3857":  //Web Mercator
+                        isWGS84 = false;
+                        break;
+                    default:
+                        return mContext.getString(R.string.error_crs_unsupported);
                 }
             }
 
