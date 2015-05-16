@@ -149,7 +149,7 @@ public class GpsEventSource
                                                     GPS_PROVIDER | NETWORK_PROVIDER);
 
         String minTimeStr =
-                sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_TIME, "3");
+                sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_TIME, "2");
         String minDistanceStr =
                 sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_DISTANCE, "10");
         mUpdateMinTime = Long.parseLong(minTimeStr) * 1000;
