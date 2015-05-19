@@ -38,13 +38,21 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.nextgis.maplib.util.Constants.*;
 
+
 public class SimpleFeatureRenderer extends Renderer{
 
     protected Style              mStyle;
     protected ThreadPoolExecutor mDrawThreadPool;
-    protected int mGeomCompleteCount;
+    protected int                mGeomCompleteCount;
 
     public static final String JSON_STYLE_KEY = "style";
+
+
+    public SimpleFeatureRenderer(Layer layer)
+    {
+        super(layer);
+        mStyle = null;
+    }
 
 
     public SimpleFeatureRenderer(
@@ -59,6 +67,11 @@ public class SimpleFeatureRenderer extends Renderer{
     @Override
     public void runDraw(final GISDisplay display)
     {
+        if (null == mStyle) {
+            Log.d(TAG, "mStyle == null");
+            return;
+        }
+
         cancelDraw();
 
         GeoEnvelope env = display.getBounds();
@@ -79,23 +92,23 @@ public class SimpleFeatureRenderer extends Renderer{
         }
 
         int threadCount = DRAWING_SEPARATE_THREADS;
-        mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
-                                                 KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
-                                                 new RejectedExecutionHandler()
-                                                 {
-                                                     @Override
-                                                     public void rejectedExecution(
-                                                             Runnable r,
-                                                             ThreadPoolExecutor executor)
-                                                     {
-                                                         try {
-                                                             executor.getQueue().put(r);
-                                                         } catch (InterruptedException e) {
-                                                             e.printStackTrace();
-                                                             //throw new RuntimeException("Interrupted while submitting task", e);
-                                                         }
-                                                     }
-                                                 });
+        mDrawThreadPool = new ThreadPoolExecutor(
+                threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+        {
+            @Override
+            public void rejectedExecution(
+                    Runnable r,
+                    ThreadPoolExecutor executor)
+            {
+                try {
+                    executor.getQueue().put(r);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    //throw new RuntimeException("Interrupted while submitting task", e);
+                }
+            }
+        });
 
         synchronized (mLayer) {
             mGeomCompleteCount = 0;
@@ -103,6 +116,8 @@ public class SimpleFeatureRenderer extends Renderer{
 
         for (int i = 0; i < cache.size(); i++) {
             final VectorCacheItem item = cache.get(i);
+            setStyleParams(mStyle, item.getId());
+
             mDrawThreadPool.execute(new Runnable()
             {
                 @Override
@@ -130,6 +145,12 @@ public class SimpleFeatureRenderer extends Renderer{
     }
 
 
+    protected void setStyleParams(Style style, long featureId)
+    {
+        // do nothing
+    }
+
+
     @Override
     public void cancelDraw(){
         if (mDrawThreadPool != null) {
@@ -154,7 +175,12 @@ public class SimpleFeatureRenderer extends Renderer{
             throws JSONException
     {
         JSONObject rootJsonObject = new JSONObject();
-        rootJsonObject.put(JSON_STYLE_KEY, mStyle.toJSON());
+        rootJsonObject.put(JSON_NAME_KEY, "SimpleFeatureRenderer");
+
+        if (null != mStyle) {
+            rootJsonObject.put(JSON_STYLE_KEY, mStyle.toJSON());
+        }
+
         return rootJsonObject;
     }
 
@@ -187,6 +213,8 @@ public class SimpleFeatureRenderer extends Renderer{
                 mStyle = new SimplePolygonStyle();
                 mStyle.fromJSON(styleJsonObject);
                 break;
+            default:
+                throw new JSONException("Unknown style type: " + styleName);
         }
     }
 }

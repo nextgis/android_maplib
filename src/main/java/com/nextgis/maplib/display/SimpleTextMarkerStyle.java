@@ -131,6 +131,18 @@ public class SimpleTextMarkerStyle
     }
 
 
+    public String getMarkerText()
+    {
+        return mMarkerText;
+    }
+
+
+    public void setMarkerText(String markerText)
+    {
+        mMarkerText = markerText;
+    }
+
+
     @Override
     public JSONObject toJSON()
             throws JSONException

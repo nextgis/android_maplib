@@ -44,10 +44,13 @@ import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.display.IStyleRule;
+import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.display.SimplePolygonStyle;
+import com.nextgis.maplib.display.Style;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
@@ -486,28 +489,79 @@ public class VectorLayer
     }
 
 
-    protected void setDefaultRenderer()
+    protected Style getDefaultStyle()
+            throws Exception
     {
         switch (mGeometryType) {
+
             case GTPoint:
             case GTMultiPoint:
-                mRenderer = new SimpleFeatureRenderer(
-                        this, new SimpleMarkerStyle(
-                        Color.RED, Color.BLACK, 6, SimpleMarkerStyle.MarkerStyleCircle));
-                break;
+                return new SimpleMarkerStyle(
+                        Color.RED, Color.BLACK, 6, SimpleMarkerStyle.MarkerStyleCircle);
+
             case GTLineString:
             case GTMultiLineString:
-                mRenderer = new SimpleFeatureRenderer(
-                        this, new SimpleLineStyle(
-                        Color.GREEN, Color.BLUE, SimpleLineStyle.LineStyleSolid));
-                break;
+                return new SimpleLineStyle(
+                        Color.GREEN, Color.BLUE, SimpleLineStyle.LineStyleSolid);
+
             case GTPolygon:
             case GTMultiPolygon:
-                mRenderer = new SimpleFeatureRenderer(this, new SimplePolygonStyle(Color.MAGENTA));
+                return new SimplePolygonStyle(Color.MAGENTA);
+
+            default:
+                throw new Exception("Unknown geometry type: " + mGeometryType);
+        }
+    }
+
+
+    protected void setDefaultRenderer()
+    {
+        try {
+            mRenderer = new SimpleFeatureRenderer(this, getDefaultStyle());
+        } catch (Exception e) {
+            Log.d(TAG, e.getLocalizedMessage());
+            mRenderer = null;
+        }
+    }
+
+
+    protected void setRenderer(JSONObject jsonObject)
+            throws JSONException
+    {
+        String renderName = jsonObject.getString(JSON_NAME_KEY);
+        switch (renderName)
+        {
+            case "SimpleFeatureRenderer":
+                mRenderer = new SimpleFeatureRenderer(this);
+                break;
+            case "RuleFeatureRenderer":
+                mRenderer = new RuleFeatureRenderer(this);
                 break;
             default:
                 mRenderer = null;
         }
+
+        if (null != mRenderer) {
+            if (mRenderer instanceof IJSONStore) {
+                IJSONStore jsonStore = (IJSONStore) mRenderer;
+                jsonStore.fromJSON(jsonObject);
+
+            }
+
+            if (mRenderer instanceof RuleFeatureRenderer) {
+                IStyleRule rule = getStyleRule();
+                if (null != rule) {
+                    RuleFeatureRenderer renderer = (RuleFeatureRenderer) mRenderer;
+                    renderer.setStyleRule(rule);
+                }
+            }
+        }
+    }
+
+
+    protected IStyleRule getStyleRule()
+    {
+        return null;
     }
 
 
@@ -561,14 +615,8 @@ public class VectorLayer
         }
 
         if (jsonObject.has(JSON_RENDERERPROPS_KEY)) {
-            setDefaultRenderer();
-
-            if (null != mRenderer && mRenderer instanceof IJSONStore) {
-                IJSONStore jsonStore = (IJSONStore) mRenderer;
-                jsonStore.fromJSON(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
-            }
-        }
-        else{
+            setRenderer(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
+        } else{
             setDefaultRenderer();
         }
 
