@@ -58,6 +58,16 @@ public class SimpleTextLineStyle
     }
 
 
+    @Override
+    public SimpleTextLineStyle clone()
+            throws CloneNotSupportedException
+    {
+        SimpleTextLineStyle obj = (SimpleTextLineStyle) super.clone();
+        obj.mLineText = mLineText;
+        return obj;
+    }
+
+
     public void onDraw(
             GeoLineString lineString,
             GISDisplay display)

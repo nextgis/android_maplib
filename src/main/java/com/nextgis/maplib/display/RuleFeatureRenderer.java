@@ -22,11 +22,13 @@
 
 package com.nextgis.maplib.display;
 
+import android.util.Log;
 import com.nextgis.maplib.map.Layer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class RuleFeatureRenderer
@@ -61,11 +63,20 @@ public class RuleFeatureRenderer
     }
 
 
-    protected void setStyleParams(Style style, long featureId)
+    protected Style getParametrizedStyle(
+            Style style,
+            long featureId)
     {
-        if (null != mStyleRule) {
-            mStyleRule.setStyleParams(mStyle, featureId);
+        try {
+            if (null != mStyleRule) {
+                Style styleClone = style.clone();
+                mStyleRule.setStyleParams(styleClone, featureId);
+                return styleClone;
+            }
+        } catch (CloneNotSupportedException e) {
+            Log.d(TAG, "Returned not parametrized style, " + e.getLocalizedMessage());
         }
+        return style;
     }
 
 

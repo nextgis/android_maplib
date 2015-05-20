@@ -52,6 +52,17 @@ public class SimplePolygonStyle extends Style
         mWidth = 3;
     }
 
+
+    @Override
+    public SimplePolygonStyle clone()
+            throws CloneNotSupportedException
+    {
+        SimplePolygonStyle obj = (SimplePolygonStyle) super.clone();
+        obj.mWidth = mWidth;
+        return obj;
+    }
+
+
     public void onDraw(
             GeoPolygon polygon,
             GISDisplay display)

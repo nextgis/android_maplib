@@ -70,6 +70,19 @@ public class SimpleMarkerStyle
     }
 
 
+    @Override
+    public SimpleMarkerStyle clone()
+            throws CloneNotSupportedException
+    {
+        SimpleMarkerStyle obj = (SimpleMarkerStyle) super.clone();
+        obj.mType = mType;
+        obj.mSize = mSize;
+        obj.mWidth = mWidth;
+        obj.mOutColor = mOutColor;
+        return obj;
+    }
+
+
     protected void onDraw(
             GeoPoint pt,
             GISDisplay display)

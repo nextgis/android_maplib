@@ -29,7 +29,8 @@ import org.json.JSONObject;
 import static com.nextgis.maplib.util.Constants.JSON_COLOR_KEY;
 
 
-public abstract class Style implements IJSONStore
+public abstract class Style
+        implements IJSONStore, Cloneable
 {
     protected int mColor;
 
@@ -37,6 +38,15 @@ public abstract class Style implements IJSONStore
     public Style()
     {
 
+    }
+
+
+    public Style clone()
+            throws CloneNotSupportedException
+    {
+        Style obj = (Style) super.clone();
+        obj.mColor = mColor;
+        return obj;
     }
 
 

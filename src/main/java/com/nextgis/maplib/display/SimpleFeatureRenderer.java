@@ -116,38 +116,60 @@ public class SimpleFeatureRenderer extends Renderer{
 
         for (int i = 0; i < cache.size(); i++) {
             final VectorCacheItem item = cache.get(i);
-            setStyleParams(mStyle, item.getId());
+            final Style style = getParametrizedStyle(mStyle, item.getId());
 
-            mDrawThreadPool.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    android.os.Process.setThreadPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+            mDrawThreadPool.execute(
+                    new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            android.os.Process.setThreadPriority(
+                                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                    GeoGeometry geometry = item.getGeoGeometry();
-                    if (null != geometry) {
-                        mStyle.onDraw(geometry, display);
-                    }
+                            GeoGeometry geometry = item.getGeoGeometry();
+                            if (null != geometry) {
+                                style.onDraw(geometry, display);
+                            }
 
-                    synchronized (mLayer) {
-                        mGeomCompleteCount++;
-                        float percent = (float) (mGeomCompleteCount) / cache.size();
-                        vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
+                            synchronized (mLayer) {
+                                mGeomCompleteCount++;
+                                float percent = (float) (mGeomCompleteCount) / cache.size();
+                                vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
 
-                        // Log.d(TAG, "Vector percent: " + percent + " complete: " + mGeomCompleteCount + " geom count: " + cache.size() + " layer :" + mLayer.getName());
-                    }
-                    //vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
-                }
+                                //Log.d(TAG, "Vector percent: " + percent + " complete: " +
+                                //        mGeomCompleteCount + " geom count: " + cache.size() +
+                                //        " layer :" + mLayer.getName());
+                            }
+                            //vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
+                        }
 
-            });
+                    });
+
         }
     }
 
 
-    protected void setStyleParams(Style style, long featureId)
+    /**
+     * If subclass's getParametrizedStyle() changes style params then must be so in the method
+     * body:
+     * <pre> {@code
+     * try {
+     *     Style styleClone = style.clone();
+     *     // changing styleClone params
+     *     return styleClone;
+     * } catch (CloneNotSupportedException e) {
+     *     e.printStackTrace();
+     *     return style;
+     *     // or treat this situation instead
+     * }
+     * } </pre>
+     */
+    protected Style getParametrizedStyle(
+            Style style,
+            long featureId)
     {
-        // do nothing
+        return style;
     }
 
 

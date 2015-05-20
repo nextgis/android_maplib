@@ -59,6 +59,16 @@ public class SimpleTextMarkerStyle
     }
 
 
+    @Override
+    public SimpleTextMarkerStyle clone()
+            throws CloneNotSupportedException
+    {
+        SimpleTextMarkerStyle obj = (SimpleTextMarkerStyle) super.clone();
+        obj.mMarkerText = mMarkerText;
+        return obj;
+    }
+
+
     protected void onDraw(
             GeoPoint pt,
             GISDisplay display)
