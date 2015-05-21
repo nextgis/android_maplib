@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
@@ -161,12 +162,13 @@ public class RemoteTMSLayer
 
             final HttpGet get = new HttpGet(url);
 
-            //basic auth
-            if (null != mLogin && mLogin.length() > 0 && null != mPassword &&
-                mPassword.length() > 0) {
+            // basic auth
+            // Here we must use getLogin() and getPassword() for subclasses
+            // which override these methods
+            if (!TextUtils.isEmpty(getLogin()) && !TextUtils.isEmpty(getPassword())) {
                 get.setHeader("Accept", "*/*");
                 final String basicAuth = "Basic " + Base64.encodeToString(
-                        (mLogin + ":" + mPassword).getBytes(), Base64.NO_WRAP);
+                        (getLogin() + ":" + getPassword()).getBytes(), Base64.NO_WRAP);
                 get.setHeader("Authorization", basicAuth);
             }
 
@@ -235,8 +237,16 @@ public class RemoteTMSLayer
     {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_URL_KEY, mURL);
-        rootConfig.put(JSON_LOGIN_KEY, mLogin);
-        rootConfig.put(JSON_PASSWORD_KEY, mPassword);
+        // Here we must use mLogin instead of getLogin() for subclasses
+        // which do not use mLogin
+        if (!TextUtils.isEmpty(mLogin)) {
+            rootConfig.put(JSON_LOGIN_KEY, mLogin);
+        }
+        // Here we must use mPassword instead of getPassword() for subclasses
+        // which do not use mLogin
+        if (!TextUtils.isEmpty(mPassword)) {
+            rootConfig.put(JSON_PASSWORD_KEY, mPassword);
+        }
         return rootConfig;
     }
 
@@ -247,10 +257,18 @@ public class RemoteTMSLayer
     {
         super.fromJSON(jsonObject);
         mURL = jsonObject.getString(JSON_URL_KEY);
-        if(jsonObject.has(JSON_LOGIN_KEY))
+        if (jsonObject.has(JSON_LOGIN_KEY))
+        {
+            // Here we must use mLogin instead of setLogin() for subclasses
+            // which do not use mLogin
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
-        if(jsonObject.has(JSON_PASSWORD_KEY))
+        }
+        if (jsonObject.has(JSON_PASSWORD_KEY))
+        {
+            // Here we must use mPassword instead of setPassword() for subclasses
+            // which do not use mLogin
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
+        }
 
         analizeURL(mURL);
     }
@@ -351,9 +369,21 @@ public class RemoteTMSLayer
     }
 
 
+    public String getLogin()
+    {
+        return mLogin;
+    }
+
+
     public void setLogin(String login)
     {
         mLogin = login;
+    }
+
+
+    public String getPassword()
+    {
+        return mPassword;
     }
 
 

@@ -21,7 +21,10 @@
 
 package com.nextgis.maplib.map;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
+import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,10 +35,11 @@ import static com.nextgis.maplib.util.Constants.*;
 
 public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
 {
-    protected String mAccount;
+    protected String mAccountName;
 
-    protected final static short MAX_THREAD_COUNT = 8;
+    protected final static short  MAX_THREAD_COUNT = 8;
     protected static final String JSON_ACCOUNT_KEY = "account";
+
 
     public NGWRasterLayer(
             Context context,
@@ -51,7 +55,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_ACCOUNT_KEY, mAccount);
+        rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
         return rootConfig;
     }
 
@@ -61,7 +65,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        mAccount = jsonObject.getString(JSON_ACCOUNT_KEY);
+        mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
     }
 
 
@@ -75,13 +79,49 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
     @Override
     public String getAccountName()
     {
-        return mAccount;
+        return mAccountName;
     }
 
 
     @Override
-    public void setAccountName(String account)
+    public void setAccountName(String accountName)
     {
-        mAccount = account;
+        mAccountName = accountName;
+    }
+
+
+    @Override
+    public String getLogin()
+    {
+        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
+        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
+        Account account = app.getAccount(mAccountName);
+
+        return accountManager.getUserData(account, "login");
+    }
+
+
+    @Override
+    public void setLogin(String login)
+    {
+        throw new AssertionError("NGWRasterLayer.setLogin() can not be used");
+    }
+
+
+    @Override
+    public String getPassword()
+    {
+        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
+        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
+        Account account = app.getAccount(mAccountName);
+
+        return accountManager.getPassword(account);
+    }
+
+
+    @Override
+    public void setPassword(String password)
+    {
+        throw new AssertionError("NGWRasterLayer.setPassword() can not be used");
     }
 }

@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib.api;
 
+import android.accounts.Account;
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.MapBase;
 
@@ -43,6 +44,12 @@ public interface IGISApplication
      * @return A authority for sync purposes or empty string in not sync anything
      */
     public String getAuthority();
+
+    /**
+     * @param accountName Account name
+     * @return Account by it name
+     */
+    public Account getAccount(String accountName);
 
     /**
      *
