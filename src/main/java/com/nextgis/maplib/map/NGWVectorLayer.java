@@ -111,6 +111,7 @@ public class NGWVectorLayer
     public void setAccountName(String accountName)
     {
         mAccountName = accountName;
+        setAccountCacheData();
     }
 
 
@@ -145,8 +146,7 @@ public class NGWVectorLayer
     {
         super.fromJSON(jsonObject);
 
-        mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
-        setAccountCacheData();
+        setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
 
         mRemoteId = jsonObject.getLong(JSON_ID_KEY);
         if (jsonObject.has(JSON_SYNC_TYPE_KEY)) {

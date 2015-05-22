@@ -66,9 +66,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
             throws JSONException
     {
         super.fromJSON(jsonObject);
-
-        mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
-        setAccountCacheData();
+        setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
     }
 
 
@@ -100,6 +98,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
     public void setAccountName(String accountName)
     {
         mAccountName = accountName;
+        setAccountCacheData();
     }
 
 
