@@ -47,9 +47,27 @@ public interface IGISApplication
 
     /**
      * @param accountName Account name
-     * @return Account by it name
+     * @return Account by its name
      */
     public Account getAccount(String accountName);
+
+    /**
+     * @param account Account
+     * @return Account URL
+     */
+    public String getAccountUrl(Account account);
+
+    /**
+     * @param account Account
+     * @return Account login
+     */
+    public String getAccountLogin(Account account);
+
+    /**
+     * @param account Account
+     * @return Account password
+     */
+    public String getAccountPassword(Account account);
 
     /**
      *

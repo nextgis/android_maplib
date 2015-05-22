@@ -22,7 +22,6 @@
 package com.nextgis.maplib.map;
 
 import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -69,7 +68,11 @@ public class NGWVectorLayer
         extends VectorLayer
         implements INGWLayer
 {
-    protected String      mAccountName;
+    protected String mAccountName;
+    protected String mCacheUrl;
+    protected String mCacheLogin;
+    protected String mCachePassword;
+
     protected long        mRemoteId;
     protected NetworkUtil mNet;
     protected int         mSyncType;
@@ -141,7 +144,10 @@ public class NGWVectorLayer
             throws JSONException, SQLiteException
     {
         super.fromJSON(jsonObject);
+
         mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
+        setAccountCacheData();
+
         mRemoteId = jsonObject.getLong(JSON_ID_KEY);
         if (jsonObject.has(JSON_SYNC_TYPE_KEY)) {
             mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
@@ -151,6 +157,17 @@ public class NGWVectorLayer
             //init in separate thread
             downloadAsync();
         }
+    }
+
+
+    public void setAccountCacheData()
+    {
+        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
+        Account account = app.getAccount(mAccountName);
+
+        mCacheUrl = app.getAccountUrl(account);
+        mCacheLogin = app.getAccountLogin(account);
+        mCachePassword = app.getAccountPassword(account);
     }
 
 
@@ -190,17 +207,10 @@ public class NGWVectorLayer
             return getContext().getString(R.string.error_network_unavailable);
         }
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try {
             Log.d(TAG, "download layer " + getName());
-            String data = mNet.get(NGWUtil.getResourceMetaUrl(url, mRemoteId), login, password);
+            String data = mNet.get(
+                    NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
             if(null == data){
                 return getContext().getString(R.string.error_download_data);
             }
@@ -225,7 +235,8 @@ public class NGWVectorLayer
             }
 
             //get layer data
-            data = mNet.get(NGWUtil.getFeaturesUrl(url, mRemoteId), login, password);
+            data = mNet.get(
+                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
             if(null == data){
                 return getContext().getString(R.string.error_download_data);
             }
@@ -237,7 +248,7 @@ public class NGWVectorLayer
 
         } catch (IOException e) {
             Log.d(
-                    TAG, "Problem downloading GeoJSON: " + url + " Error: " +
+                    TAG, "Problem downloading GeoJSON: " + mCacheUrl + " Error: " +
                          e.getLocalizedMessage());
             return getContext().getString(R.string.error_download_data);
         } catch (JSONException | SQLiteException e) {
@@ -611,14 +622,6 @@ public class NGWVectorLayer
         if(null == attach) //just remove buggy item
             return true;
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try {
             JSONObject putData = new JSONObject();
             //putData.put(JSON_ID_KEY, attach.getAttachId());
@@ -627,8 +630,8 @@ public class NGWVectorLayer
             putData.put("description", attach.getDescription());
 
             String data = mNet.put(
-                    NGWUtil.getFeatureAttachmentUrl(url, mRemoteId, featureId) + attachId,
-                    putData.toString(), login, password);
+                    NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId) + attachId,
+                    putData.toString(), mCacheLogin, mCachePassword);
 
             if(null == data){
                 syncResult.stats.numIoExceptions++;
@@ -655,19 +658,11 @@ public class NGWVectorLayer
             return false;
         }
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try{
 
             if (!mNet.delete(
-                    NGWUtil.getFeatureAttachmentUrl(url, mRemoteId, featureId) + attachId, login,
-                    password)) {
+                    NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId) + attachId,
+                    mCacheLogin, mCachePassword)) {
 
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -700,18 +695,11 @@ public class NGWVectorLayer
         File filePath = new File(mPath, featureId + "/" + attach.getAttachId());
         String fileMime = attach.getMimetype();
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try {
             //1. upload file
-            String data = mNet.postFile(NGWUtil.getFileUploadUrl(url), fileName, filePath, fileMime,
-                                        login, password);
+            String data = mNet.postFile(
+                    NGWUtil.getFileUploadUrl(mCacheUrl), fileName, filePath, fileMime, mCacheLogin,
+                    mCachePassword);
             if(null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -732,8 +720,8 @@ public class NGWVectorLayer
             postJsonData.put("file_upload", uploadMetaArray.get(0));
             postJsonData.put("description", attach.getDescription());
 
-            data = mNet.post(NGWUtil.getFeatureAttachmentUrl(url, mRemoteId, featureId),
-                             postJsonData.toString(), login, password);
+            data = mNet.post(NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId),
+                             postJsonData.toString(), mCacheLogin, mCachePassword);
             if(null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -809,18 +797,11 @@ public class NGWVectorLayer
 
         Log.d(TAG, "The network is available. Get changes from server");
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         // read layer contents as string
         String data;
         try {
-            data = mNet.get(NGWUtil.getVectorDataUrl(url, mRemoteId), login, password);
+            data = mNet.get(
+                    NGWUtil.getVectorDataUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -1081,19 +1062,12 @@ public class NGWVectorLayer
             return true; //just remove buggy data
         }
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
             String data = mNet.post(
-                    NGWUtil.getVectorDataUrl(url, mRemoteId), payload, login, password);
+                    NGWUtil.getVectorDataUrl(mCacheUrl, mRemoteId), payload, mCacheLogin,
+                    mCachePassword);
             if(null == data){
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1122,16 +1096,11 @@ public class NGWVectorLayer
             return false;
         }
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try {
-            if (!mNet.delete(NGWUtil.getFeatureUrl(url, mRemoteId, featureId), login, password)) {
+            if (!mNet.delete(
+                    NGWUtil.getFeatureUrl(mCacheUrl, mRemoteId, featureId), mCacheLogin,
+                    mCachePassword)) {
+
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -1164,20 +1133,13 @@ public class NGWVectorLayer
             return true; //just remove buggy data
         }
 
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        String url = accountManager.getUserData(account, "url");
-        String login = accountManager.getUserData(account, "login");
-        String password = accountManager.getPassword(account);
-
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
             Log.d(TAG, "payload: " + payload);
             String data = mNet.put(
-                    NGWUtil.getFeatureUrl(url, mRemoteId, featureId), payload, login, password);
+                    NGWUtil.getFeatureUrl(mCacheUrl, mRemoteId, featureId), payload, mCacheLogin,
+                    mCachePassword);
             if(null == data){
                 syncResult.stats.numIoExceptions++;
                 return false;

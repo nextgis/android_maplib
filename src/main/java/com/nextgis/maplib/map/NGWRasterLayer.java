@@ -22,7 +22,6 @@
 package com.nextgis.maplib.map;
 
 import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.content.Context;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -36,6 +35,8 @@ import static com.nextgis.maplib.util.Constants.*;
 public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
 {
     protected String mAccountName;
+    protected String mCacheLogin;
+    protected String mCachePassword;
 
     protected final static short  MAX_THREAD_COUNT = 8;
     protected static final String JSON_ACCOUNT_KEY = "account";
@@ -65,7 +66,19 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
             throws JSONException
     {
         super.fromJSON(jsonObject);
+
         mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
+        setAccountCacheData();
+    }
+
+
+    public void setAccountCacheData()
+    {
+        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
+        Account account = app.getAccount(mAccountName);
+
+        mCacheLogin = app.getAccountLogin(account);
+        mCachePassword = app.getAccountPassword(account);
     }
 
 
@@ -93,11 +106,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
     @Override
     public String getLogin()
     {
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        return accountManager.getUserData(account, "login");
+        return mCacheLogin;
     }
 
 
@@ -111,11 +120,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
     @Override
     public String getPassword()
     {
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        AccountManager accountManager = AccountManager.get(mContext.getApplicationContext());
-        Account account = app.getAccount(mAccountName);
-
-        return accountManager.getPassword(account);
+        return mCachePassword;
     }
 
 

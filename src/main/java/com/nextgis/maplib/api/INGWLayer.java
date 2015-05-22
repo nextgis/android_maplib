@@ -26,4 +26,6 @@ public interface INGWLayer
     public String getAccountName();
 
     public void setAccountName(String account);
+
+    public void setAccountCacheData();
 }
