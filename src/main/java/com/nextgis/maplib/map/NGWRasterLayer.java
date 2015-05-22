@@ -75,8 +75,10 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
         IGISApplication app = (IGISApplication) mContext.getApplicationContext();
         Account account = app.getAccount(mAccountName);
 
-        mCacheLogin = app.getAccountLogin(account);
-        mCachePassword = app.getAccountPassword(account);
+        if (null != account) {
+            mCacheLogin = app.getAccountLogin(account);
+            mCachePassword = app.getAccountPassword(account);
+        }
     }
 
 
