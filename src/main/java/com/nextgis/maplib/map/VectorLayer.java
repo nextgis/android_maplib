@@ -528,17 +528,18 @@ public class VectorLayer
     protected void setRenderer(JSONObject jsonObject)
             throws JSONException
     {
-        String renderName = jsonObject.getString(JSON_NAME_KEY);
+        String renderName = "";
+        if(jsonObject.has(JSON_NAME_KEY))
+            renderName = jsonObject.getString(JSON_NAME_KEY);
         switch (renderName)
         {
-            case "SimpleFeatureRenderer":
-                mRenderer = new SimpleFeatureRenderer(this);
-                break;
             case "RuleFeatureRenderer":
                 mRenderer = new RuleFeatureRenderer(this);
                 break;
             default:
-                mRenderer = null;
+            case "SimpleFeatureRenderer":
+                mRenderer = new SimpleFeatureRenderer(this);
+                break;
         }
 
         if (null != mRenderer) {
