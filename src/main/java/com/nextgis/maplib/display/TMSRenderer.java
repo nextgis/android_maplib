@@ -257,4 +257,22 @@ public class TMSRenderer
             }*/
         }
     }
+
+
+    public boolean isForceToGrayScale()
+    {
+        return mForceToGrayScale;
+    }
+
+
+    public float getBrightness()
+    {
+        return mBrightness;
+    }
+
+
+    public float getContrast()
+    {
+        return mContrast;
+    }
 }
