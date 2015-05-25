@@ -365,7 +365,7 @@ public class GISDisplay
         matrix.postScale((float) mInvertScale, (float) -mInvertScale);
         matrix.postTranslate((float) pt.getX(), (float) pt.getY());
 
-        float scale = (float) (1 + mZoomLevel - Math.floor(mZoomLevel));
+        float scale = (float) (1.0036 + mZoomLevel - Math.floor(mZoomLevel)); // 1.0036 ~ 256 / 255 - add one extra pixel
 
         if (bitmap.getWidth() != mTileSize) {
             scale = (float) mTileSize / bitmap.getWidth() * scale;
