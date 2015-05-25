@@ -58,11 +58,18 @@ public class LocalTMSLayer
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
+        Bitmap ret = getBitmapFromCache(tile.getHash());
+        if(null != ret)
+            return ret;
+
         TileCacheLevelDescItem item = mLimits.get(tile.getZoomLevel());
         if(item != null && item.isInside(tile.getX(), tile.getY())){
             File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
-            if (tilePath.exists())
-                return BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+            if (tilePath.exists()) {
+                ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                putBitmapToCache(tile.getHash(), ret);
+                return ret;
+            }
         }
         return null;
     }

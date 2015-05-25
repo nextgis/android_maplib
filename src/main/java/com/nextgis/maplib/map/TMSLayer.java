@@ -29,12 +29,15 @@ import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.display.TMSRenderer;
+import com.nextgis.maplib.util.Constants;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 import static com.nextgis.maplib.util.Constants.*;
@@ -42,10 +45,15 @@ import static com.nextgis.maplib.util.Constants.*;
 public abstract class TMSLayer
         extends Layer
 {
-    protected static final String JSON_TMSTYPE_KEY       = "tms_type";
+    protected static final String JSON_TMSTYPE_KEY     = "tms_type";
+    protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
+
     protected int mTMSType;
-    protected static final int    HTTP_SEPARATE_THREADS       = 2;
-    //protected List<String> checkDuplicates = new ArrayList<>();
+    protected static final int HTTP_SEPARATE_THREADS = 2;
+    protected Map<String, Bitmap> mBitmapCache;
+    protected int mCacheSize, mCacheSizeMult;
+    protected int mViewWidth, mViewHeight;
+    protected final Object lock = new Object();
 
     protected TMSLayer(
             Context contex,
@@ -53,6 +61,7 @@ public abstract class TMSLayer
     {
         super(contex, path);
 
+        mCacheSizeMult = 0;
         mRenderer = new TMSRenderer(this);
     }
 
@@ -298,6 +307,26 @@ public abstract class TMSLayer
 
     public abstract Bitmap getBitmap(TileItem tile);
 
+    protected void putBitmapToCache(
+            String tileHash,
+            Bitmap bitmap){
+
+        synchronized (lock) {
+            if(mBitmapCache != null) {
+                mBitmapCache.put(tileHash, bitmap);
+            }
+        }
+    }
+
+    protected Bitmap getBitmapFromCache(String tileHash){
+        synchronized (lock) {
+            if(mBitmapCache != null) {
+                return mBitmapCache.get(tileHash);
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public JSONObject toJSON()
@@ -309,6 +338,9 @@ public abstract class TMSLayer
             IJSONStore jsonStore = (IJSONStore) mRenderer;
             rootConfig.put(JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
         }
+
+
+        rootConfig.put(JSON_CACHE_SIZE_MULT, mCacheSizeMult);
         return rootConfig;
     }
 
@@ -325,10 +357,72 @@ public abstract class TMSLayer
                 jsonStore.fromJSON(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
             }
         }
+
+        if(jsonObject.has(JSON_CACHE_SIZE_MULT)){
+            mCacheSizeMult = jsonObject.getInt(JSON_CACHE_SIZE_MULT);
+        }
     }
 
     public int getMaxThreadCount()
     {
         return HTTP_SEPARATE_THREADS;
+    }
+
+    @Override
+    public void setViewSize(
+            int w,
+            int h)
+    {
+        super.setViewSize(w, h);
+
+        mViewWidth = w;
+        mViewHeight = h;
+
+        setCacheSizeMultiply(mCacheSizeMult);
+    }
+
+
+    public int getCacheSizeMultiply()
+    {
+        return mCacheSizeMult;
+    }
+
+
+    public void setCacheSizeMultiply(int cacheSizeMult)
+    {
+        mCacheSizeMult = cacheSizeMult;
+        if(mCacheSizeMult == 0){
+            synchronized (lock) {
+                mBitmapCache = null;
+            }
+            return;
+        }
+
+        // calc new hash size
+        int nTileCount = (int) (mViewWidth * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) *
+                         (int) (mViewHeight * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) * mCacheSizeMult;
+
+        if(null != mBitmapCache && mCacheSize >= nTileCount)
+            return;
+        if(nTileCount < 30)
+            nTileCount = 30;
+
+        synchronized (lock) {
+            mBitmapCache = lruCache(nTileCount);
+        }
+
+        mCacheSize = nTileCount;
+    }
+
+    protected static <K,V> Map<K,V> lruCache(final int maxSize)
+    {
+        return new LinkedHashMap<K, V>(maxSize * 4 / 3, 0.75f, true)
+        {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<K, V> eldest)
+            {
+                return size() > maxSize;
+            }
+        };
     }
 }

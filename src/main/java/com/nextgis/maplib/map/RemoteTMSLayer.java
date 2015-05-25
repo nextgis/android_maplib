@@ -61,7 +61,6 @@ public class RemoteTMSLayer
     protected static final String JSON_URL_KEY      = "url";
     protected static final String JSON_LOGIN_KEY    = "login";
     protected static final String JSON_PASSWORD_KEY = "password";
-    protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
 
     protected       String       mURL;
     protected       NetworkUtil  mNet;
@@ -72,13 +71,7 @@ public class RemoteTMSLayer
     protected       String       mPassword;
     protected       Semaphore    mAvailable;
 
-    protected       Map<String, Bitmap> mBitmapCache;
-    protected       int          mCacheSize, mCacheSizeMult;
-    protected int mViewWidth, mViewHeight;
-
     public final static long DELAY = 2150;
-    protected final Object lock = new Object();
-
 
     public RemoteTMSLayer(
             Context context,
@@ -90,7 +83,6 @@ public class RemoteTMSLayer
         mSubdomains = new ArrayList<>();
         mCurrentSubdomain = 0;
         mLayerType = LAYERTYPE_REMOTE_TMS;
-        mCacheSizeMult = 2;
 
         setViewSize(100, 100);
     }
@@ -103,26 +95,6 @@ public class RemoteTMSLayer
             mAvailable.release(diff);
         Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
                    getMaxThreadCount());
-    }
-
-    protected void putBitmapToCache(
-            String tileHash,
-            Bitmap bitmap){
-
-        synchronized (lock) {
-            if(mBitmapCache != null) {
-                mBitmapCache.put(tileHash, bitmap);
-            }
-        }
-    }
-
-    protected Bitmap getBitmapFromCache(String tileHash){
-        synchronized (lock) {
-            if(mBitmapCache != null) {
-                return mBitmapCache.get(tileHash);
-            }
-        }
-        return null;
     }
 
     @Override
@@ -251,7 +223,6 @@ public class RemoteTMSLayer
             rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         }
 
-        rootConfig.put(JSON_CACHE_SIZE_MULT, mCacheSizeMult);
         return rootConfig;
     }
 
@@ -273,10 +244,6 @@ public class RemoteTMSLayer
             // Here we must use mPassword instead of setPassword() for subclasses
             // which do not use mLogin
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
-        }
-
-        if(jsonObject.has(JSON_CACHE_SIZE_MULT)){
-            mCacheSizeMult = jsonObject.getInt(JSON_CACHE_SIZE_MULT);
         }
 
         analizeURL(mURL);
@@ -399,64 +366,5 @@ public class RemoteTMSLayer
     public void setPassword(String password)
     {
         mPassword = password;
-    }
-
-    protected static <K,V> Map<K,V> lruCache(final int maxSize)
-    {
-        return new LinkedHashMap<K, V>(maxSize * 4 / 3, 0.75f, true)
-        {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<K, V> eldest)
-            {
-                return size() > maxSize;
-            }
-        };
-    }
-
-
-    @Override
-    public void setViewSize(
-            int w,
-            int h)
-    {
-        super.setViewSize(w, h);
-
-        mViewWidth = w;
-        mViewHeight = h;
-
-        setCacheSizeMultiply(mCacheSizeMult);
-    }
-
-
-    public int getCacheSizeMultiply()
-    {
-        return mCacheSizeMult;
-    }
-
-
-    public void setCacheSizeMultiply(int cacheSizeMult)
-    {
-        mCacheSizeMult = cacheSizeMult;
-        if(mCacheSizeMult == 0){
-            synchronized (lock) {
-                mBitmapCache = null;
-            }
-            return;
-        }
-
-        // calc new hash size
-        int nTileCount = (int) (mViewWidth * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) *
-                         (int) (mViewHeight * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) * mCacheSizeMult;
-
-        if(null != mBitmapCache && mCacheSize >= nTileCount)
-            return;
-        if(nTileCount < 30)
-            nTileCount = 30;
-
-        synchronized (lock) {
-            mBitmapCache = lruCache(nTileCount);
-        }
-
-        mCacheSize = nTileCount;
     }
 }
