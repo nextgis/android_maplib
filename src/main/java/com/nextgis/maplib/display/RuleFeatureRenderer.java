@@ -29,8 +29,9 @@ import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.TAG;
@@ -40,7 +41,7 @@ public class RuleFeatureRenderer
         extends SimpleFeatureRenderer
 {
     protected IStyleRule       mStyleRule;
-    protected ArrayList<Style> mParametrizedStyles;
+    protected Map<Long, Style> mParametrizedStyles;
 
 
     public RuleFeatureRenderer(Layer layer)
@@ -82,18 +83,18 @@ public class RuleFeatureRenderer
         try {
 
             if (null == mParametrizedStyles) {
-                mParametrizedStyles = new ArrayList<>(cache.size());
+                mParametrizedStyles = new TreeMap<>();
 
                 for (int i = 0; i < cache.size(); i++) {
                     final VectorCacheItem item = cache.get(i);
 
                     Style styleClone = mStyle.clone();
                     mStyleRule.setStyleParams(styleClone, item.getId());
-                    mParametrizedStyles.add(styleClone);
+                    mParametrizedStyles.put(item.getId(), styleClone);
                 }
             }
 
-            return mParametrizedStyles.get((int) featureId);
+            return mParametrizedStyles.get(featureId);
 
         } catch (CloneNotSupportedException e) {
             Log.d(TAG, "Returned not parametrized style, " + e.getLocalizedMessage());
