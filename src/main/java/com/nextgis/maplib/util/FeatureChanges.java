@@ -67,6 +67,7 @@ public class FeatureChanges
         }
         catch (SQLiteException e) {
             e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
             return 0;
         }
     }
@@ -522,7 +523,15 @@ public class FeatureChanges
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
-        return db.delete(tableName, selection, null);
+        int retResult = 0;
+        try {
+            retResult = db.delete(tableName, selection, null);
+        }
+        catch (SQLiteException e){
+            e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
+        }
+        return retResult;
     }
 
     public static void delete(String tableName){
@@ -531,5 +540,4 @@ public class FeatureChanges
         String tableDrop = "DROP TABLE IF EXISTS " + tableName;
         db.execSQL(tableDrop);
     }
-
 }
