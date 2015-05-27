@@ -24,8 +24,13 @@ package com.nextgis.maplib.display;
 
 import android.util.Log;
 import com.nextgis.maplib.map.Layer;
+import com.nextgis.maplib.map.VectorLayer;
+import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.TAG;
@@ -34,7 +39,8 @@ import static com.nextgis.maplib.util.Constants.TAG;
 public class RuleFeatureRenderer
         extends SimpleFeatureRenderer
 {
-    protected IStyleRule mStyleRule;
+    protected IStyleRule       mStyleRule;
+    protected ArrayList<Style> mParametrizedStyles;
 
 
     public RuleFeatureRenderer(Layer layer)
@@ -63,20 +69,37 @@ public class RuleFeatureRenderer
     }
 
 
-    protected Style getParametrizedStyle(
-            Style style,
-            long featureId)
+    @Override
+    protected Style getStyle(long featureId)
     {
+        if (null == mStyleRule) {
+            return mStyle;
+        }
+
+        final VectorLayer vectorLayer = (VectorLayer) mLayer;
+        final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
+
         try {
-            if (null != mStyleRule) {
-                Style styleClone = style.clone();
-                mStyleRule.setStyleParams(styleClone, featureId);
-                return styleClone;
+
+            if (null == mParametrizedStyles) {
+                mParametrizedStyles = new ArrayList<>(cache.size());
+
+                for (int i = 0; i < cache.size(); i++) {
+                    final VectorCacheItem item = cache.get(i);
+
+                    Style styleClone = mStyle.clone();
+                    mStyleRule.setStyleParams(styleClone, item.getId());
+                    mParametrizedStyles.add(styleClone);
+                }
             }
+
+            return mParametrizedStyles.get((int) featureId);
+
         } catch (CloneNotSupportedException e) {
             Log.d(TAG, "Returned not parametrized style, " + e.getLocalizedMessage());
+            mParametrizedStyles = null;
+            return mStyle;
         }
-        return style;
     }
 
 

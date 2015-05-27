@@ -116,7 +116,7 @@ public class SimpleFeatureRenderer extends Renderer{
 
         for (int i = 0; i < cache.size(); i++) {
             final VectorCacheItem item = cache.get(i);
-            final Style style = getParametrizedStyle(mStyle, item.getId());
+            final Style style = getStyle(item.getId());
 
             mDrawThreadPool.execute(
                     new Runnable()
@@ -151,25 +151,30 @@ public class SimpleFeatureRenderer extends Renderer{
 
 
     /**
-     * If subclass's getParametrizedStyle() changes style params then must be so in the method
+     * If subclass's getStyle(long featureId) changes style params then must be so in the method
      * body:
      * <pre> {@code
      * try {
-     *     Style styleClone = style.clone();
+     *     Style styleClone = mStyle.clone();
      *     // changing styleClone params
      *     return styleClone;
      * } catch (CloneNotSupportedException e) {
      *     e.printStackTrace();
-     *     return style;
+     *     return mStyle;
      *     // or treat this situation instead
      * }
      * } </pre>
+     * or
+     * <pre> {@code
+     * Style style = new Style(); // or from subclass of Style
+     * // changing style params
+     * return style;
+     * } </pre>
+
      */
-    protected Style getParametrizedStyle(
-            Style style,
-            long featureId)
+    protected Style getStyle(long featureId)
     {
-        return style;
+        return mStyle;
     }
 
 
