@@ -224,12 +224,23 @@ public class NGWVectorLayer
             List<Field> fields = getFieldsFromJson(fieldsJSONArray);
 
             //fill SRS
-            JSONObject vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
+            JSONObject vectorLayerJSONObject = null;
+            if(geoJSONObject.has("vector_layer")){
+                vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
+            }
+            else if(geoJSONObject.has("postgis_layer")) {
+                vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
+            }
+            if(null == vectorLayerJSONObject){
+                return getContext().getString(R.string.error_download_data);
+            }
+
             String geomTypeString = vectorLayerJSONObject.getString("geometry_type");
             int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
             if (geomType < 4) {
                 geomType += 3;
             }
+
             JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
             int nSRS = srs.getInt("id");
             if (nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84) {
