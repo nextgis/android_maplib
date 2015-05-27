@@ -34,4 +34,5 @@
     <string name="tracks_title">Трек %s</string>
     <string name="tracks_stop">Стоп</string>
     <string name="tracks_open">Открыть</string>
+    <string name="tracks">Мои треки</string>
 </resources>

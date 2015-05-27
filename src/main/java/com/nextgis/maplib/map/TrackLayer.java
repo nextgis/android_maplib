@@ -29,6 +29,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.text.TextUtils;
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -145,6 +146,12 @@ public class TrackLayer
         mTracks = new HashMap<>();
     }
 
+
+    @Override
+    public String getName()
+    {
+        return mContext.getString(R.string.tracks);
+    }
 
     public List<GeoLineString> getTracks()
     {

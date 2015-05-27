@@ -34,4 +34,5 @@
     <string name="tracks_title">Track %s</string>
     <string name="tracks_stop">Stop</string>
     <string name="tracks_open">Open</string>
+    <string name="tracks">My tracks</string>
 </resources>
