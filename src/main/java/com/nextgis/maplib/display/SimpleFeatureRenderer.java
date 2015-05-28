@@ -44,6 +44,7 @@ public class SimpleFeatureRenderer extends Renderer{
     protected Style              mStyle;
     protected ThreadPoolExecutor mDrawThreadPool;
     protected int                mGeomCompleteCount;
+    protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
 
@@ -92,23 +93,25 @@ public class SimpleFeatureRenderer extends Renderer{
         }
 
         int threadCount = DRAWING_SEPARATE_THREADS;
-        mDrawThreadPool = new ThreadPoolExecutor(
-                threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
-        {
-            @Override
-            public void rejectedExecution(
-                    Runnable r,
-                    ThreadPoolExecutor executor)
+        synchronized (lock) {
+            mDrawThreadPool = new ThreadPoolExecutor(
+                    threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
             {
-                try {
-                    executor.getQueue().put(r);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    //throw new RuntimeException("Interrupted while submitting task", e);
+                @Override
+                public void rejectedExecution(
+                        Runnable r,
+                        ThreadPoolExecutor executor)
+                {
+                    try {
+                        executor.getQueue().put(r);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        //throw new RuntimeException("Interrupted while submitting task", e);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         synchronized (mLayer) {
             mGeomCompleteCount = 0;
@@ -181,7 +184,9 @@ public class SimpleFeatureRenderer extends Renderer{
     @Override
     public void cancelDraw(){
         if (mDrawThreadPool != null) {
-            mDrawThreadPool.shutdownNow();
+            synchronized (lock) {
+                mDrawThreadPool.shutdownNow();
+            }
             /*try {
                 mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
             } catch (InterruptedException e) {

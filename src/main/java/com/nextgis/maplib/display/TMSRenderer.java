@@ -68,6 +68,7 @@ public class TMSRenderer
     protected float              mBrightness;
     protected boolean            mForceToGrayScale;
     protected int mTileCompleteCount;
+    protected final Object lock = new Object();
 
 
     public TMSRenderer(ILayer layer)
@@ -182,23 +183,25 @@ public class TMSRenderer
         }
 
         int threadCount = DRAWING_SEPARATE_THREADS;//tmsLayer.getMaxThreadCount();
-        mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
-                                                 KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
-                                                 new RejectedExecutionHandler()
-                                                 {
-                                                     @Override
-                                                     public void rejectedExecution(
-                                                             Runnable r,
-                                                             ThreadPoolExecutor executor)
+        synchronized (lock) {
+            mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
+                                                     KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
+                                                     new RejectedExecutionHandler()
                                                      {
-                                                         try {
-                                                             executor.getQueue().put(r);
-                                                         } catch (InterruptedException e) {
-                                                             e.printStackTrace();
-                                                             //throw new RuntimeException("Interrupted while submitting task", e);
+                                                         @Override
+                                                         public void rejectedExecution(
+                                                                 Runnable r,
+                                                                 ThreadPoolExecutor executor)
+                                                         {
+                                                             try {
+                                                                 executor.getQueue().put(r);
+                                                             } catch (InterruptedException e) {
+                                                                 e.printStackTrace();
+                                                                 //throw new RuntimeException("Interrupted while submitting task", e);
+                                                             }
                                                          }
-                                                     }
-                                                 });
+                                                     });
+        }
 
         /*if (null == mDrawThreadPool) {
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1);
@@ -247,14 +250,16 @@ public class TMSRenderer
     public void cancelDraw()
     {
         if (mDrawThreadPool != null) {
-            mDrawThreadPool.shutdownNow();
-            try {
+            synchronized (lock) {
+                mDrawThreadPool.shutdownNow();
+            }
+            /*try {
                 mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 mDrawThreadPool.shutdownNow();
                 Thread.currentThread().interrupt();
-            }
+            }*/
         }
     }
 
