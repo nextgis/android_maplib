@@ -377,6 +377,9 @@ public class VectorLayer
                 String warning = getContext().getString(R.string.warning_remove_field);
                 reportError(String.format(warning, fieldName));
             }
+            else if(fieldName.contains(":")){
+                field.setName(fieldName.replace(":", "_"));
+            }
         }
 
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " +

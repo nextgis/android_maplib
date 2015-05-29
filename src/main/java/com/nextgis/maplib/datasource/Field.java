@@ -99,4 +99,16 @@ public class Field implements IJSONStore
     {
         return mAlias;
     }
+
+
+    public void setName(String name)
+    {
+        mName = name;
+    }
+
+
+    public void setAlias(String alias)
+    {
+        mAlias = alias;
+    }
 }
