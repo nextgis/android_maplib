@@ -234,7 +234,7 @@ public class VectorLayer
 
                 int nId = i;
                 if (jsonFeature.has(GEOJSON_ID)) {
-                    nId = jsonFeature.getInt(GEOJSON_ID);
+                    nId = jsonFeature.optInt(GEOJSON_ID, nId);
                 }
                 Feature feature = new Feature(nId, fields); // ID == i
                 feature.setGeometry(geometry);
@@ -369,7 +369,8 @@ public class VectorLayer
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             String fieldName = field.getName();
-            if (NGWUtil.containsCaseInsensitive(fieldName, VECTOR_FORBIDDEN_FIELDS)) {
+            if (NGWUtil.containsCaseInsensitive(fieldName, VECTOR_FORBIDDEN_FIELDS) ||
+                fieldName.startsWith("@")) {
                 fields.remove(i);
                 i--;
 
@@ -949,8 +950,9 @@ public class VectorLayer
     }
 
     protected void updateUniqId(int id){
-        if(mUniqId < id)
+        if(mUniqId <= id) {
             mUniqId = id + 1;
+        }
     }
 
     protected long insert(ContentValues contentValues)
