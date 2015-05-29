@@ -322,7 +322,7 @@ public class VectorLayer
 
                 int nId = i;
                 if (jsonFeature.has(GEOJSON_ID)) {
-                    nId = jsonFeature.getInt(GEOJSON_ID);
+                    nId = jsonFeature.optInt(GEOJSON_ID, nId);
                 }
                 Feature feature = new Feature(nId, fields); // ID == i
                 feature.setGeometry(geometry);
