@@ -44,7 +44,7 @@ import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.display.IStyleRule;
+import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
@@ -52,6 +52,7 @@ import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.display.Style;
 import com.nextgis.maplib.util.AttachItem;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
@@ -87,6 +88,7 @@ public class VectorLayer
     protected String                mAuthority;
     protected Map<String, Field>    mFields;
     protected VectorCacheItem       mTempCacheItem;
+    protected int mUniqId;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
@@ -169,8 +171,9 @@ public class VectorLayer
         mAttaches = new HashMap<>();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
-    }
 
+        mUniqId = Constants.NOT_FOUND;
+    }
 
     public String createFromGeoJSON(JSONObject geoJSONObject)
     {
@@ -543,19 +546,14 @@ public class VectorLayer
                 break;
         }
 
-        if (null != mRenderer) {
-            if (mRenderer instanceof IJSONStore) {
-                IJSONStore jsonStore = (IJSONStore) mRenderer;
-                jsonStore.fromJSON(jsonObject);
+        IJSONStore jsonStore = (IJSONStore) mRenderer;
+        jsonStore.fromJSON(jsonObject);
 
-            }
-
-            if (mRenderer instanceof RuleFeatureRenderer) {
-                IStyleRule rule = getStyleRule();
-                if (null != rule) {
-                    RuleFeatureRenderer renderer = (RuleFeatureRenderer) mRenderer;
-                    renderer.setStyleRule(rule);
-                }
+        if (mRenderer instanceof RuleFeatureRenderer) {
+            IStyleRule rule = getStyleRule();
+            if (null != rule) {
+                RuleFeatureRenderer renderer = (RuleFeatureRenderer) mRenderer;
+                renderer.setStyleRule(rule);
             }
         }
     }
@@ -646,6 +644,8 @@ public class VectorLayer
                             int nId = cursor.getInt(0);
                             mExtents.merge(geoGeometry.getEnvelope());
                             mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+
+                            updateUniqId(nId);
                         }
                     } catch (IOException | ClassNotFoundException e) {
                         // e.printStackTrace();
@@ -948,6 +948,11 @@ public class VectorLayer
         return rowID;
     }
 
+    protected void updateUniqId(int id){
+        if(mUniqId < id)
+            mUniqId = id + 1;
+    }
+
     protected long insert(ContentValues contentValues)
     {
         if (!contentValues.containsKey(FIELD_GEOM)) {
@@ -966,6 +971,9 @@ public class VectorLayer
             notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
         }
+
+        updateUniqId((int)rowID);
+
         return rowID;
     }
 
@@ -1254,6 +1262,8 @@ public class VectorLayer
                                 NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                         getContext().sendBroadcast(notify);
                     }
+
+                    updateUniqId(values.getAsLong(FIELD_ID).intValue());
 
                 } else {
                     notify = new Intent(NOTIFY_UPDATE_FIELDS);
@@ -1673,7 +1683,7 @@ public class VectorLayer
     }
 
     public void notifyInsert(long rowID){
-        GeoGeometry geom = getGeometryForID(rowID);
+        GeoGeometry geom = getGeometryForId(rowID);
         if(null != geom) {
             mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
 
@@ -1684,7 +1694,7 @@ public class VectorLayer
     }
 
     public void notifyUpdate(long rowID, long rowOldID){
-        GeoGeometry geom = getGeometryForID(rowID);
+        GeoGeometry geom = getGeometryForId(rowID);
         if(null != geom) {
             for (VectorCacheItem item : mVectorCacheItems) {
                 if(rowOldID != NOT_FOUND)
@@ -1714,7 +1724,7 @@ public class VectorLayer
         notifyLayerChanged();
     }
 
-    protected GeoGeometry getGeometryForID(long rowID){
+    protected GeoGeometry getGeometryForId(long rowID){
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_GEOM};
@@ -1732,5 +1742,11 @@ public class VectorLayer
         }
 
         return null;
+    }
+
+
+    public int getUniqId()
+    {
+        return mUniqId;
     }
 }

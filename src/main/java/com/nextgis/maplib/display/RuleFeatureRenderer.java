@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.VectorCacheItem;
@@ -109,7 +110,8 @@ public class RuleFeatureRenderer
             }
 
         } catch (CloneNotSupportedException e) {
-            Log.d(TAG, "Warning, mParametrizedStyles is not initialised: " + e.getLocalizedMessage());
+            Log.d(TAG,
+                  "Warning, mParametrizedStyles is not initialised: " + e.getLocalizedMessage());
             mParametrizedStyles.clear();
         }
     }

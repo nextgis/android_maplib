@@ -20,7 +20,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-package com.nextgis.maplib.display;
+package com.nextgis.maplib.api;
+
+import com.nextgis.maplib.display.Style;
+
 
 public interface IStyleRule
 {
