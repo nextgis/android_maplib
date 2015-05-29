@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib.api;
 
+import android.content.Context;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 
 import java.io.File;
@@ -28,6 +29,8 @@ import java.io.File;
 
 public interface ILayer
 {
+    public Context getContext();
+
     public String getName();
 
     public void setName(String newName);

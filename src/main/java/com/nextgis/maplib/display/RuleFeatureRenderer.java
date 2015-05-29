@@ -22,6 +22,10 @@
 
 package com.nextgis.maplib.display;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Log;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
@@ -33,21 +37,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class RuleFeatureRenderer
         extends SimpleFeatureRenderer
 {
-    protected IStyleRule       mStyleRule;
-    protected Map<Long, Style> mParametrizedStyles;
+    protected IStyleRule mStyleRule;
+    protected Map<Long, Style> mParametrizedStyles = new TreeMap<>();
 
 
     public RuleFeatureRenderer(Layer layer)
     {
         super(layer);
         mStyleRule = null;
+        init();
     }
 
 
@@ -57,6 +61,7 @@ public class RuleFeatureRenderer
     {
         super(layer);
         mStyleRule = styleRule;
+        init();
     }
 
 
@@ -67,40 +72,68 @@ public class RuleFeatureRenderer
     {
         super(layer, style);
         mStyleRule = styleRule;
+        init();
+    }
+
+
+    protected void init()
+    {
+        // register events from layers modify in services or other applications
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(VectorLayer.NOTIFY_DELETE);
+        intentFilter.addAction(VectorLayer.NOTIFY_DELETE_ALL);
+        intentFilter.addAction(VectorLayer.NOTIFY_INSERT);
+        intentFilter.addAction(VectorLayer.NOTIFY_UPDATE);
+        intentFilter.addAction(VectorLayer.NOTIFY_UPDATE_FIELDS);
+        mLayer.getContext().registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
+
+        initParametrizedStyles();
+    }
+
+
+    protected void initParametrizedStyles()
+    {
+        mParametrizedStyles.clear();
+
+        if (null == mStyleRule) {
+            return;
+        }
+
+        final VectorLayer vectorLayer = (VectorLayer) mLayer;
+        final List<VectorCacheItem> vectorCache = vectorLayer.getVectorCache();
+
+        try {
+
+            for (int i = 0; i < vectorCache.size(); i++) {
+                putParametrizedStyle(vectorCache.get(i).getId());
+            }
+
+        } catch (CloneNotSupportedException e) {
+            Log.d(TAG, "Warning, mParametrizedStyles is not initialised: " + e.getLocalizedMessage());
+            mParametrizedStyles.clear();
+        }
+    }
+
+
+    protected void putParametrizedStyle(long featureId)
+            throws CloneNotSupportedException
+    {
+        Style styleClone = mStyle.clone();
+        mStyleRule.setStyleParams(styleClone, featureId);
+        mParametrizedStyles.put(featureId, styleClone);
     }
 
 
     @Override
     protected Style getStyle(long featureId)
     {
-        if (null == mStyleRule) {
+        if (null == mStyleRule || mParametrizedStyles.size() == 0) {
             return mStyle;
         }
 
-        final VectorLayer vectorLayer = (VectorLayer) mLayer;
-        final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
+        Style style = mParametrizedStyles.get(featureId);
 
-        try {
-
-            if (null == mParametrizedStyles) {
-                mParametrizedStyles = new TreeMap<>();
-
-                for (int i = 0; i < cache.size(); i++) {
-                    final VectorCacheItem item = cache.get(i);
-
-                    Style styleClone = mStyle.clone();
-                    mStyleRule.setStyleParams(styleClone, item.getId());
-                    mParametrizedStyles.put(item.getId(), styleClone);
-                }
-            }
-
-            return mParametrizedStyles.get(featureId);
-
-        } catch (CloneNotSupportedException e) {
-            Log.d(TAG, "Returned not parametrized style, " + e.getLocalizedMessage());
-            mParametrizedStyles = null;
-            return mStyle;
-        }
+        return null == style ? mStyle : style;
     }
 
 
@@ -113,6 +146,7 @@ public class RuleFeatureRenderer
     public void setStyleRule(IStyleRule styleRule)
     {
         mStyleRule = styleRule;
+        initParametrizedStyles();
     }
 
 
@@ -131,5 +165,65 @@ public class RuleFeatureRenderer
             throws JSONException
     {
         super.fromJSON(jsonObject);
+    }
+
+
+    protected class VectorLayerNotifyReceiver
+            extends BroadcastReceiver
+    {
+        @Override
+        public void onReceive(
+                Context context,
+                Intent intent)
+        {
+            if (null == mStyleRule) {
+                return;
+            }
+
+            Log.d(TAG, "Receive notify: " + intent.getAction());
+
+            try {
+                long featureId;
+
+                switch (intent.getAction()) {
+
+                    case VectorLayer.NOTIFY_DELETE:
+                        featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
+                        mParametrizedStyles.remove(featureId);
+                        break;
+
+                    case VectorLayer.NOTIFY_DELETE_ALL:
+                        mParametrizedStyles.clear();
+                        break;
+
+                    case VectorLayer.NOTIFY_UPDATE:
+                    case VectorLayer.NOTIFY_UPDATE_FIELDS:
+                        featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
+                        putParametrizedStyle(featureId);
+
+                        if (intent.hasExtra(FIELD_OLD_ID)) {
+                            long oldFeatureId = intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND);
+                            mParametrizedStyles.remove(oldFeatureId);
+                        }
+
+                        break;
+
+                    case VectorLayer.NOTIFY_UPDATE_ALL:
+                        initParametrizedStyles();
+                        break;
+
+                    case VectorLayer.NOTIFY_INSERT:
+                        featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
+                        putParametrizedStyle(featureId);
+                        break;
+                }
+
+            } catch (CloneNotSupportedException e) {
+                Log.d(
+                        TAG, "Warning, mParametrizedStyles is not initialised: " +
+                        e.getLocalizedMessage());
+                mParametrizedStyles.clear();
+            }
+        }
     }
 }

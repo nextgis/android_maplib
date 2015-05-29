@@ -95,13 +95,14 @@ public class VectorLayer
     protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
     protected static final String JSON_FIELDS_KEY         = "fields";
 
-    public static final String NOTIFY_DELETE        = "com.nextgis.maplib.notify_delete";
-    public static final String NOTIFY_DELETE_ALL    = "com.nextgis.maplib.notify_delete_all";
-    public static final String NOTIFY_INSERT        = "com.nextgis.maplib.notify_insert";
-    public static final String NOTIFY_UPDATE        = "com.nextgis.maplib.notify_update";
-    public static final String NOTIFY_UPDATE_ALL    = "com.nextgis.maplib.notify_update_all";
+    public static final String NOTIFY_DELETE            = "com.nextgis.maplib.notify_delete";
+    public static final String NOTIFY_DELETE_ALL        = "com.nextgis.maplib.notify_delete_all";
+    public static final String NOTIFY_INSERT            = "com.nextgis.maplib.notify_insert";
+    public static final String NOTIFY_UPDATE            = "com.nextgis.maplib.notify_update";
+    public static final String NOTIFY_UPDATE_ALL        = "com.nextgis.maplib.notify_update_all";
+    public static final String NOTIFY_UPDATE_FIELDS     = "com.nextgis.maplib.notify_update_fields";
     public static final String NOTIFY_FEATURE_ID_CHANGE = "com.nextgis.maplib.notify_change_id";
-    public static final String NOTIFY_LAYER_NAME    = "layer_name";
+    public static final String NOTIFY_LAYER_NAME        = "layer_name";
 
 
     protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
@@ -615,16 +616,15 @@ public class VectorLayer
             }
         }
 
+        if (mIsInitialized) {
+            mExtents = new GeoEnvelope();
+            reloadCache();
+        }
+
         if (jsonObject.has(JSON_RENDERERPROPS_KEY)) {
             setRenderer(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
         } else{
             setDefaultRenderer();
-        }
-
-        if (mIsInitialized) {
-            mExtents = new GeoEnvelope();
-
-            reloadCache();
         }
     }
 
@@ -1235,21 +1235,29 @@ public class VectorLayer
                     getContext().sendBroadcast(notify);
                 }
             } else {
-                notify = new Intent(NOTIFY_UPDATE);
-                boolean bNotify = false;
-                if(values.containsKey(FIELD_GEOM)) {
+                if (values.containsKey(FIELD_GEOM) || values.containsKey(FIELD_ID)) {
+                    notify = new Intent(NOTIFY_UPDATE);
+                    boolean bNotify = false;
+                    if (values.containsKey(FIELD_GEOM)) {
+                        notify.putExtra(FIELD_ID, rowID);
+                        bNotify = true;
+                    }
+
+                    if (values.containsKey(FIELD_ID)) {
+                        notify.putExtra(FIELD_OLD_ID, rowID);
+                        notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
+                        bNotify = true;
+                    }
+
+                    if (bNotify) {
+                        notify.putExtra(
+                                NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                        getContext().sendBroadcast(notify);
+                    }
+
+                } else {
+                    notify = new Intent(NOTIFY_UPDATE_FIELDS);
                     notify.putExtra(FIELD_ID, rowID);
-                    bNotify = true;
-                }
-
-                if(values.containsKey(FIELD_ID)) {
-                    notify.putExtra(FIELD_OLD_ID, rowID);
-                    notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
-                    bNotify = true;
-                }
-
-                if(bNotify) {
-                    notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                     getContext().sendBroadcast(notify);
                 }
             }

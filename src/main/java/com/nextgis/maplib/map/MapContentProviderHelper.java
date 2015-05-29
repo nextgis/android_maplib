@@ -146,38 +146,57 @@ public class MapContentProviderHelper extends MapBase
 
             Log.d(TAG, "Receive notify: " + intent.getAction());
 
-            if (intent.getAction().equals(VectorLayer.NOTIFY_DELETE)) {
-                VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                if(null != layer){
-                    layer.notifyDelete(
-                            intent.getLongExtra(FIELD_ID, NOT_FOUND));
-                }
-            }
-            else if (intent.getAction().equals(VectorLayer.NOTIFY_DELETE_ALL)) {
-                VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                if(null != layer){
-                    layer.notifyDeleteAll();
-                }
-            }
-            else if (intent.getAction().equals(VectorLayer.NOTIFY_UPDATE)) {
-                VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                if(null != layer){
-                    layer.notifyUpdate(
-                            intent.getLongExtra(FIELD_ID, NOT_FOUND),
-                            intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND));
-                }
-            }
-            else if (intent.getAction().equals(VectorLayer.NOTIFY_UPDATE_ALL)) {
-                VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                if(null != layer){
-                    layer.notifyUpdateAll();
-                }
-            }
-            else if (intent.getAction().equals(VectorLayer.NOTIFY_INSERT)) {
-                VectorLayer layer = (VectorLayer) getVectorLayerByPath(MapContentProviderHelper.this, intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                if(null != layer){
-                    layer.notifyInsert(intent.getLongExtra(FIELD_ID, NOT_FOUND));
-                }
+            VectorLayer layer;
+
+            switch (intent.getAction()) {
+
+                case VectorLayer.NOTIFY_DELETE:
+                    layer = (VectorLayer) getVectorLayerByPath(
+                            MapContentProviderHelper.this,
+                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
+                    if (null != layer) {
+                        layer.notifyDelete(
+                                intent.getLongExtra(FIELD_ID, NOT_FOUND));
+                    }
+                    break;
+
+                case VectorLayer.NOTIFY_DELETE_ALL:
+                    layer = (VectorLayer) getVectorLayerByPath(
+                            MapContentProviderHelper.this,
+                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
+                    if (null != layer) {
+                        layer.notifyDeleteAll();
+                    }
+                    break;
+
+                case VectorLayer.NOTIFY_UPDATE:
+                    layer = (VectorLayer) getVectorLayerByPath(
+                            MapContentProviderHelper.this,
+                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
+                    if (null != layer) {
+                        layer.notifyUpdate(
+                                intent.getLongExtra(FIELD_ID, NOT_FOUND),
+                                intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND));
+                    }
+                    break;
+
+                case VectorLayer.NOTIFY_UPDATE_ALL:
+                    layer = (VectorLayer) getVectorLayerByPath(
+                            MapContentProviderHelper.this,
+                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
+                    if (null != layer) {
+                        layer.notifyUpdateAll();
+                    }
+                    break;
+
+                case VectorLayer.NOTIFY_INSERT:
+                    layer = (VectorLayer) getVectorLayerByPath(
+                            MapContentProviderHelper.this,
+                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
+                    if (null != layer) {
+                        layer.notifyInsert(intent.getLongExtra(FIELD_ID, NOT_FOUND));
+                    }
+                    break;
             }
         }
     }

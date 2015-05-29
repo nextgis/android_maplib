@@ -24,5 +24,5 @@ package com.nextgis.maplib.display;
 
 public interface IStyleRule
 {
-    public void setStyleParams(Style style, long featureId);
+    void setStyleParams(Style style, long featureId);
 }
