@@ -26,10 +26,7 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
-import android.provider.SyncStateContract;
-import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
-import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
@@ -38,12 +35,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -67,7 +60,7 @@ public class TMSRenderer
     protected float              mContrast;
     protected float              mBrightness;
     protected boolean            mForceToGrayScale;
-    protected int mTileCompleteCount;
+    protected int                mTileCompleteCount;
     protected final Object lock = new Object();
 
 
@@ -87,6 +80,7 @@ public class TMSRenderer
         mRasterPaint.setFilterBitmap(mFilterBitmap);
         mRasterPaint.setDither(mDither);
     }
+
 
     @Override
     public JSONObject toJSON()
@@ -141,17 +135,51 @@ public class TMSRenderer
 
         ColorMatrix cm;
         if (bToGreyScale) {
-            cm = new ColorMatrix(new float[] {
-                contrast * 0.299f, 0.587f, 0.114f, 0, brightness,
-                0.299f, 0.587f * contrast, 0.114f, 0, brightness,
-                0.299f, 0.587f, 0.114f * contrast, 0, brightness,
-                0, 0, 0, 1, 0});
+            cm = new ColorMatrix(
+                    new float[] {
+                            contrast * 0.299f,
+                            0.587f,
+                            0.114f,
+                            0,
+                            brightness,
+                            0.299f,
+                            0.587f * contrast,
+                            0.114f,
+                            0,
+                            brightness,
+                            0.299f,
+                            0.587f,
+                            0.114f * contrast,
+                            0,
+                            brightness,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0});
         } else {
-            cm = new ColorMatrix(new float[] {
-                contrast, 0, 0, 0, brightness,
-                0, contrast, 0, 0, brightness,
-                0, 0, contrast, 0, brightness,
-                0, 0, 0, 1, 0});
+            cm = new ColorMatrix(
+                    new float[] {
+                            contrast,
+                            0,
+                            0,
+                            0,
+                            brightness,
+                            0,
+                            contrast,
+                            0,
+                            0,
+                            brightness,
+                            0,
+                            0,
+                            contrast,
+                            0,
+                            brightness,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0});
         }
         if (mRasterPaint != null) {
             mRasterPaint.setColorFilter(new ColorMatrixColorFilter(cm));
@@ -171,36 +199,36 @@ public class TMSRenderer
         //get tiled for zoom and bounds
         final TMSLayer tmsLayer = (TMSLayer) mLayer;
 
-        if(tmsLayer instanceof RemoteTMSLayer){
-            RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer)tmsLayer;
+        if (tmsLayer instanceof RemoteTMSLayer) {
+            RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer) tmsLayer;
             remoteTMSLayer.onPrepare();
         }
 
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, display.getBounds(), zoom);
-        if(tiles.size() == 0){
+        if (tiles.size() == 0) {
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
             return;
         }
 
         int threadCount = DRAWING_SEPARATE_THREADS;//tmsLayer.getMaxThreadCount();
         synchronized (lock) {
-            mDrawThreadPool = new ThreadPoolExecutor(threadCount, threadCount, KEEP_ALIVE_TIME,
-                                                     KEEP_ALIVE_TIME_UNIT, new LinkedBlockingQueue<Runnable>(),
-                                                     new RejectedExecutionHandler()
-                                                     {
-                                                         @Override
-                                                         public void rejectedExecution(
-                                                                 Runnable r,
-                                                                 ThreadPoolExecutor executor)
-                                                         {
-                                                             try {
-                                                                 executor.getQueue().put(r);
-                                                             } catch (InterruptedException e) {
-                                                                 e.printStackTrace();
-                                                                 //throw new RuntimeException("Interrupted while submitting task", e);
-                                                             }
-                                                         }
-                                                     });
+            mDrawThreadPool = new ThreadPoolExecutor(
+                    threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+            {
+                @Override
+                public void rejectedExecution(
+                        Runnable r,
+                        ThreadPoolExecutor executor)
+                {
+                    try {
+                        executor.getQueue().put(r);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        //throw new RuntimeException("Interrupted while submitting task", e);
+                    }
+                }
+            });
         }
 
         /*if (null == mDrawThreadPool) {
@@ -214,34 +242,36 @@ public class TMSRenderer
 
         for (int i = 0; i < tiles.size(); ++i) {
             final TileItem tile = tiles.get(i);
-            mDrawThreadPool.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    android.os.Process.setThreadPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+            mDrawThreadPool.execute(
+                    new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            android.os.Process.setThreadPriority(
+                                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                    final Bitmap bmp = tmsLayer.getBitmap(tile);
-                    if (bmp != null) {
-                        display.drawTile(bmp, tile.getPoint(), mRasterPaint);
-                    }
+                            final Bitmap bmp = tmsLayer.getBitmap(tile);
+                            if (bmp != null) {
+                                display.drawTile(bmp, tile.getPoint(), mRasterPaint);
+                            }
 
-                    synchronized (mLayer) {
+                            synchronized (mLayer) {
                         /*long complete = mDrawThreadPool.getCompletedTaskCount() + 1;
                         if (mDrawThreadPool.getTaskCount() > 1)
                             percent = (float) (complete) / mDrawThreadPool.getTaskCount();
                         tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
                         Log.d(TAG, "percent: " + percent + " complete: " + complete + " task count: " + mDrawThreadPool.getTaskCount());*/
-                        mTileCompleteCount++;
-                        float percent = (float) (mTileCompleteCount) / tiles.size();
+                                mTileCompleteCount++;
+                                float percent = (float) (mTileCompleteCount) / tiles.size();
 
-                        tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                                tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
 
-                        // Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tiles.size() + " layer: " + mLayer.getName());
-                    }
+                                // Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tiles.size() + " layer: " + mLayer.getName());
+                            }
 
-                }
-            });
+                        }
+                    });
         }
     }
 

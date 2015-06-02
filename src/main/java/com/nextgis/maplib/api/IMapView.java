@@ -21,7 +21,6 @@
 
 package com.nextgis.maplib.api;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -30,15 +29,19 @@ import com.nextgis.maplib.datasource.GeoPoint;
 public interface IMapView
         extends IRenderer
 {
-    void draw(Canvas canvas, boolean clearBackground);
+    void draw(
+            Canvas canvas,
+            boolean clearBackground);
 
-    void draw(Canvas canvas,
-                float x,
+    void draw(
+            Canvas canvas,
+            float x,
             float y,
             boolean clearBackground);
 
-    void draw(Canvas canvas,
-                float x,
+    void draw(
+            Canvas canvas,
+            float x,
             float y,
             float scale);
 
@@ -46,7 +49,10 @@ public interface IMapView
             int w,
             int h);
 
-    void buffer(float x, float y, float scale);
+    void buffer(
+            float x,
+            float y,
+            float scale);
 
     float getZoomLevel();
 

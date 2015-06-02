@@ -41,12 +41,14 @@ import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 
 
-public class MapContentProviderHelper extends MapBase
+public class MapContentProviderHelper
+        extends MapBase
 {
     protected DatabaseHelper mDatabaseHelper;
 
-    protected static final String DBNAME           = "layers";
+    protected static final String DBNAME = "layers";
     protected static final int    DATABASE_VERSION = 1;
+
 
     public MapContentProviderHelper(
             Context context,
@@ -66,10 +68,11 @@ public class MapContentProviderHelper extends MapBase
             dbFullName = context.getDatabasePath(DBNAME);
         }
 
-        mDatabaseHelper = new DatabaseHelper(context,          // the application context
-                                             dbFullName,       // the name of the database
-                                             null,             // uses the default SQLite cursor
-                                             DATABASE_VERSION  // the version number
+        mDatabaseHelper = new DatabaseHelper(
+                context,          // the application context
+                dbFullName,       // the name of the database
+                null,             // uses the default SQLite cursor
+                DATABASE_VERSION  // the version number
         );
 
         // register events from layers modify in services or other applications
@@ -81,38 +84,41 @@ public class MapContentProviderHelper extends MapBase
         context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
     }
 
+
     public SQLiteDatabase getDatabase(boolean readOnly)
     {
-        if(readOnly)
+        if (readOnly) {
             return mDatabaseHelper.getReadableDatabase();
-        else
+        } else {
             return mDatabaseHelper.getWritableDatabase();
+        }
     }
 
-    public static Layer getVectorLayerByPath(LayerGroup layerGroup, String path)
+
+    public static Layer getVectorLayerByPath(
+            LayerGroup layerGroup,
+            String path)
     {
-        for(int i = 0; i < layerGroup.getLayerCount(); i++)
-        {
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             ILayer layer = layerGroup.getLayer(i);
-            if(layer instanceof LayerGroup)
-            {
-                LayerGroup inLayerGroup = (LayerGroup)layer;
+            if (layer instanceof LayerGroup) {
+                LayerGroup inLayerGroup = (LayerGroup) layer;
                 Layer out = getVectorLayerByPath(inLayerGroup, path);
-                if(null != out)
+                if (null != out) {
                     return out;
-            }
-            else if(layer instanceof VectorLayer)
-            {
-                VectorLayer vectorLayer = (VectorLayer)layer;
-                if(path.contains(vectorLayer.getPath().getName()))
+                }
+            } else if (layer instanceof VectorLayer) {
+                VectorLayer vectorLayer = (VectorLayer) layer;
+                if (path.contains(vectorLayer.getPath().getName())) {
                     return vectorLayer;
-            }
-            else if(layer instanceof TrackLayer)
-            {
+                }
+            } else if (layer instanceof TrackLayer) {
                 TrackLayer trackLayer = (TrackLayer) layer;
-                if(path.contains(TrackLayer.TABLE_TRACKS) || path.contains(TrackLayer.TABLE_TRACKPOINTS))
+                if (path.contains(TrackLayer.TABLE_TRACKS) ||
+                    path.contains(TrackLayer.TABLE_TRACKPOINTS)) {
                     return trackLayer;
-        }
+                }
+            }
         }
         return null;
     }
@@ -139,10 +145,16 @@ public class MapContentProviderHelper extends MapBase
         }
     }
 
-    protected class VectorLayerNotifyReceiver extends BroadcastReceiver {
+
+    protected class VectorLayerNotifyReceiver
+            extends BroadcastReceiver
+    {
 
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(
+                Context context,
+                Intent intent)
+        {
 
             Log.d(TAG, "Receive notify: " + intent.getAction());
 

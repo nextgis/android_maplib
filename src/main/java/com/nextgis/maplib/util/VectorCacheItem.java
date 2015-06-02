@@ -27,8 +27,8 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 public class VectorCacheItem
 {
     protected GeoGeometry mGeoGeometry;
-    protected String mLabel;
-    protected long mId;
+    protected String      mLabel;
+    protected long        mId;
 
 
     public VectorCacheItem(

@@ -36,10 +36,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ResourceGroup extends Resource
+public class ResourceGroup
+        extends Resource
 {
     protected List<Resource> mChildren;
-    protected boolean mChildrenLoaded;
+    protected boolean        mChildrenLoaded;
+
 
     public ResourceGroup(
             long remoteId,
@@ -60,10 +62,12 @@ public class ResourceGroup extends Resource
         mChildrenLoaded = false;
     }
 
+
     public void loadChildren()
     {
-        if(mChildrenLoaded)
+        if (mChildrenLoaded) {
             return;
+        }
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
             HttpGet get = new HttpGet(sURL);
@@ -72,22 +76,21 @@ public class ResourceGroup extends Resource
             HttpResponse response = mConnection.getHttpClient().execute(get);
             HttpEntity entity = response.getEntity();
             JSONArray children = new JSONArray(EntityUtils.toString(entity));
-            for(int i = 0; i < children.length(); i++)
-            {
+            for (int i = 0; i < children.length(); i++) {
                 addResource(children.getJSONObject(i));
             }
             mChildrenLoaded = true;
-        }
-        catch (IOException | JSONException e ){
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }
+
 
     protected void addResource(JSONObject data)
     {
         int type = getType(data);
         Resource resource = null;
-        switch(type) {
+        switch (type) {
             case Connection.NGWResourceTypeResourceGroup:
                 resource = new ResourceGroup(data, mConnection);
                 break;
@@ -104,20 +107,20 @@ public class ResourceGroup extends Resource
                 break;
         }
 
-        if(null != resource) {
+        if (null != resource) {
             resource.setParent(this);
             resource.fillPermissions();
             mChildren.add(resource);
         }
     }
 
+
     protected int getType(JSONObject data)
     {
         try {
             String sType = data.getJSONObject("resource").getString("cls");
             return mConnection.getType(sType);
-        }
-        catch (JSONException e){
+        } catch (JSONException e) {
             return Connection.NGWResourceTypeNone;
         }
     }
@@ -129,9 +132,9 @@ public class ResourceGroup extends Resource
             int i)
     {
         super.writeToParcel(parcel, i);
-        parcel.writeByte(mChildrenLoaded ? (byte)1 : (byte)0);
+        parcel.writeByte(mChildrenLoaded ? (byte) 1 : (byte) 0);
         parcel.writeInt(mChildren.size());
-        for(Resource resource : mChildren){
+        for (Resource resource : mChildren) {
             parcel.writeInt(resource.getType());
             parcel.writeParcelable(resource, i);
         }
@@ -174,7 +177,8 @@ public class ResourceGroup extends Resource
                 case Connection.NGWResourceTypeRasterLayer:
                 case Connection.NGWResourceTypeVectorLayer:
                 case Connection.NGWResourceTypeWMSClient:
-                    LayerWithStyles layer = in.readParcelable(LayerWithStyles.class.getClassLoader());
+                    LayerWithStyles layer =
+                            in.readParcelable(LayerWithStyles.class.getClassLoader());
                     layer.setParent(this);
                     mChildren.add(layer);
                     break;
@@ -182,34 +186,40 @@ public class ResourceGroup extends Resource
         }
     }
 
+
     @Override
     public void setConnection(Connection connection)
     {
         super.setConnection(connection);
-        for(Resource resource : mChildren){
+        for (Resource resource : mChildren) {
             resource.setConnection(connection);
         }
     }
+
 
     @Override
     public INGWResource getResourceById(int id)
     {
         INGWResource ret = super.getResourceById(id);
-        if(null != ret)
+        if (null != ret) {
             return ret;
-        for(Resource resource : mChildren){
+        }
+        for (Resource resource : mChildren) {
             ret = resource.getResourceById(id);
-            if(null != ret)
+            if (null != ret) {
                 return ret;
+            }
         }
         return super.getResourceById(id);
     }
 
+
     @Override
     public int getChildrenCount()
     {
-        if(null == mChildren)
+        if (null == mChildren) {
             return 0;
+        }
         return mChildren.size();
     }
 
@@ -217,8 +227,9 @@ public class ResourceGroup extends Resource
     @Override
     public INGWResource getChild(int i)
     {
-        if(null == mChildren)
+        if (null == mChildren) {
             return null;
+        }
         return mChildren.get(i);
     }
 

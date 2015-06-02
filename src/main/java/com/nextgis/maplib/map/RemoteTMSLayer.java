@@ -29,7 +29,6 @@ import android.util.Base64;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
-import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import org.apache.http.HttpEntity;
@@ -45,9 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -73,6 +70,7 @@ public class RemoteTMSLayer
 
     public final static long DELAY = 2150;
 
+
     public RemoteTMSLayer(
             Context context,
             File path)
@@ -91,21 +89,26 @@ public class RemoteTMSLayer
     public synchronized void onPrepare()
     {
         int diff = getMaxThreadCount() - mAvailable.availablePermits();
-        if (diff > 0)
+        if (diff > 0) {
             mAvailable.release(diff);
-        Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
-                   getMaxThreadCount());
+        }
+        Log.d(
+                TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
+                     getMaxThreadCount());
     }
+
 
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
-        if(null == tile)
+        if (null == tile) {
             return null;
+        }
 
         Bitmap ret = getBitmapFromCache(tile.getHash());
-        if(null != ret)
+        if (null != ret) {
             return ret;
+        }
 
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
@@ -149,9 +152,11 @@ public class RemoteTMSLayer
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             mNet.setProxy(HTTPClient, url);
-            if(!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
-                if(exist) //if exist but not reload from internet
+            if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
+                if (exist) //if exist but not reload from internet
+                {
                     ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+                }
 
                 putBitmapToCache(tile.getHash(), ret);
                 return ret;
@@ -163,9 +168,9 @@ public class RemoteTMSLayer
             // Check to see if we got success
             final org.apache.http.StatusLine line = response.getStatusLine();
             if (line.getStatusCode() != 200) {
-                Log.d(TAG,
-                      "Problem downloading MapTile: " + url + " HTTP response: " +
-                      line);
+                Log.d(
+                        TAG, "Problem downloading MapTile: " + url + " HTTP response: " +
+                             line);
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
                 putBitmapToCache(tile.getHash(), ret);
                 return ret;
@@ -195,12 +200,15 @@ public class RemoteTMSLayer
 
         } catch (InterruptedException | IOException | IllegalArgumentException e) {
             e.printStackTrace();
-            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " +
-                       e.getLocalizedMessage());
+            Log.d(
+                    TAG, "Problem downloading MapTile: " + url + " Error: " +
+                         e.getLocalizedMessage());
         }
 
-        if(exist) //if exist but not reload from internet
+        if (exist) //if exist but not reload from internet
+        {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+        }
         putBitmapToCache(tile.getHash(), ret);
         return ret;
     }
@@ -233,14 +241,12 @@ public class RemoteTMSLayer
     {
         super.fromJSON(jsonObject);
         mURL = jsonObject.getString(JSON_URL_KEY);
-        if (jsonObject.has(JSON_LOGIN_KEY))
-        {
+        if (jsonObject.has(JSON_LOGIN_KEY)) {
             // Here we must use mLogin instead of setLogin() for subclasses
             // which do not use mLogin
             mLogin = jsonObject.getString(JSON_LOGIN_KEY);
         }
-        if (jsonObject.has(JSON_PASSWORD_KEY))
-        {
+        if (jsonObject.has(JSON_PASSWORD_KEY)) {
             // Here we must use mPassword instead of setPassword() for subclasses
             // which do not use mLogin
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
@@ -248,6 +254,7 @@ public class RemoteTMSLayer
 
         analizeURL(mURL);
     }
+
 
     public String getURL()
     {
@@ -261,77 +268,74 @@ public class RemoteTMSLayer
         analizeURL(mURL);
     }
 
+
     protected synchronized String getURLSubdomain()
     {
-        if(mSubdomains.size() == 0 || mSubDomainsMask.length() == 0)
+        if (mSubdomains.size() == 0 || mSubDomainsMask.length() == 0) {
             return mURL;
+        }
 
-        if(mCurrentSubdomain >= mSubdomains.size())
+        if (mCurrentSubdomain >= mSubdomains.size()) {
             mCurrentSubdomain = 0;
+        }
 
         String subdomain = mSubdomains.get(mCurrentSubdomain++);
         return mURL.replace(mSubDomainsMask, subdomain);
     }
 
-    protected void analizeURL(String url){
+
+    protected void analizeURL(String url)
+    {
         //analize url for subdomains
         boolean begin_block = false;
         String subdomain = "";
         int beginSubDomains = NOT_FOUND;
         int endSubDomains = NOT_FOUND;
-        for(int i = 0; i < url.length(); ++i)
-        {
-            if(begin_block)
-            {
-                if(url.charAt(i) == 'x' || url.charAt(i) == 'y' || url.charAt(i) == 'z')
-                {
+        for (int i = 0; i < url.length(); ++i) {
+            if (begin_block) {
+                if (url.charAt(i) == 'x' || url.charAt(i) == 'y' || url.charAt(i) == 'z') {
                     begin_block = false;
-                }
-                else if(url.charAt(i) == ',')
-                {
+                } else if (url.charAt(i) == ',') {
                     subdomain = subdomain.trim();
-                    if(subdomain.length() > 0) {
+                    if (subdomain.length() > 0) {
                         mSubdomains.add(subdomain);
                         subdomain = "";
                     }
-                }
-                else if(url.charAt(i) == '}')
-                {
+                } else if (url.charAt(i) == '}') {
                     subdomain = subdomain.trim();
-                    if(subdomain.length() > 0) {
+                    if (subdomain.length() > 0) {
                         mSubdomains.add(subdomain);
                         subdomain = "";
                     }
                     endSubDomains = i;
                     begin_block = false;
-                }
-                else
-                {
+                } else {
                     subdomain += url.charAt(i);
                 }
             }
 
-            if(url.charAt(i) == '{')
-            {
-                if(endSubDomains == NOT_FOUND)
+            if (url.charAt(i) == '{') {
+                if (endSubDomains == NOT_FOUND) {
                     beginSubDomains = i;
+                }
                 begin_block = true;
             }
         }
 
-        if(endSubDomains > beginSubDomains)
-        {
+        if (endSubDomains > beginSubDomains) {
             mSubDomainsMask = url.substring(beginSubDomains, endSubDomains + 1);
         }
 
         mAvailable = new Semaphore(getMaxThreadCount(), true);
     }
 
+
     @Override
     public GeoEnvelope getExtents()
     {
-        if(mExtents == null)
+        if (mExtents == null) {
             mExtents = new GeoEnvelope(-MERCATOR_MAX, MERCATOR_MAX, -MERCATOR_MAX, MERCATOR_MAX);
+        }
         return mExtents;
     }
 
@@ -339,8 +343,9 @@ public class RemoteTMSLayer
     @Override
     public int getMaxThreadCount()
     {
-        if(mSubdomains.isEmpty())
+        if (mSubdomains.isEmpty()) {
             return HTTP_SEPARATE_THREADS;
+        }
         return mSubdomains.size() * HTTP_SEPARATE_THREADS;
     }
 

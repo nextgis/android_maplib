@@ -92,6 +92,7 @@ public class GeoGeometryFactory
         return output;
     }
 
+
     public static int typeFromString(String jsonType)
     {
         switch (jsonType) {
@@ -128,49 +129,45 @@ public class GeoGeometryFactory
         }
     }
 
+
     public static GeoGeometry fromBlob(byte[] raw)
             throws IOException, ClassNotFoundException
     {
-        if(null == raw)
+        if (null == raw) {
             return null;
+        }
         ByteArrayInputStream in = new ByteArrayInputStream(raw);
         ObjectInputStream is = new ObjectInputStream(in);
         return (GeoGeometry) is.readObject();
     }
 
+
     public static GeoGeometry fromWKT(String wkt)
     {
         GeoGeometry output = null;
         wkt = wkt.trim();
-        if(wkt.startsWith("POINT")) {
+        if (wkt.startsWith("POINT")) {
             output = new GeoPoint();
             output.setCoordinatesFromWKT(wkt.substring(5).trim());
-        }
-        else if(wkt.startsWith("LINESTRING")){
+        } else if (wkt.startsWith("LINESTRING")) {
             output = new GeoLineString();
             output.setCoordinatesFromWKT(wkt.substring(10).trim());
-        }
-        else if(wkt.startsWith("LINEARRING")){
+        } else if (wkt.startsWith("LINEARRING")) {
             output = new GeoLinearRing();
             output.setCoordinatesFromWKT(wkt.substring(10).trim());
-        }
-        else if(wkt.startsWith("POLYGON")){
+        } else if (wkt.startsWith("POLYGON")) {
             output = new GeoPolygon();
             output.setCoordinatesFromWKT(wkt.substring(7).trim());
-        }
-        else if(wkt.startsWith("MULTIPOINT")){
+        } else if (wkt.startsWith("MULTIPOINT")) {
             output = new GeoMultiPoint();
             output.setCoordinatesFromWKT(wkt.substring(10).trim());
-        }
-        else if(wkt.startsWith("MULTILINESTRING")){
+        } else if (wkt.startsWith("MULTILINESTRING")) {
             output = new GeoMultiLineString();
             output.setCoordinatesFromWKT(wkt.substring(15).trim());
-        }
-        else if(wkt.startsWith("MULTIPOLYGON")){
+        } else if (wkt.startsWith("MULTIPOLYGON")) {
             output = new GeoMultiPolygon();
             output.setCoordinatesFromWKT(wkt.substring(12).trim());
-        }
-        else if(wkt.startsWith("GEOMETRYCOLLECTION")){
+        } else if (wkt.startsWith("GEOMETRYCOLLECTION")) {
             output = new GeoGeometryCollection();
             output.setCoordinatesFromWKT(wkt.substring(18).trim());
         }

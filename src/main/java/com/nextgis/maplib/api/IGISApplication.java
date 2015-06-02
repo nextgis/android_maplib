@@ -27,50 +27,55 @@ import com.nextgis.maplib.map.MapBase;
 
 
 /**
- * Interface that all applications using the library should implements. This is use in content provider.
- * If your application will not implement this interface - the syncronize vector layers with server
- * will not work.
+ * Interface that all applications using the library should implements. This is use in content
+ * provider. If your application will not implement this interface - the syncronize vector layers
+ * with server will not work.
  */
 public interface IGISApplication
 {
     /**
-     *
      * @return A MapBase or any inherited classes or null if not created in application
      */
     public MapBase getMap();
 
     /**
-     *
      * @return A authority for sync purposes or empty string in not sync anything
      */
     public String getAuthority();
 
     /**
-     * @param accountName Account name
+     * @param accountName
+     *         Account name
+     *
      * @return Account by its name
      */
     public Account getAccount(String accountName);
 
     /**
-     * @param account Account
+     * @param account
+     *         Account
+     *
      * @return Account URL
      */
     public String getAccountUrl(Account account);
 
     /**
-     * @param account Account
+     * @param account
+     *         Account
+     *
      * @return Account login
      */
     public String getAccountLogin(Account account);
 
     /**
-     * @param account Account
+     * @param account
+     *         Account
+     *
      * @return Account password
      */
     public String getAccountPassword(Account account);
 
     /**
-     *
      * @return A GpsEventSource or null if not needed or created in application
      */
     public GpsEventSource getGpsEventSource();

@@ -125,7 +125,9 @@ public class TileItem
         return mY;
     }
 
-    public final String getHash(){
+
+    public final String getHash()
+    {
         return "z" + mZoomLevel + "." + mX + "." + mY;
     }
 }

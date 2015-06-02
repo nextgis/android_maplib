@@ -42,15 +42,17 @@ public class LayerWithStyles
 {
     List<Long> mStyles;
 
+
     protected LayerWithStyles(Parcel in)
     {
         super(in);
         mStyles = new ArrayList<>();
         int count = in.readInt();
-        for(int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             mStyles.add(in.readLong());
         }
     }
+
 
     public LayerWithStyles(
             JSONObject data,
@@ -90,9 +92,9 @@ public class LayerWithStyles
             int i)
     {
         super.writeToParcel(parcel, i);
-        if (null == mStyles)
+        if (null == mStyles) {
             parcel.writeInt(0);
-        else {
+        } else {
             parcel.writeInt(mStyles.size());
             for (Long style : mStyles) {
                 parcel.writeLong(style);
@@ -141,31 +143,43 @@ public class LayerWithStyles
         }
     }
 
-    public int getStyleCount(){
-        if(null == mStyles)
+
+    public int getStyleCount()
+    {
+        if (null == mStyles) {
             return 0;
+        }
         return mStyles.size();
     }
 
-    public long getStyleId(int i){
+
+    public long getStyleId(int i)
+    {
         return mStyles.get(i);
     }
 
+
     public String getTMSUrl(int styleNo)
     {
-        if(getType() == Connection.NGWResourceTypeRasterLayer || getType() == Connection.NGWResourceTypeVectorLayer || getType() == Connection.NGWResourceTypePostgisLayer)
+        if (getType() == Connection.NGWResourceTypeRasterLayer ||
+            getType() == Connection.NGWResourceTypeVectorLayer ||
+            getType() == Connection.NGWResourceTypePostgisLayer) {
             return NGWUtil.getTMSUrl(mConnection.getURL(), mStyles.get(styleNo));
+        }
 
-        if(getType() == Connection.NGWResourceTypeWMSClient)
+        if (getType() == Connection.NGWResourceTypeWMSClient) {
             return NGWUtil.getTMSUrl(mConnection.getURL(), mRemoteId);
+        }
 
         return null;
     }
+
 
     public String getGeoJSONUrl()
     {
         return NGWUtil.getGeoJSONUrl(mConnection.getURL(), mRemoteId);
     }
+
 
     public String getResourceUrl()
     {

@@ -50,9 +50,9 @@ public class MapEventSource
     protected final static int    EVENT_onLayersReordered   = 5;
     protected final static int    EVENT_onLayerDrawFinished = 6;
     protected final static int    EVENT_onLayerDrawStarted  = 7;
-    protected List<MapEventListener> mListeners;
-    protected static Handler         mHandler;
-    protected boolean                mFreeze;
+    protected        List<MapEventListener> mListeners;
+    protected static Handler                mHandler;
+    protected        boolean                mFreeze;
 
 
     public MapEventSource(
@@ -249,6 +249,7 @@ public class MapEventSource
         mHandler.sendMessage(msg);
     }
 
+
     /**
      * Send layers draw started event to all listeners
      */
@@ -266,21 +267,26 @@ public class MapEventSource
         mHandler.sendMessage(msg);
     }
 
+
     /**
      * Create handler for messages
      */
-    protected void createHandler(){
-        mHandler = new Handler() {
-            public void handleMessage(Message msg) {
+    protected void createHandler()
+    {
+        mHandler = new Handler()
+        {
+            public void handleMessage(Message msg)
+            {
                 super.handleMessage(msg);
 
-                if(mFreeze)
+                if (mFreeze) {
                     return;
+                }
 
                 Bundle resultData = msg.getData();
 
                 for (MapEventListener listener : mListeners) {
-                    switch(resultData.getInt(BUNDLE_TYPE_KEY)) {
+                    switch (resultData.getInt(BUNDLE_TYPE_KEY)) {
                         case EVENT_onLayerAdded:
                             listener.onLayerAdded(resultData.getInt(BUNDLE_ID_KEY));
                             break;
@@ -291,10 +297,15 @@ public class MapEventSource
                             listener.onLayerChanged(resultData.getInt(BUNDLE_ID_KEY));
                             break;
                         case EVENT_onExtentChanged:
-                            listener.onExtentChanged(resultData.getFloat(BUNDLE_ZOOM_KEY), new GeoPoint(resultData.getDouble(BUNDLE_X_KEY), resultData.getDouble(BUNDLE_Y_KEY)));
+                            listener.onExtentChanged(
+                                    resultData.getFloat(BUNDLE_ZOOM_KEY), new GeoPoint(
+                                            resultData.getDouble(BUNDLE_X_KEY),
+                                            resultData.getDouble(BUNDLE_Y_KEY)));
                             break;
                         case EVENT_onLayerDrawFinished:
-                            listener.onLayerDrawFinished(resultData.getInt(BUNDLE_ID_KEY), resultData.getFloat(BUNDLE_DONE_KEY));
+                            listener.onLayerDrawFinished(
+                                    resultData.getInt(BUNDLE_ID_KEY),
+                                    resultData.getFloat(BUNDLE_DONE_KEY));
                             break;
                         case EVENT_onLayersReordered:
                             listener.onLayersReordered();
@@ -308,11 +319,15 @@ public class MapEventSource
         };
     }
 
-    public void freeze(){
+
+    public void freeze()
+    {
         mFreeze = true;
     }
 
-    public void thaw(){
+
+    public void thaw()
+    {
         mFreeze = false;
     }
 }

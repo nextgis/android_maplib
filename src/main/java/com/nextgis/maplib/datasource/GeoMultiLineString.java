@@ -30,7 +30,8 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 public class GeoMultiLineString
         extends GeoGeometryCollection
 {
-    protected static final long serialVersionUID =-1241179697270831766L;
+    protected static final long serialVersionUID = -1241179697270831766L;
+
 
     @Override
     public void add(GeoGeometry geometry)
@@ -73,18 +74,21 @@ public class GeoMultiLineString
     @Override
     public void setCoordinatesFromWKT(String wkt)
     {
-        if(wkt.contains("EMPTY"))
+        if (wkt.contains("EMPTY")) {
             return;
+        }
 
-        if(wkt.startsWith("("))
+        if (wkt.startsWith("(")) {
             wkt = wkt.substring(1, wkt.length() - 1);
+        }
 
         int pos = wkt.indexOf("(");
-        while(pos != Constants.NOT_FOUND) {
+        while (pos != Constants.NOT_FOUND) {
             wkt = wkt.substring(pos + 1, wkt.length());
             pos = wkt.indexOf(")") - 1;
-            if(pos < 1)
+            if (pos < 1) {
                 return;
+            }
 
             GeoLineString lineString = new GeoLineString();
             lineString.setCoordinatesFromWKT(wkt.substring(0, pos).trim());
@@ -105,15 +109,17 @@ public class GeoMultiLineString
     public String toWKT(boolean full)
     {
         StringBuilder buf = new StringBuilder();
-        if(full)
+        if (full) {
             buf.append("MULTILINESTRING ");
-        if (mGeometries.size() == 0)
+        }
+        if (mGeometries.size() == 0) {
             buf.append(" EMPTY");
-        else {
+        } else {
             buf.append("(");
             for (int i = 0; i < mGeometries.size(); i++) {
-                if(i > 0)
+                if (i > 0) {
                     buf.append(", ");
+                }
                 GeoGeometry geom = mGeometries.get(i);
                 buf.append(geom.toWKT(false));
             }

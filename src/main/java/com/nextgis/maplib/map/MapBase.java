@@ -24,15 +24,11 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.util.FileUtil;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+
 
 public class MapBase
         extends LayerGroup
@@ -65,6 +61,7 @@ public class MapBase
         return mNewId++;
     }
 
+
     @Override
     protected void onLayerAdded(ILayer layer)
     {
@@ -72,19 +69,25 @@ public class MapBase
         super.onLayerAdded(layer);
     }
 
+
     public static MapBase getInstance()
     {
-        if(mInstance == null)
-            throw new IllegalArgumentException("Impossible to get the instance. This class must be initialized before");
+        if (mInstance == null) {
+            throw new IllegalArgumentException(
+                    "Impossible to get the instance. This class must be initialized before");
+        }
         return mInstance;
     }
 
+
     public ILayer getLastLayer()
     {
-        if(mLayers.size() == 0)
+        if (mLayers.size() == 0) {
             return null;
+        }
         return mLayers.get(mLayers.size() - 1);
     }
+
 
     @Override
     public boolean delete()
@@ -105,14 +108,16 @@ public class MapBase
     }
 
 
-    public void moveTo(File newPath){
+    public void moveTo(File newPath)
+    {
 
-        if(mPath.equals(newPath))
+        if (mPath.equals(newPath)) {
             return;
+        }
 
         clearLayers();
 
-        if(FileUtil.move(mPath, newPath)) {
+        if (FileUtil.move(mPath, newPath)) {
             //change path
             mPath = newPath;
         }

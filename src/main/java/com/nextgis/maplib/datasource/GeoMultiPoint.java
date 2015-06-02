@@ -29,7 +29,8 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 public class GeoMultiPoint
         extends GeoGeometryCollection
 {
-    protected static final long serialVersionUID =-1241179697270831765L;
+    protected static final long serialVersionUID = -1241179697270831765L;
+
 
     @Override
     public void add(GeoGeometry geometry)
@@ -72,12 +73,14 @@ public class GeoMultiPoint
     @Override
     public void setCoordinatesFromWKT(String wkt)
     {
-        if(wkt.contains("EMPTY"))
+        if (wkt.contains("EMPTY")) {
             return;
+        }
 
-        if(wkt.startsWith("("))
+        if (wkt.startsWith("(")) {
             wkt = wkt.substring(1, wkt.length() - 1);
-        for(String wktPt : wkt.split(",")){
+        }
+        for (String wktPt : wkt.split(",")) {
             GeoPoint pt = new GeoPoint();
             pt.setCoordinatesFromWKT(wktPt.trim());
             add(pt);
@@ -90,19 +93,22 @@ public class GeoMultiPoint
         super.add(point);
     }
 
+
     @Override
     public String toWKT(boolean full)
     {
         StringBuilder buf = new StringBuilder();
-        if(full)
+        if (full) {
             buf.append("MULTIPOINT ");
-        if (mGeometries.size() == 0)
+        }
+        if (mGeometries.size() == 0) {
             buf.append(" EMPTY");
-        else {
+        } else {
             buf.append("(");
             for (int i = 0; i < mGeometries.size(); i++) {
-                if(i > 0)
+                if (i > 0) {
                     buf.append(", ");
+                }
                 GeoGeometry geom = mGeometries.get(i);
                 buf.append(geom.toWKT(false));
             }

@@ -24,20 +24,20 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
 
-public abstract class GeoGeometry implements Serializable
+public abstract class GeoGeometry
+        implements Serializable
 {
-    protected static final long serialVersionUID =-1241179697270831761L;
+    protected static final long serialVersionUID = -1241179697270831761L;
     protected int mCRS;
+
 
     public boolean project(int toCrs)
     {
@@ -115,6 +115,7 @@ public abstract class GeoGeometry implements Serializable
 
     public abstract void setCoordinatesFromWKT(String wkt);
 
+
     public byte[] toBlob()
             throws IOException
     {
@@ -124,23 +125,29 @@ public abstract class GeoGeometry implements Serializable
         return out.toByteArray();
     }
 
+
     public abstract String toWKT(boolean full);
+
 
     public boolean equals(Object o)
     {
-        if(super.equals(o))
+        if (super.equals(o)) {
             return true;
-        GeoGeometry other = (GeoGeometry)o;
+        }
+        GeoGeometry other = (GeoGeometry) o;
         return null != other && getType() == other.getType();
     }
 
-    public boolean intersects(GeoEnvelope envelope){
+
+    public boolean intersects(GeoEnvelope envelope)
+    {
         return getEnvelope().intersects(envelope);
     }
 
 
     /**
      * Make deep copy of geometry
+     *
      * @return The geometry copy
      */
     public abstract GeoGeometry copy();

@@ -50,19 +50,28 @@ public abstract class Style
     }
 
 
-    public int getColor() {
+    public int getColor()
+    {
         return mColor;
     }
 
-    public void setColor(int color) {
+
+    public void setColor(int color)
+    {
         mColor = color;
     }
 
-    public Style(final int color){
+
+    public Style(final int color)
+    {
         mColor = color;
     }
 
-    public abstract void onDraw(GeoGeometry geoGeometry, GISDisplay display);
+
+    public abstract void onDraw(
+            GeoGeometry geoGeometry,
+            GISDisplay display);
+
 
     @Override
     public JSONObject toJSON()

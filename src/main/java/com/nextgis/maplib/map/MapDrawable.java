@@ -24,17 +24,15 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.util.Log;
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
-import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
+import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 
 
 public class MapDrawable
@@ -43,6 +41,7 @@ public class MapDrawable
 {
 
     protected int mLimitsType;
+
 
     public MapDrawable(
             Bitmap backgroundTile,
@@ -60,16 +59,20 @@ public class MapDrawable
 
 
     @Override
-    public void draw(Canvas canvas, boolean clearBackground)
+    public void draw(
+            Canvas canvas,
+            boolean clearBackground)
     {
         if (mDisplay != null) {
             mDisplay.draw(canvas, clearBackground);
         }
     }
 
+
     @Override
-    public void draw(Canvas canvas,
-                                    float x,
+    public void draw(
+            Canvas canvas,
+            float x,
             float y,
             boolean clearBackground)
     {
@@ -78,8 +81,10 @@ public class MapDrawable
         }
     }
 
+
     @Override
-    public void draw(Canvas canvas,
+    public void draw(
+            Canvas canvas,
             float x,
             float y,
             float scale)
@@ -89,13 +94,18 @@ public class MapDrawable
         }
     }
 
+
     @Override
-    public void buffer(float x, float y, float scale)
+    public void buffer(
+            float x,
+            float y,
+            float scale)
     {
         if (mDisplay != null) {
             mDisplay.buffer(x, y, scale);
         }
     }
+
 
     @Override
     public void setViewSize(
@@ -147,6 +157,7 @@ public class MapDrawable
         }
     }
 
+
     @Override
     public GeoPoint getMapCenter()
     {
@@ -188,7 +199,9 @@ public class MapDrawable
 
 
     @Override
-    public void setLimits(GeoEnvelope limits, int limitsType)
+    public void setLimits(
+            GeoEnvelope limits,
+            int limitsType)
     {
         if (mDisplay != null) {
             mDisplay.setGeoLimits(limits, limitsType);
@@ -253,14 +266,13 @@ public class MapDrawable
 
         mLayerDrawIndex = 0;
 
-        if(display != null){
+        if (display != null) {
             //print current view to layer or background
             //display.clearBackground();
             display.clearLayer();
 
             drawNext(display);
-        }
-        else {
+        } else {
             //mDisplay.clearBackground();
             mDisplay.clearLayer();
 
@@ -291,7 +303,7 @@ public class MapDrawable
 
     public void clearBackground(Canvas canvas)
     {
-        if(null != mDisplay) {
+        if (null != mDisplay) {
             mDisplay.clearBackground(canvas);
         }
     }

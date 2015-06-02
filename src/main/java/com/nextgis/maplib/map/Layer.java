@@ -90,6 +90,7 @@ public class Layer
         }
     }
 
+
     @Override
     public void setName(String newName)
     {
@@ -138,7 +139,9 @@ public class Layer
         return true;
     }
 
-    protected void notifyLayerChanged(){
+
+    protected void notifyLayerChanged()
+    {
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
             group.onLayerChanged(this);
@@ -179,6 +182,7 @@ public class Layer
     {
         return mPath;
     }
+
 
     protected File getFileName()
     {
@@ -296,6 +300,7 @@ public class Layer
     {
         return mContext;
     }
+
 
     @Override
     public boolean isValid()

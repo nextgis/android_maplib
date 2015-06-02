@@ -20,7 +20,6 @@
  */
 package com.nextgis.maplib.datasource;
 
-import com.nextgis.maplib.util.Constants;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -30,7 +29,7 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 public class GeoPoint
         extends GeoGeometry
 {
-    protected static final long serialVersionUID =-1241179697270831762L;
+    protected static final long serialVersionUID = -1241179697270831762L;
     protected double mX;
     protected double mY;
 
@@ -56,6 +55,7 @@ public class GeoPoint
         this.mY = point.mY;
         this.mCRS = point.mCRS;
     }
+
 
     public final double getX()
     {
@@ -150,11 +150,13 @@ public class GeoPoint
     @Override
     public void setCoordinatesFromWKT(String wkt)
     {
-        if(wkt.contains("EMPTY"))
+        if (wkt.contains("EMPTY")) {
             return;
+        }
 
-        if(wkt.startsWith("("))
+        if (wkt.startsWith("(")) {
             wkt = wkt.substring(1, wkt.length() - 1);
+        }
         int pos = wkt.indexOf(" ");
         mX = Double.parseDouble(wkt.substring(0, pos).trim());
         mY = Double.parseDouble(wkt.substring(pos, wkt.length()).trim());
@@ -170,19 +172,21 @@ public class GeoPoint
     @Override
     public String toWKT(boolean full)
     {
-        if(full)
+        if (full) {
             return "POINT ( " + mX + " " + mY + " )";
-        else
+        } else {
             return mX + " " + mY;
+        }
     }
 
 
     @Override
     public boolean equals(Object o)
     {
-        if(! super.equals(o) )
+        if (!super.equals(o)) {
             return false;
-        GeoPoint otherPt = (GeoPoint)o;
+        }
+        GeoPoint otherPt = (GeoPoint) o;
         return getX() == otherPt.getX() && getY() == otherPt.getY();
     }
 

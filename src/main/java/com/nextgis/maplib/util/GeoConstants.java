@@ -1,4 +1,3 @@
-
 /*
  * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android.

@@ -39,7 +39,7 @@ import java.util.List;
 
 public class GpsEventSource
 {
-    public static final   int MIN_SATELLITES_IN_FIX = 3;
+    public static final int MIN_SATELLITES_IN_FIX = 3;
     protected List<GpsEventListener> mListeners;
 
     protected LocationManager     mLocationManager;
@@ -145,8 +145,8 @@ public class GpsEventSource
 
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(mContext);
-        mListenProviders = sharedPreferences.getInt(SettingsConstants.KEY_PREF_LOCATION_SOURCE,
-                                                    GPS_PROVIDER | NETWORK_PROVIDER);
+        mListenProviders = sharedPreferences.getInt(
+                SettingsConstants.KEY_PREF_LOCATION_SOURCE, GPS_PROVIDER | NETWORK_PROVIDER);
 
         String minTimeStr =
                 sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_TIME, "2");
@@ -165,15 +165,16 @@ public class GpsEventSource
     {
         if (0 != (mListenProviders & GPS_PROVIDER) &&
             mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, mUpdateMinTime,
-                                                    mUpdateMinDistance, mGpsLocationListener);
+            mLocationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
+                    mGpsLocationListener);
         }
 
         if (0 != (mListenProviders & NETWORK_PROVIDER) &&
             mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
-            mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                                                    mUpdateMinTime, mUpdateMinDistance,
-                                                    mGpsLocationListener);
+            mLocationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
+                    mGpsLocationListener);
         }
     }
 

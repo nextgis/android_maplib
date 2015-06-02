@@ -92,10 +92,9 @@ public class SyncAdapter
      * stops after end of syncing of current NGWVectorLayer. The data structure of the current
      * NGWVectorLayer will be saved.
      * <p/>
-     * <b>Description copied from class:</b> AbstractThreadedSyncAdapter
-     * Perform a sync for this account. SyncAdapter-specific parameters may be specified in extras,
-     * which is guaranteed to not be null. Invocations of this method are guaranteed to be
-     * serialized.
+     * <b>Description copied from class:</b> AbstractThreadedSyncAdapter Perform a sync for this
+     * account. SyncAdapter-specific parameters may be specified in extras, which is guaranteed to
+     * not be null. Invocations of this method are guaranteed to be serialized.
      */
     @Override
     public void onPerformSync(

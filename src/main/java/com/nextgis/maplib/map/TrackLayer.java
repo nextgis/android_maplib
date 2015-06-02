@@ -153,6 +153,7 @@ public class TrackLayer
         return mContext.getString(R.string.tracks);
     }
 
+
     public List<GeoLineString> getTracks()
     {
         if (mTracks.size() == 0) {
@@ -261,9 +262,8 @@ public class TrackLayer
 
         String[] proj = new String[] {FIELD_LON, FIELD_LAT};
 
-        return mContext.getContentResolver()
-                       .query(Uri.withAppendedPath(mContentUriTracks, id + ""), proj, null, null,
-                              null);
+        return mContext.getContentResolver().query(
+                Uri.withAppendedPath(mContentUriTracks, id + ""), proj, null, null, null);
     }
 
 
@@ -305,16 +305,17 @@ public class TrackLayer
 
         switch (mUriMatcher.match(uri)) {
             case TYPE_TRACKS:
-                cursor = mSQLiteDatabase.query(TABLE_TRACKS, projection, selection, selectionArgs,
-                                               null, null, sortOrder);
+                cursor = mSQLiteDatabase.query(
+                        TABLE_TRACKS, projection, selection, selectionArgs, null, null, sortOrder);
                 cursor.setNotificationUri(getContext().getContentResolver(), mContentUriTracks);
                 return cursor;
             case TYPE_TRACKPOINTS:
-                cursor = mSQLiteDatabase.query(TABLE_TRACKPOINTS, projection, selection,
-                                               selectionArgs, null, null, sortOrder);
+                cursor = mSQLiteDatabase.query(
+                        TABLE_TRACKPOINTS, projection, selection, selectionArgs, null, null,
+                        sortOrder);
 
-                cursor.setNotificationUri(getContext().getContentResolver(),
-                                          mContentUriTrackpoints);
+                cursor.setNotificationUri(
+                        getContext().getContentResolver(), mContentUriTrackpoints);
                 return cursor;
             case TYPE_SINGLE_TRACK:
                 String id = uri.getLastPathSegment();
@@ -325,8 +326,9 @@ public class TrackLayer
                     selection = selection + " AND " + FIELD_SESSION + " = " + id;
                 }
 
-                cursor = mSQLiteDatabase.query(TABLE_TRACKPOINTS, projection, selection,
-                                               selectionArgs, null, null, sortOrder);
+                cursor = mSQLiteDatabase.query(
+                        TABLE_TRACKPOINTS, projection, selection, selectionArgs, null, null,
+                        sortOrder);
                 return cursor;
             default:
                 throw new IllegalArgumentException("Wrong tracks URI: " + uri);

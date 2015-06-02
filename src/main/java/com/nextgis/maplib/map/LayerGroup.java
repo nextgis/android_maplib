@@ -22,14 +22,12 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
-import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
-import com.nextgis.maplib.util.Constants;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,6 +40,7 @@ import java.util.List;
 import java.util.Random;
 
 import static com.nextgis.maplib.util.Constants.*;
+
 
 public class LayerGroup
         extends Layer
@@ -78,8 +77,9 @@ public class LayerGroup
      */
     public ILayer getLayerById(int id)
     {
-        if (mId == id)
+        if (mId == id) {
             return this;
+        }
         for (ILayer layer : mLayers) {
             if (layer.getId() == id) {
                 return layer;
@@ -91,8 +91,9 @@ public class LayerGroup
 
     public ILayer getLayerByName(String name)
     {
-        if (mName.equals(name))
+        if (mName.equals(name)) {
             return this;
+        }
         for (ILayer layer : mLayers) {
             if (layer.getName().equals(name)) {
                 return layer;
@@ -104,9 +105,13 @@ public class LayerGroup
 
     /**
      * Get a list of specified type layers
-     * @param layerGroup to inspect for layers
-     * @param types A layer type
-     * @param layerList A list to fill with find layers
+     *
+     * @param layerGroup
+     *         to inspect for layers
+     * @param types
+     *         A layer type
+     * @param layerList
+     *         A list to fill with find layers
      */
     public static void getLayersByType(
             LayerGroup layerGroup,
@@ -121,26 +126,28 @@ public class LayerGroup
             }
 
             if (layer instanceof LayerGroup) {
-                getLayersByType((LayerGroup)layer, types, layerList);
+                getLayersByType((LayerGroup) layer, types, layerList);
             }
         }
     }
 
-    public static void getVectorLayersByType(LayerGroup layerGroup, int types, List<ILayer> layerList)
+
+    public static void getVectorLayersByType(
+            LayerGroup layerGroup,
+            int types,
+            List<ILayer> layerList)
     {
-        for(int i = 0; i < layerGroup.getLayerCount(); i++)
-        {
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             ILayer layer = layerGroup.getLayer(i);
 
-            if(layer instanceof VectorLayer) {
-                VectorLayer vectorLayer = (VectorLayer)layer;
+            if (layer instanceof VectorLayer) {
+                VectorLayer vectorLayer = (VectorLayer) layer;
                 if (0 != (types & 1 << vectorLayer.getGeometryType())) {
                     layerList.add(layer);
                 }
             }
 
-            if(layer instanceof LayerGroup)
-            {
+            if (layer instanceof LayerGroup) {
                 getVectorLayersByType((LayerGroup) layer, types, layerList);
             }
         }
@@ -162,7 +169,10 @@ public class LayerGroup
         }
     }
 
-    public void insertLayer(int index, ILayer layer)
+
+    public void insertLayer(
+            int index,
+            ILayer layer)
     {
         if (layer != null) {
             mLayers.add(index, layer);
@@ -171,7 +181,10 @@ public class LayerGroup
         }
     }
 
-    public void moveLayer(int newPosition, ILayer layer)
+
+    public void moveLayer(
+            int newPosition,
+            ILayer layer)
     {
         if (layer != null) {
             mLayers.remove(layer);
@@ -179,6 +192,7 @@ public class LayerGroup
             onLayersReordered();
         }
     }
+
 
     @Override
     public void runDraw(GISDisplay display)
@@ -313,7 +327,7 @@ public class LayerGroup
         //} else {
         //}
 
-        if(percent >= 1.0f) {
+        if (percent >= 1.0f) {
             drawNext(mDisplay);
         }
 
@@ -330,28 +344,28 @@ public class LayerGroup
 
     protected void drawNext(final GISDisplay display)
     {
-        if(mLayers.size() == 0 || mLayers.size() <= mLayerDrawIndex)
+        if (mLayers.size() == 0 || mLayers.size() <= mLayerDrawIndex) {
             return;
+        }
 
         ILayer layer = mLayers.get(mLayerDrawIndex);
         mLayerDrawIndex++;
-        if(layer.isValid() && layer instanceof ILayerView){
-            ILayerView layerView = (ILayerView)layer;
-            if(layerView.isVisible() && layer instanceof IRenderer) {
+        if (layer.isValid() && layer instanceof ILayerView) {
+            ILayerView layerView = (ILayerView) layer;
+            if (layerView.isVisible() && layer instanceof IRenderer) {
                 // Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
 
                 IRenderer renderer = (IRenderer) layer;
                 renderer.runDraw(display);
-            }
-            else {
+            } else {
                 drawNext(display);
             }
-        }
-        else{
+        } else {
             //fake notify
             onDrawFinished(layer.getId(), 1.0f);
         }
     }
+
 
     protected void onLayerAdded(ILayer layer)
     {
@@ -373,7 +387,7 @@ public class LayerGroup
 
     protected void onLayerDeleted(int id)
     {
-        for(ILayer layer : mLayers) {
+        for (ILayer layer : mLayers) {
             if (layer.getId() == id) {
                 mLayers.remove(layer);
                 break;
@@ -428,11 +442,12 @@ public class LayerGroup
     @Override
     public boolean save()
     {
-        for(ILayer layer : mLayers){
+        for (ILayer layer : mLayers) {
             layer.save();
         }
         return super.save();
     }
+
 
     public File createLayerStorage()
     {
@@ -451,9 +466,9 @@ public class LayerGroup
     {
         super.setViewSize(w, h);
 
-        for(ILayer layer : mLayers) {
+        for (ILayer layer : mLayers) {
             if (layer instanceof ILayerView) {
-                ILayerView lv = (ILayerView)layer;
+                ILayerView lv = (ILayerView) layer;
                 lv.setViewSize(w, h);
             }
         }

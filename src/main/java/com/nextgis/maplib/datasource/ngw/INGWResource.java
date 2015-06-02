@@ -28,11 +28,18 @@ public interface INGWResource
         extends Parcelable
 {
     public String getName();
+
     public int getType();
+
     public int getId();
+
     public INGWResource getResourceById(int id);
+
     public int getChildrenCount();
+
     public INGWResource getChild(int i);
+
     public INGWResource getParent();
+
     public void setParent(INGWResource resource);
 }

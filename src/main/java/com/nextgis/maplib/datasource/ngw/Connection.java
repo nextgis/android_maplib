@@ -48,7 +48,8 @@ import java.util.List;
 import static com.nextgis.maplib.util.Constants.*;
 
 
-public class Connection implements INGWResource
+public class Connection
+        implements INGWResource
 {
     protected String        mName;
     protected String        mLogin;
@@ -58,25 +59,26 @@ public class Connection implements INGWResource
     protected String        mCookie;
     protected List<Integer> mSupportedTypes;
     protected ResourceGroup mRootResource;
-    protected int mId;
-    protected INGWResource mParent;
+    protected int           mId;
+    protected INGWResource  mParent;
 
-    public final static int NGWResourceTypeNone              = 1<<0;
-    public final static int NGWResourceTypeResourceGroup     = 1<<1;
-    public final static int NGWResourceTypePostgisLayer      = 1<<2;
-    public final static int NGWResourceTypePostgisConnection = 1<<3;
-    public final static int NGWResourceTypeWMSServerService  = 1<<4;
-    public final static int NGWResourceTypeBaseLayers        = 1<<5;
-    public final static int NGWResourceTypeWebMap            = 1<<6;
-    public final static int NGWResourceTypeWFSServerService  = 1<<7;
-    public final static int NGWResourceTypeVectorLayer       = 1<<8;
-    public final static int NGWResourceTypeRasterLayer       = 1<<9;
-    public final static int NGWResourceTypeVectorLayerStyle  = 1<<10;
-    public final static int NGWResourceTypeRasterLayerStyle  = 1<<11;
-    public final static int NGWResourceTypeFileSet           = 1<<12;
-    public final static int NGWResourceTypeConnection        = 1<<13;
-    public final static int NGWResourceTypeConnections       = 1<<14;
-    public final static int NGWResourceTypeWMSClient         = 1<<15;
+    public final static int NGWResourceTypeNone              = 1 << 0;
+    public final static int NGWResourceTypeResourceGroup     = 1 << 1;
+    public final static int NGWResourceTypePostgisLayer      = 1 << 2;
+    public final static int NGWResourceTypePostgisConnection = 1 << 3;
+    public final static int NGWResourceTypeWMSServerService  = 1 << 4;
+    public final static int NGWResourceTypeBaseLayers        = 1 << 5;
+    public final static int NGWResourceTypeWebMap            = 1 << 6;
+    public final static int NGWResourceTypeWFSServerService  = 1 << 7;
+    public final static int NGWResourceTypeVectorLayer       = 1 << 8;
+    public final static int NGWResourceTypeRasterLayer       = 1 << 9;
+    public final static int NGWResourceTypeVectorLayerStyle  = 1 << 10;
+    public final static int NGWResourceTypeRasterLayerStyle  = 1 << 11;
+    public final static int NGWResourceTypeFileSet           = 1 << 12;
+    public final static int NGWResourceTypeConnection        = 1 << 13;
+    public final static int NGWResourceTypeConnections       = 1 << 14;
+    public final static int NGWResourceTypeWMSClient         = 1 << 15;
+
 
     public Connection(
             String name,
@@ -87,14 +89,16 @@ public class Connection implements INGWResource
         mName = name;
         mLogin = login;
         mPassword = password;
-        if(URL.startsWith("http"))
+        if (URL.startsWith("http")) {
             mURL = URL;
-        else
+        } else {
             mURL = "http://" + URL;
+        }
         mIsConnected = false;
         mId = Connections.getNewId();
         mSupportedTypes = new ArrayList<>();
     }
+
 
     public boolean connect()
     {
@@ -110,8 +114,9 @@ public class Connection implements INGWResource
             HttpResponse response = httpclient.execute(httppost);
             //2 get cookie
             Header head = response.getFirstHeader("Set-Cookie");
-            if (head == null)
+            if (head == null) {
                 return false;
+            }
             mCookie = head.getValue();
 
             mIsConnected = true;
@@ -133,7 +138,7 @@ public class Connection implements INGWResource
         HttpClient httpclient = new DefaultHttpClient();
         httpclient.getParams().setParameter(CoreProtocolPNames.USER_AGENT, APP_USER_AGENT);
         httpclient.getParams()
-                  .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
+                .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
         httpclient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
         httpclient.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
 
@@ -153,7 +158,8 @@ public class Connection implements INGWResource
     }
 
 
-    protected void fillCapabilities(){
+    protected void fillCapabilities()
+    {
         mSupportedTypes.clear();
         try {
             String sURL = mURL + "/resource/schema";
@@ -165,29 +171,30 @@ public class Connection implements INGWResource
 
             JSONObject schema = new JSONObject(EntityUtils.toString(entity));
             JSONObject resources = schema.getJSONObject("resources");
-            if(null != resources){
+            if (null != resources) {
                 Iterator<String> keys = resources.keys();
-                while(keys.hasNext()){
+                while (keys.hasNext()) {
                     int type = getType(keys.next());
-                    if (type != NGWResourceTypeNone)
-                    {
-                        if (mSupportedTypes.isEmpty())
+                    if (type != NGWResourceTypeNone) {
+                        if (mSupportedTypes.isEmpty()) {
                             mSupportedTypes.add(type);
-                        else if (!isTypeSupported(type))
+                        } else if (!isTypeSupported(type)) {
                             mSupportedTypes.add(type);
+                        }
                     }
                 }
             }
-        }
-        catch (IOException | JSONException e){
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }
+
 
     public boolean isTypeSupported(int type)
     {
         return mSupportedTypes.isEmpty() || mSupportedTypes.contains(type);
     }
+
 
     public int getType(String sType)
     {
@@ -246,21 +253,27 @@ public class Connection implements INGWResource
         return mId;
     }
 
+
     @Override
     public INGWResource getResourceById(int id)
     {
-        if(id == mId)
+        if (id == mId) {
             return this;
-        if(null == mRootResource) //not connected
+        }
+        if (null == mRootResource) //not connected
+        {
             return null;
+        }
         return mRootResource.getResourceById(id);
     }
+
 
     @Override
     public int getChildrenCount()
     {
-        if(null == mRootResource)
+        if (null == mRootResource) {
             return 0;
+        }
         return mRootResource.getChildrenCount();
     }
 
@@ -268,8 +281,9 @@ public class Connection implements INGWResource
     @Override
     public INGWResource getChild(int i)
     {
-        if(null == mRootResource)
+        if (null == mRootResource) {
             return null;
+        }
         return mRootResource.getChild(i);
     }
 
@@ -280,6 +294,7 @@ public class Connection implements INGWResource
         return mParent;
     }
 
+
     @Override
     public void setParent(INGWResource resource)
     {
@@ -287,16 +302,20 @@ public class Connection implements INGWResource
     }
 
 
-    public void loadChildren(){
-        if(null != mRootResource)
+    public void loadChildren()
+    {
+        if (null != mRootResource) {
             mRootResource.loadChildren();
+        }
     }
+
 
     @Override
     public int describeContents()
     {
         return 0;
     }
+
 
     @Override
     public void writeToParcel(
@@ -311,8 +330,9 @@ public class Connection implements INGWResource
         parcel.writeString(mCookie);
         parcel.writeInt(mId);
         parcel.writeInt(mSupportedTypes.size());
-        for(Integer type : mSupportedTypes)
+        for (Integer type : mSupportedTypes) {
             parcel.writeInt(type);
+        }
         parcel.writeParcelable(mRootResource, i);
     }
 
@@ -344,10 +364,11 @@ public class Connection implements INGWResource
         mId = in.readInt();
         int count = in.readInt();
         mSupportedTypes = new ArrayList<>();
-        for(int i = 0; i < count; i++)
+        for (int i = 0; i < count; i++) {
             mSupportedTypes.add(in.readInt());
+        }
         mRootResource = in.readParcelable(ResourceGroup.class.getClassLoader());
-        if(null != mRootResource) {
+        if (null != mRootResource) {
             mRootResource.setConnection(this);
             mRootResource.setParent(this);
         }

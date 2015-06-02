@@ -22,7 +22,6 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -33,7 +32,6 @@ import android.graphics.RectF;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
-import com.nextgis.maplib.util.Constants;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
@@ -67,7 +65,7 @@ public class GISDisplay
     protected       GeoEnvelope mScreenBounds;
     protected       GeoEnvelope mOffScreenBounds;
     protected       int         mLimitType;
-    protected int mWidth, mHeight;
+    protected       int         mWidth, mHeight;
 
 
     public GISDisplay(Bitmap backgroundTile)
@@ -102,8 +100,9 @@ public class GISDisplay
             int w,
             int h)
     {
-        if((mWidth == w && mHeight == h) || w < 1 || h < 1)
+        if ((mWidth == w && mHeight == h) || w < 1 || h < 1) {
             return;
+        }
         mMainBitmap = null;
         mMainCanvas = null;
         mDoubleBufferBitmap = null;
@@ -125,12 +124,13 @@ public class GISDisplay
         float zoom = (float) Math.max(w, h) / mTileSize;
         mMinZoomLevel = (float) Math.ceil(Math.log(zoom) / Math.log(2.0));
 
-        if(mMinZoomLevel < 0)
+        if (mMinZoomLevel < 0) {
             mMinZoomLevel = 0;
+        }
 
-        mMainBitmap = Bitmap.createBitmap((int) (w * OFFSCREEN_EXTRASIZE_RATIO),
-                                          (int) (h * OFFSCREEN_EXTRASIZE_RATIO),
-                                          Bitmap.Config.ARGB_8888);
+        mMainBitmap = Bitmap.createBitmap(
+                (int) (w * OFFSCREEN_EXTRASIZE_RATIO), (int) (h * OFFSCREEN_EXTRASIZE_RATIO),
+                Bitmap.Config.ARGB_8888);
         mMainCanvas = new Canvas(mMainBitmap);
 
         mMainBitmapOffsetX = (mMainBitmap.getWidth() - w) * .5f;
@@ -141,15 +141,16 @@ public class GISDisplay
         }
 
         // create double buffer
-        mDoubleBufferBitmap = Bitmap.createBitmap((int) (w * OFFSCREEN_EXTRASIZE_RATIO),
-                                                  (int) (h * OFFSCREEN_EXTRASIZE_RATIO),
-                                                  Bitmap.Config.ARGB_8888);
+        mDoubleBufferBitmap = Bitmap.createBitmap(
+                (int) (w * OFFSCREEN_EXTRASIZE_RATIO), (int) (h * OFFSCREEN_EXTRASIZE_RATIO),
+                Bitmap.Config.ARGB_8888);
 
         mDoubleBufferCanvas = new Canvas(mDoubleBufferBitmap);
 
         //default zoom and center
         setZoomAndCenter(mZoomLevel, mCenter);
     }
+
 
     public void setZoomAndCenter(
             float zoom,
@@ -164,8 +165,7 @@ public class GISDisplay
         mCenter = center;
         if (mCenter.getX() > MERCATOR_MAX) {
             mCenter.setX(mCenter.getX() - MERCATOR_MAX);
-        }
-        else if(mCenter.getX() < -MERCATOR_MAX){
+        } else if (mCenter.getX() < -MERCATOR_MAX) {
             mCenter.setX(mCenter.getX() + MERCATOR_MAX);
         }
 
@@ -176,8 +176,8 @@ public class GISDisplay
         mapTileSize *= 1 + zoom - nZoom;
         double mapPixelSize = mapTileSize * mTileSize;
 
-        mMapTileSize.setCoordinates(mFullBounds.width() / mapTileSize,
-                                    mFullBounds.height() / mapTileSize);
+        mMapTileSize.setCoordinates(
+                mFullBounds.width() / mapTileSize, mFullBounds.height() / mapTileSize);
 
         double scaleX = mapPixelSize / mFullBounds.width();
         double scaleY = mapPixelSize / mFullBounds.height();
@@ -194,10 +194,10 @@ public class GISDisplay
         mInvertTransformMatrix.reset();
         boolean operationSuccess = mTransformMatrix.invert(mInvertTransformMatrix);
         //found that matrix may not be inverted on some devices, so look for zoom there it inverts successfully
-        if(!operationSuccess){
-            if(zoom >= mMinZoomLevel){
+        if (!operationSuccess) {
+            if (zoom >= mMinZoomLevel) {
                 mMinZoomLevel += .5;
-                if(mMinZoomLevel >= mMaxZoomLevel - 1) {
+                if (mMinZoomLevel >= mMaxZoomLevel - 1) {
                     throw new IllegalArgumentException("The transformation matrix is invalid");
                 }
                 setZoomAndCenter(zoom + .5f, center);
@@ -208,18 +208,18 @@ public class GISDisplay
         Matrix matrix = new Matrix();
         matrix.postTranslate((float) -mCenter.getX(), (float) -mCenter.getY());
         matrix.postScale((float) mScale, (float) -mScale);
-        matrix.postTranslate((float) (mMainBitmap.getWidth() * .5),
-                             (float) (mMainBitmap.getHeight() * .5));
+        matrix.postTranslate(
+                (float) (mMainBitmap.getWidth() * .5), (float) (mMainBitmap.getHeight() * .5));
         mMainCanvas.setMatrix(matrix);
 
-        RectF rect =
-                new RectF(-mMainBitmapOffsetX, mHeight + mMainBitmapOffsetY,
-                          mWidth + mMainBitmapOffsetX, -mMainBitmapOffsetY);
+        RectF rect = new RectF(
+                -mMainBitmapOffsetX, mHeight + mMainBitmapOffsetY, mWidth + mMainBitmapOffsetX,
+                -mMainBitmapOffsetY);
         mInvertTransformMatrix.mapRect(rect);
 
-        mCurrentBounds =
-                new GeoEnvelope(Math.min(rect.left, rect.right), Math.max(rect.left, rect.right),
-                                Math.min(rect.bottom, rect.top), Math.max(rect.bottom, rect.top));
+        mCurrentBounds = new GeoEnvelope(
+                Math.min(rect.left, rect.right), Math.max(rect.left, rect.right),
+                Math.min(rect.bottom, rect.top), Math.max(rect.bottom, rect.top));
         //Log.d(TAG, "current: " + mCurrentBounds.toString());
 
         mLimits = mapToScreen(mGeoLimits);
@@ -240,8 +240,9 @@ public class GISDisplay
     {
         GeoEnvelope outEnv = new GeoEnvelope();
         RectF rect = new RectF();
-        rect.set((float) env.getMinX(), (float) env.getMaxY(), (float) env.getMaxX(),
-                 (float) env.getMinY());
+        rect.set(
+                (float) env.getMinX(), (float) env.getMaxY(), (float) env.getMaxX(),
+                (float) env.getMinY());
 
         mTransformMatrix.mapRect(rect);
         outEnv.setMin(rect.left, rect.bottom);
@@ -249,6 +250,7 @@ public class GISDisplay
 
         return outEnv;
     }
+
 
     public void clearLayer()
     {
@@ -273,13 +275,17 @@ public class GISDisplay
         return new GeoEnvelope(mOffScreenBounds);
     }
 
-    public synchronized void draw(Canvas canvas, boolean clearBackground)
+
+    public synchronized void draw(
+            Canvas canvas,
+            boolean clearBackground)
     {
         draw(canvas, 0, 0, clearBackground);
     }
 
 
-    public synchronized void draw(Canvas canvas,
+    public synchronized void draw(
+            Canvas canvas,
             float x,
             float y,
             boolean clearBackground)
@@ -288,17 +294,20 @@ public class GISDisplay
             clearBackground(canvas);
         }
 
-        if(null == canvas)
+        if (null == canvas) {
             return;
+        }
 
-        canvas.drawBitmap(mDoubleBufferBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
+        canvas.drawBitmap(
+                mDoubleBufferBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
     }
 
 
     public void clearBackground(Canvas canvas)
     {
-        if(null == canvas)
+        if (null == canvas) {
             return;
+        }
 
         //Log.d(TAG, "clearBackground(), w: " + mBackgroundBitmap.getWidth() + " h: " + mBackgroundBitmap.getHeight());
 
@@ -310,15 +319,17 @@ public class GISDisplay
     }
 
 
-    public synchronized void draw(Canvas canvas,
+    public synchronized void draw(
+            Canvas canvas,
             float x,
             float y,
             float scale)
     {
         clearBackground(canvas);
 
-        if(null == canvas)
+        if (null == canvas) {
             return;
+        }
 
         GeoPoint pt = getScaledOffset(x, y, scale);
 
@@ -357,15 +368,17 @@ public class GISDisplay
             final GeoPoint pt,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
 
         Matrix matrix = new Matrix();
 
         matrix.postScale((float) mInvertScale, (float) -mInvertScale);
         matrix.postTranslate((float) pt.getX(), (float) pt.getY());
 
-        float scale = (float) (1.0036 + mZoomLevel - Math.floor(mZoomLevel)); // 1.0036 ~ 256 / 255 - add one extra pixel
+        float scale = (float) (1.0036 + mZoomLevel -
+                               Math.floor(mZoomLevel)); // 1.0036 ~ 256 / 255 - add one extra pixel
 
         if (bitmap.getWidth() != mTileSize) {
             scale = (float) mTileSize / bitmap.getWidth() * scale;
@@ -389,8 +402,9 @@ public class GISDisplay
             float vOffset,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
 
         PathMeasure pm = new PathMeasure(path, false);
         Matrix matrix = new Matrix();
@@ -438,34 +452,40 @@ public class GISDisplay
         //mMainCanvas.drawTextOnPath(text, path, hOffset, vOffset, paint);
     }
 
+
     public void drawPoint(
             float x,
             float y,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawPoint(x, y, paint);
     }
 
 
     public void drawLine(
-            float x0, float y0,
+            float x0,
+            float y0,
             float x1,
             float y1,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawLine(x0, y0, x1, y1, paint);
     }
+
 
     public void drawLines(
             float[] pts,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawLines(pts, paint);
     }
 
@@ -476,10 +496,12 @@ public class GISDisplay
             float radius,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawCircle(x, y, radius, paint);
     }
+
 
     public void drawBox(
             float x,
@@ -487,10 +509,12 @@ public class GISDisplay
             float size,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
     }
+
 
     public void drawCrossedBox(
             float x,
@@ -498,19 +522,25 @@ public class GISDisplay
             float size,
             Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
         mMainCanvas.drawLine(x - size, y - size, x + size, y + size, paint);
         mMainCanvas.drawLine(x - size, y + size, x + size, y - size, paint);
     }
 
-    public void drawPath(Path path, Paint paint)
+
+    public void drawPath(
+            Path path,
+            Paint paint)
     {
-        if(null == mMainCanvas)
+        if (null == mMainCanvas) {
             return;
+        }
         mMainCanvas.drawPath(path, paint);
     }
+
 
     public final double getScale()
     {
@@ -550,11 +580,13 @@ public class GISDisplay
         return new GeoPoint(points[0], points[1]);
     }
 
-    public GeoPoint[] screenToMap(final float[] points){
+
+    public GeoPoint[] screenToMap(final float[] points)
+    {
         mInvertTransformMatrix.mapPoints(points);
         GeoPoint[] ret = new GeoPoint[points.length / 2];
         int count = 0;
-        for(int i = 0; i < points.length - 1; i += 2){
+        for (int i = 0; i < points.length - 1; i += 2) {
             ret[count++] = new GeoPoint(points[i], points[i + 1]);
         }
         return ret;
@@ -571,11 +603,14 @@ public class GISDisplay
         return new GeoPoint(points[0], points[1]);
     }
 
-    public float[] mapToScreen(final GeoPoint[] points){
-        if(null == points)
+
+    public float[] mapToScreen(final GeoPoint[] points)
+    {
+        if (null == points) {
             return null;
+        }
         float dfPoints[] = new float[points.length * 2];
-        for(int i = 0; i < points.length; i++){
+        for (int i = 0; i < points.length; i++) {
             int pos = i * 2;
             dfPoints[pos] = (float) points[i].getX();
             dfPoints[pos + 1] = (float) points[i].getY();
@@ -586,12 +621,14 @@ public class GISDisplay
         return dfPoints;
     }
 
+
     public GeoEnvelope screenToMap(final GeoEnvelope env)
     {
         GeoEnvelope outEnv = new GeoEnvelope();
         RectF rect = new RectF();
-        rect.set((float) env.getMinX(), (float) env.getMaxY(), (float) env.getMaxX(),
-                 (float) env.getMinY());
+        rect.set(
+                (float) env.getMinX(), (float) env.getMaxY(), (float) env.getMaxX(),
+                (float) env.getMinY());
 
         mInvertTransformMatrix.mapRect(rect);
         outEnv.setMin(rect.left, rect.top); // screen axis Y and geo axis Y are inverse
@@ -651,6 +688,7 @@ public class GISDisplay
         return mLimitType;
     }
 
+
     public void buffer(
             float x,
             float y,
@@ -658,10 +696,9 @@ public class GISDisplay
     {
         mDoubleBufferBitmap.eraseColor(Color.TRANSPARENT);
 
-        if(scale == 1){
+        if (scale == 1) {
             mDoubleBufferCanvas.drawBitmap(mMainBitmap, x, y, null);
-        }
-        else {
+        } else {
             GeoPoint pt = getScaledOffset(x, y, scale);
 
             float mainBitmapOffsetX = (float) pt.getX();

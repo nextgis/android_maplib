@@ -39,7 +39,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import static com.nextgis.maplib.util.Constants.*;
 
 
-public class SimpleFeatureRenderer extends Renderer{
+public class SimpleFeatureRenderer
+        extends Renderer
+{
 
     protected Style              mStyle;
     protected ThreadPoolExecutor mDrawThreadPool;
@@ -173,7 +175,6 @@ public class SimpleFeatureRenderer extends Renderer{
      * // changing style params
      * return style;
      * } </pre>
-
      */
     protected Style getStyle(long featureId)
     {
@@ -182,7 +183,8 @@ public class SimpleFeatureRenderer extends Renderer{
 
 
     @Override
-    public void cancelDraw(){
+    public void cancelDraw()
+    {
         if (mDrawThreadPool != null) {
             synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
@@ -197,7 +199,9 @@ public class SimpleFeatureRenderer extends Renderer{
         }
     }
 
-    public Style getStyle() {
+
+    public Style getStyle()
+    {
         return mStyle;
     }
 
@@ -223,8 +227,7 @@ public class SimpleFeatureRenderer extends Renderer{
     {
         JSONObject styleJsonObject = jsonObject.getJSONObject(JSON_STYLE_KEY);
         String styleName = styleJsonObject.getString(JSON_NAME_KEY);
-        switch (styleName)
-        {
+        switch (styleName) {
             case "SimpleMarkerStyle":
                 mStyle = new SimpleMarkerStyle();
                 mStyle.fromJSON(styleJsonObject);

@@ -1,4 +1,3 @@
-
 /*
  * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android.
@@ -43,19 +42,14 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -65,9 +59,10 @@ public class NetworkUtil
 {
     protected final ConnectivityManager mConnectionManager;
     protected final TelephonyManager    mTelephonyManager;
-    protected long mLastCheckTime;
-    protected boolean mLastState;
-    protected Context mContext;
+    protected       long                mLastCheckTime;
+    protected       boolean             mLastState;
+    protected       Context             mContext;
+
 
     public NetworkUtil(Context context)
     {
@@ -111,40 +106,43 @@ public class NetworkUtil
         return mLastState;
     }
 
-    public void setProxy(DefaultHttpClient client, String url){
+
+    public void setProxy(
+            DefaultHttpClient client,
+            String url)
+    {
         HttpHost httpproxy;
         String proxyAddress;
         int proxyPort;
-        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH )
-        {
-            if(url.startsWith("https")){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            if (url.startsWith("https")) {
                 proxyAddress = System.getProperty("https.proxyHost");
                 String portStr = System.getProperty("https.proxyPort");
                 proxyPort = Integer.parseInt((portStr != null ? portStr : "-1"));
-            }
-            else {
+            } else {
                 proxyAddress = System.getProperty("http.proxyHost");
                 String portStr = System.getProperty("http.proxyPort");
                 proxyPort = Integer.parseInt((portStr != null ? portStr : "-1"));
             }
 
-            if(proxyPort < 0 || TextUtils.isEmpty(proxyAddress))
+            if (proxyPort < 0 || TextUtils.isEmpty(proxyAddress)) {
                 return;
+            }
 
-            httpproxy =  new HttpHost(proxyAddress, proxyPort);
-        }
-        else
-        {
-            proxyAddress = android.net.Proxy.getHost( mContext );
-            proxyPort = android.net.Proxy.getPort( mContext );
+            httpproxy = new HttpHost(proxyAddress, proxyPort);
+        } else {
+            proxyAddress = android.net.Proxy.getHost(mContext);
+            proxyPort = android.net.Proxy.getPort(mContext);
 
-            if(proxyPort < 0 || TextUtils.isEmpty(proxyAddress))
+            if (proxyPort < 0 || TextUtils.isEmpty(proxyAddress)) {
                 return;
-            httpproxy =  new HttpHost(proxyAddress, proxyPort);
+            }
+            httpproxy = new HttpHost(proxyAddress, proxyPort);
         }
 
-        client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,  httpproxy);
+        client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, httpproxy);
     }
+
 
     public DefaultHttpClient getHttpClient()
     {
@@ -157,13 +155,17 @@ public class NetworkUtil
         DefaultHttpClient HTTPClient = new DefaultHttpClient();//httpParameters);
         HTTPClient.getParams().setParameter(CoreProtocolPNames.USER_AGENT, APP_USER_AGENT);
         HTTPClient.getParams()
-                  .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
+                .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
         HTTPClient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
 
         return HTTPClient;
     }
 
-    public String get(String targetURL, String username, String password)
+
+    public String get(
+            String targetURL,
+            String username,
+            String password)
             throws IOException
     {
         final HttpGet get = new HttpGet(targetURL);
@@ -194,7 +196,12 @@ public class NetworkUtil
         return EntityUtils.toString(entity);
     }
 
-    public String post(String targetURL, String payload, String username, String password)
+
+    public String post(
+            String targetURL,
+            String payload,
+            String username,
+            String password)
             throws IOException
     {
         final HttpPost post = new HttpPost(targetURL);
@@ -228,7 +235,11 @@ public class NetworkUtil
         return EntityUtils.toString(entity);
     }
 
-    public boolean delete(String targetURL, String username, String password)
+
+    public boolean delete(
+            String targetURL,
+            String username,
+            String password)
             throws IOException
     {
         final HttpDelete delete = new HttpDelete(targetURL);
@@ -253,7 +264,12 @@ public class NetworkUtil
         return true;
     }
 
-    public String put(String targetURL, String payload, String username, String password)
+
+    public String put(
+            String targetURL,
+            String payload,
+            String username,
+            String password)
             throws IOException
     {
         final HttpPut put = new HttpPut(targetURL);
@@ -288,12 +304,19 @@ public class NetworkUtil
         return EntityUtils.toString(entity);
     }
 
-    public String postFile(String targetURL, String fileName, File file, String fileMime, String username, String password)
+
+    public String postFile(
+            String targetURL,
+            String fileName,
+            File file,
+            String fileMime,
+            String username,
+            String password)
             throws IOException
     {
         final String lineEnd = "\r\n";
         final String twoHyphens = "--";
-        final String boundary =  "**nextgis**";
+        final String boundary = "**nextgis**";
 
         //------------------ CLIENT REQUEST
         FileInputStream fileInputStream = new FileInputStream(file);
@@ -305,7 +328,7 @@ public class NetworkUtil
         if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
             final String basicAuth = "Basic " + Base64.encodeToString(
                     (username + ":" + password).getBytes(), Base64.NO_WRAP);
-            conn.setRequestProperty ("Authorization", basicAuth);
+            conn.setRequestProperty("Authorization", basicAuth);
         }
 
         // Allow Inputs
@@ -317,12 +340,14 @@ public class NetworkUtil
         // Use a post method.
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Connection", "Keep-Alive");
-        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
-        DataOutputStream dos = new DataOutputStream( conn.getOutputStream() );
+        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+        DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
         dos.writeBytes(twoHyphens + boundary + lineEnd);
-        dos.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" + lineEnd);
+        dos.writeBytes(
+                "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" +
+                lineEnd);
 
-        if(!TextUtils.isEmpty(fileMime)){
+        if (!TextUtils.isEmpty(fileMime)) {
             dos.writeBytes("Content-Type: " + fileMime + lineEnd);
         }
 

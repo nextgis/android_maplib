@@ -36,7 +36,10 @@ public class DatabaseContext
 {
     protected File mDatabasePath;
 
-    public DatabaseContext(Context base, File databasePath)
+
+    public DatabaseContext(
+            Context base,
+            File databasePath)
     {
         super(base);
         mDatabasePath = databasePath;
@@ -47,13 +50,11 @@ public class DatabaseContext
     public File getDatabasePath(String name)
     {
         String dbfile = mDatabasePath + File.separator + name;
-        if (!dbfile.endsWith(".db"))
-        {
-            dbfile += ".db" ;
+        if (!dbfile.endsWith(".db")) {
+            dbfile += ".db";
         }
 
-        if (!mDatabasePath.exists())
-        {
+        if (!mDatabasePath.exists()) {
             mDatabasePath.mkdirs();
         }
 
@@ -69,7 +70,8 @@ public class DatabaseContext
             SQLiteDatabase.CursorFactory factory,
             DatabaseErrorHandler errorHandler)
     {
-        return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name).getAbsolutePath(), factory, errorHandler);
+        return SQLiteDatabase.openOrCreateDatabase(
+                getDatabasePath(name).getAbsolutePath(), factory, errorHandler);
     }
 
 

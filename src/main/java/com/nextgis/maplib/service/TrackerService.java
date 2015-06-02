@@ -223,7 +223,8 @@ public class TrackerService
         today.set(Calendar.MILLISECOND, 0);
 
         // get track name date unique appendix
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-", Locale.getDefault());
+        final SimpleDateFormat simpleDateFormat =
+                new SimpleDateFormat("yyyy-MM-dd-", Locale.getDefault());
         String append = "1";
 
         // there is at least one track
@@ -234,7 +235,7 @@ public class TrackerService
             if (lastTrackEnd > today.getTimeInMillis()) {
                 String[] segments =
                         mLastTrack.getString(mLastTrack.getColumnIndex(TrackLayer.FIELD_NAME))
-                                  .split("-");
+                                .split("-");
                 int newTrackDayId = Integer.parseInt(segments[segments.length - 1]) + 1;
                 append = Integer.toString(newTrackDayId);
             }
@@ -262,7 +263,7 @@ public class TrackerService
 
     private void stopTrack()
     {
-        if(null != mNewTrack && !mNewTrack.equals(Uri.parse(""))) {
+        if (null != mNewTrack && !mNewTrack.equals(Uri.parse(""))) {
             Log.d(Constants.TAG, "uri: " + mNewTrack);
             // update unclosed tracks in DB
             mValues.clear();
@@ -293,25 +294,27 @@ public class TrackerService
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             Intent intentStop = new Intent(this, TrackerService.class);
             intentStop.setAction(ACTION_STOP);
-            PendingIntent stopService = PendingIntent.getService(this, 0, intentStop,
-                                                                 PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent stopService = PendingIntent.getService(
+                    this, 0, intentStop, PendingIntent.FLAG_UPDATE_CURRENT);
 
             Notification.Builder builder = new Notification.Builder(this);
 
             builder.setContentIntent(mOpenActivity)
-                   .setSmallIcon(mSmallIcon)
-                   .setLargeIcon(largeIcon)
-                   .setTicker(mTicker)
-                   .setWhen(System.currentTimeMillis())
-                   .setAutoCancel(false)
-                   .setContentTitle(title)
-                   .setContentText(mTicker)
-                   .setOngoing(true);
+                    .setSmallIcon(mSmallIcon)
+                    .setLargeIcon(largeIcon)
+                    .setTicker(mTicker)
+                    .setWhen(System.currentTimeMillis())
+                    .setAutoCancel(false)
+                    .setContentTitle(title)
+                    .setContentText(mTicker)
+                    .setOngoing(true);
 
-            builder.addAction(android.R.drawable.ic_menu_mapmode, getString(R.string.tracks_open),
-                              mOpenActivity);
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel,
-                              getString(R.string.tracks_stop), stopService);
+            builder.addAction(
+                    android.R.drawable.ic_menu_mapmode, getString(R.string.tracks_open),
+                    mOpenActivity);
+            builder.addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.tracks_stop),
+                    stopService);
 
             notif = builder.build();
         } else {
@@ -363,8 +366,8 @@ public class TrackerService
         }
 
         intentActivity.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        mOpenActivity = PendingIntent.getActivity(this, 0, intentActivity,
-                                                  PendingIntent.FLAG_UPDATE_CURRENT);
+        mOpenActivity = PendingIntent.getActivity(
+                this, 0, intentActivity, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
 

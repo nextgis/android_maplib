@@ -21,107 +21,137 @@
 
 package com.nextgis.maplib.util;
 
-import java.util.List;
-
-
 public class NGWUtil
 {
      /*
     NGW API Functions
      */
 
-    public static String getFileUploadUrl(String server){
-        if (!server.startsWith("http"))
+
+    public static String getFileUploadUrl(String server)
+    {
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/api/component/file_upload/upload";
     }
 
 
     /**
      * GeoJSON URL. Get data as GeoJSON
-     * @param server URL
-     * @param remoteId Vector layer resource id
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         Vector layer resource id
+     *
      * @return URL
      */
     public static String getGeoJSONUrl(
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/resource/" + remoteId + "/geojson/";
     }
 
 
     /**
      * Get vector layer data as JSON (NOT GeoJSON!)
-     * @param server URL
-     * @param remoteId Vector layer resource id
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         Vector layer resource id
+     *
      * @return URL
      */
     public static String getVectorDataUrl(
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/api/resource/" + remoteId + "/feature/";
     }
 
 
     /**
      * TMS URL for raster layer
-     * @param server URL
-     * @param styleId Raster style id
+     *
+     * @param server
+     *         URL
+     * @param styleId
+     *         Raster style id
+     *
      * @return URL to TMS for TMSLayer
      */
     public static String getTMSUrl(
-        String server,
-        long styleId)
+            String server,
+            long styleId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/resource/" + styleId + "//tms?z={z}&x={x}&y={y}";
     }
 
 
     /**
      * Resource URL
-     * @param server URL
-     * @param remoteId resource id
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         resource id
+     *
      * @return URL to resource
      */
     public static String getResourceUrl(
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/resource/" + remoteId;
     }
 
 
     /**
      * The resource metadata (fields, geometry type, SRS, etc.)
-     * @param server URL
-     * @param remoteId resource id
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         resource id
+     *
      * @return URL to resource meta
      */
     public static String getResourceMetaUrl(
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/api/resource/" + remoteId;
     }
 
 
     /**
      * Get one row from vector layer
-     * @param server URL
-     * @param remoteId resource id
-     * @param featureId row id
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         resource id
+     * @param featureId
+     *         row id
+     *
      * @return URL to row
      */
     public static String getFeatureUrl(
@@ -129,37 +159,44 @@ public class NGWUtil
             long remoteId,
             long featureId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/api/resource/" + remoteId + "/feature/" + featureId;
     }
 
 
     /**
      * Get the url to JSONArray of features
-     * @param server URL
-     * @param remoteId vector layer id
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         vector layer id
+     *
      * @return URL
      */
     public static String getFeaturesUrl(
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/api/resource/" + remoteId + "/feature/";
     }
 
-    public static boolean containsCaseInsensitive(String strToCompare, String[] list)
+
+    public static boolean containsCaseInsensitive(
+            String strToCompare,
+            String[] list)
     {
-        for(String str : list)
-        {
-            if(str.equalsIgnoreCase(strToCompare))
-            {
-                return(true);
+        for (String str : list) {
+            if (str.equalsIgnoreCase(strToCompare)) {
+                return (true);
             }
         }
-        return(false);
+        return (false);
     }
 
 
@@ -168,8 +205,9 @@ public class NGWUtil
             long remoteId,
             long featureId)
     {
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
         return server + "/api/resource/" + remoteId + "/feature/" + featureId + "/attachment/";
     }
 

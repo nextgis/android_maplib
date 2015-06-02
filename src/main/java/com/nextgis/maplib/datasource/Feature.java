@@ -42,7 +42,9 @@ import java.util.Map;
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-public class Feature implements IJSONStore
+
+public class Feature
+        implements IJSONStore
 {
     protected long                    mId;
     protected GeoGeometry             mGeometry;
@@ -90,8 +92,9 @@ public class Feature implements IJSONStore
             int index,
             Object value)
     {
-        if (index < 0 || index >= mFields.size())
+        if (index < 0 || index >= mFields.size()) {
             return false;
+        }
         if (mFieldValues.size() <= index) {
             for (int i = mFieldValues.size(); i <= index; i++) {
                 mFieldValues.add(null);
@@ -120,8 +123,9 @@ public class Feature implements IJSONStore
     public Object getFieldValue(int index)
     {
         if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
-            index >= mFieldValues.size())
+            index >= mFieldValues.size()) {
             return null;
+        }
         return mFieldValues.get(index);
     }
 
@@ -135,27 +139,32 @@ public class Feature implements IJSONStore
 
     public int getFieldValueIndex(String fieldName)
     {
-        for(int i = 0; i < mFields.size(); i++){
-            if(mFields.get(i).getName().equals(fieldName))
+        for (int i = 0; i < mFields.size(); i++) {
+            if (mFields.get(i).getName().equals(fieldName)) {
                 return i;
+            }
         }
         return NOT_FOUND;
     }
 
-    public String getFieldValueAsString(int index) {
-        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() || index >= mFieldValues.size())
+
+    public String getFieldValueAsString(int index)
+    {
+        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
+            index >= mFieldValues.size()) {
             return "";
+        }
         Object val = mFieldValues.get(index);
-        if(null == val)
+        if (null == val) {
             return "";
-        switch (mFields.get(index).getType())
-        {
+        }
+        switch (mFields.get(index).getType()) {
             case FTString:
             case FTReal:
             case FTInteger:
                 return val.toString();
             case FTDateTime:
-                if(val instanceof Date) {
+                if (val instanceof Date) {
                     SimpleDateFormat dateFormat = new SimpleDateFormat();
                     return dateFormat.format((Date) val);
                 }
@@ -166,13 +175,15 @@ public class Feature implements IJSONStore
 
 
     @Override
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON()
+            throws JSONException
+    {
         JSONObject oJSONOut = new JSONObject();
         oJSONOut.put(GEOJSON_TYPE, GEOJSON_TYPE_Feature);
         oJSONOut.put(GEOJSON_FEATURE_ID, mId);
         oJSONOut.put(GEOJSON_GEOMETRY, mGeometry.toJSON());
         JSONObject oJSONProp = new JSONObject();
-        for(int i = 0; i < mFieldValues.size(); i++){
+        for (int i = 0; i < mFieldValues.size(); i++) {
             String key = mFields.get(i).getName();
             oJSONProp.put(key, mFieldValues.get(i));
         }
@@ -185,8 +196,9 @@ public class Feature implements IJSONStore
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        if(!jsonObject.getString(GEOJSON_TYPE).equals(GEOJSON_TYPE_Feature))
+        if (!jsonObject.getString(GEOJSON_TYPE).equals(GEOJSON_TYPE_Feature)) {
             throw new JSONException("not valid geojson feature");
+        }
         mId = jsonObject.getInt(GEOJSON_FEATURE_ID);
         JSONObject oJSONGeom = jsonObject.getJSONObject(GEOJSON_GEOMETRY);
         mGeometry = GeoGeometryFactory.fromJson(oJSONGeom);
@@ -209,48 +221,49 @@ public class Feature implements IJSONStore
     public ContentValues getContentValues(boolean withId)
     {
         ContentValues returnValues = new ContentValues();
-        if(withId) {
+        if (withId) {
             returnValues.put(FIELD_ID, mId);
         }
 
         try {
-            if(null != mGeometry)
+            if (null != mGeometry) {
                 returnValues.put(FIELD_GEOM, mGeometry.toBlob());
-        }
-        catch (IOException e){ //if exception - not create geom
+            }
+        } catch (IOException e) { //if exception - not create geom
             e.printStackTrace();
         }
 
-        for(int i = 0; i < mFields.size(); i++){
+        for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
             Object value = getFieldValue(i);
 
-            if(null != value) {
-                switch(field.getType()) {
+            if (null != value) {
+                switch (field.getType()) {
                     case FTString:
-                        returnValues.put(field.getName(), (String)value);
+                        returnValues.put(field.getName(), (String) value);
                         break;
                     case FTReal:
-                        if(value instanceof Double)
-                            returnValues.put(field.getName(), (double)value);
-                        else
-                            returnValues.put(field.getName(), (float)value);
+                        if (value instanceof Double) {
+                            returnValues.put(field.getName(), (double) value);
+                        } else {
+                            returnValues.put(field.getName(), (float) value);
+                        }
                         break;
                     case FTInteger:
-                        if(value instanceof Long)
-                            returnValues.put(field.getName(), (long)value);
-                        else
-                            returnValues.put(field.getName(), (int)value);
+                        if (value instanceof Long) {
+                            returnValues.put(field.getName(), (long) value);
+                        } else {
+                            returnValues.put(field.getName(), (int) value);
+                        }
                         break;
                     case FTDateTime:
-                        Date date = (Date)value;
+                        Date date = (Date) value;
                         returnValues.put(field.getName(), date.getTime());
                         break;
                     default:
                         break;
                 }
-            }
-            else{
+            } else {
                 returnValues.putNull(field.getName());
             }
         }
@@ -261,24 +274,24 @@ public class Feature implements IJSONStore
 
     public void fromCursor(Cursor cursor)
     {
-        if(null == cursor)
+        if (null == cursor) {
             return;
+        }
         mId = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
 
         try {
-            mGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
-        }
-        catch (ClassNotFoundException | IOException e){ //let it be empty geometry
+            mGeometry =
+                    GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
+        } catch (ClassNotFoundException | IOException e) { //let it be empty geometry
             e.printStackTrace();
         }
 
-        for(int i = 0; i < mFields.size(); i++){
+        for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
             int index = cursor.getColumnIndex(field.getName());
-            if(cursor.isNull(index)){
+            if (cursor.isNull(index)) {
                 setFieldValue(i, null);
-            }
-            else {
+            } else {
                 if (index != NOT_FOUND) {
                     switch (field.getType()) {
                         case FTString:
@@ -303,12 +316,15 @@ public class Feature implements IJSONStore
         }
     }
 
-    public boolean equalsData(Feature f){
-        if(null == f)
+
+    public boolean equalsData(Feature f)
+    {
+        if (null == f) {
             return false;
+        }
         //compare attributes
         Log.d(TAG, "Feature id:" + mId + " compare attributes");
-        for(int i = 0; i < mFields.size(); i++){
+        for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
 
             Object value = getFieldValue(i);
@@ -316,59 +332,52 @@ public class Feature implements IJSONStore
 
             //Log.d(TAG, value + "<->" + valueOther);
 
-            if(null == value){
-                if(null != valueOther) {
-                    if(field.getType() == FTDateTime){
-                        Date dt = (Date)valueOther;
-                        if(dt.getTime() != 0) {
+            if (null == value) {
+                if (null != valueOther) {
+                    if (field.getType() == FTDateTime) {
+                        Date dt = (Date) valueOther;
+                        if (dt.getTime() != 0) {
                             Log.d(TAG, value + "<->" + valueOther);
                             return false;
                         }
-                    }
-                    else{
+                    } else {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
                 }
-            }
-            else if(null == valueOther){
+            } else if (null == valueOther) {
                 Log.d(TAG, value + "<->" + valueOther);
                 return false;
-            }
-            else {
-                if(value instanceof Integer && valueOther instanceof Long){
-                    Integer vlong = (Integer)value;
-                    Long ovlong = (Long)valueOther;
-                    if(vlong != ovlong.intValue()) {
+            } else {
+                if (value instanceof Integer && valueOther instanceof Long) {
+                    Integer vlong = (Integer) value;
+                    Long ovlong = (Long) valueOther;
+                    if (vlong != ovlong.intValue()) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if(value instanceof Long && valueOther instanceof Integer){
-                    Long vlong = (Long)value;
-                    Integer ovlong = (Integer)valueOther;
-                    if(vlong.intValue() != ovlong) {
+                } else if (value instanceof Long && valueOther instanceof Integer) {
+                    Long vlong = (Long) value;
+                    Integer ovlong = (Integer) valueOther;
+                    if (vlong.intValue() != ovlong) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if(value instanceof Float && valueOther instanceof Double){
-                    Float vlong = (Float)value;
-                    Double ovlong = (Double)valueOther;
-                    if(vlong != ovlong.floatValue()) {
+                } else if (value instanceof Float && valueOther instanceof Double) {
+                    Float vlong = (Float) value;
+                    Double ovlong = (Double) valueOther;
+                    if (vlong != ovlong.floatValue()) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if(value instanceof Double && valueOther instanceof Float){
-                    Double vlong = (Double)value;
-                    Float ovlong = (Float)valueOther;
-                    if(vlong.floatValue() != ovlong) {
+                } else if (value instanceof Double && valueOther instanceof Float) {
+                    Double vlong = (Double) value;
+                    Float ovlong = (Float) valueOther;
+                    if (vlong.floatValue() != ovlong) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if (!value.equals(valueOther)) {
+                } else if (!value.equals(valueOther)) {
                     Log.d(TAG, value + "<->" + valueOther);
                     return false;
                 }
@@ -376,26 +385,32 @@ public class Feature implements IJSONStore
         }
         //compare geometry
         Log.d(TAG, "compare geometry");
-        if(null == mGeometry){
+        if (null == mGeometry) {
             return null == f.getGeometry();
         }
         return mGeometry.equals(f.getGeometry());
 
     }
 
-    public boolean equalsAttachments(Feature f){
-        if(null == f)
+
+    public boolean equalsAttachments(Feature f)
+    {
+        if (null == f) {
             return false;
+        }
         //compare attachments
         Map<String, AttachItem> attachments = f.getAttachments();
-        if(mAttachments.size() != attachments.size())
+        if (mAttachments.size() != attachments.size()) {
             return false;
-        for(AttachItem item : mAttachments.values()){
+        }
+        for (AttachItem item : mAttachments.values()) {
             AttachItem otherItem = attachments.get(item.getAttachId());
-            if(null == otherItem)
+            if (null == otherItem) {
                 return false;
-            if(!item.equals(otherItem))
+            }
+            if (!item.equals(otherItem)) {
                 return false;
+            }
         }
         return true;
     }
@@ -404,10 +419,12 @@ public class Feature implements IJSONStore
     @Override
     public boolean equals(Object o)
     {
-        if(super.equals(o)) //if same pointers
+        if (super.equals(o)) //if same pointers
+        {
             return true;
+        }
 
-        Feature other = (Feature)o;
+        Feature other = (Feature) o;
         // go deeper
         return equalsData(other) && equalsAttachments(other);
     }
@@ -418,11 +435,15 @@ public class Feature implements IJSONStore
         mAttachments.put(item.getAttachId(), item);
     }
 
-    public void addAttachments(Map<String, AttachItem> attachments){
-        if(null == attachments)
+
+    public void addAttachments(Map<String, AttachItem> attachments)
+    {
+        if (null == attachments) {
             return;
+        }
         mAttachments = attachments;
     }
+
 
     public Map<String, AttachItem> getAttachments()
     {

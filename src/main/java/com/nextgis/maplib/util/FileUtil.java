@@ -1,4 +1,3 @@
-
 /*
  * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android.
@@ -98,6 +97,7 @@ public class FileUtil
         }
     }
 
+
     public static boolean deleteRecursive(File fileOrDirectory)
     {
         boolean isOK = true;
@@ -111,23 +111,32 @@ public class FileUtil
         return fileOrDirectory.delete() && isOK;
     }
 
-    public static boolean move(File from, File to){
+
+    public static boolean move(
+            File from,
+            File to)
+    {
         return copyRecursive(from, to) && deleteRecursive(from);
     }
 
-    public static boolean copyRecursive(File from, File to){
+
+    public static boolean copyRecursive(
+            File from,
+            File to)
+    {
         if (from.isDirectory()) {
             if (!to.exists()) {
-                if(!to.mkdir())
+                if (!to.mkdir()) {
                     return false;
+                }
             }
 
             for (String path : from.list()) {
-                if(!copyRecursive(new File(from, path), new File(to, path)))
+                if (!copyRecursive(new File(from, path), new File(to, path))) {
                     return false;
+                }
             }
-        }
-        else {
+        } else {
 
             try {
                 InputStream in = new FileInputStream(from);
@@ -136,14 +145,14 @@ public class FileUtil
                 copyStream(in, out, buf, Constants.IO_BUFFER_SIZE);
                 in.close();
                 out.close();
-            }
-            catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
                 return false;
             }
         }
         return true;
     }
+
 
     public static void copyStream(
             InputStream is,
@@ -158,7 +167,11 @@ public class FileUtil
         }
     }
 
-    public static String getFileNameByUri(final Context context, Uri uri, String defaultName)
+
+    public static String getFileNameByUri(
+            final Context context,
+            Uri uri,
+            String defaultName)
     {
         String fileName = defaultName;
         try {
@@ -166,7 +179,8 @@ public class FileUtil
                 Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
                 if (null != cursor) {
                     if (cursor.moveToFirst()) {
-                        int column_index = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
+                        int column_index =
+                                cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
                         fileName = cursor.getString(column_index);
                     }
                     cursor.close();
@@ -176,72 +190,77 @@ public class FileUtil
             } else {
                 fileName = fileName + "_" + uri.getLastPathSegment();
             }
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             //do nothing, only return default file name;
             Log.d(Constants.TAG, e.getLocalizedMessage());
         }
         return fileName;
     }
 
-    public static String removeExtention(String filePath) {
+
+    public static String removeExtention(String filePath)
+    {
         // These first few lines the same as Justin's
         File f = new File(filePath);
 
         // if it's a directory, don't remove the extention
-        if (f.isDirectory()) return filePath;
+        if (f.isDirectory()) {
+            return filePath;
+        }
 
         String name = f.getName();
 
         // Now we know it's a file - don't need to do any special hidden
         // checking or contains() checking because of:
         final int lastPeriodPos = name.lastIndexOf('.');
-        if (lastPeriodPos <= 0)
-        {
+        if (lastPeriodPos <= 0) {
             // No period after first character - return name as it was passed in
             return filePath;
-        }
-        else
-        {
+        } else {
             // Remove the last period and everything after it
             File renamed = new File(f.getParent(), name.substring(0, lastPeriodPos));
             return renamed.getPath();
         }
     }
 
-    public static String getExtention(String filePath) {
+
+    public static String getExtention(String filePath)
+    {
         File f = new File(filePath);
-        if (f.isDirectory())
+        if (f.isDirectory()) {
             return "";
+        }
 
         String name = f.getName();
 
         final int lastPeriodPos = name.lastIndexOf('.');
-        if (lastPeriodPos <= 0)
-        {
+        if (lastPeriodPos <= 0) {
             return "";
-        }
-        else
-        {
+        } else {
             return name.substring(lastPeriodPos + 1, name.length());
         }
     }
 
-    public static long getDirectorySize(File dir) {
+
+    public static long getDirectorySize(File dir)
+    {
         long size = 0;
         File[] files = dir.listFiles();
 
         for (File file : files) {
-            if (file.isFile())
+            if (file.isFile()) {
                 size += file.length();
-            else
+            } else {
                 size += getDirectorySize(file);
+            }
         }
 
         return size;
     }
 
-    public static boolean isDirectoryWritable(File directory) {
+
+    public static boolean isDirectoryWritable(File directory)
+    {
         File toCreate = new File(directory, "hello");
         try {
             toCreate.createNewFile();

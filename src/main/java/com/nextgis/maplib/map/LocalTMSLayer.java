@@ -59,11 +59,12 @@ public class LocalTMSLayer
     public Bitmap getBitmap(TileItem tile)
     {
         Bitmap ret = getBitmapFromCache(tile.getHash());
-        if(null != ret)
+        if (null != ret) {
             return ret;
+        }
 
         TileCacheLevelDescItem item = mLimits.get(tile.getZoomLevel());
-        if(item != null && item.isInside(tile.getX(), tile.getY())){
+        if (item != null && item.isInside(tile.getX(), tile.getY())) {
             File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
             if (tilePath.exists()) {
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
@@ -96,10 +97,12 @@ public class LocalTMSLayer
 
             jsonArray.put(oJSONLevel);
 
-            if(nMaxLevel < nLevelZ)
+            if (nMaxLevel < nLevelZ) {
                 nMaxLevel = nLevelZ;
-            if(nMinLevel > nLevelZ)
+            }
+            if (nMinLevel > nLevelZ) {
                 nMinLevel = nLevelZ;
+            }
         }
 
         rootConfig.put(JSON_MAXLEVEL_KEY, nMaxLevel);
@@ -116,7 +119,7 @@ public class LocalTMSLayer
         super.fromJSON(jsonObject);
         mLimits = new HashMap<>();
         final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LEVELS_KEY);
-        for(int i = 0; i < jsonArray.length(); i++) {
+        for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonLevel = jsonArray.getJSONObject(i);
             int nLevel = jsonLevel.getInt(JSON_LEVEL_KEY);
             int nMaxX = jsonLevel.getInt(JSON_BBOX_MAXX_KEY);
@@ -127,6 +130,7 @@ public class LocalTMSLayer
             mLimits.put(nLevel, new TileCacheLevelDescItem(nMaxX, nMinX, nMaxY, nMinY));
         }
     }
+
 
     @Override
     public int getMaxThreadCount()
@@ -142,8 +146,9 @@ public class LocalTMSLayer
             int nMinX,
             int nMinY)
     {
-        if(null == mLimits)
+        if (null == mLimits) {
             mLimits = new HashMap<>();
+        }
         mLimits.put(nLevelZ, new TileCacheLevelDescItem(nMaxX, nMinX, nMaxY, nMinY));
     }
 
@@ -153,30 +158,48 @@ public class LocalTMSLayer
         int minY, maxY;
         int minX, maxX;
 
-        public TileCacheLevelDescItem(int nMaxX, int nMinX, int nMaxY, int nMinY) {
+
+        public TileCacheLevelDescItem(
+                int nMaxX,
+                int nMinX,
+                int nMaxY,
+                int nMinY)
+        {
             this.minX = nMinX;
             this.minY = nMinY;
             this.maxX = nMaxX;
             this.maxY = nMaxY;
         }
 
-        public int getMinX(){
+
+        public int getMinX()
+        {
             return minX;
         }
 
-        public int getMinY(){
+
+        public int getMinY()
+        {
             return minY;
         }
 
-        public int getMaxX(){
+
+        public int getMaxX()
+        {
             return maxX;
         }
 
-        public int getMaxY(){
+
+        public int getMaxY()
+        {
             return maxY;
         }
 
-        public boolean isInside(int nX, int nY){
+
+        public boolean isInside(
+                int nX,
+                int nY)
+        {
             return !(nX < minX || nX > maxX) && !(nY < minY || nY > maxY);
         }
     }

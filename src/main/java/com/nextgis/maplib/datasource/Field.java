@@ -31,9 +31,10 @@ import org.json.JSONObject;
 /**
  * A class to describe feature field
  */
-public class Field implements IJSONStore
+public class Field
+        implements IJSONStore
 {
-    protected int mType;
+    protected int    mType;
     protected String mName;
     protected String mAlias;
 
@@ -52,10 +53,11 @@ public class Field implements IJSONStore
     {
         mType = type;
         mName = name;
-        if(TextUtils.isEmpty(mAlias))
+        if (TextUtils.isEmpty(mAlias)) {
             mAlias = mName;
-        else
+        } else {
             mAlias = alias;
+        }
     }
 
 
@@ -77,7 +79,7 @@ public class Field implements IJSONStore
     {
         mType = jsonObject.getInt(Constants.JSON_TYPE_KEY);
         mName = jsonObject.getString(Constants.JSON_NAME_KEY);
-        if(jsonObject.has(JSON_ALIAS_KEY)){
+        if (jsonObject.has(JSON_ALIAS_KEY)) {
             mAlias = jsonObject.getString(JSON_ALIAS_KEY);
         }
     }

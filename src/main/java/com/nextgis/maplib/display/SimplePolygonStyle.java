@@ -38,16 +38,20 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
-public class SimplePolygonStyle extends Style
+public class SimplePolygonStyle
+        extends Style
 {
     protected float mWidth;
+
 
     public SimplePolygonStyle()
     {
         super();
     }
 
-    public SimplePolygonStyle(int color) {
+
+    public SimplePolygonStyle(int color)
+    {
         super(color);
         mWidth = 3;
     }
@@ -84,6 +88,7 @@ public class SimplePolygonStyle extends Style
         display.drawPath(polygonPath, lnPaint);
     }
 
+
     @Override
     public void onDraw(
             GeoGeometry geoGeometry,
@@ -101,10 +106,11 @@ public class SimplePolygonStyle extends Style
                 }
                 break;
 
-                //throw new IllegalArgumentException(
-                //        "The input geometry type is not support by this style");
+            //throw new IllegalArgumentException(
+            //        "The input geometry type is not support by this style");
         }
     }
+
 
     @Override
     public JSONObject toJSON()
@@ -125,6 +131,7 @@ public class SimplePolygonStyle extends Style
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
     }
 
+
     protected Path getPath(GeoPolygon polygon)
     {
         List<GeoPoint> points = polygon.getOuterRing().getPoints();
@@ -141,7 +148,10 @@ public class SimplePolygonStyle extends Style
         return polygonPath;
     }
 
-    protected void appendPath(Path polygonPath, List<GeoPoint> points)
+
+    protected void appendPath(
+            Path polygonPath,
+            List<GeoPoint> points)
     {
         float x0, y0;
 

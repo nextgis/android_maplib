@@ -39,21 +39,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
-import static com.nextgis.maplib.util.Constants.*;
+
 
 public abstract class TMSLayer
         extends Layer
 {
-    protected static final String JSON_TMSTYPE_KEY     = "tms_type";
+    protected static final String JSON_TMSTYPE_KEY = "tms_type";
     protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
 
     protected int mTMSType;
     protected static final int HTTP_SEPARATE_THREADS = 2;
     protected Map<String, Bitmap> mBitmapCache;
-    protected int mCacheSize, mCacheSizeMult;
+    protected int                 mCacheSize, mCacheSizeMult;
     protected int mViewWidth, mViewHeight;
     protected final Object lock = new Object();
+
 
     protected TMSLayer(
             Context contex,
@@ -233,8 +235,8 @@ public abstract class TMSLayer
 
 
         // normal fill from left bottom corner
-        for(int x = begX; x < endX; x++){
-            for(int y = begY; y < endY; y++){
+        for (int x = begX; x < endX; x++) {
+            for (int y = begY; y < endY; y++) {
 
                 addItemToList(fullBounds, mapTileSize, x, y, nZoom, tilesInMap, list);
             }
@@ -264,7 +266,7 @@ public abstract class TMSLayer
         }
 
         realY = y;
-        if(mTMSType == TMSTYPE_OSM){
+        if (mTMSType == TMSTYPE_OSM) {
             realY = tilesInMap - y - 1;
         }
 
@@ -272,7 +274,9 @@ public abstract class TMSLayer
             return;
         }
 
-        final GeoPoint pt = new GeoPoint(fullBounds.getMinX() + x * mapTileSize.getX(), fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
+        final GeoPoint pt = new GeoPoint(
+                fullBounds.getMinX() + x * mapTileSize.getX(),
+                fullBounds.getMinY() + (y + 1) * mapTileSize.getY());
         TileItem item = new TileItem(realX, realY, zoom, pt);
         list.add(item);
 
@@ -307,20 +311,24 @@ public abstract class TMSLayer
 
     public abstract Bitmap getBitmap(TileItem tile);
 
+
     protected void putBitmapToCache(
             String tileHash,
-            Bitmap bitmap){
+            Bitmap bitmap)
+    {
 
         synchronized (lock) {
-            if(mBitmapCache != null) {
+            if (mBitmapCache != null) {
                 mBitmapCache.put(tileHash, bitmap);
             }
         }
     }
 
-    protected Bitmap getBitmapFromCache(String tileHash){
+
+    protected Bitmap getBitmapFromCache(String tileHash)
+    {
         synchronized (lock) {
-            if(mBitmapCache != null) {
+            if (mBitmapCache != null) {
                 return mBitmapCache.get(tileHash);
             }
         }
@@ -358,15 +366,17 @@ public abstract class TMSLayer
             }
         }
 
-        if(jsonObject.has(JSON_CACHE_SIZE_MULT)){
+        if (jsonObject.has(JSON_CACHE_SIZE_MULT)) {
             mCacheSizeMult = jsonObject.getInt(JSON_CACHE_SIZE_MULT);
         }
     }
+
 
     public int getMaxThreadCount()
     {
         return HTTP_SEPARATE_THREADS;
     }
+
 
     @Override
     public void setViewSize(
@@ -391,7 +401,7 @@ public abstract class TMSLayer
     public void setCacheSizeMultiply(int cacheSizeMult)
     {
         mCacheSizeMult = cacheSizeMult;
-        if(mCacheSizeMult == 0){
+        if (mCacheSizeMult == 0) {
             synchronized (lock) {
                 mBitmapCache = null;
             }
@@ -399,13 +409,17 @@ public abstract class TMSLayer
         }
 
         // calc new hash size
-        int nTileCount = (int) (mViewWidth * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) *
-                         (int) (mViewHeight * Constants.OFFSCREEN_EXTRASIZE_RATIO / Constants.DEFAULT_TILE_SIZE) * mCacheSizeMult;
+        int nTileCount = (int) (mViewWidth * Constants.OFFSCREEN_EXTRASIZE_RATIO /
+                                Constants.DEFAULT_TILE_SIZE) *
+                         (int) (mViewHeight * Constants.OFFSCREEN_EXTRASIZE_RATIO /
+                                Constants.DEFAULT_TILE_SIZE) * mCacheSizeMult;
 
-        if(null != mBitmapCache && mCacheSize >= nTileCount)
+        if (null != mBitmapCache && mCacheSize >= nTileCount) {
             return;
-        if(nTileCount < 30)
+        }
+        if (nTileCount < 30) {
             nTileCount = 30;
+        }
 
         synchronized (lock) {
             mBitmapCache = lruCache(nTileCount);
@@ -414,7 +428,8 @@ public abstract class TMSLayer
         mCacheSize = nTileCount;
     }
 
-    protected static <K,V> Map<K,V> lruCache(final int maxSize)
+
+    protected static <K, V> Map<K, V> lruCache(final int maxSize)
     {
         return new LinkedHashMap<K, V>(maxSize * 4 / 3, 0.75f, true)
         {

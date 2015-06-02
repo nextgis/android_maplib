@@ -34,8 +34,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -84,20 +82,28 @@ public abstract class LayerFactory
         return layer;
     }
 
-    public static Account getAccountByName(Context context, String accountName){
+
+    public static Account getAccountByName(
+            Context context,
+            String accountName)
+    {
         final AccountManager accountManager = AccountManager.get(context.getApplicationContext());
-        for(Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)){
-            if(account.name.equals(accountName)){
+        for (Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)) {
+            if (account.name.equals(accountName)) {
                 return account;
             }
         }
         return null;
     }
 
-    public static Connection getConnectionFromAccount(Context context, String accountName){
+
+    public static Connection getConnectionFromAccount(
+            Context context,
+            String accountName)
+    {
         final AccountManager accountManager = AccountManager.get(context.getApplicationContext());
         Account account = getAccountByName(context, accountName);
-        if(null != account){
+        if (null != account) {
             String url = accountManager.getUserData(account, "url");
             String password = accountManager.getPassword(account);
             String login = accountManager.getUserData(account, "login");
@@ -105,6 +111,7 @@ public abstract class LayerFactory
         }
         return null;
     }
+
 
     public abstract void createNewRemoteTMSLayer(
             final Context context,

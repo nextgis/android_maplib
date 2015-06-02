@@ -73,7 +73,7 @@ public class TrackRenderer
         mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
 
         List<GeoLineString> trackLines = layer.getTracks();
-        if(trackLines.size() < 1){
+        if (trackLines.size() < 1) {
             layer.onDrawFinished(layer.getId(), 1.0f);
             return;
         }
@@ -83,14 +83,15 @@ public class TrackRenderer
             List<GeoPoint> points = trackLine.getPoints();
 
             for (int i = 1; i < points.size(); i++) {
-                display.drawLine((float) points.get(i - 1).getX(), (float) points.get(i - 1).getY(),
-                                 (float) points.get(i).getX(), (float) points.get(i).getY(),
-                                 mPaint);
+                display.drawLine(
+                        (float) points.get(i - 1).getX(), (float) points.get(i - 1).getY(),
+                        (float) points.get(i).getX(), (float) points.get(i).getY(), mPaint);
             }
 
             linesCompleteCount++;
             synchronized (mLayer) {
-                layer.onDrawFinished(layer.getId(), (float) (linesCompleteCount) / trackLines.size());
+                layer.onDrawFinished(
+                        layer.getId(), (float) (linesCompleteCount) / trackLines.size());
             }
         }
     }

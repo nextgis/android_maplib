@@ -30,22 +30,23 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 
-public abstract class Resource implements INGWResource
+public abstract class Resource
+        implements INGWResource
 {
-    protected long mRemoteId;
-    protected Connection mConnection;
-    protected boolean mHasChildren;
-    protected String mDescription;
-    protected String mName;
-    protected String mKeyName;
-    protected long mOwnerId;
-    protected JSONObject mPermissions;
-    protected int mType;
-    protected int mId;
+    protected long         mRemoteId;
+    protected Connection   mConnection;
+    protected boolean      mHasChildren;
+    protected String       mDescription;
+    protected String       mName;
+    protected String       mKeyName;
+    protected long         mOwnerId;
+    protected JSONObject   mPermissions;
+    protected int          mType;
+    protected int          mId;
     protected INGWResource mParent;
+
 
     public Resource(
             long remoteId,
@@ -56,8 +57,10 @@ public abstract class Resource implements INGWResource
         mId = Connections.getNewId();
     }
 
-    public Resource(JSONObject json,
-                    Connection connection)
+
+    public Resource(
+            JSONObject json,
+            Connection connection)
     {
 
         mConnection = connection;
@@ -65,26 +68,29 @@ public abstract class Resource implements INGWResource
             JSONObject JSONResource = json.getJSONObject("resource");
 
             mHasChildren = JSONResource.getBoolean("children");
-            if (JSONResource.has("description"))
+            if (JSONResource.has("description")) {
                 mDescription = JSONResource.getString("description");
+            }
 
             mName = JSONResource.getString("display_name");
             mRemoteId = JSONResource.getLong("id");
             mType = mConnection.getType(JSONResource.getString("cls"));
 
-            if (JSONResource.has("keyname"))
+            if (JSONResource.has("keyname")) {
                 mKeyName = JSONResource.getString("keyname");
+            }
             if (JSONResource.has("owner_user")) {
                 JSONObject jsonObjectOwnerUser = JSONResource.getJSONObject("owner_user");
-                if(jsonObjectOwnerUser.has("id"))
+                if (jsonObjectOwnerUser.has("id")) {
                     mOwnerId = jsonObjectOwnerUser.getLong("id");
+                }
             }
-        }
-        catch (JSONException e){
+        } catch (JSONException e) {
             e.printStackTrace();
         }
         mId = Connections.getNewId();
     }
+
 
     public void fillPermissions()
     {
@@ -126,8 +132,9 @@ public abstract class Resource implements INGWResource
     @Override
     public INGWResource getResourceById(int id)
     {
-        if(mId == id)
+        if (mId == id) {
             return this;
+        }
         return null;
     }
 
@@ -150,13 +157,14 @@ public abstract class Resource implements INGWResource
         parcel.writeString(mKeyName);
         parcel.writeLong(mOwnerId);
         boolean hasPermissions = null != mPermissions;
-        parcel.writeByte(hasPermissions ? (byte)1 : (byte)0);
-        if(hasPermissions) {
+        parcel.writeByte(hasPermissions ? (byte) 1 : (byte) 0);
+        if (hasPermissions) {
             parcel.writeString(mPermissions.toString());
         }
         parcel.writeInt(mType);
         parcel.writeInt(mId);
     }
+
 
     protected Resource(
             Parcel in)
@@ -167,7 +175,7 @@ public abstract class Resource implements INGWResource
         mKeyName = in.readString();
         mOwnerId = in.readLong();
         boolean hasPermissions = in.readByte() == 1;
-        if(hasPermissions) {
+        if (hasPermissions) {
             try {
                 mPermissions = new JSONObject(in.readString());
             } catch (JSONException e) {
@@ -177,6 +185,7 @@ public abstract class Resource implements INGWResource
         mType = in.readInt();
         mId = in.readInt();
     }
+
 
     public void setConnection(Connection connection)
     {

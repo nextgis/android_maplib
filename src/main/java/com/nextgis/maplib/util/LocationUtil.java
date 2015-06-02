@@ -179,11 +179,10 @@ public class LocationUtil
                                ? SettingsConstants.KEY_PREF_TRACKS_SOURCE
                                : SettingsConstants.KEY_PREF_LOCATION_SOURCE;
 
-        SharedPreferences sharedPreferences =
-                context.getSharedPreferences(context.getPackageName() + "_preferences",
-                                             Constants.MODE_MULTI_PROCESS);
-        int providers = sharedPreferences.getInt(preferenceKey, GpsEventSource.GPS_PROVIDER |
-                                                                GpsEventSource.NETWORK_PROVIDER);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(
+                context.getPackageName() + "_preferences", Constants.MODE_MULTI_PROCESS);
+        int providers = sharedPreferences.getInt(
+                preferenceKey, GpsEventSource.GPS_PROVIDER | GpsEventSource.NETWORK_PROVIDER);
 
         return 0 != (providers & currentProvider);
     }

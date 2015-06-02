@@ -32,7 +32,8 @@ import com.nextgis.maplib.util.DatabaseContext;
 import java.io.File;
 
 
-public class DatabaseHelper extends SQLiteOpenHelper
+public class DatabaseHelper
+        extends SQLiteOpenHelper
 {
 
     public DatabaseHelper(
@@ -41,7 +42,9 @@ public class DatabaseHelper extends SQLiteOpenHelper
             SQLiteDatabase.CursorFactory factory,
             int version)
     {
-        super(new DatabaseContext(context, dbFullName.getParentFile()), dbFullName.getName(), factory, version);
+        super(
+                new DatabaseContext(context, dbFullName.getParentFile()), dbFullName.getName(),
+                factory, version);
     }
 
 
@@ -53,7 +56,9 @@ public class DatabaseHelper extends SQLiteOpenHelper
             int version,
             DatabaseErrorHandler errorHandler)
     {
-        super(new DatabaseContext(context, dbFullName.getParentFile()), dbFullName.getName(), factory, version, errorHandler);
+        super(
+                new DatabaseContext(context, dbFullName.getParentFile()), dbFullName.getName(),
+                factory, version, errorHandler);
     }
 
 

@@ -33,8 +33,8 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 public class GeoPolygon
         extends GeoGeometry
 {
-    protected static final long serialVersionUID =-1241179697270831764L;
-    protected GeoLinearRing mOuterRing;
+    protected static final long serialVersionUID = -1241179697270831764L;
+    protected GeoLinearRing       mOuterRing;
     protected List<GeoLinearRing> mInnerRings;
 
 
@@ -44,10 +44,12 @@ public class GeoPolygon
         mInnerRings = new ArrayList<>();
     }
 
-    public GeoPolygon(GeoPolygon polygon){
+
+    public GeoPolygon(GeoPolygon polygon)
+    {
         mOuterRing = (GeoLinearRing) polygon.mOuterRing.copy();
         mInnerRings = new ArrayList<>();
-        for(GeoLinearRing ring : polygon.mInnerRings){
+        for (GeoLinearRing ring : polygon.mInnerRings) {
             mInnerRings.add((GeoLinearRing) ring.copy());
         }
     }
@@ -68,14 +70,14 @@ public class GeoPolygon
     @Override
     protected boolean rawProject(int toCrs)
     {
-        if( mOuterRing.rawProject(toCrs) )
-        {
+        if (mOuterRing.rawProject(toCrs)) {
             boolean isOk = true;
-            for(GeoGeometry geometry : mInnerRings){
+            for (GeoGeometry geometry : mInnerRings) {
                 isOk = isOk && geometry.rawProject(toCrs);
             }
-            if(isOk)
+            if (isOk) {
                 super.rawProject(toCrs);
+            }
             return isOk;
         }
         return false;
@@ -155,23 +157,28 @@ public class GeoPolygon
     @Override
     public void setCoordinatesFromWKT(String wkt)
     {
-        if(wkt.contains("EMPTY"))
+        if (wkt.contains("EMPTY")) {
             return;
+        }
 
-        if(wkt.startsWith("("))
+        if (wkt.startsWith("(")) {
             wkt = wkt.substring(1, wkt.length() - 1);
+        }
         //get outer ring
         int pos = wkt.indexOf(")");
-        if(pos == Constants.NOT_FOUND) // no inner rings
+        if (pos == Constants.NOT_FOUND) // no inner rings
+        {
             mOuterRing.setCoordinatesFromWKT(wkt);
-        else
+        } else {
             mOuterRing.setCoordinatesFromWKT(wkt.substring(0, pos));
+        }
         pos = wkt.indexOf("(");
-        while(pos != Constants.NOT_FOUND) {
+        while (pos != Constants.NOT_FOUND) {
             wkt = wkt.substring(pos + 1, wkt.length());
             pos = wkt.indexOf(")") - 1;
-            if(pos < 1)
+            if (pos < 1) {
                 return;
+            }
 
             GeoLinearRing innerRing = new GeoLinearRing();
             innerRing.setCoordinatesFromWKT(wkt.substring(0, pos));
@@ -192,14 +199,15 @@ public class GeoPolygon
     public String toWKT(boolean full)
     {
         StringBuilder buf = new StringBuilder();
-        if(full)
+        if (full) {
             buf.append("POLYGON ");
-        if (mOuterRing.getPoints().size() == 0)
+        }
+        if (mOuterRing.getPoints().size() == 0) {
             buf.append(" EMPTY");
-        else {
+        } else {
             buf.append("(");
             buf.append(mOuterRing.toWKT(false));
-            if(mInnerRings.size() > 0) {
+            if (mInnerRings.size() > 0) {
                 buf.append(", ");
                 for (int i = 0; i < mInnerRings.size(); i++) {
                     GeoLinearRing ring = mInnerRings.get(i);
@@ -215,16 +223,19 @@ public class GeoPolygon
     @Override
     public boolean equals(Object o)
     {
-        if (!super.equals(o))
+        if (!super.equals(o)) {
             return false;
+        }
         GeoPolygon otherPlg = (GeoPolygon) o;
-        if(!otherPlg.getOuterRing().equals(getOuterRing()))
+        if (!otherPlg.getOuterRing().equals(getOuterRing())) {
             return false;
-        for(int i = 0; i < mInnerRings.size(); i++){
+        }
+        for (int i = 0; i < mInnerRings.size(); i++) {
             GeoLinearRing ring = mInnerRings.get(i);
             GeoLinearRing otherRing = otherPlg.getInnerRing(i);
-            if(!ring.equals(otherRing))
+            if (!ring.equals(otherRing)) {
                 return false;
+            }
         }
         return true;
     }
@@ -232,36 +243,46 @@ public class GeoPolygon
 
     public GeoLinearRing getInnerRing(int index)
     {
-        if(mInnerRings.size() > index)
+        if (mInnerRings.size() > index) {
             return mInnerRings.get(index);
+        }
         return null;
     }
 
-    public int getInnerRingCount(){
+
+    public int getInnerRingCount()
+    {
         return mInnerRings.size();
     }
 
-    public void removeInnerRing(int index){
+
+    public void removeInnerRing(int index)
+    {
         mInnerRings.remove(index);
     }
 
-    public void addInnerRing(GeoLinearRing ring){
+
+    public void addInnerRing(GeoLinearRing ring)
+    {
         mInnerRings.add(ring);
     }
+
 
     @Override
     public boolean intersects(GeoEnvelope envelope)
     {
-        if(super.intersects(envelope)){
+        if (super.intersects(envelope)) {
             //check if inside outer ring but not in hole
 
             boolean intersects = mOuterRing.intersects(envelope);
-            if(!intersects)
+            if (!intersects) {
                 return false;
+            }
 
-            for(GeoLinearRing ring : mInnerRings){
-                if(ring.intersects(envelope))
+            for (GeoLinearRing ring : mInnerRings) {
+                if (ring.intersects(envelope)) {
                     return false;
+                }
             }
             return true;
         }

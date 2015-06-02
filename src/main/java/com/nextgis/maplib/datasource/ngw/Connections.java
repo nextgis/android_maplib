@@ -28,12 +28,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class Connections implements INGWResource
+public class Connections
+        implements INGWResource
 {
-    protected String mName;
+    protected String           mName;
     protected List<Connection> mConnections;
-    protected int mId = 0;
+    protected        int mId    = 0;
     protected static int mNewId = 1;
+
 
     public Connections(String name)
     {
@@ -41,25 +43,31 @@ public class Connections implements INGWResource
         mConnections = new ArrayList<>();
     }
 
-    public static int getNewId(){
+
+    public static int getNewId()
+    {
         return mNewId++;
     }
 
+
     public void add(Connection connection)
     {
-        if(null != mConnections) {
+        if (null != mConnections) {
             connection.setParent(this);
             mConnections.add(connection);
         }
     }
 
+
     @Override
     public INGWResource getChild(int i)
     {
-        if(null == mConnections || i < 0 || i >= mConnections.size())
+        if (null == mConnections || i < 0 || i >= mConnections.size()) {
             return null;
+        }
         return mConnections.get(i);
     }
+
 
     @Override
     public String getName()
@@ -85,12 +93,14 @@ public class Connections implements INGWResource
     @Override
     public INGWResource getResourceById(int id)
     {
-        if(id == mId)
+        if (id == mId) {
             return this;
-        for(Connection connection : mConnections){
+        }
+        for (Connection connection : mConnections) {
             INGWResource ret = connection.getResourceById(id);
-            if(null != ret)
+            if (null != ret) {
                 return ret;
+            }
         }
         return null;
     }
@@ -99,10 +109,12 @@ public class Connections implements INGWResource
     @Override
     public int getChildrenCount()
     {
-        if(null == mConnections)
+        if (null == mConnections) {
             return 0;
+        }
         return mConnections.size();
     }
+
 
     @Override
     public int describeContents()
@@ -119,9 +131,11 @@ public class Connections implements INGWResource
         parcel.writeString(mName);
         parcel.writeInt(mId);
         parcel.writeInt(mConnections.size());
-        for(Connection connection : mConnections)
+        for (Connection connection : mConnections) {
             parcel.writeParcelable(connection, i);
+        }
     }
+
 
     public static final Parcelable.Creator<Connections> CREATOR =
             new Parcelable.Creator<Connections>()
@@ -145,7 +159,7 @@ public class Connections implements INGWResource
         mId = in.readInt();
         int count = in.readInt();
         mConnections = new ArrayList<>();
-        for(int i = 0; i < count; i++){
+        for (int i = 0; i < count; i++) {
             Connection it = in.readParcelable(Connection.class.getClassLoader());
             it.setParent(this);
             mConnections.add(it);

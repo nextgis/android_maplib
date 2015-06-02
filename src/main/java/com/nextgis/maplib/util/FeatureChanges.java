@@ -1,24 +1,20 @@
-/*******************************************************************************
- * Project:  NextGIS mobile apps for Compulink
- * Purpose:  Mobile GIS for Android
- * Authors:  Dmitry Baryshnikov (aka Bishop), polimax@mail.ru
- *           NikitaFeodonit, nfeodonit@yandex.com
- * *****************************************************************************
+/**
+ * **************************************************************************** Project:  NextGIS
+ * mobile apps for Compulink Purpose:  Mobile GIS for Android Authors:  Dmitry Baryshnikov (aka
+ * Bishop), polimax@mail.ru NikitaFeodonit, nfeodonit@yandex.com *****************************************************************************
  * Copyright (C) 2014-2015 NextGIS
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- ******************************************************************************/
+ * <p/>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p/>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>. ****************************************************************************
+ */
 
 package com.nextgis.maplib.util;
 
@@ -64,8 +60,7 @@ public class FeatureChanges
 
         try {
             return DatabaseUtils.queryNumEntries(db, tableName);
-        }
-        catch (SQLiteException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             Log.d(TAG, e.getLocalizedMessage());
             return 0;
@@ -95,7 +90,7 @@ public class FeatureChanges
         }
 
         if (cursor.moveToFirst()) {
-             ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
+            ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
         }
 
         cursor.close();
@@ -144,7 +139,7 @@ public class FeatureChanges
     {
         String sortOrder = FIELD_ID + " ASC";
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
 
         return query(tableName, selection, sortOrder, null);
     }
@@ -156,7 +151,7 @@ public class FeatureChanges
             int operation)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
 
         return isRecords(tableName, selection);
     }
@@ -168,7 +163,7 @@ public class FeatureChanges
     {
         String sortOrder = FIELD_ID + " ASC";
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
 
         return query(tableName, selection, sortOrder, null);
     }
@@ -179,7 +174,7 @@ public class FeatureChanges
             long featureId)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
 
         return isRecords(tableName, selection);
     }
@@ -192,8 +187,9 @@ public class FeatureChanges
     {
         String sortOrder = FIELD_ID + " ASC";
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId;
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId;
 
         return query(tableName, selection, sortOrder, null);
     }
@@ -205,8 +201,9 @@ public class FeatureChanges
             long attachId)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId;
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId;
 
         return isRecords(tableName, selection);
     }
@@ -220,9 +217,10 @@ public class FeatureChanges
     {
         String sortOrder = FIELD_ID + " ASC";
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
 
         return query(tableName, selection, sortOrder, null);
     }
@@ -235,9 +233,10 @@ public class FeatureChanges
             int attachOperation)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
 
         return isRecords(tableName, selection);
     }
@@ -248,8 +247,10 @@ public class FeatureChanges
             long featureId)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_DELETE + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_DELETE +
+                           " ) )";
 
         return isRecords(tableName, selection);
     }
@@ -350,8 +351,8 @@ public class FeatureChanges
             int attachOperation)
     {
         String selection = FIELD_ID + " = " + recordId + " AND " +
-                FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                FIELD_ATTACH_ID + " = " + attachId;
+                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                           FIELD_ATTACH_ID + " = " + attachId;
 
         ContentValues values = new ContentValues();
         values.put(FIELD_ATTACH_OPERATION, attachOperation);
@@ -392,7 +393,7 @@ public class FeatureChanges
             long lastRecordId)
     {
         String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                FIELD_FEATURE_ID + " = " + featureId;
+                           FIELD_FEATURE_ID + " = " + featureId;
 
         return delete(tableName, selection);
     }
@@ -404,7 +405,7 @@ public class FeatureChanges
             int operation)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
 
         return delete(tableName, selection);
     }
@@ -417,8 +418,8 @@ public class FeatureChanges
             long lastRecordId)
     {
         String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
+                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
 
         return delete(tableName, selection);
     }
@@ -429,7 +430,7 @@ public class FeatureChanges
             long featureId)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
 
         return delete(tableName, selection);
     }
@@ -441,8 +442,8 @@ public class FeatureChanges
             long lastRecordId)
     {
         String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
 
         return delete(tableName, selection);
     }
@@ -454,8 +455,9 @@ public class FeatureChanges
             long attachId)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId;
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId;
 
         return delete(tableName, selection);
     }
@@ -468,9 +470,10 @@ public class FeatureChanges
             long lastRecordId)
     {
         String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId;
+                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId;
 
         return delete(tableName, selection);
     }
@@ -483,9 +486,10 @@ public class FeatureChanges
             int attachOperation)
     {
         String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
 
         return delete(tableName, selection);
     }
@@ -499,10 +503,11 @@ public class FeatureChanges
             long lastRecordId)
     {
         String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND " +
-                FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
+                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                           " ) ) AND " +
+                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
 
         return delete(tableName, selection);
     }
@@ -526,15 +531,16 @@ public class FeatureChanges
         int retResult = 0;
         try {
             retResult = db.delete(tableName, selection, null);
-        }
-        catch (SQLiteException e){
+        } catch (SQLiteException e) {
             e.printStackTrace();
             Log.d(TAG, e.getLocalizedMessage());
         }
         return retResult;
     }
 
-    public static void delete(String tableName){
+
+    public static void delete(String tableName)
+    {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
         String tableDrop = "DROP TABLE IF EXISTS " + tableName;

@@ -29,7 +29,8 @@ import org.json.JSONObject;
 /**
  * Class describes attach item
  */
-public class AttachItem implements IJSONStore
+public class AttachItem
+        implements IJSONStore
 {
     String mDescription;
     String mDisplayName;
@@ -46,12 +47,12 @@ public class AttachItem implements IJSONStore
     {
     }
 
+
     public AttachItem(
             String attachId,
             String displayName,
             String mimetype,
-            String description
-            )
+            String description)
     {
         mDescription = description;
         mDisplayName = displayName;
@@ -144,10 +145,13 @@ public class AttachItem implements IJSONStore
 
         AttachItem that = (AttachItem) o;
 
-        return mAttachId.equals(that.mAttachId)
-               && !(mDescription != null ? !mDescription.equals(that.mDescription) : that.mDescription != null)
-               && !(mDisplayName != null ? !mDisplayName.equals(that.mDisplayName) : that.mDisplayName != null)
-               && !(mMimetype != null ? !mMimetype.equals(that.mMimetype) : that.mMimetype != null);
+        return mAttachId.equals(that.mAttachId) && !(mDescription != null
+                                                     ? !mDescription.equals(that.mDescription)
+                                                     : that.mDescription != null) &&
+               !(mDisplayName != null
+                 ? !mDisplayName.equals(that.mDisplayName)
+                 : that.mDisplayName != null) &&
+               !(mMimetype != null ? !mMimetype.equals(that.mMimetype) : that.mMimetype != null);
 
     }
 

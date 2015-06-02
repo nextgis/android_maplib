@@ -137,8 +137,8 @@ public class SimpleMarkerStyle
                 }
                 break;
 
-                //throw new IllegalArgumentException(
-                //        "The input geometry type is not support by this style");
+            //throw new IllegalArgumentException(
+            //        "The input geometry type is not support by this style");
         }
     }
 

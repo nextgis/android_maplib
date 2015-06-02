@@ -33,7 +33,7 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 public class GeoGeometryCollection
         extends GeoGeometry
 {
-    protected static final long serialVersionUID =-1241179697270831768L;
+    protected static final long serialVersionUID = -1241179697270831768L;
     protected List<GeoGeometry> mGeometries;
 
 
@@ -42,9 +42,11 @@ public class GeoGeometryCollection
         mGeometries = new ArrayList<>();
     }
 
-    public GeoGeometryCollection(GeoGeometryCollection collection){
+
+    public GeoGeometryCollection(GeoGeometryCollection collection)
+    {
         mGeometries = new ArrayList<>();
-        for(GeoGeometry geometry : collection.mGeometries){
+        for (GeoGeometry geometry : collection.mGeometries) {
             mGeometries.add(geometry.copy());
         }
     }
@@ -93,8 +95,9 @@ public class GeoGeometryCollection
         for (GeoGeometry geometry : mGeometries) {
             isOk = isOk && geometry.rawProject(toCrs);
         }
-        if(isOk)
+        if (isOk) {
             super.rawProject(toCrs);
+        }
         return isOk;
     }
 
@@ -171,13 +174,14 @@ public class GeoGeometryCollection
     {
         StringBuilder buf = new StringBuilder();
         buf.append("GEOMETRYCOLLECTION ");
-        if (mGeometries.size() == 0)
+        if (mGeometries.size() == 0) {
             buf.append(" EMPTY");
-        else {
+        } else {
             buf.append("(");
             for (int i = 0; i < mGeometries.size(); i++) {
-                if (i > 0)
+                if (i > 0) {
                     buf.append(", ");
+                }
                 GeoGeometry geometry = mGeometries.get(i);
                 buf.append(geometry.toWKT(false));
             }
@@ -190,14 +194,16 @@ public class GeoGeometryCollection
     @Override
     public boolean equals(Object o)
     {
-        if (!super.equals(o))
+        if (!super.equals(o)) {
             return false;
+        }
         GeoGeometryCollection otherColl = (GeoGeometryCollection) o;
-        for(int i = 0; i < mGeometries.size(); i++){
+        for (int i = 0; i < mGeometries.size(); i++) {
             GeoGeometry geom = mGeometries.get(i);
             GeoGeometry otherGeom = otherColl.getGeometry(i);
-            if(!geom.equals(otherGeom))
+            if (!geom.equals(otherGeom)) {
                 return false;
+            }
         }
         return true;
     }
@@ -205,8 +211,9 @@ public class GeoGeometryCollection
 
     public GeoGeometry getGeometry(int index)
     {
-        if(mGeometries.size() > index)
+        if (mGeometries.size() > index) {
             return mGeometries.get(index);
+        }
         return null;
     }
 
@@ -214,9 +221,10 @@ public class GeoGeometryCollection
     @Override
     public boolean intersects(GeoEnvelope envelope)
     {
-        for(GeoGeometry geom : mGeometries) {
-            if (geom.intersects(envelope))
+        for (GeoGeometry geom : mGeometries) {
+            if (geom.intersects(envelope)) {
                 return true;
+            }
         }
         return false;
     }
@@ -228,8 +236,10 @@ public class GeoGeometryCollection
         return new GeoGeometryCollection(this);
     }
 
+
     @Override
-    public void clear(){
+    public void clear()
+    {
         mGeometries.clear();
     }
 }

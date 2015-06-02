@@ -30,9 +30,12 @@ import org.json.JSONObject;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_RASTER;
 
-public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer
+
+public class NGWRasterLayer
+        extends RemoteTMSLayer
+        implements INGWLayer
 {
     protected String mAccountName;
     protected String mCacheLogin;
