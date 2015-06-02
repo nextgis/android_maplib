@@ -1257,6 +1257,8 @@ public class VectorLayer
                     }
 
                     if (values.containsKey(FIELD_ID)) {
+                        updateUniqId(values.getAsLong(FIELD_ID).intValue());
+
                         notify.putExtra(FIELD_OLD_ID, rowID);
                         notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
                         bNotify = true;
@@ -1267,8 +1269,6 @@ public class VectorLayer
                                 NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                         getContext().sendBroadcast(notify);
                     }
-
-                    updateUniqId(values.getAsLong(FIELD_ID).intValue());
 
                 } else {
                     notify = new Intent(NOTIFY_UPDATE_FIELDS);
