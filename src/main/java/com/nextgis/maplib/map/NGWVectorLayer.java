@@ -484,7 +484,7 @@ public class NGWVectorLayer
     /**
      * Synchronize changes with NGW. Should be run from non UI thread.
      *
-     * @param authority
+     * @param authority - a content resolver authority (i.e. com.nextgis.mobile.provider)
      * @param syncResult
      *         - report some errors via this parameter
      */
@@ -499,6 +499,10 @@ public class NGWVectorLayer
         // 1. get remote changes
         if (!getChangesFromServer(authority, syncResult)) {
             Log.d(TAG, "Get remote changes failed");
+            return;
+        }
+
+        if(isRemoteReadOnly()) {
             return;
         }
 
@@ -1305,7 +1309,21 @@ public class NGWVectorLayer
         return super.delete();
     }
 
+
+    /**
+     * Indicate if layer can sync data with remote server
+     * @return true if layer can sync or false
+     */
     public boolean isSyncable(){
-        return mNGWLayerType == Connection.NGWResourceTypeVectorLayer || mNGWLayerType == Connection.NGWResourceTypeNone;
+        return true;
+    }
+
+
+    /**
+     * Indicate if layer can send changes to remote server
+     * @return true if layer can send changes to remote server or false
+     */
+    public boolean isRemoteReadOnly(){
+        return !(mNGWLayerType == Connection.NGWResourceTypeVectorLayer);
     }
 }
