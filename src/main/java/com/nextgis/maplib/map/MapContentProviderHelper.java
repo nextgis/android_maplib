@@ -48,7 +48,7 @@ public class MapContentProviderHelper
 {
     protected DatabaseHelper mDatabaseHelper;
 
-    protected static final String DBNAME = "layers";
+    protected static final String DBNAME           = "layers";
     protected static final int    DATABASE_VERSION = 1;
 
 

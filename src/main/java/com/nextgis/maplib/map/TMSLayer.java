@@ -48,7 +48,7 @@ import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 public abstract class TMSLayer
         extends Layer
 {
-    protected static final String JSON_TMSTYPE_KEY = "tms_type";
+    protected static final String JSON_TMSTYPE_KEY     = "tms_type";
     protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
 
     protected int mTMSType;

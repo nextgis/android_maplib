@@ -880,10 +880,7 @@ public class VectorLayer
                 attachId = uri.getLastPathSegment();
                 if (projection == null) {
                     projection = new String[] {
-                            ATTACH_DISPLAY_NAME,
-                            ATTACH_SIZE,
-                            ATTACH_ID,
-                            ATTACH_MIME_TYPE};
+                            ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
                 matrixCursor = new MatrixCursor(projection);
                 //get attach path
