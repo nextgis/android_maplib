@@ -43,6 +43,7 @@ import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.FeatureChanges;
@@ -78,6 +79,7 @@ public class NGWVectorLayer
     protected long        mRemoteId;
     protected NetworkUtil mNet;
     protected int         mSyncType;
+    protected int         mNGWLayerType;
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/attachments
 
@@ -85,6 +87,7 @@ public class NGWVectorLayer
 
     protected static final String JSON_ACCOUNT_KEY   = "account";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
+    protected static final String JSON_NGWLAYER_TYPE_KEY = "ngw_layer_type";
 
 
     public NGWVectorLayer(
@@ -99,6 +102,7 @@ public class NGWVectorLayer
         mChangeTableName = mPath.getName() + "_changes";
         mSyncType = SYNC_NONE;
         mLayerType = LAYERTYPE_NGW_VECTOR;
+        mNGWLayerType = Connection.NGWResourceTypeNone;
     }
 
 
@@ -137,6 +141,7 @@ public class NGWVectorLayer
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
         rootConfig.put(JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
+        rootConfig.put(JSON_NGWLAYER_TYPE_KEY, mNGWLayerType);
 
         return rootConfig;
     }
@@ -153,6 +158,10 @@ public class NGWVectorLayer
         mRemoteId = jsonObject.getLong(JSON_ID_KEY);
         if (jsonObject.has(JSON_SYNC_TYPE_KEY)) {
             mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
+        }
+
+        if(jsonObject.has(JSON_NGWLAYER_TYPE_KEY)) {
+            mNGWLayerType = jsonObject.getInt(JSON_NGWLAYER_TYPE_KEY);
         }
 
         if (!mIsInitialized) {
@@ -229,8 +238,10 @@ public class NGWVectorLayer
             JSONObject vectorLayerJSONObject = null;
             if (geoJSONObject.has("vector_layer")) {
                 vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
+                mNGWLayerType = Connection.NGWResourceTypeVectorLayer;
             } else if (geoJSONObject.has("postgis_layer")) {
                 vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
+                mNGWLayerType = Connection.NGWResourceTypePostgisLayer;
             }
             if (null == vectorLayerJSONObject) {
                 return getContext().getString(R.string.error_download_data);
@@ -1248,9 +1259,14 @@ public class NGWVectorLayer
 
     public void setSyncType(int syncType)
     {
+        if( !isSyncable() ) {
+            return;
+        }
+
         if (mSyncType == syncType) {
             return;
         }
+
         if (syncType == SYNC_NONE) {
             mSyncType = syncType;
             FeatureChanges.removeAllChanges(mChangeTableName);
@@ -1287,5 +1303,9 @@ public class NGWVectorLayer
         FeatureChanges.delete(mChangeTableName);
 
         return super.delete();
+    }
+
+    public boolean isSyncable(){
+        return mNGWLayerType == Connection.NGWResourceTypeVectorLayer || mNGWLayerType == Connection.NGWResourceTypeNone;
     }
 }
