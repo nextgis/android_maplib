@@ -42,7 +42,7 @@ public class AccurateLocationTaker
     protected Integer mMaxTakeCount;
     protected Long    mMaxTakeTimeMillis;
     protected long    mPublishProgressDelayMillis;
-    protected String  mCircularErrorStr;
+    protected float   mCircularError;
 
     protected long mStartTakeTimeMillis;
     protected long mTakeTimeMillis;
@@ -60,8 +60,9 @@ public class AccurateLocationTaker
     private Runnable mProgressUpdateRunner;
 
     protected boolean isCancelled = false;
-    protected OnProgressUpdateListener      mOnProgressUpdateListener;
-    protected OnGetAccurateLocationListener mOnGetAccurateLocationListener;
+    protected OnProgressUpdateListener             mOnProgressUpdateListener;
+    protected OnGetCurrentAccurateLocationListener mOnGetCurrentAccurateLocationListener;
+    protected OnGetAccurateLocationListener        mOnGetAccurateLocationListener;
 
 
     /**
@@ -89,7 +90,7 @@ public class AccurateLocationTaker
         mMaxTakeCount = maxTakeCount;
         mMaxTakeTimeMillis = maxTakeTimeMillis;
         mPublishProgressDelayMillis = publishProgressDelayMillis;
-        mCircularErrorStr = circularErrorStr;
+        mCircularError = getCircularErrorFromString(circularErrorStr);
 
         mLatMin = mLatMax = mLonMin = mLonMax = mAltMin = mAltMax = null;
 
@@ -98,10 +99,8 @@ public class AccurateLocationTaker
     }
 
 
-    protected Location getAccurateLocation(String circularErrorString)
+    protected float getCircularErrorFromString(String circularErrorString)
     {
-        float circularError;
-
         if (null == circularErrorString) {
             circularErrorString = "CE50";
         }
@@ -109,20 +108,14 @@ public class AccurateLocationTaker
         switch (circularErrorString) {
             case "CE50":
             default:
-                circularError = 0.5f;
-                break;
+                return 0.5f;
             case "CE90":
-                circularError = 0.9f;
-                break;
+                return 0.9f;
             case "CE95":
-                circularError = 0.95f;
-                break;
+                return 0.95f;
             case "CE98":
-                circularError = 0.98f;
-                break;
+                return 0.98f;
         }
-
-        return getAccurateLocation(circularError);
     }
 
 
@@ -132,6 +125,10 @@ public class AccurateLocationTaker
             throw new IllegalArgumentException(
                     "GPS taking, circularError must be in the [0, 1] bounds, now is " +
                             circularError);
+        }
+
+        if (0 == mGpsTakings.size()) {
+            return null;
         }
 
         int takeCount = mGpsTakings.size();
@@ -238,21 +235,24 @@ public class AccurateLocationTaker
             @Override
             public void run()
             {
-                Log.d(Constants.TAG, "GPS taking, the progress updating is started");
-
                 if (isCancelled()) {
                     stopTaking();
                     return;
                 }
 
                 if (isTaking()) {
+                    // Re-run it after the mPublishProgressDelayMillis
+                    mHandler.postDelayed(mProgressUpdateRunner, mPublishProgressDelayMillis);
+
                     if (null != mOnProgressUpdateListener) {
                         mOnProgressUpdateListener.onProgressUpdate(
                                 (long) mGpsTakings.size(), mTakeTimeMillis);
                     }
 
-                    // Re-run it after the mPublishProgressDelayMillis
-                    mHandler.postDelayed(mProgressUpdateRunner, mPublishProgressDelayMillis);
+                    if (null != mOnGetCurrentAccurateLocationListener) {
+                        mOnGetCurrentAccurateLocationListener.onGetCurrentAccurateLocation(
+                                getAccurateLocation(mCircularError));
+                    }
                 }
             }
         };
@@ -272,7 +272,7 @@ public class AccurateLocationTaker
     }
 
 
-    protected void stopTaking()
+    public void stopTaking()
     {
         mLocationManager.removeUpdates(this);
         mHandler.removeCallbacks(mStopTakingRunner);
@@ -281,7 +281,8 @@ public class AccurateLocationTaker
         if (!isCancelled() && null != mOnGetAccurateLocationListener) {
             Log.d(Constants.TAG, "Get the GPS accurate location");
             mOnGetAccurateLocationListener.onGetAccurateLocation(
-                    getAccurateLocation(mCircularErrorStr));
+                    getAccurateLocation(mCircularError), (long) mGpsTakings.size(),
+                    mTakeTimeMillis);
         }
     }
 
@@ -320,6 +321,27 @@ public class AccurateLocationTaker
     }
 
 
+    public void setOnGetCurrentAccurateLocationListener(
+            OnGetCurrentAccurateLocationListener onGetCurrentAccurateLocationListener)
+    {
+        mOnGetCurrentAccurateLocationListener = onGetCurrentAccurateLocationListener;
+    }
+
+
+    /**
+     * Implement the OnGetCurrentAccurateLocationListener interface to obtain the current accurate
+     * location during the measurement.
+     */
+    public interface OnGetCurrentAccurateLocationListener
+    {
+        /**
+         * @param currentAccurateLocation
+         *         The current accurate location. May be null.
+         */
+        void onGetCurrentAccurateLocation(Location currentAccurateLocation);
+    }
+
+
     public void setOnGetAccurateLocationListener(
             OnGetAccurateLocationListener onGetAccurateLocationListener)
     {
@@ -334,8 +356,13 @@ public class AccurateLocationTaker
     {
         /**
          * @param accurateLocation
-         *         The accurateLocation presents accurate location.
+         *         The accurate location. May be null.
+         * @param values
+         *         The values[0] presents the take counts. The values[1] presents the take time
+         *         (milliseconds).
          */
-        void onGetAccurateLocation(Location accurateLocation);
+        void onGetAccurateLocation(
+                Location accurateLocation,
+                Long... values);
     }
 }
