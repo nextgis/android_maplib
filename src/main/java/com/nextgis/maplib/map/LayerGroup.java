@@ -354,7 +354,9 @@ public class LayerGroup
         mLayerDrawIndex++;
         if (layer.isValid() && layer instanceof ILayerView) {
             ILayerView layerView = (ILayerView) layer;
-            if (layerView.isVisible() && layer instanceof IRenderer) {
+            if (layerView.isVisible() && layer instanceof IRenderer &&
+                    display.getZoomLevel() <= layerView.getMaxZoom() &&
+                    display.getZoomLevel() >= layerView.getMinZoom()) {
                 // Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
 
                 IRenderer renderer = (IRenderer) layer;
