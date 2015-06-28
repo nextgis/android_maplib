@@ -29,21 +29,44 @@ import com.nextgis.maplib.map.MapBase;
 
 
 /**
+ * If you plan to fix maplib or maplibui libraries, you nee to clone the sources such way:
+ * <ul>
+ *     <li>clone maplib and/or maplibui as submodules</li>
+ *     <pre>
+ *         <code>
+ *             git submodule add https://github.com/nextgis/android_maplib.git maplib
+ *             git submodule add https://github.com/nextgis/android_maplibui.git maplibui
+ *         </code>
+ *     </pre>
+ *     <li>Modify settings.gradle:</li>
+ *     <pre>
+ *         <code>
+ *             from: include ':app'
+ *             to: include ':app', ':maplib', ':maplibui'
+ *         </code>
+ *     </pre>
+ * </ul>
+ * <p>
+ * Note: Expected that project was created via Android studio new project wizard.
+ * </p>
+ * <p>
  * Interface that all applications using the library should implements. This is use in content
- * provider. If your application will not implement this interface - the syncronize vector layers
+ * provider. If your application will not implement this interface - the synchronize vector layers
  * with server will not work.
+ * </p>
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
  */
 public interface IGISApplication
 {
     /**
      * @return A MapBase or any inherited classes or null if not created in application
      */
-    public MapBase getMap();
+    MapBase getMap();
 
     /**
      * @return A authority for sync purposes or empty string in not sync anything
      */
-    public String getAuthority();
+    String getAuthority();
 
     /**
      * @param accountName
@@ -51,7 +74,7 @@ public interface IGISApplication
      *
      * @return Account by its name
      */
-    public Account getAccount(String accountName);
+    Account getAccount(String accountName);
 
     /**
      * @param account
@@ -59,7 +82,7 @@ public interface IGISApplication
      *
      * @return Account URL
      */
-    public String getAccountUrl(Account account);
+    String getAccountUrl(Account account);
 
     /**
      * @param account
@@ -67,7 +90,7 @@ public interface IGISApplication
      *
      * @return Account login
      */
-    public String getAccountLogin(Account account);
+    String getAccountLogin(Account account);
 
     /**
      * @param account
@@ -75,15 +98,15 @@ public interface IGISApplication
      *
      * @return Account password
      */
-    public String getAccountPassword(Account account);
+    String getAccountPassword(Account account);
 
     /**
      * @return A GpsEventSource or null if not needed or created in application
      */
-    public GpsEventSource getGpsEventSource();
+    GpsEventSource getGpsEventSource();
 
     /**
      * Show settings Activity
      */
-    public void showSettings();
+    void showSettings();
 }
