@@ -1018,11 +1018,13 @@ public class NGWVectorLayer
                     int recordIdColumn = changeCursor.getColumnIndex(FIELD_ID);
                     int featureIdColumn = changeCursor.getColumnIndex(FIELD_FEATURE_ID);
                     int operationColumn = changeCursor.getColumnIndex(FIELD_OPERATION);
+                    int attachOperationColumn = changeCursor.getColumnIndex(FIELD_ATTACH_OPERATION);
 
                     do {
                         long changeRecordId = changeCursor.getLong(recordIdColumn);
                         long changeFeatureId = changeCursor.getLong(featureIdColumn);
                         int changeOperation = changeCursor.getInt(operationColumn);
+                        int attachChangeOperation = changeCursor.getInt(attachOperationColumn);
 
                         boolean bDeleteChange = true; // if feature not exist on server
                         for (Feature remoteFeature : features) {
@@ -1038,15 +1040,18 @@ public class NGWVectorLayer
                             }
                         }
 
-                        if (0 != (changeOperation & CHANGE_OPERATION_NEW) && bDeleteChange) {
+                        if ((0 != (changeOperation & CHANGE_OPERATION_NEW) ||
+                                0 != (attachChangeOperation & CHANGE_OPERATION_NEW)) &&
+                                bDeleteChange) {
+
                             bDeleteChange = false;
                         }
 
                         if (bDeleteChange) {
                             Log.d(
                                     TAG, "Delete change for feature #" + changeFeatureId +
-                                         " operation " +
-                                         changeOperation);
+                                         ", changeOperation " + changeOperation +
+                                         ", attachChangeOperation " + attachChangeOperation);
                             // TODO: analise for operation, remove all equal
                             FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
                         }
@@ -1056,6 +1061,7 @@ public class NGWVectorLayer
 
                 changeCursor.close();
             }
+
         } catch (ConcurrentModificationException e) {
             e.printStackTrace();
             return false;
