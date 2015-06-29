@@ -59,7 +59,8 @@ public class AccurateLocationTaker
     private Runnable mStopTakingRunner;
     private Runnable mProgressUpdateRunner;
 
-    protected boolean isCancelled = false;
+    protected boolean mIsStopped   = false;
+    protected boolean mIsCancelled = false;
     protected OnProgressUpdateListener             mOnProgressUpdateListener;
     protected OnGetCurrentAccurateLocationListener mOnGetCurrentAccurateLocationListener;
     protected OnGetAccurateLocationListener        mOnGetAccurateLocationListener;
@@ -208,6 +209,8 @@ public class AccurateLocationTaker
 
     public void startTaking()
     {
+        mIsStopped = false;
+
         Log.d(Constants.TAG, "Start the GPS taking");
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
         mStartTakeTimeMillis = System.currentTimeMillis();
@@ -261,19 +264,21 @@ public class AccurateLocationTaker
     }
 
 
-    protected boolean isTaking()
+    public boolean isTaking()
     {
         mTakeTimeMillis = System.currentTimeMillis() - mStartTakeTimeMillis;
         boolean isAllIgnored = null == mMaxTakeTimeMillis && null == mMaxTakeCount;
         boolean hasTakeCount = null == mMaxTakeCount || mGpsTakings.size() < mMaxTakeCount;
         boolean hasTakeTime = null == mMaxTakeTimeMillis || mTakeTimeMillis < mMaxTakeTimeMillis;
 
-        return !isAllIgnored && hasTakeCount && hasTakeTime;
+        return !mIsStopped && !mIsCancelled && !isAllIgnored && hasTakeCount && hasTakeTime;
     }
 
 
     public void stopTaking()
     {
+        mIsStopped = true;
+
         mLocationManager.removeUpdates(this);
         mHandler.removeCallbacks(mStopTakingRunner);
         mHandler.removeCallbacks(mProgressUpdateRunner);
@@ -289,14 +294,15 @@ public class AccurateLocationTaker
 
     public boolean isCancelled()
     {
-        return isCancelled;
+        return mIsCancelled;
     }
 
 
     public void cancelTaking()
     {
         Log.d(Constants.TAG, "GPS taking is cancelled");
-        isCancelled = true;
+        mIsCancelled = true;
+        mIsStopped = true;
         stopTaking();
     }
 
