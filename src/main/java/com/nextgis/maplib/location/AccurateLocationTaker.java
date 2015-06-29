@@ -51,7 +51,7 @@ public class AccurateLocationTaker
     protected double mLatSum, mLonSum, mAltSum;
     protected double mLatAverage, mLonAverage, mAltAverage;
 
-    protected ArrayList<Location> mGpsTakings = new ArrayList<>();
+    protected ArrayList<Location> mGpsTakings;
     protected LocationManager mLocationManager;
 
     // Create a Handler that uses the Main Looper to run in
@@ -92,11 +92,6 @@ public class AccurateLocationTaker
         mMaxTakeTimeMillis = maxTakeTimeMillis;
         mPublishProgressDelayMillis = publishProgressDelayMillis;
         mCircularError = getCircularErrorFromString(circularErrorStr);
-
-        mLatMin = mLatMax = mLonMin = mLonMax = mAltMin = mAltMax = null;
-
-        mLatSum = mLonSum = mAltSum = 0;
-        mLatAverage = mLonAverage = mAltAverage = 0;
     }
 
 
@@ -163,6 +158,10 @@ public class AccurateLocationTaker
 
     public void onLocationChanged(Location location)
     {
+        if (null == mGpsTakings) {
+            return;
+        }
+
         mGpsTakings.add(location);
 
         double lat = location.getLatitude();
@@ -210,10 +209,16 @@ public class AccurateLocationTaker
     public void startTaking()
     {
         mIsStopped = false;
+        mGpsTakings = new ArrayList<>();
+        mStartTakeTimeMillis = System.currentTimeMillis();
+        mTakeTimeMillis = 0;
+
+        mLatMin = mLatMax = mLonMin = mLonMax = mAltMin = mAltMax = null;
+        mLatSum = mLonSum = mAltSum = 0;
+        mLatAverage = mLonAverage = mAltAverage = 0;
 
         Log.d(Constants.TAG, "Start the GPS taking");
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        mStartTakeTimeMillis = System.currentTimeMillis();
 
         mStopTakingRunner = new Runnable()
         {
@@ -283,7 +288,7 @@ public class AccurateLocationTaker
         mHandler.removeCallbacks(mStopTakingRunner);
         mHandler.removeCallbacks(mProgressUpdateRunner);
 
-        if (!isCancelled() && null != mOnGetAccurateLocationListener) {
+        if (null != mGpsTakings && !isCancelled() && null != mOnGetAccurateLocationListener) {
             Log.d(Constants.TAG, "Get the GPS accurate location");
             mOnGetAccurateLocationListener.onGetAccurateLocation(
                     getAccurateLocation(mCircularError), (long) mGpsTakings.size(),
