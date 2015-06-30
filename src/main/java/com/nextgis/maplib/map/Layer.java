@@ -154,7 +154,7 @@ public class Layer
     @Override
     public float getMaxZoom()
     {
-        return mMaxZoom;
+        return mMaxZoom == mMinZoom ? 25 : mMaxZoom;
     }
 
 

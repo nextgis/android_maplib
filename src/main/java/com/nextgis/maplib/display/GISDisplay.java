@@ -166,9 +166,9 @@ public class GISDisplay
 
         mCenter = center;
         if (mCenter.getX() > MERCATOR_MAX) {
-            mCenter.setX(mCenter.getX() - MERCATOR_MAX);
+            mCenter.setX(mCenter.getX() - MERCATOR_MAX*2);
         } else if (mCenter.getX() < -MERCATOR_MAX) {
-            mCenter.setX(mCenter.getX() + MERCATOR_MAX);
+            mCenter.setX(mCenter.getX() + MERCATOR_MAX*2);
         }
 
         int nZoom = (int) Math.floor(zoom);
