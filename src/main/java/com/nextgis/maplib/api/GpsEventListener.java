@@ -28,7 +28,9 @@ import android.location.Location;
 
 public interface GpsEventListener
 {
-    public abstract void onLocationChanged(Location location);
+    void onLocationChanged(Location location);
 
-    public abstract void onGpsStatusChanged(int event);
+    void onBestLocationChanged(Location location);
+
+    void onGpsStatusChanged(int event);
 }

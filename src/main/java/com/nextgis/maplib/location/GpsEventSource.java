@@ -34,32 +34,34 @@ import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.GpsEventListener;
 import com.nextgis.maplib.util.SettingsConstants;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 public class GpsEventSource
 {
     public static final int MIN_SATELLITES_IN_FIX = 3;
-    protected List<GpsEventListener> mListeners;
+    protected Queue<GpsEventListener> mListeners;
 
     protected LocationManager     mLocationManager;
     protected GpsLocationListener mGpsLocationListener;
     protected GpsStatusListener   mGpsStatusListener;
     protected int                 mListenProviders;
     protected Location            mLastLocation;
+    protected Location            mCurrentBestLocation;
     protected Context             mContext;
     protected long                mUpdateMinTime;
     protected float               mUpdateMinDistance;
 
-    public static final int GPS_PROVIDER     = 1 << 0;
-    public static final int NETWORK_PROVIDER = 1 << 1;
+    public static final    int GPS_PROVIDER     = 1 << 0;
+    public static final    int NETWORK_PROVIDER = 1 << 1;
+    protected static final int TWO_MINUTES      = 1000 * 60 * 2;
 
 
     public GpsEventSource(Context context)
     {
         mContext = context;
-        mListeners = new ArrayList<>();
+        mListeners = new ConcurrentLinkedQueue<>();
 
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         mGpsLocationListener = new GpsLocationListener();
@@ -140,6 +142,47 @@ public class GpsEventSource
     }
 
 
+    public Location getLastKnownBestLocation()
+    {
+        if (null != mCurrentBestLocation) {
+            return mCurrentBestLocation;
+        }
+
+        if (null != mLocationManager) {
+            Location gpsLocation = null;
+            Location networkLocation = null;
+
+            if (0 != (mListenProviders & GPS_PROVIDER)) {
+                gpsLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            }
+
+            if (0 != (mListenProviders & NETWORK_PROVIDER)) {
+                networkLocation =
+                        mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (null == gpsLocation) {
+                mCurrentBestLocation = networkLocation;
+                return mCurrentBestLocation;
+            }
+
+            if (null == networkLocation) {
+                mCurrentBestLocation = gpsLocation;
+                return mCurrentBestLocation;
+            }
+
+            if (isBetterLocation(gpsLocation, networkLocation)) {
+                mCurrentBestLocation = gpsLocation;
+            } else {
+                mCurrentBestLocation = networkLocation;
+            }
+            return mCurrentBestLocation;
+        }
+
+        return null;
+    }
+
+
     public void updateActiveListeners()
     {
         mLocationManager.removeUpdates(mGpsLocationListener);
@@ -165,18 +208,88 @@ public class GpsEventSource
     private void requestUpdates()
     {
         if (0 != (mListenProviders & GPS_PROVIDER) &&
-            mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
+                mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
+
             mLocationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
         }
 
         if (0 != (mListenProviders & NETWORK_PROVIDER) &&
-            mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
+                mLocationManager.getAllProviders().contains(LocationManager.NETWORK_PROVIDER)) {
+
             mLocationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
         }
+    }
+
+
+    /**
+     * Determines whether one Location reading is better than the current Location fix
+     *
+     * @param location
+     *         The new Location that you want to evaluate
+     * @param currentBestLocation
+     *         The current Location fix, to which you want to compare the new one
+     */
+    protected boolean isBetterLocation(
+            Location location,
+            Location currentBestLocation)
+    {
+        if (currentBestLocation == null) {
+            // A new location is always better than no location
+            return true;
+        }
+
+        // Check whether the new location fix is newer or older
+        long timeDelta = location.getTime() - currentBestLocation.getTime();
+        boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
+        boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
+        boolean isNewer = timeDelta > 0;
+
+        // If it's been more than two minutes since the current location, use the new location
+        // because the user has likely moved
+        if (isSignificantlyNewer) {
+            return true;
+            // If the new location is more than two minutes older, it must be worse
+        } else if (isSignificantlyOlder) {
+            return false;
+        }
+
+        // Check whether the new location fix is more or less accurate
+        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
+        boolean isLessAccurate = accuracyDelta > 0;
+        boolean isMoreAccurate = accuracyDelta < 0;
+        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
+
+        // Check if the old and new location are from the same provider
+        boolean isFromSameProvider =
+                isSameProvider(location.getProvider(), currentBestLocation.getProvider());
+
+        // Determine location quality using a combination of timeliness and accuracy
+        if (isMoreAccurate) {
+            return true;
+        } else if (isNewer && !isLessAccurate) {
+            return true;
+        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Checks whether two providers are the same
+     */
+    protected boolean isSameProvider(
+            String provider1,
+            String provider2)
+    {
+        if (provider1 == null) {
+            return provider2 == null;
+        }
+        return provider1.equals(provider2);
     }
 
 
@@ -187,6 +300,13 @@ public class GpsEventSource
         public void onLocationChanged(Location location)
         {
             mLastLocation = location;
+
+            if (isBetterLocation(mLastLocation, mCurrentBestLocation)) {
+                mCurrentBestLocation = mLastLocation;
+                for (GpsEventListener listener : mListeners) {
+                    listener.onBestLocationChanged(mCurrentBestLocation);
+                }
+            }
 
             for (GpsEventListener listener : mListeners) {
                 listener.onLocationChanged(mLastLocation);
@@ -214,7 +334,7 @@ public class GpsEventSource
     }
 
 
-    private final class GpsStatusListener
+    protected final class GpsStatusListener
             implements GpsStatus.Listener
     {
 
