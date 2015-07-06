@@ -50,6 +50,8 @@ public class AccurateLocationTaker
     protected double mLatSum, mLonSum, mAltSum;
     protected double mLatAverage, mLonAverage, mAltAverage;
 
+    protected Long mLastLocationTime;
+
     protected ArrayList<Location> mGpsTakings;
     protected GpsEventSource      mGpsEventSource;
 
@@ -134,13 +136,20 @@ public class AccurateLocationTaker
         mLonAverage = mLonSum / takeCount;
         mAltAverage = mAltSum / takeCount;
 
+        long time;
+        if (null != mLastLocationTime) {
+            time = mLastLocationTime;
+        } else {
+            time = System.currentTimeMillis();
+        }
+
         Location accurateLoc = new Location("GPS Accurate");
 
         accurateLoc.setSpeed(0);
         accurateLoc.setLatitude(mLatAverage);
         accurateLoc.setLongitude(mLonAverage);
         accurateLoc.setAltitude(mAltAverage);
-        accurateLoc.setTime(System.currentTimeMillis());
+        accurateLoc.setTime(time);
 
         ArrayList<Float> GPSDist = new ArrayList<>();
         for (final Location location : mGpsTakings) {
@@ -181,6 +190,8 @@ public class AccurateLocationTaker
         mLatSum += lat;
         mLonSum += lon;
         mAltSum += alt;
+
+        mLastLocationTime = location.getTime();
 
         if (!isTaking()) {
             Log.d(Constants.TAG, "Stop the GPS taking after the maxTakeCount");
@@ -235,6 +246,7 @@ public class AccurateLocationTaker
         mLatMin = mLatMax = mLonMin = mLonMax = mAltMin = mAltMax = null;
         mLatSum = mLonSum = mAltSum = 0;
         mLatAverage = mLonAverage = mAltAverage = 0;
+        mLastLocationTime = null;
 
         Log.d(Constants.TAG, "Start the GPS taking");
 
