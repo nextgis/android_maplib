@@ -24,6 +24,8 @@
 package com.nextgis.maplib.api;
 
 import android.accounts.Account;
+import android.accounts.AccountManagerFuture;
+
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.MapBase;
 
@@ -75,6 +77,13 @@ public interface IGISApplication
      * @return Account by its name
      */
     Account getAccount(String accountName);
+
+    /**
+     * Remove an account
+     * @param account Account to remove
+     * @return An @see AccountManagerFuture which resolves to a Boolean, true if the account has been successfully removed
+     */
+    AccountManagerFuture<Boolean> removeAccount(Account account);
 
     /**
      * @param account
