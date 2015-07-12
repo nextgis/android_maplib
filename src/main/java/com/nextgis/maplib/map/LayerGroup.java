@@ -24,6 +24,8 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.text.TextUtils;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
@@ -452,7 +454,22 @@ public class LayerGroup
         return super.save();
     }
 
+    /**
+     * Create the layer folder of specified name
+     * @param layerName The name of folder
+     * @return Path to the layer folder
+     */
+    public File createLayerStorage(String layerName)
+    {
+        if(TextUtils.isEmpty(layerName))
+            return createLayerStorage();
+        return new File(mPath, layerName);
+    }
 
+    /**
+     * Create the layer folder of random name
+     * @return Path to the layer folder
+     */
     public File createLayerStorage()
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");

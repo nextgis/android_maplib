@@ -25,6 +25,11 @@ package com.nextgis.maplib.util;
 
 public class NGWUtil
 {
+    public static String NGWKEY_ID = "id";
+    public static String NGWKEY_GEOM = "geom";
+    public static String NGWKEY_FIELDS = "fields";
+    public static String NGWKEY_SRS = "srs";
+
      /*
     NGW API Functions
      */
@@ -186,6 +191,16 @@ public class NGWUtil
             server = "http://" + server;
         }
         return server + "/api/resource/" + remoteId + "/feature/";
+    }
+
+    public static String getFeaturesUrl(
+            String server,
+            long remoteId,
+            String where){
+        if (!server.startsWith("http")) {
+            server = "http://" + server;
+        }
+        return server + "/api/resource/" + remoteId + "/feature/?" + where;
     }
 
 

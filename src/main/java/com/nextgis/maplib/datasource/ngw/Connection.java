@@ -303,6 +303,11 @@ public class Connection
         mParent = resource;
     }
 
+    @Override
+    public String getKey() {
+        return "";
+    }
+
 
     public void loadChildren()
     {

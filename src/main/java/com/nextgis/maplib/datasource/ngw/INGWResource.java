@@ -29,19 +29,21 @@ import android.os.Parcelable;
 public interface INGWResource
         extends Parcelable
 {
-    public String getName();
+    String getName();
 
-    public int getType();
+    int getType();
 
-    public int getId();
+    int getId();
 
-    public INGWResource getResourceById(int id);
+    INGWResource getResourceById(int id);
 
-    public int getChildrenCount();
+    int getChildrenCount();
 
-    public INGWResource getChild(int i);
+    INGWResource getChild(int i);
 
-    public INGWResource getParent();
+    INGWResource getParent();
 
-    public void setParent(INGWResource resource);
+    void setParent(INGWResource resource);
+
+    String getKey();
 }

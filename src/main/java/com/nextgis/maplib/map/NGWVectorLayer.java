@@ -231,7 +231,7 @@ public class NGWVectorLayer
 
             //fill field list
             JSONObject featureLayerJSONObject = geoJSONObject.getJSONObject("feature_layer");
-            JSONArray fieldsJSONArray = featureLayerJSONObject.getJSONArray("fields");
+            JSONArray fieldsJSONArray = featureLayerJSONObject.getJSONArray(NGWUtil.NGWKEY_FIELDS);
             List<Field> fields = getFieldsFromJson(fieldsJSONArray);
 
             //fill SRS
@@ -1238,7 +1238,7 @@ public class NGWVectorLayer
                         break;
                 }
             }
-            rootObject.put("fields", valueObject);
+            rootObject.put(NGWUtil.NGWKEY_FIELDS, valueObject);
         }
 
         if (0 != (mSyncType & SYNC_GEOMETRY)) {
@@ -1246,7 +1246,7 @@ public class NGWVectorLayer
             GeoGeometry geometry =
                     GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
 
-            rootObject.put("geom", geometry.toWKT(true));
+            rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
             //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
         }
 
