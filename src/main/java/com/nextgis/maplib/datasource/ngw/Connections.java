@@ -181,4 +181,9 @@ public class Connections
     {
 
     }
+
+    @Override
+    public String getKey() {
+        return "";
+    }
 }
