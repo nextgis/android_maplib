@@ -23,12 +23,24 @@
 
 package com.nextgis.maplib.util;
 
+import android.text.TextUtils;
+
 public class NGWUtil
 {
     public static String NGWKEY_ID = "id";
     public static String NGWKEY_GEOM = "geom";
     public static String NGWKEY_FIELDS = "fields";
     public static String NGWKEY_SRS = "srs";
+    public static String NGWKEY_EXTENSIONS = "extensions";
+    public static String NGWKEY_NAME = "name";
+    public static String NGWKEY_MIME = "mime_type";
+    public static String NGWKEY_DESCRIPTION = "description";
+    public static String NGWKEY_YEAR = "year";
+    public static String NGWKEY_MONTH = "month";
+    public static String NGWKEY_DAY = "day";
+    public static String NGWKEY_HOUR = "hour";
+    public static String NGWKEY_MINUTE = "minute";
+    public static String NGWKEY_SECOND = "second";
 
      /*
     NGW API Functions
@@ -63,28 +75,6 @@ public class NGWUtil
         }
         return server + "/resource/" + remoteId + "/geojson/";
     }
-
-
-    /**
-     * Get vector layer data as JSON (NOT GeoJSON!)
-     *
-     * @param server
-     *         URL
-     * @param remoteId
-     *         Vector layer resource id
-     *
-     * @return URL
-     */
-    public static String getVectorDataUrl(
-            String server,
-            long remoteId)
-    {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/api/resource/" + remoteId + "/feature/";
-    }
-
 
     /**
      * TMS URL for raster layer
@@ -174,7 +164,7 @@ public class NGWUtil
 
 
     /**
-     * Get the url to JSONArray of features
+     * Get the url to JSONArray of features  (NOT GeoJSON!)
      *
      * @param server
      *         URL
@@ -200,6 +190,9 @@ public class NGWUtil
         if (!server.startsWith("http")) {
             server = "http://" + server;
         }
+        if(TextUtils.isEmpty(where))
+            return server + "/api/resource/" + remoteId + "/feature/";
+
         return server + "/api/resource/" + remoteId + "/feature/?" + where;
     }
 
