@@ -163,6 +163,14 @@ public class NetworkUtil
         return HTTPClient;
     }
 
+    public static String getHTTPBaseAuth(String username, String password){
+        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
+            return "Basic " + Base64.encodeToString(
+                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+        }
+        return null;
+    }
+
 
     public String get(
             String targetURL,
@@ -172,11 +180,9 @@ public class NetworkUtil
     {
         final HttpGet get = new HttpGet(targetURL);
         //basic auth
-        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
-            final String basicAuth = "Basic " + Base64.encodeToString(
-                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+        final String basicAuth = getHTTPBaseAuth(username, password);
+        if(null != basicAuth)
             get.setHeader("Authorization", basicAuth);
-        }
 
         final DefaultHttpClient HTTPClient = getHttpClient();
         setProxy(HTTPClient, targetURL);
@@ -195,6 +201,12 @@ public class NetworkUtil
             return null;
         }
 
+        if(entity.getContentLength() > MAX_CONTENT_LENGTH){
+            Log.d(TAG, "Too much data to download: " + targetURL);
+            return null;
+        }
+
+
         return EntityUtils.toString(entity);
     }
 
@@ -208,11 +220,9 @@ public class NetworkUtil
     {
         final HttpPost post = new HttpPost(targetURL);
         //basic auth
-        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
-            final String basicAuth = "Basic " + Base64.encodeToString(
-                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+        final String basicAuth = getHTTPBaseAuth(username, password);
+        if(null != basicAuth)
             post.setHeader("Authorization", basicAuth);
-        }
 
         post.setEntity(new StringEntity(payload, "UTF8"));
         post.setHeader("Content-type", "application/json");
@@ -246,11 +256,9 @@ public class NetworkUtil
     {
         final HttpDelete delete = new HttpDelete(targetURL);
         //basic auth
-        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
-            final String basicAuth = "Basic " + Base64.encodeToString(
-                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+        final String basicAuth = getHTTPBaseAuth(username, password);
+        if(null != basicAuth)
             delete.setHeader("Authorization", basicAuth);
-        }
 
         final DefaultHttpClient HTTPClient = getHttpClient();
         setProxy(HTTPClient, targetURL);
@@ -276,11 +284,9 @@ public class NetworkUtil
     {
         final HttpPut put = new HttpPut(targetURL);
         //basic auth
-        if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)) {
-            final String basicAuth = "Basic " + Base64.encodeToString(
-                    (username + ":" + password).getBytes(), Base64.NO_WRAP);
+        final String basicAuth = getHTTPBaseAuth(username, password);
+        if(null != basicAuth)
             put.setHeader("Authorization", basicAuth);
-        }
 
         put.setEntity(new StringEntity(payload, "UTF8"));
         put.setHeader("Content-type", "application/json");
