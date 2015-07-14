@@ -44,6 +44,9 @@ public class SimplePolygonStyle
         extends Style
 {
     protected float mWidth;
+    protected boolean mFill;
+
+    protected String JSON_FILL_KEY = "fill";
 
 
     public SimplePolygonStyle()
@@ -56,6 +59,7 @@ public class SimplePolygonStyle
     {
         super(color);
         mWidth = 3;
+        mFill = true;
     }
 
 
@@ -65,6 +69,7 @@ public class SimplePolygonStyle
     {
         SimplePolygonStyle obj = (SimplePolygonStyle) super.clone();
         obj.mWidth = mWidth;
+        obj.mFill = mFill;
         return obj;
     }
 
@@ -85,11 +90,20 @@ public class SimplePolygonStyle
         lnPaint.setAlpha(128);
         display.drawPath(polygonPath, lnPaint);
 
-        lnPaint.setStyle(Paint.Style.FILL);
-        lnPaint.setAlpha(64);
-        display.drawPath(polygonPath, lnPaint);
+        if(mFill) {
+            lnPaint.setStyle(Paint.Style.FILL);
+            lnPaint.setAlpha(64);
+            display.drawPath(polygonPath, lnPaint);
+        }
     }
 
+    public boolean isFill() {
+        return mFill;
+    }
+
+    public void setFill(boolean fill) {
+        mFill = fill;
+    }
 
     @Override
     public void onDraw(
@@ -120,6 +134,7 @@ public class SimplePolygonStyle
     {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
+        rootConfig.put(JSON_FILL_KEY, mFill);
         rootConfig.put(JSON_NAME_KEY, "SimplePolygonStyle");
         return rootConfig;
     }
@@ -131,6 +146,7 @@ public class SimplePolygonStyle
     {
         super.fromJSON(jsonObject);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
+        mFill = jsonObject.getBoolean(JSON_FILL_KEY);
     }
 
 
