@@ -41,6 +41,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
@@ -62,17 +63,18 @@ import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -80,9 +82,40 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-import static com.nextgis.maplib.util.Constants.*;
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.VECTOR_FORBIDDEN_FIELDS;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WGS84;
+import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
+import static com.nextgis.maplib.util.GeoConstants.FTInteger;
+import static com.nextgis.maplib.util.GeoConstants.FTReal;
+import static com.nextgis.maplib.util.GeoConstants.FTString;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_CRS;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRY;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_ID;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_NAME;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_PROPERTIES;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_FEATURES;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
 public class VectorLayer
@@ -498,7 +531,21 @@ public class VectorLayer
                     }
                     break;
                 case FTDateTime:
-                    values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
+                    Object dateVal = feature.getFieldValue(i);
+                    if(dateVal instanceof Date){
+                        Date date = (Date) dateVal;
+                        values.put(fields.get(i).getName(), date.getTime());
+                    }
+                    else if(dateVal instanceof Long){
+                        values.put(fields.get(i).getName(), (long) dateVal);
+                    }
+                    else if(dateVal instanceof Calendar){
+                        Calendar cal = (Calendar)dateVal;
+                        values.put(fields.get(i).getName(), cal.getTimeInMillis());
+                    }
+                    else{
+                        Log.d(TAG, "skip value: " + dateVal.toString());
+                    }
                     break;
             }
         }

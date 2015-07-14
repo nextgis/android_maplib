@@ -317,5 +317,8 @@ public class Layer
         return mRenderer;
     }
 
-
+    @Override
+    public void setRenderer(IRenderer renderer) {
+        mRenderer = renderer;
+    }
 }

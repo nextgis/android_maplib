@@ -472,7 +472,7 @@ public class NGWVectorLayer
         }
 
         Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
-        feature.setFieldValue(fieldName, calendar.getTime());
+        feature.setFieldValue(fieldName, calendar.getTimeInMillis());
 
         reader.endObject();
     }
