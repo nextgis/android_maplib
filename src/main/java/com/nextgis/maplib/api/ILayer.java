@@ -58,4 +58,6 @@ public interface ILayer
     boolean isValid();
 
     IRenderer getRenderer();
+
+    void setRenderer(IRenderer renderer);
 }

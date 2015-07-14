@@ -28,7 +28,7 @@ import com.nextgis.maplib.display.GISDisplay;
 
 public interface IRenderer
 {
-    public void runDraw(final GISDisplay display);
+    void runDraw(final GISDisplay display);
 
-    public void cancelDraw();
+    void cancelDraw();
 }
