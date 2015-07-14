@@ -78,11 +78,12 @@ public class LayerContentProvider
 
         if (layer instanceof VectorLayer) {
             return ((VectorLayer) layer).query(
-                    uri, projection, selection, selectionArgs, sortOrder);
+                    uri, projection, selection, selectionArgs, sortOrder, null);
         }
 
         if (layer instanceof TrackLayer) {
-            return ((TrackLayer) layer).query(uri, projection, selection, selectionArgs, sortOrder);
+            return ((TrackLayer) layer).query(uri, projection, selection, selectionArgs, sortOrder,
+                    null);
         }
 
         return null;

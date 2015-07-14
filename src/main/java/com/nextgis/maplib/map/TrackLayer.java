@@ -300,7 +300,8 @@ public class TrackLayer
             String[] projection,
             String selection,
             String[] selectionArgs,
-            String sortOrder)
+            String sortOrder,
+            String limit)
     {
         mSQLiteDatabase = mMap.getDatabase(true);
         Cursor cursor;
@@ -308,13 +309,13 @@ public class TrackLayer
         switch (mUriMatcher.match(uri)) {
             case TYPE_TRACKS:
                 cursor = mSQLiteDatabase.query(
-                        TABLE_TRACKS, projection, selection, selectionArgs, null, null, sortOrder);
+                        TABLE_TRACKS, projection, selection, selectionArgs, null, null, sortOrder, limit);
                 cursor.setNotificationUri(getContext().getContentResolver(), mContentUriTracks);
                 return cursor;
             case TYPE_TRACKPOINTS:
                 cursor = mSQLiteDatabase.query(
                         TABLE_TRACKPOINTS, projection, selection, selectionArgs, null, null,
-                        sortOrder);
+                        sortOrder, limit);
 
                 cursor.setNotificationUri(
                         getContext().getContentResolver(), mContentUriTrackpoints);
@@ -330,7 +331,7 @@ public class TrackLayer
 
                 cursor = mSQLiteDatabase.query(
                         TABLE_TRACKPOINTS, projection, selection, selectionArgs, null, null,
-                        sortOrder);
+                        sortOrder, limit);
                 return cursor;
             default:
                 throw new IllegalArgumentException("Wrong tracks URI: " + uri);

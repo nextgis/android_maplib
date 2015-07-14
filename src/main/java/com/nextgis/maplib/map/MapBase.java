@@ -99,6 +99,8 @@ public class MapBase
             layer.delete();
         }
 
+        mLayers.clear();
+
         return FileUtil.deleteRecursive(getFileName());
     }
 

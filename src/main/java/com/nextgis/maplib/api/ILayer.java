@@ -31,31 +31,31 @@ import java.io.File;
 
 public interface ILayer
 {
-    public Context getContext();
+    Context getContext();
 
-    public String getName();
+    String getName();
 
-    public void setName(String newName);
+    void setName(String newName);
 
-    public short getId();
+    short getId();
 
-    public int getType();
+    int getType();
 
-    public boolean delete();
+    boolean delete();
 
-    public File getPath();
+    File getPath();
 
-    public boolean save();
+    boolean save();
 
-    public boolean load();
+    boolean load();
 
-    public GeoEnvelope getExtents();
+    GeoEnvelope getExtents();
 
-    public void setParent(ILayer layer);
+    void setParent(ILayer layer);
 
-    public void setId(short id);
+    void setId(short id);
 
-    public boolean isValid();
+    boolean isValid();
 
-    public IRenderer getRenderer();
+    IRenderer getRenderer();
 }
