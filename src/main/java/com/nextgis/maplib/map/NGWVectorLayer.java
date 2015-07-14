@@ -24,6 +24,7 @@
 package com.nextgis.maplib.map;
 
 import android.accounts.Account;
+import android.annotation.TargetApi;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -34,6 +35,11 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.text.TextUtils;
+import android.util.Base64;
+import android.util.JsonReader;
+import android.util.JsonToken;
 import android.util.Log;
 import android.widget.Toast;
 import com.nextgis.maplib.R;
@@ -46,6 +52,7 @@ import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
@@ -55,8 +62,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ConcurrentModificationException;
@@ -80,6 +93,7 @@ public class NGWVectorLayer
     protected NetworkUtil mNet;
     protected int         mSyncType;
     protected int         mNGWLayerType;
+    protected String mServerWhere;
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/attachments
 
@@ -88,6 +102,7 @@ public class NGWVectorLayer
     protected static final String JSON_ACCOUNT_KEY   = "account";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
     protected static final String JSON_NGWLAYER_TYPE_KEY = "ngw_layer_type";
+    protected static final String JSON_SERVERWHERE_KEY   = "server_where";
 
 
     public NGWVectorLayer(
@@ -133,6 +148,14 @@ public class NGWVectorLayer
     }
 
 
+    public String getServerWhere() {
+        return mServerWhere;
+    }
+
+    public void setServerWhere(String serverWhere) {
+        mServerWhere = serverWhere;
+    }
+
     @Override
     public JSONObject toJSON()
             throws JSONException
@@ -142,6 +165,7 @@ public class NGWVectorLayer
         rootConfig.put(JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
         rootConfig.put(JSON_NGWLAYER_TYPE_KEY, mNGWLayerType);
+        rootConfig.put(JSON_SERVERWHERE_KEY, mServerWhere);
 
         return rootConfig;
     }
@@ -162,6 +186,10 @@ public class NGWVectorLayer
 
         if(jsonObject.has(JSON_NGWLAYER_TYPE_KEY)) {
             mNGWLayerType = jsonObject.getInt(JSON_NGWLAYER_TYPE_KEY);
+        }
+
+        if(jsonObject.has(JSON_SERVERWHERE_KEY)){
+            mServerWhere = jsonObject.getString(JSON_SERVERWHERE_KEY);
         }
 
         if (!mIsInitialized) {
@@ -259,21 +287,46 @@ public class NGWVectorLayer
                 return getContext().getString(R.string.error_crs_unsupported);
             }
 
-            //get layer data
-            data = mNet.get(
-                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
-            if (null == data) {
-                return getContext().getString(R.string.error_download_data);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+
+                //get layer data
+                data = mNet.get(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere),
+                            mCacheLogin, mCachePassword);
+                if (null == data) {
+                    return getContext().getString(R.string.error_download_data);
+                }
+
+                JSONArray featuresJSONArray = new JSONArray(data);
+                List<Feature> features = jsonToFeatures(featuresJSONArray, fields, nSRS);
+
+                return initialize(fields, features, geomType);
+            }
+            else{
+                // init empty layer
+                String initStatus = initialize(fields, new ArrayList<Feature>(), geomType);
+                if(initStatus != null)
+                    return initStatus;
+
+                mIsInitialized = false;
+
+                // get features and fill them
+                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere));
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                final String basicAuth = NetworkUtil.getHTTPBaseAuth(mCacheLogin, mCachePassword);
+                if(null != basicAuth)
+                    urlConnection.setRequestProperty("Authorization", basicAuth);
+                MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+                SQLiteDatabase db = map.getDatabase(false);
+                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                loadFeaturesFromNGWStream(in, fields, db, nSRS);
+                urlConnection.disconnect();
+
+                mIsInitialized = true;
+                return null;
             }
 
-            JSONArray featuresJSONArray = new JSONArray(data);
-            List<Feature> features = jsonToFeatures(featuresJSONArray, fields, nSRS);
-
-            return initialize(fields, features, geomType);
-
         } catch (IOException e) {
-            Log.d(
-                    TAG, "Problem downloading GeoJSON: " + mCacheUrl + " Error: " +
+            Log.d(TAG, "Problem downloading GeoJSON: " + mCacheUrl + " Error: " +
                          e.getLocalizedMessage());
             return getContext().getString(R.string.error_download_data);
         } catch (JSONException | SQLiteException e) {
@@ -282,6 +335,204 @@ public class NGWVectorLayer
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected List<Feature> loadFeaturesFromNGWStream(InputStream in, List<Field> fields, int nSRS) throws IOException {
+        List<Feature> result = new ArrayList<>();
+        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+        reader.beginArray();
+        while (reader.hasNext()) {
+            Feature feature = readNGWFeature(reader, fields, nSRS);
+            result.add(feature);
+        }
+        reader.endArray();
+        reader.close();
+
+        return result;
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void loadFeaturesFromNGWStream(InputStream in, List<Field> fields, SQLiteDatabase db, int nSRS) throws IOException {
+        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+        reader.beginArray();
+        while (reader.hasNext()) {
+            //TODO: download attachments if needed
+            Feature feature = readNGWFeature(reader, fields, nSRS);
+            createFeature(feature, fields, db);
+        }
+        reader.endArray();
+        reader.close();
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected Feature readNGWFeature(JsonReader reader, List<Field> fields, int nSRS) throws IOException {
+        Feature feature = new Feature(Constants.NOT_FOUND, fields);
+
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String name = reader.nextName();
+            if (name.equals(NGWUtil.NGWKEY_ID)) {
+                feature.setId(reader.nextLong());
+            } else if (name.equals(NGWUtil.NGWKEY_GEOM)) {
+                String wkt = reader.nextString();
+                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+                geom.setCRS(nSRS);
+                if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
+                    geom.project(GeoConstants.CRS_WEB_MERCATOR);
+                }
+                feature.setGeometry(geom);
+            }
+            else if(name.equals(NGWUtil.NGWKEY_FIELDS)){
+                readNGWFeatureFields(feature, reader, fields);
+            }
+            else if(name.equals(NGWUtil.NGWKEY_EXTENSIONS)){
+                if (reader.peek() != JsonToken.NULL) {
+                    readNGWFeatureAttachments(feature, reader);
+                }
+            }
+            else
+                reader.skipValue();
+        }
+        reader.endObject();
+        return  feature;
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields) throws IOException {
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String name = reader.nextName();
+            if(reader.peek() == JsonToken.NULL)
+                reader.skipValue();
+            else {
+                boolean bAdded = false;
+                for (Field field : fields) {
+                    if (field.getName().equals(name)) {
+                        switch (field.getType()) {
+                            case GeoConstants.FTReal:
+                                feature.setFieldValue(field.getName(), reader.nextDouble());
+                                bAdded = true;
+                                break;
+                            case GeoConstants.FTInteger:
+                                feature.setFieldValue(field.getName(), reader.nextInt());
+                                bAdded = true;
+                                break;
+                            case GeoConstants.FTString:
+                                feature.setFieldValue(field.getName(), reader.nextString());
+                                bAdded = true;
+                                break;
+                            case GeoConstants.FTDateTime:
+                                readNGWDate(feature, reader, field.getName());
+                                bAdded = true;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                }
+                if(!bAdded)
+                    reader.skipValue();
+            }
+        }
+        reader.endObject();
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void readNGWDate(Feature feature, JsonReader reader, String fieldName) throws IOException {
+        reader.beginObject();
+        int nYear = 1900;
+        int nMonth = 1;
+        int nDay = 1;
+        int nHour = 0;
+        int nMinute = 0;
+        int nSecond = 0;
+        while (reader.hasNext()){
+            String name = reader.nextName();
+            if(name.equals(NGWUtil.NGWKEY_YEAR)){
+                nYear = reader.nextInt();
+            }
+            else if(name.equals(NGWUtil.NGWKEY_MONTH)){
+                nMonth = reader.nextInt();
+            }
+            else if(name.equals(NGWUtil.NGWKEY_DAY)){
+                nDay = reader.nextInt();
+            }
+            else if(name.equals(NGWUtil.NGWKEY_HOUR)){
+                nHour = reader.nextInt();
+            }
+            else if(name.equals(NGWUtil.NGWKEY_MINUTE)){
+                nMinute = reader.nextInt();
+            }
+            else if(name.equals(NGWUtil.NGWKEY_SECOND)){
+                nSecond = reader.nextInt();
+            }
+            else {
+                reader.skipValue();
+            }
+        }
+
+        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
+        feature.setFieldValue(fieldName, calendar.getTime());
+
+        reader.endObject();
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void readNGWFeatureAttachments(Feature feature, JsonReader reader) throws IOException {
+        //add extensions
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String name = reader.nextName();
+            if(name.equals("attachment") && reader.peek() != JsonToken.NULL){
+                reader.beginArray();
+                while (reader.hasNext()) {
+                    readNGWFeatureAttachment(feature, reader);
+                }
+                reader.endArray();
+            }
+            else {
+                reader.skipValue();
+            }
+        }
+
+        reader.endObject();
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void readNGWFeatureAttachment(Feature feature, JsonReader reader) throws IOException {
+        reader.beginObject();
+        String attachId = "";
+        String name = "";
+        String mime = "";
+        String descriptionText = "";
+        while (reader.hasNext()) {
+            String keyName = reader.nextName();
+            if(reader.peek() == JsonToken.NULL){
+                reader.skipValue();
+                continue;
+            }
+
+            if(keyName.equals(NGWUtil.NGWKEY_ID)){
+                attachId += reader.nextLong();
+            }
+            else if(keyName.equals(NGWUtil.NGWKEY_NAME)){
+                name += reader.nextString();
+            }
+            else if(keyName.equals(NGWUtil.NGWKEY_MIME)){
+                mime += reader.nextString();
+            }
+            else if(keyName.equals(NGWUtil.NGWKEY_DESCRIPTION)){
+                descriptionText += reader.nextString();
+            }
+            else{
+                reader.skipValue();
+            }
+        }
+        AttachItem item = new AttachItem(attachId, name, mime, descriptionText);
+        feature.addAttachment(item);
+
+        reader.endObject();
+    }
 
     @Override
     public String initialize(
@@ -304,9 +555,9 @@ public class NGWVectorLayer
         List<Feature> features = new ArrayList<>();
         for (int i = 0; i < featuresJSONArray.length(); i++) {
             JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
-            long id = featureJSONObject.getLong(JSON_ID_KEY);
-            String wkt = featureJSONObject.getString("geom");
-            JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(JSON_FIELDS_KEY);
+            long id = featureJSONObject.getLong(NGWUtil.NGWKEY_ID);
+            String wkt = featureJSONObject.getString(NGWUtil.NGWKEY_GEOM);
+            JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(NGWUtil.NGWKEY_FIELDS);
             Feature feature = new Feature(id, fields);
             GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
             if (null == geom) {
@@ -368,6 +619,8 @@ public class NGWVectorLayer
             case "INTEGER":
                 return GeoConstants.FTInteger;
             case "DATE":
+            case "DATETIME":
+            case "TIME":
                 return GeoConstants.FTDateTime;
             case "REAL":
                 return GeoConstants.FTReal;
@@ -509,7 +762,7 @@ public class NGWVectorLayer
         // 2. send current changes
         if (!sendLocalChanges(syncResult)) {
             Log.d(TAG, "Set local changes failed");
-            return;
+            //return;
         }
     }
 
@@ -822,39 +1075,62 @@ public class NGWVectorLayer
     protected boolean getChangesFromServer(
             String authority,
             SyncResult syncResult)
-            throws SQLiteException
-    {
+            throws SQLiteException {
         if (!mNet.isNetworkAvailable()) {
             return false;
         }
 
         Log.d(TAG, "The network is available. Get changes from server");
-
-        // read layer contents as string
-        String data;
-        try {
-            data = mNet.get(
-                    NGWUtil.getVectorDataUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
-        } catch (IOException e) {
-            e.printStackTrace();
-            syncResult.stats.numParseExceptions++;
-            return false;
-        }
-
-        if (null == data) {
-            return false;
-        }
-
-        // parse layer contents to Feature list
         List<Feature> features;
-        try {
-            JSONArray featuresJSONArray = new JSONArray(data);
-            features =
-                    jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
-        } catch (JSONException e) {
-            e.printStackTrace();
-            syncResult.stats.numParseExceptions++;
-            return false;
+        // read layer contents as string
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+
+            String data;
+            try {
+                data = mNet.get( NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere),
+                        mCacheLogin, mCachePassword);
+            } catch (IOException e) {
+                e.printStackTrace();
+                syncResult.stats.numParseExceptions++;
+                return false;
+            }
+
+            if (null == data) {
+                return false;
+            }
+
+            // parse layer contents to Feature list
+            try {
+                JSONArray featuresJSONArray = new JSONArray(data);
+                features =
+                        jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR);
+            } catch (JSONException e) {
+                e.printStackTrace();
+                syncResult.stats.numParseExceptions++;
+                return false;
+            }
+        }
+        else{
+            try {
+                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere));
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                final String basicAuth = NetworkUtil.getHTTPBaseAuth(mCacheLogin, mCachePassword);
+                if(null != basicAuth)
+                    urlConnection.setRequestProperty("Authorization", basicAuth);
+
+                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                features = loadFeaturesFromNGWStream(in, getFields(), GeoConstants.CRS_WEB_MERCATOR);
+                urlConnection.disconnect();
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+                syncResult.stats.numParseExceptions++;
+                return false;
+            } catch (IOException e) {
+                e.printStackTrace();
+                syncResult.stats.numParseExceptions++;
+                return false;
+            }
         }
 
         Log.d(TAG, "Get " + features.size() + " feature(s) from server");
@@ -862,7 +1138,7 @@ public class NGWVectorLayer
         // analyse feature
         for (Feature remoteFeature : features) {
 
-            Cursor cursor = query(null, FIELD_ID + " = " + remoteFeature.getId(), null, null);
+            Cursor cursor = query(null, FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
             //no local feature
             if (null == cursor || cursor.getCount() == 0) {
 
@@ -1092,7 +1368,7 @@ public class NGWVectorLayer
         Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
-        Cursor cursor = query(uri, null, null, null, null);
+        Cursor cursor = query(uri, null, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "addFeatureOnServer: Get cursor failed");
             if (null != cursor) {
@@ -1105,7 +1381,7 @@ public class NGWVectorLayer
             String payload = cursorToJson(cursor);
             cursor.close();
             String data = mNet.post(
-                    NGWUtil.getVectorDataUrl(mCacheUrl, mRemoteId), payload, mCacheLogin,
+                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere), payload, mCacheLogin,
                     mCachePassword);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
@@ -1163,7 +1439,7 @@ public class NGWVectorLayer
         Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
-        Cursor cursor = query(uri, null, null, null, null);
+        Cursor cursor = query(uri, null, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
             Log.d(TAG, "empty cursor for uri: " + uri);
             if (null != cursor) {

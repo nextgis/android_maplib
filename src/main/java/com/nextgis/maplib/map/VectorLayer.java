@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.map;
 
+import android.annotation.TargetApi;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -34,9 +35,11 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.JsonReader;
 import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
@@ -63,9 +66,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -419,73 +425,16 @@ public class VectorLayer
 
         //1. create table and populate with values
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
+        SQLiteDatabase db = map.getDatabase(false);
         db.execSQL(tableCreate);
 
-        for (Feature feature : features) {
-            ContentValues values = new ContentValues();
-            values.put(FIELD_ID, feature.getId());
-            try {
-                values.put(FIELD_GEOM, feature.getGeometry().toBlob());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            for (int i = 0; i < fields.size(); ++i) {
-                if (!feature.isValuePresent(i)) {
-                    continue;
-                }
-                switch (fields.get(i).getType()) {
-                    case FTString:
-                        values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
-                        break;
-                    case FTInteger:
-                        Object intVal = feature.getFieldValue(i);
-                        if (intVal instanceof Integer) {
-                            values.put(fields.get(i).getName(), (int) intVal);
-                        } else if (intVal instanceof Long) {
-                            values.put(fields.get(i).getName(), (long) intVal);
-                        } else {
-                            Log.d(TAG, "skip value: " + intVal.toString());
-                        }
-                        break;
-                    case FTReal:
-                        Object realVal = feature.getFieldValue(i);
-                        if (realVal instanceof Double) {
-                            values.put(fields.get(i).getName(), (double) realVal);
-                        } else if (realVal instanceof Float) {
-                            values.put(fields.get(i).getName(), (float) realVal);
-                        } else {
-                            Log.d(TAG, "skip value: " + realVal.toString());
-                        }
-                        break;
-                    case FTDateTime:
-                        values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
-                        break;
-                }
-            }
-
-            db.insert(mPath.getName(), "", values);
-        }
-
-        //fill the geometry and labels array
-        GeoEnvelope extents = new GeoEnvelope();
-        for (Feature feature : features) {
-            if (null == feature.getGeometry()) {
-                continue;
-            }
-            //update bbox
-            extents.merge(feature.getGeometry().getEnvelope());
-            //add to cache
-            mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
-
-            if (geometryType == NOT_FOUND || geometryType != feature.getGeometry().getType()) {
-                geometryType = feature.getGeometry().getType();
-            }
-        }
-
-        //2. save the layer properties to config.json
         mGeometryType = geometryType;
-        mExtents = extents;
+        mExtents = new GeoEnvelope();
+
+        for (Feature feature : features) {
+            createFeature(feature, fields, db);
+        }
+
         mIsInitialized = true;
         setDefaultRenderer();
 
@@ -504,6 +453,87 @@ public class VectorLayer
         return null;
     }
 
+    protected void createFeature(Feature feature, List<Field> fields, SQLiteDatabase db)
+            throws SQLiteException{
+        //1. check if such id already used
+        // maybe was added previous session
+        for(VectorCacheItem item : mVectorCacheItems){
+            if(item.getId() == feature.getId())
+                return;
+        }
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_ID, feature.getId());
+        try {
+            values.put(FIELD_GEOM, feature.getGeometry().toBlob());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        for (int i = 0; i < fields.size(); ++i) {
+            if (!feature.isValuePresent(i)) {
+                continue;
+            }
+            switch (fields.get(i).getType()) {
+                case FTString:
+                    values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
+                    break;
+                case FTInteger:
+                    Object intVal = feature.getFieldValue(i);
+                    if (intVal instanceof Integer) {
+                        values.put(fields.get(i).getName(), (int) intVal);
+                    } else if (intVal instanceof Long) {
+                        values.put(fields.get(i).getName(), (long) intVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + intVal.toString());
+                    }
+                    break;
+                case FTReal:
+                    Object realVal = feature.getFieldValue(i);
+                    if (realVal instanceof Double) {
+                        values.put(fields.get(i).getName(), (double) realVal);
+                    } else if (realVal instanceof Float) {
+                        values.put(fields.get(i).getName(), (float) realVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + realVal.toString());
+                    }
+                    break;
+                case FTDateTime:
+                    values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
+                    break;
+            }
+        }
+
+        db.insert(mPath.getName(), "", values);
+
+        if (null == feature.getGeometry()) {
+            return;
+        }
+        //update bbox
+        mExtents.merge(feature.getGeometry().getEnvelope());
+        //add to cache
+        mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
+
+        if (mGeometryType == NOT_FOUND || mGeometryType != feature.getGeometry().getType()) {
+            mGeometryType = feature.getGeometry().getType();
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void loadFeaturesFromGeoJSONStream(InputStream in, List<Field> fields, SQLiteDatabase db) throws IOException {
+        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+        reader.beginArray();
+        while (reader.hasNext()) {
+            //TODO: download attachments if needed
+            Feature feature = readGeoJSONFeature(reader, fields);
+            createFeature(feature, fields, db);
+        }
+        reader.endArray();
+        reader.close();
+    }
+
+    protected Feature readGeoJSONFeature(JsonReader reader, List<Field> fields){
+        return null;
+    }
 
     protected Style getDefaultStyle()
             throws Exception
@@ -700,7 +730,8 @@ public class VectorLayer
             String[] projection,
             String selection,
             String[] selectionArgs,
-            String sortOrder)
+            String sortOrder,
+            String limit)
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
@@ -713,7 +744,7 @@ public class VectorLayer
 
         try {
             return db.query(
-                    mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder);
+                    mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder, limit);
         } catch (SQLiteException e) {
             Log.d(TAG, e.getLocalizedMessage());
             return null;
@@ -726,7 +757,8 @@ public class VectorLayer
             String[] projection,
             String selection,
             String[] selectionArgs,
-            String sortOrder)
+            String sortOrder,
+            String limit)
     {
         Cursor cursor;
         MatrixCursor matrixCursor;
@@ -740,7 +772,7 @@ public class VectorLayer
                 if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = FIELD_ID + " ASC";
                 }
-                cursor = query(projection, selection, selectionArgs, sortOrder);
+                cursor = query(projection, selection, selectionArgs, sortOrder, limit);
                 if (null != cursor) {
                     cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 }
@@ -753,7 +785,7 @@ public class VectorLayer
                     selection = selection + " AND " + FIELD_ID + " = " + featureId;
                 }
 
-                cursor = query(projection, selection, selectionArgs, sortOrder);
+                cursor = query(projection, selection, selectionArgs, sortOrder, limit);
                 if (null != cursor) {
                     cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 }
