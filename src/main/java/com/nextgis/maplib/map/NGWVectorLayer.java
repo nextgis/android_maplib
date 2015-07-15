@@ -36,12 +36,11 @@ import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.text.TextUtils;
-import android.util.Base64;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -58,6 +57,7 @@ import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -77,7 +77,26 @@ import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
+import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
+import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
+import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.SYNC_ATTACH;
+import static com.nextgis.maplib.util.Constants.SYNC_ATTRIBUTES;
+import static com.nextgis.maplib.util.Constants.SYNC_DATA;
+import static com.nextgis.maplib.util.Constants.SYNC_GEOMETRY;
+import static com.nextgis.maplib.util.Constants.SYNC_NONE;
+import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class NGWVectorLayer

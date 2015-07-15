@@ -609,6 +609,8 @@ public class VectorLayer
 
     protected void setDefaultRenderer()
     {
+        if(null != mRenderer)
+            return;
         try {
             mRenderer = new SimpleFeatureRenderer(this, getDefaultStyle());
         } catch (Exception e) {
