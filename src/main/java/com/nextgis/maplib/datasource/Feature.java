@@ -259,8 +259,17 @@ public class Feature
                         }
                         break;
                     case FTDateTime:
-                        Date date = (Date) value;
-                        returnValues.put(field.getName(), date.getTime());
+                        if (value instanceof Date) {
+                            Date date = (Date) value;
+                            returnValues.put(field.getName(), date.getTime());
+                        }
+                        else if(value instanceof Long){
+                            returnValues.put(field.getName(), (long) value);
+                        }
+                        else if(value instanceof Calendar){
+                            Calendar cal = (Calendar)value;
+                            returnValues.put(field.getName(), cal.getTimeInMillis());
+                        }
                         break;
                     default:
                         break;
