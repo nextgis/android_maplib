@@ -1152,6 +1152,9 @@ public class NGWVectorLayer
             }
         }
 
+        if(!mCacheLoaded)
+            reloadCache();
+
         Log.d(TAG, "Get " + features.size() + " feature(s) from server");
 
         // analyse feature
@@ -1577,6 +1580,10 @@ public class NGWVectorLayer
             FeatureChanges.removeAllChanges(mChangeTableName);
         } else if (mSyncType == SYNC_NONE && 0 != (syncType & SYNC_DATA)) {
             mSyncType = syncType;
+
+            if(mCacheLoaded)
+                reloadCache();
+
             for (VectorCacheItem cacheItem : mVectorCacheItems) {
                 long id = cacheItem.getId();
                 addChange(id, CHANGE_OPERATION_NEW);

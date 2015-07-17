@@ -130,6 +130,7 @@ public class VectorLayer
     protected Map<String, Field>    mFields;
     protected VectorCacheItem       mTempCacheItem;
     protected int                   mUniqId;
+    protected boolean mCacheLoaded;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
@@ -180,6 +181,7 @@ public class VectorLayer
     {
         super(context, path);
 
+        mCacheLoaded = false;
 
         if (!(context instanceof IGISApplication)) {
             throw new IllegalArgumentException(
@@ -490,6 +492,10 @@ public class VectorLayer
             throws SQLiteException{
         //1. check if such id already used
         // maybe was added previous session
+
+        if(!mCacheLoaded)
+            reloadCache();
+
         for(VectorCacheItem item : mVectorCacheItems){
             if(item.getId() == feature.getId())
                 return;
@@ -707,7 +713,15 @@ public class VectorLayer
 
         if (mIsInitialized) {
             mExtents = new GeoEnvelope();
-            reloadCache();
+            if(mIsVisible) {
+                // load the layer contents async
+                Thread t = new Thread(new Runnable() {
+                    public void run() {
+                        reloadCache();
+                    }
+                });
+                t.start();
+            }
         }
 
         if (jsonObject.has(JSON_RENDERERPROPS_KEY)) {
@@ -718,7 +732,7 @@ public class VectorLayer
     }
 
 
-    protected void reloadCache()
+    protected synchronized void reloadCache()
             throws SQLiteException
     {
         //load vector cache
@@ -745,6 +759,9 @@ public class VectorLayer
             }
             cursor.close();
         }
+
+        mCacheLoaded = true;
+        notifyLayerChanged();
     }
 
 
@@ -1629,15 +1646,17 @@ public class VectorLayer
 
     public int getCount()
     {
-        if (null != mVectorCacheItems) {
-            return mVectorCacheItems.size();
-        }
-        return 0;
+        if(!mCacheLoaded)
+            reloadCache();
+
+        return mVectorCacheItems.size();
     }
 
 
     public List<VectorCacheItem> query(GeoEnvelope envelope)
     {
+        if(!mCacheLoaded)
+            reloadCache();
         List<VectorCacheItem> ret = new ArrayList<>();
         for (VectorCacheItem cacheItem : mVectorCacheItems) {
             GeoGeometry geom = cacheItem.getGeoGeometry();
@@ -1746,6 +1765,9 @@ public class VectorLayer
 
     public VectorCacheItem getCacheItem(long id)
     {
+        if(!mCacheLoaded)
+            reloadCache();
+
         for (VectorCacheItem cacheItem : mVectorCacheItems) {
             if (cacheItem.getId() == id) {
                 return cacheItem;
@@ -1757,6 +1779,9 @@ public class VectorLayer
 
     public void deleteCacheItem(long id)
     {
+        if(!mCacheLoaded)
+            reloadCache();
+
         Iterator<VectorCacheItem> cacheItemIterator = mVectorCacheItems.iterator();
         while (cacheItemIterator.hasNext()) {
             VectorCacheItem cacheItem = cacheItemIterator.next();
@@ -1909,5 +1934,19 @@ public class VectorLayer
     public int getUniqId()
     {
         return mUniqId;
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        if(mIsVisible) {
+            // load the layer contents async
+            Thread t = new Thread(new Runnable() {
+                public void run() {
+                    reloadCache();
+                }
+            });
+            t.start();
+        }
     }
 }

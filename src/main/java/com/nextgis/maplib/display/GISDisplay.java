@@ -370,7 +370,7 @@ public class GISDisplay
             final GeoPoint pt,
             Paint paint)
     {
-        if (null == mMainCanvas) {
+        if (null == mMainCanvas | null == bitmap) {
             return;
         }
 

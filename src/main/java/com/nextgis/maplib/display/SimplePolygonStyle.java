@@ -145,8 +145,10 @@ public class SimplePolygonStyle
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
-        mFill = jsonObject.getBoolean(JSON_FILL_KEY);
+        if(jsonObject.has(JSON_WIDTH_KEY))
+            mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
+        if(jsonObject.has(JSON_FILL_KEY))
+            mFill = jsonObject.getBoolean(JSON_FILL_KEY);
     }
 
 
