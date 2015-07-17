@@ -65,6 +65,7 @@ public class Layer
     {
         mPath = path;
         mContext = context;
+        mExtents = new GeoEnvelope();
     }
 
 
@@ -154,7 +155,7 @@ public class Layer
     @Override
     public float getMaxZoom()
     {
-        return mMaxZoom == mMinZoom ? 25 : mMaxZoom;
+        return mMaxZoom == mMinZoom ? 100 : mMaxZoom;
     }
 
 

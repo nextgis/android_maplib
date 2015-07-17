@@ -44,7 +44,7 @@ public class GeoEnvelope
     }
 
 
-    protected void unInit()
+    public void unInit()
     {
         mMinX = null;
         mMaxX = null;

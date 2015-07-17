@@ -90,6 +90,7 @@ import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
 import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
 import static com.nextgis.maplib.util.Constants.FIELD_ID;
 import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
+import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXX_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
@@ -102,6 +103,7 @@ import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
 import static com.nextgis.maplib.util.GeoConstants.FTInteger;
 import static com.nextgis.maplib.util.GeoConstants.FTReal;
 import static com.nextgis.maplib.util.GeoConstants.FTString;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_BBOX;
 import static com.nextgis.maplib.util.GeoConstants.GEOJSON_CRS;
 import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRY;
 import static com.nextgis.maplib.util.GeoConstants.GEOJSON_ID;
@@ -464,7 +466,6 @@ public class VectorLayer
         db.execSQL(tableCreate);
 
         mGeometryType = geometryType;
-        mExtents = new GeoEnvelope();
 
         for (Feature feature : features) {
             createFeature(feature, fields, db);
@@ -562,13 +563,15 @@ public class VectorLayer
             return;
         }
         //update bbox
-        mExtents.merge(feature.getGeometry().getEnvelope());
+        updateExtent(feature.getGeometry().getEnvelope());
         //add to cache
         mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
 
         if (mGeometryType == NOT_FOUND || mGeometryType != feature.getGeometry().getType()) {
             mGeometryType = feature.getGeometry().getType();
         }
+
+        save();
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -687,8 +690,23 @@ public class VectorLayer
 
         if (null != mRenderer && mRenderer instanceof IJSONStore) {
             IJSONStore jsonStore = (IJSONStore) mRenderer;
-            rootConfig.put(JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
+            rootConfig.put(Constants.JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
         }
+
+        if(mCacheLoaded){
+            mExtents.unInit();
+            for(VectorCacheItem item : mVectorCacheItems){
+                updateExtent(item.getGeoGeometry().getEnvelope());
+            }
+        }
+
+        if(mExtents.isInit()) {
+            rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
+            rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
+            rootConfig.put(Constants.JSON_BBOX_MAXY_KEY, mExtents.getMaxY());
+            rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
+        }
+
         return rootConfig;
     }
 
@@ -711,8 +729,16 @@ public class VectorLayer
             }
         }
 
+        if (jsonObject.has(Constants.JSON_BBOX_MAXX_KEY))
+            mExtents.setMaxX(jsonObject.getDouble(Constants.JSON_BBOX_MAXX_KEY));
+        if (jsonObject.has(Constants.JSON_BBOX_MAXY_KEY))
+            mExtents.setMaxY(jsonObject.getDouble(Constants.JSON_BBOX_MAXY_KEY));
+        if (jsonObject.has(Constants.JSON_BBOX_MINX_KEY))
+            mExtents.setMinX(jsonObject.getDouble(Constants.JSON_BBOX_MINX_KEY));
+        if (jsonObject.has(Constants.JSON_BBOX_MINY_KEY))
+            mExtents.setMinY(jsonObject.getDouble(Constants.JSON_BBOX_MINY_KEY));
+
         if (mIsInitialized) {
-            mExtents = new GeoEnvelope();
             if(mIsVisible) {
                 // load the layer contents async
                 Thread t = new Thread(new Runnable() {
@@ -732,10 +758,11 @@ public class VectorLayer
     }
 
 
-    protected synchronized void reloadCache()
-            throws SQLiteException
+    protected synchronized void reloadCache() throws SQLiteException
     {
         //load vector cache
+        mExtents.unInit();
+        mCacheLoaded = false;
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
@@ -747,9 +774,8 @@ public class VectorLayer
                         GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
                         if (null != geoGeometry) {
                             int nId = cursor.getInt(0);
-                            mExtents.merge(geoGeometry.getEnvelope());
                             mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
-
+                            updateExtent(geoGeometry.getEnvelope());
                             updateUniqId(nId);
                         }
                     } catch (IOException | ClassNotFoundException e) {

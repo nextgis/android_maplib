@@ -48,10 +48,10 @@ public class LocalTMSLayer
 
 
     protected LocalTMSLayer(
-            Context contex,
+            Context context,
             File path)
     {
-        super(contex, path);
+        super(context, path);
 
         mLayerType = LAYERTYPE_LOCAL_TMS;
     }
