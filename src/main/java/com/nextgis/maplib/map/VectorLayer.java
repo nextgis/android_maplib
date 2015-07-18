@@ -760,6 +760,9 @@ public class VectorLayer
 
     protected synchronized void reloadCache() throws SQLiteException
     {
+        if(!mIsInitialized)
+            return;
+
         //load vector cache
         mExtents.unInit();
         mCacheLoaded = false;

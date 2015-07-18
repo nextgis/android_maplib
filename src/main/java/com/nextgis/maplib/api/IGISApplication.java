@@ -70,6 +70,12 @@ public interface IGISApplication
      */
     String getAuthority();
 
+    boolean addAccount(String name, String url, String login, String password, String token);
+
+    void setUserData(String name, String key, String value);
+
+    void setPassword(String name,String value);
+
     /**
      * @param accountName
      *         Account name
