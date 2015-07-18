@@ -26,7 +26,11 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 
 
 /**
@@ -204,5 +209,44 @@ public class LocalTMSLayer
         {
             return !(nX < minX || nX > maxX) && !(nY < minY || nY > maxY);
         }
+    }
+
+    @Override
+    public GeoEnvelope getExtents() {
+        Integer firstZoom = 100;
+        for(Integer key: mLimits.keySet()){
+            if(key < firstZoom)
+                firstZoom = key;
+        }
+
+        TileCacheLevelDescItem item = mLimits.get(firstZoom);
+
+        if(null == item)
+            return super.getExtents();
+
+        double mapTileCount = 1 << firstZoom;
+        double mapTileSize = GeoConstants.MERCATOR_MAX * 2 / mapTileCount;
+
+        GeoEnvelope env = new GeoEnvelope();
+        env.setMinX(item.getMinX() * mapTileSize - GeoConstants.MERCATOR_MAX);
+        if(item.getMinX() == item.getMaxX())
+            env.setMaxX((item.getMaxX() +1) * mapTileSize - GeoConstants.MERCATOR_MAX);
+        else
+            env.setMaxX(item.getMaxX() * mapTileSize - GeoConstants.MERCATOR_MAX);
+
+        if(mTMSType == GeoConstants.TMSTYPE_OSM) {
+            if(item.getMinY() == item.getMaxY())
+                env.setMinY(GeoConstants.MERCATOR_MAX - (item.getMaxY() + 1) * mapTileSize);
+            else
+                env.setMinY(GeoConstants.MERCATOR_MAX - item.getMaxY() * mapTileSize);
+            env.setMaxY(GeoConstants.MERCATOR_MAX - item.getMinY() * mapTileSize);
+        } else {
+            env.setMinY(item.getMinY() * mapTileSize - GeoConstants.MERCATOR_MAX);
+            if(item.getMinY() == item.getMaxY())
+                env.setMaxY((item.getMaxY() + 1) * mapTileSize - GeoConstants.MERCATOR_MAX);
+            else
+                env.setMaxY(item.getMaxY() * mapTileSize - GeoConstants.MERCATOR_MAX);
+        }
+        return env;
     }
 }
