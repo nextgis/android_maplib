@@ -38,7 +38,7 @@ public interface Constants
     String APP_USER_AGENT     = "NextGIS Mobile";
     int    TIMEOUT_CONNECTION = 3000;
     int    TIMEOUT_SOKET      = 30000;
-    int    IO_BUFFER_SIZE     = 32 * 1024; //32k
+    int    IO_BUFFER_SIZE     = 8 * 1024; //8k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
     /**
