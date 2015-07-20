@@ -29,6 +29,17 @@
         android:allowBackup="true"
         android:label="@string/app_name"
         >
+
+        <service
+            android:process=":tracks"
+            android:name=".service.TrackerService"
+            />
+
+        <service
+            android:process=":tiledownload"
+            android:name=".service.TileDownloadService"
+            />
+
     </application>
 
 </manifest>
