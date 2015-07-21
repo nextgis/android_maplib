@@ -29,9 +29,19 @@ import org.json.JSONObject;
 
 public interface IJSONStore
 {
-    public JSONObject toJSON()
+    /**
+     * Store object in json
+     * @return json object with stored data
+     * @throws JSONException
+     */
+    JSONObject toJSON()
             throws JSONException;
 
-    public void fromJSON(JSONObject jsonObject)
+    /**
+     * Restore object from json
+     * @param jsonObject where the stored data are
+     * @throws JSONException
+     */
+    void fromJSON(JSONObject jsonObject)
             throws JSONException;
 }

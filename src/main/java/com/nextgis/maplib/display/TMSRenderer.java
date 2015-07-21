@@ -206,13 +206,13 @@ public class TMSRenderer
             remoteTMSLayer.onPrepare();
         }
 
-        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display, display.getBounds(), zoom);
+        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
             return;
         }
 
-        int threadCount = DRAWING_SEPARATE_THREADS;//tmsLayer.getMaxThreadCount();
+        int threadCount = DRAWING_SEPARATE_THREADS;
         synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
@@ -275,6 +275,7 @@ public class TMSRenderer
                         }
                     });
         }
+        mDrawThreadPool.shutdown();
     }
 
 
@@ -285,13 +286,14 @@ public class TMSRenderer
             synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
             }
-            /*try {
+            try {
                 mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
+                mDrawThreadPool.purge();
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 mDrawThreadPool.shutdownNow();
                 Thread.currentThread().interrupt();
-            }*/
+            }
         }
     }
 
