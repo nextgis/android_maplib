@@ -96,9 +96,84 @@ public class RemoteTMSLayer
         }
         Log.d(
                 TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
-                     getMaxThreadCount());
+                        getMaxThreadCount());
     }
 
+    public void downloadTile(TileItem tile){
+        if (null == tile) {
+            return;
+        }
+
+        // try to get tile from local cache
+        File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
+        boolean exist = tilePath.exists();
+        if (exist && System.currentTimeMillis() - tilePath.lastModified() <
+                DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
+            return;
+        }
+
+        if (!mNet.isNetworkAvailable()) {
+            return;
+        }
+
+        // try to get tile from remote
+        String url = tile.toString(getURLSubdomain());
+        Log.d(TAG, "url: " + url);
+        try {
+
+            final HttpGet get = new HttpGet(url);
+
+            // basic auth
+            // Here we must use getLogin() and getPassword() for subclasses
+            // which override these methods
+            String basicAuth  = NetworkUtil.getHTTPBaseAuth(getLogin(), getPassword());
+            if (null != basicAuth) {
+                get.setHeader("Authorization", basicAuth);
+            }
+            get.setHeader("Accept", "*/*");
+
+            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
+            mNet.setProxy(HTTPClient, url);
+            if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) {
+                return;
+            }
+
+            final HttpResponse response = HTTPClient.execute(get);
+            mAvailable.release();
+
+            // Check to see if we got success
+            final org.apache.http.StatusLine line = response.getStatusLine();
+            if (line.getStatusCode() != 200) {
+                Log.d(
+                        TAG, "Problem downloading MapTile: " + url + " HTTP response: " +
+                                line);
+                return;
+            }
+
+            final HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                Log.d(TAG, "No content downloading MapTile: " + url);
+                return;
+            }
+
+            FileUtil.createDir(tilePath.getParentFile());
+
+            InputStream input = entity.getContent();
+            OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
+            byte data[] = new byte[IO_BUFFER_SIZE];
+
+            FileUtil.copyStream(input, output, data, IO_BUFFER_SIZE);
+
+            output.close();
+            input.close();
+
+        } catch (InterruptedException | IOException | IllegalArgumentException e) {
+            e.printStackTrace();
+            Log.d(
+                    TAG, "Problem downloading MapTile: " + url + " Error: " +
+                            e.getLocalizedMessage());
+        }
+    }
 
     @Override
     public Bitmap getBitmap(TileItem tile)
@@ -145,12 +220,11 @@ public class RemoteTMSLayer
             // basic auth
             // Here we must use getLogin() and getPassword() for subclasses
             // which override these methods
-            if (!TextUtils.isEmpty(getLogin()) && !TextUtils.isEmpty(getPassword())) {
-                get.setHeader("Accept", "*/*");
-                final String basicAuth = "Basic " + Base64.encodeToString(
-                        (getLogin() + ":" + getPassword()).getBytes(), Base64.NO_WRAP);
+            String basicAuth  = NetworkUtil.getHTTPBaseAuth(getLogin(), getPassword());
+            if (null != basicAuth) {
                 get.setHeader("Authorization", basicAuth);
             }
+            get.setHeader("Accept", "*/*");
 
             final DefaultHttpClient HTTPClient = mNet.getHttpClient();
             mNet.setProxy(HTTPClient, url);

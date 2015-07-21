@@ -29,7 +29,6 @@ import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.TileItem;
-import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.util.Constants;
 import org.json.JSONException;
@@ -83,7 +82,7 @@ public abstract class TMSLayer
 
 
     public final List<TileItem> getTielsForBounds(
-            GISDisplay display,
+            GeoEnvelope fullBounds,
             GeoEnvelope bounds,
             double zoom)
     {
@@ -91,7 +90,6 @@ public abstract class TMSLayer
         int nZoom = (int) zoom;
         int tilesInMap = 1 << nZoom;
         double halfTilesInMap = tilesInMap / 2;
-        GeoEnvelope fullBounds = display.getFullBounds();
         GeoPoint mapTileSize =
                 new GeoPoint(fullBounds.width() / tilesInMap, fullBounds.height() / tilesInMap);
 
