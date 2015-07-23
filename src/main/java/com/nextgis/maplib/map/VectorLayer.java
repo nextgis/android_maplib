@@ -1073,13 +1073,35 @@ public class VectorLayer
         if (!contentValues.containsKey(FIELD_GEOM)) {
             return NOT_FOUND;
         }
+
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
             throw new IllegalArgumentException(
                     "The map should extends MapContentProviderHelper or inherited");
         }
+
+        if (!contentValues.containsKey(FIELD_ID)) {
+            String columns[] = {FIELD_ID};
+            String sortOrder = FIELD_ID + " DESC";
+            Cursor cursor = query(columns, null, null, sortOrder, "1");
+
+            long id = MIN_LOCAL_FEATURE_ID;
+
+            if (cursor.moveToFirst()) {
+                id = cursor.getLong(0);
+                if (MIN_LOCAL_FEATURE_ID > id) {
+                    id = MIN_LOCAL_FEATURE_ID;
+                } else {
+                    ++id;
+                }
+            }
+
+            contentValues.put(FIELD_ID, id);
+        }
+
         SQLiteDatabase db = map.getDatabase(false);
         long rowID = db.insert(mPath.getName(), null, contentValues);
+
         if (rowID != NOT_FOUND) {
             Intent notify = new Intent(NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowID);
