@@ -372,6 +372,8 @@ public class NetworkUtil
 
         int responseCode = conn.getResponseCode();
         if (responseCode != 200) {
+            Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " +
+                    responseCode);
             return null;
         }
 
