@@ -22,8 +22,6 @@
  */
 package com.nextgis.maplib.util;
 
-import android.os.*;
-
 import java.util.concurrent.TimeUnit;
 
 
@@ -42,6 +40,8 @@ public interface Constants
     int    TIMEOUT_SOKET      = 30000;
     int    IO_BUFFER_SIZE     = 8 * 1024; //8k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
+
+    long MIN_LOCAL_FEATURE_ID = 10000000;
 
     /**
      * NGW account type

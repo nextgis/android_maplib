@@ -41,7 +41,6 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IJSONStore;
@@ -63,7 +62,6 @@ import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -82,42 +80,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
-import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXX_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
-import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.VECTOR_FORBIDDEN_FIELDS;
-import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
-import static com.nextgis.maplib.util.GeoConstants.CRS_WGS84;
-import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
-import static com.nextgis.maplib.util.GeoConstants.FTInteger;
-import static com.nextgis.maplib.util.GeoConstants.FTReal;
-import static com.nextgis.maplib.util.GeoConstants.FTString;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_BBOX;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_CRS;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRY;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_ID;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_NAME;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_PROPERTIES;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_FEATURES;
-import static com.nextgis.maplib.util.GeoConstants.GTLineString;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
-import static com.nextgis.maplib.util.GeoConstants.GTNone;
-import static com.nextgis.maplib.util.GeoConstants.GTPoint;
-import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
+import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.*;
 
 
 public class VectorLayer
@@ -131,7 +96,7 @@ public class VectorLayer
     protected String                mAuthority;
     protected Map<String, Field>    mFields;
     protected VectorCacheItem       mTempCacheItem;
-    protected int                   mUniqId;
+    protected long                  mUniqId;
     protected boolean mCacheLoaded;
 
     protected static String CONTENT_TYPE;
@@ -776,7 +741,7 @@ public class VectorLayer
                     try {
                         GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
                         if (null != geoGeometry) {
-                            int nId = cursor.getInt(0);
+                            long nId = cursor.getLong(0);
                             mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
                             updateExtent(geoGeometry.getEnvelope());
                             updateUniqId(nId);
@@ -1095,7 +1060,7 @@ public class VectorLayer
     }
 
 
-    protected void updateUniqId(int id)
+    protected void updateUniqId(long id)
     {
         if (mUniqId <= id) {
             mUniqId = id + 1;
@@ -1122,7 +1087,7 @@ public class VectorLayer
             getContext().sendBroadcast(notify);
         }
 
-        updateUniqId((int) rowID);
+        updateUniqId(rowID);
 
         return rowID;
     }
@@ -1168,7 +1133,8 @@ public class VectorLayer
                     long featureIdL = Long.parseLong(featureId);
                     //get attach path
                     File attachFolder = new File(mPath, featureId);
-                    long maxId = 1000; //we start files from 1000 to not overlap with NGW files id's
+                    //we start files from MIN_LOCAL_FEATURE_ID to not overlap with NGW files id's
+                    long maxId = MIN_LOCAL_FEATURE_ID;
                     if (attachFolder.isDirectory()) {
                         for (File attachFile : attachFolder.listFiles()) {
                             if (attachFile.getName().equals(META)) {
@@ -1411,7 +1377,7 @@ public class VectorLayer
                     }
 
                     if (values.containsKey(FIELD_ID)) {
-                        updateUniqId(values.getAsLong(FIELD_ID).intValue());
+                        updateUniqId(values.getAsLong(FIELD_ID));
 
                         notify.putExtra(FIELD_OLD_ID, rowID);
                         notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
@@ -1960,7 +1926,7 @@ public class VectorLayer
     }
 
 
-    public int getUniqId()
+    public long getUniqId()
     {
         return mUniqId;
     }

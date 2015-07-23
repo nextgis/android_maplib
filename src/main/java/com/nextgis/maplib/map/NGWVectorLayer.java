@@ -1612,7 +1612,7 @@ public class NGWVectorLayer
                             continue;
                         }
                         Long attachIdL = Long.parseLong(attachId);
-                        if (attachIdL >= 1000) {
+                        if (attachIdL >= MIN_LOCAL_FEATURE_ID) {
                             addChange(id, attachIdL, CHANGE_OPERATION_NEW);
                         }
                     }
