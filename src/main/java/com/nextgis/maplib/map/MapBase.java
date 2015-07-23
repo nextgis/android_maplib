@@ -25,6 +25,7 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.util.FileUtil;
 
 import java.io.File;
@@ -126,6 +127,21 @@ public class MapBase
             mPath = newPath;
         }
         load();
+    }
+
+    public GeoEnvelope getFullBounds(){
+        if(null != mDisplay){
+            return mDisplay.getFullBounds();
+        }
+        return new GeoEnvelope();
+    }
+
+    public GeoEnvelope getCurrentBounds()
+    {
+        if (mDisplay != null) {
+            return mDisplay.getBounds();
+        }
+        return null;
     }
 
 }

@@ -32,9 +32,5 @@
     <string name="E">E</string>
     <string name="W">W</string>
     <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
-    <string name="tracks_running">Track is recording now</string>
-    <string name="tracks_title">Track %s</string>
-    <string name="tracks_stop">Stop</string>
-    <string name="tracks_open">Open</string>
     <string name="tracks">My tracks</string>
 </resources>

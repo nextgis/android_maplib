@@ -154,6 +154,7 @@ public class SimpleFeatureRenderer
                     });
 
         }
+        mDrawThreadPool.shutdown();
     }
 
 

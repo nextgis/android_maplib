@@ -22,6 +22,8 @@
  */
 package com.nextgis.maplib.util;
 
+import android.os.*;
+
 import java.util.concurrent.TimeUnit;
 
 
@@ -38,7 +40,7 @@ public interface Constants
     String APP_USER_AGENT     = "NextGIS Mobile";
     int    TIMEOUT_CONNECTION = 3000;
     int    TIMEOUT_SOKET      = 30000;
-    int    IO_BUFFER_SIZE     = 32 * 1024; //32k
+    int    IO_BUFFER_SIZE     = 8 * 1024; //8k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
     /**
@@ -59,7 +61,8 @@ public interface Constants
     //from 1 and higher
     //As more than more memory needed
     float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
-    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
+    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 6;
+    int   DEFAULT_DOWNLOAD_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_BACKGROUND + 5;
 
     int DEFAULT_TILE_SIZE = 256;
 

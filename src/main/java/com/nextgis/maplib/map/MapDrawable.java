@@ -170,25 +170,13 @@ public class MapDrawable
     }
 
 
-    @Override
-    public GeoEnvelope getFullBounds()
+    public GeoEnvelope getFullScreenBounds()
     {
         if (mDisplay != null) {
             return mDisplay.getScreenBounds();
         }
         return null;
     }
-
-
-    @Override
-    public GeoEnvelope getCurrentBounds()
-    {
-        if (mDisplay != null) {
-            return mDisplay.getBounds();
-        }
-        return null;
-    }
-
 
     @Override
     public GeoEnvelope getLimits()
