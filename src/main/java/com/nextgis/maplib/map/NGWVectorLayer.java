@@ -40,7 +40,6 @@ import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
 import android.widget.Toast;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -57,7 +56,6 @@ import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -76,27 +74,9 @@ import java.util.ConcurrentModificationException;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
-import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
-import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
-import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.SYNC_ATTACH;
-import static com.nextgis.maplib.util.Constants.SYNC_ATTRIBUTES;
-import static com.nextgis.maplib.util.Constants.SYNC_DATA;
-import static com.nextgis.maplib.util.Constants.SYNC_GEOMETRY;
-import static com.nextgis.maplib.util.Constants.SYNC_NONE;
-import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class NGWVectorLayer
@@ -637,12 +617,14 @@ public class NGWVectorLayer
                 return GeoConstants.FTString;
             case "INTEGER":
                 return GeoConstants.FTInteger;
-            case "DATE":
-            case "DATETIME":
-            case "TIME":
-                return GeoConstants.FTDateTime;
             case "REAL":
                 return GeoConstants.FTReal;
+            case "DATETIME":
+                return GeoConstants.FTDateTime;
+            case "DATE":
+                return GeoConstants.FTDate;
+            case "TIME":
+                return GeoConstants.FTTime;
             default:
                 return NOT_FOUND;
         }
@@ -843,7 +825,7 @@ public class NGWVectorLayer
                     if (deleteFeatureOnServer(changeFeatureId, syncResult)) {
                         FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
                     } else {
-                        Log.d(TAG, "proceed change failed");
+                        Log.d(TAG, "proceed deleteFeatureOnServer() failed");
                     }
 
                 } else if (0 != (changeOperation & CHANGE_OPERATION_NEW)) {
@@ -853,7 +835,7 @@ public class NGWVectorLayer
                                 mChangeTableName, changeFeatureId, CHANGE_OPERATION_CHANGED,
                                 lastChangeRecordId);
                     } else {
-                        Log.d(TAG, "proceed change failed");
+                        Log.d(TAG, "proceed addFeatureOnServer() failed");
                     }
 
                 } else if (0 != (changeOperation & CHANGE_OPERATION_CHANGED)) {
@@ -863,7 +845,7 @@ public class NGWVectorLayer
                                 mChangeTableName, changeFeatureId, CHANGE_OPERATION_CHANGED,
                                 lastChangeRecordId);
                     } else {
-                        Log.d(TAG, "proceed change failed");
+                        Log.d(TAG, "proceed changeFeatureOnServer() failed");
                     }
                 }
             }
@@ -875,7 +857,7 @@ public class NGWVectorLayer
                     if (deleteAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
                         FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
                     } else {
-                        Log.d(TAG, "proceed change failed");
+                        Log.d(TAG, "proceed deleteAttachOnServer() failed");
                     }
 
                 } else if (changeAttachOperation == CHANGE_OPERATION_NEW) {
@@ -885,7 +867,7 @@ public class NGWVectorLayer
                                 mChangeTableName, changeFeatureId, changeAttachId,
                                 CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                     } else {
-                        Log.d(TAG, "proceed change failed");
+                        Log.d(TAG, "proceed sendAttachOnServer() failed");
                     }
 
                 } else if (changeAttachOperation == CHANGE_OPERATION_CHANGED) {
@@ -894,7 +876,7 @@ public class NGWVectorLayer
                                 mChangeTableName, changeFeatureId, changeAttachId,
                                 CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                     } else {
-                        Log.d(TAG, "proceed change failed");
+                        Log.d(TAG, "proceed changeAttachOnServer() failed");
                     }
                 }
             }
@@ -1010,12 +992,15 @@ public class NGWVectorLayer
             }
             JSONObject result = new JSONObject(data);
             if (!result.has("upload_meta")) {
+                Log.d(TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " +
+                        result.toString());
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
 
             JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
             if (uploadMetaArray.length() == 0) {
+                Log.d(TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -1024,9 +1009,12 @@ public class NGWVectorLayer
             postJsonData.put("file_upload", uploadMetaArray.get(0));
             postJsonData.put("description", attach.getDescription());
 
+            String postload = postJsonData.toString();
+            Log.d(TAG, "postload: " + postload);
+
             data = mNet.post(
                     NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId),
-                    postJsonData.toString(), mCacheLogin, mCachePassword);
+                    postload, mCacheLogin, mCachePassword);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1034,6 +1022,9 @@ public class NGWVectorLayer
 
             result = new JSONObject(data);
             if (!result.has(JSON_ID_KEY)) {
+                Log.d(
+                        TAG, "Problem sendAttachOnServer(), result has not ID key, result: " +
+                        result.toString());
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -1402,6 +1393,7 @@ public class NGWVectorLayer
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
+            Log.d(TAG, "payload: " + payload);
             String data = mNet.post(
                     NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere), payload, mCacheLogin,
                     mCachePassword);
@@ -1521,16 +1513,40 @@ public class NGWVectorLayer
                         }
                         break;
                     case GeoConstants.FTDateTime:
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.setTimeInMillis(cursor.getLong(i));
-                        int nYear = calendar.get(Calendar.YEAR);
-                        int nMonth = calendar.get(Calendar.MONTH) + 1;
-                        int nDay = calendar.get(Calendar.DAY_OF_MONTH);
-                        JSONObject date = new JSONObject();
-                        date.put("year", nYear);
-                        date.put("month", nMonth);
-                        date.put("day", nDay);
-                        valueObject.put(name, date);
+                        TimeZone timeZoneDT = TimeZone.getDefault();
+                        timeZoneDT.setRawOffset(0); // set to UTC
+                        Calendar calendarDT = Calendar.getInstance(timeZoneDT);
+                        calendarDT.setTimeInMillis(cursor.getLong(i));
+                        JSONObject jsonDateTime = new JSONObject();
+                        jsonDateTime.put("year", calendarDT.get(Calendar.YEAR));
+                        jsonDateTime.put("month", calendarDT.get(Calendar.MONTH) + 1);
+                        jsonDateTime.put("day", calendarDT.get(Calendar.DAY_OF_MONTH));
+                        jsonDateTime.put("hour", calendarDT.get(Calendar.HOUR_OF_DAY));
+                        jsonDateTime.put("minute", calendarDT.get(Calendar.MINUTE));
+                        jsonDateTime.put("second", calendarDT.get(Calendar.SECOND));
+                        valueObject.put(name, jsonDateTime);
+                        break;
+                    case GeoConstants.FTDate:
+                        TimeZone timeZoneD = TimeZone.getDefault();
+                        timeZoneD.setRawOffset(0); // set to UTC
+                        Calendar calendarD = Calendar.getInstance(timeZoneD);
+                        calendarD.setTimeInMillis(cursor.getLong(i));
+                        JSONObject jsonDate = new JSONObject();
+                        jsonDate.put("year", calendarD.get(Calendar.YEAR));
+                        jsonDate.put("month", calendarD.get(Calendar.MONTH) + 1);
+                        jsonDate.put("day", calendarD.get(Calendar.DAY_OF_MONTH));
+                        valueObject.put(name, jsonDate);
+                        break;
+                    case GeoConstants.FTTime:
+                        TimeZone timeZoneT = TimeZone.getDefault();
+                        timeZoneT.setRawOffset(0); // set to UTC
+                        Calendar calendarT = Calendar.getInstance(timeZoneT);
+                        calendarT.setTimeInMillis(cursor.getLong(i));
+                        JSONObject jsonTime = new JSONObject();
+                        jsonTime.put("hour", calendarT.get(Calendar.HOUR_OF_DAY));
+                        jsonTime.put("minute", calendarT.get(Calendar.MINUTE));
+                        jsonTime.put("second", calendarT.get(Calendar.SECOND));
+                        valueObject.put(name, jsonTime);
                         break;
                     default:
                         break;

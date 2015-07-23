@@ -62,7 +62,7 @@ public interface GeoConstants
     int GTNoneCheck               = 1 << 10;
     int GTAnyCheck                =
             GTMultiPointCheck | GTPointCheck | GTLineStringCheck | GTMultiLineStringCheck |
-            GTPolygonCheck | GTMultiPolygonCheck | GTGeometryCollectionCheck;
+                    GTPolygonCheck | GTMultiPolygonCheck | GTGeometryCollectionCheck;
 
     /**
      * geojson see http://geojson.org/geojson-spec.html
@@ -98,7 +98,9 @@ public interface GeoConstants
     int FTString      = 4;
     int FTStringList  = 5;
     int FTBinary      = 8;
-    int FTDateTime    = 11;
+    int FTDateTime    = 10;
+    int FTDate        = 11;
+    int FTTime        = 12;
 
     /**
      * CRS
