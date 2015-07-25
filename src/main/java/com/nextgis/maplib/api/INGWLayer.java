@@ -23,11 +23,35 @@
 
 package com.nextgis.maplib.api;
 
+import android.content.SyncResult;
+
 public interface INGWLayer
 {
-    public String getAccountName();
+    /**
+     * Return the account connected with this layer
+     * @return account name
+     */
+    String getAccountName();
 
-    public void setAccountName(String account);
+    /**
+     * Set the account connected with this layer
+     * @param account Name
+     */
+    void setAccountName(String account);
 
-    public void setAccountCacheData();
+    /**
+     * cache account data for fast access
+     */
+    void setAccountCacheData();
+
+    /**
+     * Sync layer data with NextGIS Web
+     * @param authority the account authority
+     * @param syncResult object for storing results of operations
+     */
+    void sync( String authority, SyncResult syncResult);
+
+    long getRemoteId();
+
+    void setRemoteId(long remoteId);
 }

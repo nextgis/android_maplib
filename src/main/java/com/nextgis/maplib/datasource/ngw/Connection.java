@@ -80,6 +80,7 @@ public class Connection
     public final static int NGWResourceTypeConnection        = 1 << 13;
     public final static int NGWResourceTypeConnections       = 1 << 14;
     public final static int NGWResourceTypeWMSClient         = 1 << 15;
+    public final static int NGWResourceTypeLookupTable       = 1 << 16;
 
 
     public Connection(
@@ -223,6 +224,8 @@ public class Connection
                 return NGWResourceTypeFileSet;
             case "wmsclient_layer":
                 return NGWResourceTypeWMSClient;
+            case "lookup_table":
+                return NGWResourceTypeLookupTable;
             default:
                 return NGWResourceTypeNone;
         }

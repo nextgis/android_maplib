@@ -38,16 +38,16 @@ import android.os.Bundle;
 import android.util.Log;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
+import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.map.LayerGroup;
 import com.nextgis.maplib.map.MapContentProviderHelper;
-import com.nextgis.maplib.map.NGWVectorLayer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.SettingsConstants;
 
 import static com.nextgis.maplib.util.Constants.NGW_ACCOUNT_TYPE;
 import static com.nextgis.maplib.util.Constants.TAG;
 
-/*
+/* useful links
 https://udinic.wordpress.com/2013/07/24/write-your-own-android-sync-adapter/#more-507
 http://www.fussylogic.co.uk/blog/?p=1031
 http://www.fussylogic.co.uk/blog/?p=1035
@@ -58,8 +58,7 @@ http://habrahabr.ru/company/e-Legion/blog/206210/
 http://habrahabr.ru/company/e-Legion/blog/216857/
 http://stackoverflow.com/questions/5486228/how-do-we-control-an-android-sync-adapter-preference
 https://books.google.ru/books?id=SXlMAQAAQBAJ&pg=PA158&lpg=PA158&dq=android:syncAdapterSettingsAction&source=bl&ots=T832S7VvKb&sig=vgNNDHfwyMzvINeHfdfDhu9tREs&hl=ru&sa=X&ei=YviqVIPMF9DgaPOUgOgP&ved=0CFUQ6AEwBw#v=onepage&q=android%3AsyncAdapterSettingsAction&f=false
-
- */
+*/
 
 
 public class SyncAdapter
@@ -148,13 +147,12 @@ public class SyncAdapter
             ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
                 sync((LayerGroup) layer, authority, syncResult);
-            } else if (layer instanceof NGWVectorLayer) {
-                NGWVectorLayer ngwVectorLayer = (NGWVectorLayer) layer;
-                ngwVectorLayer.sync(authority, syncResult);
+            } else if (layer instanceof INGWLayer) {
+                INGWLayer ngwLayer = (INGWLayer) layer;
+                ngwLayer.sync(authority, syncResult);
             }
         }
     }
-
 
     public static void setSyncPeriod(
             IGISApplication application,

@@ -43,31 +43,23 @@ import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MIN_ZOOM;
 
 
-public class Layer
-        implements ILayer, ILayerView, IJSONStore, IRenderer
+public class Layer extends Table
+        implements ILayerView, IRenderer
 {
-    protected String      mName;
     protected boolean     mIsVisible;
-    protected short       mId;
     protected float       mMaxZoom;
     protected float       mMinZoom;
-    protected File        mPath;
-    protected int         mLayerType;
     protected IRenderer   mRenderer;
     protected GeoEnvelope mExtents;
-    protected ILayer      mParent;
-    protected Context     mContext;
 
 
     public Layer(
             Context context,
             File path)
     {
-        mPath = path;
-        mContext = context;
+        super(context, path);
         mExtents = new GeoEnvelope();
     }
-
 
     @Override
     public void runDraw(GISDisplay display)
@@ -77,14 +69,6 @@ public class Layer
         }
     }
 
-
-    @Override
-    public String getName()
-    {
-        return mName;
-    }
-
-
     @Override
     public void cancelDraw()
     {
@@ -93,35 +77,11 @@ public class Layer
         }
     }
 
-
-    @Override
-    public void setName(String newName)
-    {
-        this.mName = newName;
-        notifyLayerChanged();
-    }
-
-
-    @Override
-    public short getId()
-    {
-        return mId;
-    }
-
-
-    @Override
-    public int getType()
-    {
-        return mLayerType;
-    }
-
-
     @Override
     public boolean isVisible()
     {
         return mIsVisible;
     }
-
 
     @Override
     public void setVisible(boolean visible)
@@ -130,34 +90,11 @@ public class Layer
         notifyLayerChanged();
     }
 
-
-    @Override
-    public boolean delete()
-    {
-        FileUtil.deleteRecursive(mPath);
-        if (mParent != null && mParent instanceof LayerGroup) {
-            LayerGroup group = (LayerGroup) mParent;
-            group.onLayerDeleted(mId);
-        }
-        return true;
-    }
-
-
-    protected void notifyLayerChanged()
-    {
-        if (mParent != null && mParent instanceof LayerGroup) {
-            LayerGroup group = (LayerGroup) mParent;
-            group.onLayerChanged(this);
-        }
-    }
-
-
     @Override
     public float getMaxZoom()
     {
         return mMaxZoom == mMinZoom ? 100 : mMaxZoom;
     }
-
 
     @Override
     public void setMaxZoom(float maxZoom)
@@ -165,13 +102,11 @@ public class Layer
         mMaxZoom = maxZoom;
     }
 
-
     @Override
     public float getMinZoom()
     {
         return mMinZoom;
     }
-
 
     @Override
     public void setMinZoom(float minZoom)
@@ -179,69 +114,22 @@ public class Layer
         mMinZoom = minZoom;
     }
 
-
-    @Override
-    public File getPath()
-    {
-        return mPath;
-    }
-
-
-    protected File getFileName()
-    {
-        FileUtil.createDir(getPath());
-        return new File(getPath(), CONFIG);
-    }
-
-
-    @Override
-    public boolean save()
-    {
-        try {
-            FileUtil.writeToFile(getFileName(), toJSON().toString());
-        } catch (IOException e) {
-            return false;
-        } catch (JSONException e) {
-            return false;
-        }
-        return true;
-    }
-
-
-    @Override
-    public boolean load()
-    {
-        try {
-            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
-            fromJSON(jsonObject);
-        } catch (JSONException | IOException | SQLiteException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-
     @Override
     public JSONObject toJSON()
             throws JSONException
     {
-        JSONObject rootConfig = new JSONObject();
-        rootConfig.put(JSON_NAME_KEY, getName());
-        rootConfig.put(JSON_TYPE_KEY, getType());
+        JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_MAXLEVEL_KEY, getMaxZoom());
         rootConfig.put(JSON_MINLEVEL_KEY, getMinZoom());
         rootConfig.put(JSON_VISIBILITY_KEY, isVisible());
         return rootConfig;
     }
 
-
     @Override
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        mLayerType = jsonObject.getInt(JSON_TYPE_KEY);
-        mName = jsonObject.getString(JSON_NAME_KEY);
+        super.fromJSON(jsonObject);
         if (jsonObject.has(JSON_MAXLEVEL_KEY)) {
             mMaxZoom = jsonObject.getInt(JSON_MAXLEVEL_KEY);
         } else {
@@ -256,7 +144,6 @@ public class Layer
         mIsVisible = jsonObject.getBoolean(JSON_VISIBILITY_KEY);
     }
 
-
     @Override
     public void onDrawFinished(
             int id,
@@ -268,7 +155,6 @@ public class Layer
         }
     }
 
-
     @Override
     public void setViewSize(
             int w,
@@ -277,40 +163,11 @@ public class Layer
 
     }
 
-
     @Override
     public GeoEnvelope getExtents()
     {
         return mExtents;
     }
-
-
-    @Override
-    public void setParent(ILayer layer)
-    {
-        mParent = layer;
-    }
-
-
-    @Override
-    public void setId(short id)
-    {
-        mId = id;
-    }
-
-
-    public Context getContext()
-    {
-        return mContext;
-    }
-
-
-    @Override
-    public boolean isValid()
-    {
-        return true;
-    }
-
 
     @Override
     public IRenderer getRenderer()

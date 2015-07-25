@@ -107,6 +107,11 @@ public class ResourceGroup
                 LayerWithStyles WMSlayer = new LayerWithStyles(data, mConnection);
                 resource = WMSlayer;
                 break;
+            case Connection.NGWResourceTypeLookupTable:
+                ResourceWithoutChildren resourceWoChildren =
+                        new ResourceWithoutChildren(data, mConnection);
+                resource = resourceWoChildren;
+                break;
         }
 
         if (null != resource) {
@@ -184,6 +189,11 @@ public class ResourceGroup
                     layer.setParent(this);
                     mChildren.add(layer);
                     break;
+                case Connection.NGWResourceTypeLookupTable:
+                    ResourceWithoutChildren resourceWoChildren =
+                            in.readParcelable(ResourceWithoutChildren.class.getClassLoader());
+                    resourceWoChildren.setParent(this);
+                    mChildren.add(resourceWoChildren);
             }
         }
     }
