@@ -1081,21 +1081,11 @@ public class VectorLayer
         }
 
         if (!contentValues.containsKey(FIELD_ID)) {
-            String columns[] = {FIELD_ID};
-            String sortOrder = FIELD_ID + " DESC";
-            Cursor cursor = query(columns, null, null, sortOrder, "1");
 
-            long id = MIN_LOCAL_FEATURE_ID;
-
-            if (cursor.moveToFirst()) {
-                id = cursor.getLong(0);
-                if (MIN_LOCAL_FEATURE_ID > id) {
-                    id = MIN_LOCAL_FEATURE_ID;
-                } else {
-                    ++id;
-                }
+            long id = getUniqId();
+            if (MIN_LOCAL_FEATURE_ID > id) {
+                id = MIN_LOCAL_FEATURE_ID;
             }
-
             contentValues.put(FIELD_ID, id);
         }
 
