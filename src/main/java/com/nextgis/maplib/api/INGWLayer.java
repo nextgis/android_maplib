@@ -51,6 +51,10 @@ public interface INGWLayer
      */
     void sync( String authority, SyncResult syncResult);
 
+    int getSyncType();
+
+    void setSyncType(int syncType);
+
     long getRemoteId();
 
     void setRemoteId(long remoteId);

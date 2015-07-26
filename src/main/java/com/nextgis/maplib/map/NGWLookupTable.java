@@ -42,6 +42,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -140,8 +141,54 @@ public class NGWLookupTable extends Table
     }
 
     @Override
+    public int getSyncType()
+    {
+        return mSyncType;
+    }
+
+    @Override
+    public void setSyncType(int syncType)
+    {
+        mSyncType = syncType;
+    }
+
+    @Override
     public void sync(String authority, SyncResult syncResult) {
-        // TODO: 26.07.15 implement this
+        if (0 != (mSyncType & Constants.SYNC_NONE) || !mIsInitialized) {
+            return;
+        }
+
+        Map<String, String> remoteData = new Hashtable<>();
+        String result = download(remoteData);
+        if(null != result){
+            syncResult.stats.numParseExceptions++;
+            return;
+        }
+
+        if(remoteData.size() != mData.size()){
+            mData.clear();
+            mData.putAll(remoteData);
+            save();
+            Log.d(Constants.TAG, "Update lookup table " + getName() + " from server");
+            return;
+        }
+
+        // check key and values
+        boolean isSame = true;
+        for (Map.Entry<String, String> entry : remoteData.entrySet()) {
+            if(!mData.get(entry.getKey()).equals(entry.getValue())){
+                isSame = false;
+                break;
+            }
+        }
+
+        if(!isSame){
+            mData.clear();
+            mData.putAll(remoteData);
+            save();
+            Log.d(Constants.TAG, "Update lookup table " + getName() + " from server");
+            return;
+        }
     }
 
     @Override
@@ -175,7 +222,13 @@ public class NGWLookupTable extends Table
         return mIsInitialized;
     }
 
-    public String download()
+    public String download(){
+        if(null == mData)
+            mData = new HashMap<>();
+        return download(mData);
+    }
+
+    protected String download(Map<String, String> dataMap)
     {
         if (!mNet.isNetworkAvailable()) { //return tile from cache
             return getContext().getString(R.string.error_network_unavailable);
@@ -189,7 +242,13 @@ public class NGWLookupTable extends Table
                 return getContext().getString(R.string.error_download_data);
             }
             JSONObject geoJSONObject = new JSONObject(data);
-            // TODO: 26.07.15 Fill items from resource
+            JSONObject lookupTable = geoJSONObject.getJSONObject("lookup_table");
+            JSONObject itemsObject = lookupTable.getJSONObject("items");
+            for (Iterator<String> iter = itemsObject.keys(); iter.hasNext(); ) {
+                String key = iter.next();
+                String value = itemsObject.getString(key);
+                dataMap.put(key, value);
+            }
 
             mIsInitialized = true;
             return null;
@@ -215,7 +274,7 @@ public class NGWLookupTable extends Table
         @Override
         protected String doInBackground(Void... voids)
         {
-            return download();
+            return download(mData);
         }
 
 

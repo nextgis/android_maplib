@@ -240,6 +240,9 @@ public class NGWVectorLayer
      */
     public String download()
     {
+        if(null == mCacheUrl)
+            return getContext().getString(R.string.error_download_data);
+
         if (!mNet.isNetworkAvailable()) { //return tile from cache
             return getContext().getString(R.string.error_network_unavailable);
         }

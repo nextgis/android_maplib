@@ -446,7 +446,7 @@ public class VectorLayer
 
         save();
 
-        if (null != mParent) { //notify the load is over
+        if (null != mParent && mParent instanceof LayerGroup) { //notify the load is over
             LayerGroup layerGroup = (LayerGroup) mParent;
             layerGroup.onLayerChanged(this);
         }

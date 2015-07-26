@@ -29,6 +29,8 @@ import android.content.SyncResult;
 
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
+import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -92,6 +94,16 @@ public class NGWRasterLayer
     @Override
     public void sync(String authority, SyncResult syncResult) {
         // TODO: 26.07.15 By now nothing to sync
+    }
+
+    @Override
+    public int getSyncType() {
+        return Constants.SYNC_NONE;
+    }
+
+    @Override
+    public void setSyncType(int syncType) {
+
     }
 
     @Override
