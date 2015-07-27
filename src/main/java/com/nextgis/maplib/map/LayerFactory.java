@@ -23,21 +23,30 @@
 
 package com.nextgis.maplib.map;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
+
 import com.nextgis.maplib.api.ILayer;
-import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.util.FileUtil;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.CONFIG;
+import static com.nextgis.maplib.util.Constants.JSON_TYPE_KEY;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_GROUP;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_TMS;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOOKUPTABLE;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_RASTER;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_REMOTE_TMS;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_TRACKS;
+import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public abstract class LayerFactory
@@ -76,6 +85,9 @@ public abstract class LayerFactory
                 case LAYERTYPE_TRACKS:
                     layer = new TrackLayer(context, path);
                     break;
+                case LAYERTYPE_LOOKUPTABLE:
+                    layer = new NGWLookupTable(context, path);
+                    break;
             }
         } catch (IOException | JSONException e) {
             Log.d(TAG, e.getLocalizedMessage());
@@ -84,36 +96,29 @@ public abstract class LayerFactory
         return layer;
     }
 
-
-    public static Account getAccountByName(
+    public String getLayerTypeString(
             Context context,
-            String accountName)
+            int type)
     {
-        final AccountManager accountManager = AccountManager.get(context.getApplicationContext());
-        for (Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)) {
-            if (account.name.equals(accountName)) {
-                return account;
-            }
+        switch (type) {
+            case LAYERTYPE_GROUP:
+                return "layer group";
+            case LAYERTYPE_NGW_RASTER:
+                return "NGW raster layer";
+            case LAYERTYPE_NGW_VECTOR:
+                return "NGW vector layer";
+            case LAYERTYPE_REMOTE_TMS:
+                return "remote tms layer";
+            case LAYERTYPE_LOCAL_VECTOR:
+                return "vector layer";
+            case LAYERTYPE_LOCAL_TMS:
+                return "local tms layer";
+            case LAYERTYPE_LOOKUPTABLE:
+                return "lookup table";
+            default:
+                return "n/a";
         }
-        return null;
     }
-
-
-    public static Connection getConnectionFromAccount(
-            Context context,
-            String accountName)
-    {
-        final AccountManager accountManager = AccountManager.get(context.getApplicationContext());
-        Account account = getAccountByName(context, accountName);
-        if (null != account) {
-            String url = accountManager.getUserData(account, "url");
-            String password = accountManager.getPassword(account);
-            String login = accountManager.getUserData(account, "login");
-            return new Connection(accountName, login, password, url);
-        }
-        return null;
-    }
-
 
     public abstract void createNewRemoteTMSLayer(
             final Context context,

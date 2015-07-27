@@ -44,4 +44,8 @@ public interface ILayerView
     void setViewSize(
             int w,
             int h);
+
+    IRenderer getRenderer();
+
+    void setRenderer(IRenderer renderer);
 }

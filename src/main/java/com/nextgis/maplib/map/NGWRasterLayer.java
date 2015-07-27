@@ -25,8 +25,12 @@ package com.nextgis.maplib.map;
 
 import android.accounts.Account;
 import android.content.Context;
+import android.content.SyncResult;
+
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
+import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -42,6 +46,7 @@ public class NGWRasterLayer
     protected String mAccountName;
     protected String mCacheLogin;
     protected String mCachePassword;
+    protected long        mRemoteId;
 
     protected final static short  MAX_THREAD_COUNT = 8;
     protected static final String JSON_ACCOUNT_KEY = "account";
@@ -84,6 +89,33 @@ public class NGWRasterLayer
             mCacheLogin = app.getAccountLogin(account);
             mCachePassword = app.getAccountPassword(account);
         }
+    }
+
+    @Override
+    public void sync(String authority, SyncResult syncResult) {
+        // TODO: 26.07.15 By now nothing to sync
+    }
+
+    @Override
+    public int getSyncType() {
+        return Constants.SYNC_NONE;
+    }
+
+    @Override
+    public void setSyncType(int syncType) {
+
+    }
+
+    @Override
+    public long getRemoteId()
+    {
+        return mRemoteId;
+    }
+
+    @Override
+    public void setRemoteId(long remoteId)
+    {
+        mRemoteId = remoteId;
     }
 
 

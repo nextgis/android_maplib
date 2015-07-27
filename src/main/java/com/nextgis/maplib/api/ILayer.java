@@ -53,11 +53,9 @@ public interface ILayer
 
     void setParent(ILayer layer);
 
+    ILayer getParent();
+
     void setId(short id);
 
     boolean isValid();
-
-    IRenderer getRenderer();
-
-    void setRenderer(IRenderer renderer);
 }
