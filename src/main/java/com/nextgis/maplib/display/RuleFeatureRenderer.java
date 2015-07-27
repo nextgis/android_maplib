@@ -184,7 +184,8 @@ public class RuleFeatureRenderer
                 return;
             }
 
-            Log.d(TAG, "Receive notify: " + intent.getAction());
+            // extreme logging commented
+            //Log.d(TAG, "Receive notify: " + intent.getAction());
 
             try {
                 long featureId;

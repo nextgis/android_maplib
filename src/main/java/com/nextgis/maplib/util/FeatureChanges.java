@@ -368,6 +368,40 @@ public class FeatureChanges
     }
 
 
+    public static int changeFeatureId(
+            String tableName,
+            long oldFeatureId,
+            long newFeatureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + oldFeatureId;
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, newFeatureId);
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+        return db.update(tableName, values, selection, null);
+    }
+
+
+    public static int changeFeatureIdForAttaches(
+            String tableName,
+            long oldFeatureId,
+            long newFeatureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + oldFeatureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) )";
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, newFeatureId);
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+        return db.update(tableName, values, selection, null);
+    }
+
+
     public static int removeAllChanges(String tableName)
     {
         return delete(tableName, null);
