@@ -31,6 +31,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SyncResult;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
@@ -1076,6 +1077,17 @@ public class NGWVectorLayer
         File photoFolder = new File(mPath, "" + oldFeatureId);
         if (photoFolder.exists()) {
             if (photoFolder.renameTo(new File(mPath, "" + newFeatureId))) {
+
+                int chRes = FeatureChanges.changeFeatureIdForAttaches(
+                        mChangeTableName, oldFeatureId, newFeatureId);
+                if (chRes <= 0) {
+                    Log.d(
+                            Constants.TAG,
+                            "Feature ID for attaches not changed, oldFeatureId: " + oldFeatureId +
+                                    ", newFeatureId: " + newFeatureId);
+                }
+
+            } else {
                 Log.d(Constants.TAG, "rename photo folder " + oldFeatureId + "failed");
             }
         }
@@ -1406,7 +1418,7 @@ public class NGWVectorLayer
             }
 
             return true;
-        } catch (ClassNotFoundException | JSONException | IOException e) {
+        } catch (SQLiteConstraintException | ClassNotFoundException | JSONException | IOException e) {
             e.printStackTrace();
             Log.d(Constants.TAG, e.getLocalizedMessage());
             return false;

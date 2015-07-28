@@ -30,7 +30,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
@@ -157,8 +156,8 @@ public class MapContentProviderHelper
                 Context context,
                 Intent intent)
         {
-
-            Log.d(TAG, "Receive notify: " + intent.getAction());
+            // extreme logging commented
+            //Log.d(TAG, "Receive notify: " + intent.getAction());
 
             VectorLayer layer;
 
