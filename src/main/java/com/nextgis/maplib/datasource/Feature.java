@@ -149,6 +149,36 @@ public class Feature
         return NOT_FOUND;
     }
 
+    public int getFieldValueAsInteger(String fieldName){
+        int index = getFieldValueIndex(fieldName);
+        return getFieldValueAsInteger(index);
+    }
+
+    public int getFieldValueAsInteger(int index){
+        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
+                index >= mFieldValues.size()) {
+            return Integer.MAX_VALUE;
+        }
+
+        Object val = mFieldValues.get(index);
+        if (null == val) {
+            return Integer.MAX_VALUE;
+        }
+        
+        if(val instanceof Long){
+            Long lval = (Long) val;
+            return lval.intValue();
+        }
+        else if(val instanceof Integer)
+            return (int)val;
+        else
+            return Integer.MAX_VALUE;
+    }
+
+    public String getFieldValueAsString(String fieldName){
+        int index = getFieldValueIndex(fieldName);
+        return getFieldValueAsString(index);
+    }
 
     public String getFieldValueAsString(int index)
     {
@@ -174,7 +204,6 @@ public class Feature
         }
         return "";
     }
-
 
     @Override
     public JSONObject toJSON()

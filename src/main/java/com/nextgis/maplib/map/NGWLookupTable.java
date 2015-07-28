@@ -286,4 +286,12 @@ public class NGWLookupTable extends Table
             }
         }
     }
+
+    /**
+     * Get key value map of entries
+     * @return Map
+     */
+    public Map<String, String> getData() {
+        return mData;
+    }
 }
