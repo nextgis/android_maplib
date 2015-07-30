@@ -58,7 +58,8 @@ public interface INGWLayer
     int getSyncType();
 
     /**
-     * Set sync type. @see Constants.SYNC_ALL
+     * Set sync type.
+     * @see com.nextgis.maplib.util.Constants#SYNC_ALL
      * @param syncType The value result of OR different sync types
      */
     void setSyncType(int syncType);

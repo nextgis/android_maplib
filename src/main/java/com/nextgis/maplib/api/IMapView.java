@@ -122,9 +122,10 @@ public interface IMapView
 
     /**
      * Set the map limits. The map cannot be scrolled out of this limits
-     * @param limits Envelope of limits (@see com.nextgis.maplib.datasource.GeoEnvelope)
+     * @param limits Envelope of limits
      * @param limitsType The limits type (maybe Constants.MAP_LIMITS_NO, Constants.MAP_LIMITS_X,
      *                   Constants.MAP_LIMITS_Y or Constants.MAP_LIMITS_XY)
+     * @see com.nextgis.maplib.datasource.GeoEnvelope
      */
     void setLimits(
             GeoEnvelope limits,
@@ -132,29 +133,33 @@ public interface IMapView
 
     /**
      * Transform point from screen to map
-     * @param pt Point to transform (@see com.nextgis.maplib.datasource.GeoPoint)
+     * @param pt Point to transform
      * @return Point in map coordinates
+     * @see com.nextgis.maplib.datasource.GeoPoint
      */
     GeoPoint screenToMap(final GeoPoint pt);
 
     /**
      * Transform point from map to scree
-     * @param pt Point to transform (@see com.nextgis.maplib.datasource.GeoPoint)
+     * @param pt Point to transform
      * @return Point in screen coordinates
+     * @see com.nextgis.maplib.datasource.GeoPoint
      */
     GeoPoint mapToScreen(final GeoPoint pt);
 
     /**
      * Transform from map to screen coordinates
-     * @param geoPoints Array of geopoints (@see com.nextgis.maplib.datasource.GeoPoint)
+     * @param geoPoints Array of geopoints
      * @return Array of points in format  x1,y1, ... xn, yn
+     * @see com.nextgis.maplib.datasource.GeoPoint
      */
     float[] mapToScreen(final GeoPoint[] geoPoints);
 
     /**
      * Transform provided envelope from screen to map coordinates
-     * @param env Envelope (@see com.nextgis.maplib.datasource.GeoEnvelope)
+     * @param env Envelope
      * @return Transformed envelope
+     * @see com.nextgis.maplib.datasource.GeoEnvelope
      */
     GeoEnvelope screenToMap(final GeoEnvelope env);
 
