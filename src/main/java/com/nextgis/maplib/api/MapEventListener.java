@@ -29,21 +29,49 @@ import com.nextgis.maplib.datasource.GeoPoint;
 
 public interface MapEventListener
 {
+    /**
+     * Executed then new layer added
+     * @param id The new layer identificator set in this session. May be another in next execution.
+     */
     void onLayerAdded(int id);
 
+    /**
+     * Executed then layer deleted
+     * @param id The deleted layer identificator.
+     */
     void onLayerDeleted(int id);
 
+    /**
+     * Executed then layer changed
+     * @param id The changed layer identificator.
+     */
     void onLayerChanged(int id);
 
+    /**
+     * Executed then map extent changed (i.e. user zoom in or out)
+     * @param zoom New map zoom
+     * @param center New map center
+     */
     void onExtentChanged(
             float zoom,
             GeoPoint center);
 
+    /**
+     * Executed then layer are reordered
+     */
     void onLayersReordered();
 
+    /**
+     * Executed then some drawing routine finished or indicate drawing process
+     * @param id The layer identificator
+     * @param percent The percent of layer drawn
+     */
     void onLayerDrawFinished(
             int id,
             float percent);
 
+    /**
+     * Executed then layer draw started
+     */
     void onLayerDrawStarted();
 }

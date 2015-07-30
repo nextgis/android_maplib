@@ -51,11 +51,27 @@ public interface INGWLayer
      */
     void sync( String authority, SyncResult syncResult);
 
+    /**
+     * Return the sync type (i.e. sync only attributes or the whole feature)
+     * @return
+     */
     int getSyncType();
 
+    /**
+     * Set sync type. @see Constants.SYNC_ALL
+     * @param syncType The value result of OR different sync types
+     */
     void setSyncType(int syncType);
 
+    /**
+     * Return the NextGIS Web server identificator - uniq identificator set for layer on server.
+     * @return The NextGIS Web server identificator
+     */
     long getRemoteId();
 
+    /**
+     * Set NextGIS Web server identificator.
+     * @param remoteId The NextGIS Web server identificator
+     */
     void setRemoteId(long remoteId);
 }

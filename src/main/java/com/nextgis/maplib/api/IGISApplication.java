@@ -66,20 +66,38 @@ public interface IGISApplication
     MapBase getMap();
 
     /**
-     * @return A authority for sync purposes or empty string in not sync anything
+     * @return A authority for sync purposes or empty string if not sync anything
      */
     String getAuthority();
 
+    /**
+     * Add account to android account storage
+     * @param name Account name (must be uniq)
+     * @param url NextGIS Web Server URL
+     * @param login User login
+     * @param password User password
+     * @param token A token returned from NextGIS Web Server (may be empty string)
+     * @return true on success or false
+     */
     boolean addAccount(String name, String url, String login, String password, String token);
 
+    /**
+     * Update account information
+     * @param name Account name (the account must be exist)
+     * @param key The account key to change (i.e. URL)
+     * @param value The new value for key
+     */
     void setUserData(String name, String key, String value);
 
+    /**
+     * Change password for account
+     * @param name Account name (the account must be exist)
+     * @param value New password
+     */
     void setPassword(String name,String value);
 
     /**
-     * @param accountName
-     *         Account name
-     *
+     * @param accountName Account name
      * @return Account by its name
      */
     Account getAccount(String accountName);
@@ -92,25 +110,19 @@ public interface IGISApplication
     AccountManagerFuture<Boolean> removeAccount(Account account);
 
     /**
-     * @param account
-     *         Account
-     *
+     * @param account Account object
      * @return Account URL
      */
     String getAccountUrl(Account account);
 
     /**
-     * @param account
-     *         Account
-     *
+     * @param account Account object
      * @return Account login
      */
     String getAccountLogin(Account account);
 
     /**
-     * @param account
-     *         Account
-     *
+     * @param account Account object
      * @return Account password
      */
     String getAccountPassword(Account account);
@@ -121,7 +133,7 @@ public interface IGISApplication
     GpsEventSource getGpsEventSource();
 
     /**
-     * Show settings Activity
+     * Show settings Activity or nothing
      */
     void showSettings();
 }

@@ -25,27 +25,67 @@ package com.nextgis.maplib.api;
 
 public interface ILayerView
 {
+    /**
+     * @return If layer visible or not
+     */
     boolean isVisible();
 
+    /**
+     * Set if layer visible or not
+     * @param visible true if layer must be visible, or false
+     */
     void setVisible(boolean visible);
 
+    /**
+     * Return max zoom for layer
+     * @return maximum zoom
+     */
     float getMaxZoom();
 
+    /**
+     * Set max zoom for layer
+     * @param maxZoom The max zoom value
+     */
     void setMaxZoom(float maxZoom);
 
+    /**
+     * Return min zoom for layer
+     * @return minimum zoom value
+     */
     float getMinZoom();
 
+    /**
+     * Set min zoom for layer
+     * @param minZoom The min zoom value
+     */
     void setMinZoom(float minZoom);
 
+    /**
+     * Executed then layer draw finished or indicating draw process
+     * @param id The layer identificator
+     * @param percent The draw progress percent
+     */
     void onDrawFinished(
             int id,
             float percent);
 
+    /**
+     * Update the display size in pixels. Executed by map then screen resized (or rotated)
+     * @param w width
+     * @param h height
+     */
     void setViewSize(
             int w,
             int h);
 
+    /**
+     * @return Renderer connected with this layer
+     */
     IRenderer getRenderer();
 
+    /**
+     * Set renderer for this layer
+     * @param renderer The renderer object
+     */
     void setRenderer(IRenderer renderer);
 }
