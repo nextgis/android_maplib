@@ -1940,6 +1940,16 @@ public class VectorLayer
 
     public long getUniqId()
     {
+        if (Constants.NOT_FOUND == mUniqId) {
+            String columns[] = {FIELD_ID};
+            String sortOrder = FIELD_ID + " DESC";
+            Cursor cursor = query(columns, null, null, sortOrder, "1");
+
+            if (cursor.moveToFirst()) {
+                mUniqId = cursor.getLong(0) + 1;
+            }
+        }
+
         return mUniqId;
     }
 
