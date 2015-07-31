@@ -28,6 +28,11 @@ import com.nextgis.maplib.display.Style;
 
 public interface IStyleRule
 {
+    /**
+     * Set style parameters
+     * @param style New style
+     * @param featureId The feature identificator to set style
+     */
     void setStyleParams(
             Style style,
             long featureId);

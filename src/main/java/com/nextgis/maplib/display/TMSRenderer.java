@@ -285,14 +285,14 @@ public class TMSRenderer
         if (mDrawThreadPool != null) {
             synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
-            }
-            try {
-                mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
-                mDrawThreadPool.purge();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                mDrawThreadPool.shutdownNow();
-                Thread.currentThread().interrupt();
+                try {
+                    mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
+                    //mDrawThreadPool.purge();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    //mDrawThreadPool.shutdownNow();
+                    //Thread.currentThread().interrupt();
+                }
             }
         }
     }

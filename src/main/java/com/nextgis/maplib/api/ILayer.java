@@ -31,31 +31,82 @@ import java.io.File;
 
 public interface ILayer
 {
+    /**
+     * @return Application context
+     */
     Context getContext();
 
+    /**
+     * @return User readable layer name
+     */
     String getName();
 
+    /**
+     * Set layer name
+     * @param newName New name
+     */
     void setName(String newName);
 
+    /**
+     * @return Layer identofoctor - set by map on current session
+     */
     short getId();
 
+    /**
+     * Get Layer type (@see com.nextgis.maplib.util.Constants)
+     * @return Layer type
+     */
     int getType();
 
+    /**
+     * Delete layer
+     * @return true on success or false
+     */
     boolean delete();
 
+    /**
+     * Get layer path in storage
+     * @return Layer path
+     */
     File getPath();
 
+    /**
+     * Save layer changes
+     * @return true on success or false
+     */
     boolean save();
 
+    /**
+     * Load layer
+     * @return true on  success or false
+     */
     boolean load();
 
+    /**
+     * Get layer extents
+     * @return Layer extents in map coordinates
+     */
     GeoEnvelope getExtents();
 
+    /**
+     * set layer parent
+     * @param layer Layer parent object
+     */
     void setParent(ILayer layer);
 
+    /**
+     * @return Layer parent object
+     */
     ILayer getParent();
 
+    /**
+     * Set layer internal identifictor - set by map on current session
+     * @param id New layer identificator
+     */
     void setId(short id);
 
+    /**
+     * @return Is layer valid (all data are present, .etc.)
+     */
     boolean isValid();
 }

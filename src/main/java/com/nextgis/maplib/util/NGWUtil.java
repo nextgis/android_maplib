@@ -59,11 +59,8 @@ public class NGWUtil
     /**
      * GeoJSON URL. Get data as GeoJSON
      *
-     * @param server
-     *         URL
-     * @param remoteId
-     *         Vector layer resource id
-     *
+     * @param server URL to NextGIS Web server
+     * @param remoteId Vector layer resource id
      * @return URL
      */
     public static String getGeoJSONUrl(

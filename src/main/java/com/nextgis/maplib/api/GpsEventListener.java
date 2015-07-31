@@ -28,9 +28,21 @@ import android.location.Location;
 
 public interface GpsEventListener
 {
+    /**
+     * Executed then location object changed
+     * @param location object
+     */
     void onLocationChanged(Location location);
 
+    /**
+     * Executed then location object changed in gather statistic mode, for best accuracy
+     * @param location object
+     */
     void onBestLocationChanged(Location location);
 
+    /**
+     * Executed then GPS status changed
+     * @param event Id
+     */
     void onGpsStatusChanged(int event);
 }
