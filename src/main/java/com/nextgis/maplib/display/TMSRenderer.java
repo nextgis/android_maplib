@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -286,7 +287,7 @@ public class TMSRenderer
             synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
                 try {
-                    mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
+                    mDrawThreadPool.awaitTermination(650, TimeUnit.MILLISECONDS);
                     //mDrawThreadPool.purge();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
