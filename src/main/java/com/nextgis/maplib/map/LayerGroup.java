@@ -93,13 +93,34 @@ public class LayerGroup
     }
 
 
-    public ILayer getLayerByName(String name)
-    {
+    /**
+     * search layer by it human readabler name
+     * @param name Name to search
+     * @return ILayer or null
+     */
+    public ILayer getLayerByName(String name){
         if (mName.equals(name)) {
             return this;
         }
         for (ILayer layer : mLayers) {
             if (layer.getName().equals(name)) {
+                return layer;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Search layer by it folder name
+     * @param name Name to search
+     * @return ILayer or null
+     */
+    public ILayer getLayerByPathName(String name){
+        if (getPath().getName().equals(name)) {
+            return this;
+        }
+        for (ILayer layer : mLayers) {
+            if (layer.getPath().getName().equals(name)) {
                 return layer;
             }
         }
