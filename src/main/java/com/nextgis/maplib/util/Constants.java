@@ -61,7 +61,7 @@ public interface Constants
     //from 1 and higher
     //As more than more memory needed
     float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
-    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 6;
+    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
     int   DEFAULT_DOWNLOAD_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_BACKGROUND + 5;
 
     int DEFAULT_TILE_SIZE = 256;
