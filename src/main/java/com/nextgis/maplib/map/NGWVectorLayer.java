@@ -53,6 +53,7 @@ import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FeatureChanges;
+import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -76,6 +77,11 @@ import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
+
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 
 public class NGWVectorLayer
         extends VectorLayer
@@ -233,6 +239,88 @@ public class NGWVectorLayer
         return fields;
     }
 
+    @Override
+    protected long insert(ContentValues contentValues) {
+        if (!contentValues.containsKey(FIELD_GEOM)) {
+            return NOT_FOUND;
+        }
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+
+        if (!contentValues.containsKey(FIELD_ID)) {
+
+            long id = getUniqId();
+            if (MIN_LOCAL_FEATURE_ID > id) {
+                id = MIN_LOCAL_FEATURE_ID;
+            }
+            contentValues.put(FIELD_ID, id);
+        }
+
+        SQLiteDatabase db = map.getDatabase(false);
+        long rowID = db.insert(mPath.getName(), null, contentValues);
+
+        if (rowID != NOT_FOUND) {
+            Intent notify = new Intent(NOTIFY_INSERT);
+            notify.putExtra(FIELD_ID, rowID);
+            notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            getContext().sendBroadcast(notify);
+        }
+
+        updateUniqId(rowID);
+
+        return rowID;
+    }
+
+    @Override
+    protected long insertAttach(String featureId, ContentValues contentValues) {
+        if (contentValues.containsKey(ATTACH_DISPLAY_NAME) &&
+                contentValues.containsKey(ATTACH_MIME_TYPE)) {
+            //get attach path
+            File attachFolder = new File(mPath, featureId);
+            //we start files from MIN_LOCAL_FEATURE_ID to not overlap with NGW files id's
+            long maxId = MIN_LOCAL_FEATURE_ID;
+            if (attachFolder.isDirectory()) {
+                for (File attachFile : attachFolder.listFiles()) {
+                    if (attachFile.getName().equals(META)) {
+                        continue;
+                    }
+                    long val = Long.parseLong(attachFile.getName());
+                    if (val >= maxId) {
+                        maxId = val + 1;
+                    }
+                }
+            } else {
+                FileUtil.createDir(attachFolder);
+            }
+
+            File attachFile = new File(attachFolder, "" + maxId);
+            try {
+                if (attachFile.createNewFile()) {
+                    //create new record in attaches - description, mime_type, ext
+                    String displayName = contentValues.getAsString(ATTACH_DISPLAY_NAME);
+                    String mimeType = contentValues.getAsString(ATTACH_MIME_TYPE);
+                    String description = "";
+
+                    if (contentValues.containsKey(ATTACH_DESCRIPTION)) {
+                        description = contentValues.getAsString(ATTACH_DESCRIPTION);
+                    }
+
+                    AttachItem item =
+                            new AttachItem("" + maxId, displayName, mimeType, description);
+                    addAttach(featureId, item);
+
+                    return maxId;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return NOT_FOUND;
+    }
 
     /**
      * download and create new NGW layer from GeoJSON data

@@ -711,6 +711,7 @@ public class VectorLayer
                         reloadCache();
                     }
                 });
+                t.setPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
                 t.start();
             }
         }
@@ -1080,15 +1081,6 @@ public class VectorLayer
                     "The map should extends MapContentProviderHelper or inherited");
         }
 
-        if (!contentValues.containsKey(FIELD_ID)) {
-
-            long id = getUniqId();
-            if (MIN_LOCAL_FEATURE_ID > id) {
-                id = MIN_LOCAL_FEATURE_ID;
-            }
-            contentValues.put(FIELD_ID, id);
-        }
-
         SQLiteDatabase db = map.getDatabase(false);
         long rowID = db.insert(mPath.getName(), null, contentValues);
 
@@ -1115,6 +1107,51 @@ public class VectorLayer
         }
     }
 
+    protected long insertAttach(String featureId, ContentValues contentValues){
+        if (contentValues.containsKey(ATTACH_DISPLAY_NAME) &&
+                contentValues.containsKey(ATTACH_MIME_TYPE)) {
+            //get attach path
+            File attachFolder = new File(mPath, featureId);
+            //we start files from MIN_LOCAL_FEATURE_ID to not overlap with NGW files id's
+            long maxId = NOT_FOUND;
+            if (attachFolder.isDirectory()) {
+                for (File attachFile : attachFolder.listFiles()) {
+                    if (attachFile.getName().equals(META)) {
+                        continue;
+                    }
+                    long val = Long.parseLong(attachFile.getName());
+                    if (val >= maxId) {
+                        maxId = val + 1;
+                    }
+                }
+            } else {
+                FileUtil.createDir(attachFolder);
+            }
+
+            File attachFile = new File(attachFolder, "" + maxId);
+            try {
+                if (attachFile.createNewFile()) {
+                    //create new record in attaches - description, mime_type, ext
+                    String displayName = contentValues.getAsString(ATTACH_DISPLAY_NAME);
+                    String mimeType = contentValues.getAsString(ATTACH_MIME_TYPE);
+                    String description = "";
+
+                    if (contentValues.containsKey(ATTACH_DESCRIPTION)) {
+                        description = contentValues.getAsString(ATTACH_DESCRIPTION);
+                    }
+
+                    AttachItem item =
+                            new AttachItem("" + maxId, displayName, mimeType, description);
+                    addAttach(featureId, item);
+
+                    return maxId;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return NOT_FOUND;
+    }
 
     public Uri insert(
             Uri uri,
@@ -1138,62 +1175,23 @@ public class VectorLayer
                 }
                 return null;
             case TYPE_ATTACH:
-                if (contentValues.containsKey(ATTACH_DISPLAY_NAME) &&
-                    contentValues.containsKey(ATTACH_MIME_TYPE)) {
-                    List<String> pathSegments = uri.getPathSegments();
-                    String featureId = pathSegments.get(pathSegments.size() - 2);
-                    long featureIdL = Long.parseLong(featureId);
-                    //get attach path
-                    File attachFolder = new File(mPath, featureId);
-                    //we start files from MIN_LOCAL_FEATURE_ID to not overlap with NGW files id's
-                    long maxId = MIN_LOCAL_FEATURE_ID;
-                    if (attachFolder.isDirectory()) {
-                        for (File attachFile : attachFolder.listFiles()) {
-                            if (attachFile.getName().equals(META)) {
-                                continue;
-                            }
-                            long val = Long.parseLong(attachFile.getName());
-                            if (val >= maxId) {
-                                maxId = val + 1;
-                            }
-                        }
+                List<String> pathSegments = uri.getPathSegments();
+                String featureId = pathSegments.get(pathSegments.size() - 2);
+                long attachID = insertAttach(featureId, contentValues);
+                if(attachID != NOT_FOUND){
+                    Uri resultUri = ContentUris.withAppendedId(uri, attachID);
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
+                    if (bFromNetwork) {
+                        getContext().getContentResolver()
+                                .notifyChange(resultUri, null, false);
                     } else {
-                        FileUtil.createDir(attachFolder);
+                        long featureIdL = Long.parseLong(featureId);
+                        addChange(featureIdL, attachID, CHANGE_OPERATION_NEW);
+                        getContext().getContentResolver()
+                                .notifyChange(resultUri, null, true);
                     }
-
-                    File attachFile = new File(attachFolder, "" + maxId);
-                    try {
-                        if (attachFile.createNewFile()) {
-                            //create new record in attaches - description, mime_type, ext
-                            String displayName = contentValues.getAsString(ATTACH_DISPLAY_NAME);
-                            String mimeType = contentValues.getAsString(ATTACH_MIME_TYPE);
-                            String description = "";
-
-                            if (contentValues.containsKey(ATTACH_DESCRIPTION)) {
-                                description = contentValues.getAsString(ATTACH_DESCRIPTION);
-                            }
-
-                            AttachItem item =
-                                    new AttachItem("" + maxId, displayName, mimeType, description);
-                            addAttach(featureId, item);
-
-                            Uri resultUri = ContentUris.withAppendedId(uri, maxId);
-                            String fragment = uri.getFragment();
-                            boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                            if (bFromNetwork) {
-                                getContext().getContentResolver()
-                                        .notifyChange(resultUri, null, false);
-                            } else {
-                                addChange(featureIdL, maxId, CHANGE_OPERATION_NEW);
-                                getContext().getContentResolver()
-                                        .notifyChange(resultUri, null, true);
-                            }
-
-                            return resultUri;
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    return resultUri;
                 }
                 return null;
             case TYPE_FEATURE:
@@ -1963,6 +1961,7 @@ public class VectorLayer
                     reloadCache();
                 }
             });
+            t.setPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
             t.start();
         }
     }
