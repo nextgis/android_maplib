@@ -200,12 +200,12 @@ public class FileUtil
     }
 
 
-    public static String removeExtention(String filePath)
+    public static String removeExtension(String filePath)
     {
         // These first few lines the same as Justin's
         File f = new File(filePath);
 
-        // if it's a directory, don't remove the extention
+        // if it's a directory, don't remove the extension
         if (f.isDirectory()) {
             return filePath;
         }
@@ -226,7 +226,7 @@ public class FileUtil
     }
 
 
-    public static String getExtention(String filePath)
+    public static String getExtension(String filePath)
     {
         File f = new File(filePath);
         if (f.isDirectory()) {
