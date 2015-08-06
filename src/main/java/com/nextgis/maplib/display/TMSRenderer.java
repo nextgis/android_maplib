@@ -28,6 +28,8 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
+import android.util.Log;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
@@ -207,7 +209,7 @@ public class TMSRenderer
             remoteTMSLayer.onPrepare();
         }
 
-        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
+        List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
             tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
             return;
@@ -243,7 +245,8 @@ public class TMSRenderer
             mTileCompleteCount = 0;
         }
 
-        for (int i = 0; i < tiles.size(); ++i) {
+        final int tileListSize = tiles.size();
+        for (int i = 0; i < tileListSize; ++i) {
             final TileItem tile = tiles.get(i);
             mDrawThreadPool.execute(
                     new Runnable()
@@ -266,13 +269,12 @@ public class TMSRenderer
                         tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
                         Log.d(TAG, "percent: " + percent + " complete: " + complete + " task count: " + mDrawThreadPool.getTaskCount());*/
                                 mTileCompleteCount++;
-                                float percent = (float) (mTileCompleteCount) / tiles.size();
+                                float percent = (float) (mTileCompleteCount) / tileListSize;
 
                                 tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
 
-                                // Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tiles.size() + " layer: " + mLayer.getName());
+                                Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tileListSize + " layer: " + mLayer.getName());
                             }
-
                         }
                     });
         }
@@ -288,7 +290,7 @@ public class TMSRenderer
                 mDrawThreadPool.shutdownNow();
                 try {
                     mDrawThreadPool.awaitTermination(650, TimeUnit.MILLISECONDS);
-                    //mDrawThreadPool.purge();
+                    mDrawThreadPool.purge();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     //mDrawThreadPool.shutdownNow();

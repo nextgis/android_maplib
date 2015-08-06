@@ -151,6 +151,7 @@ public interface Constants
     int SYNC_ATTACH     = 1 << 3;
     int SYNC_ALL        = SYNC_DATA | SYNC_ATTACH;
 
+    String CHANGES_NAME_POSTFIX = "_changes";
     int CHANGE_OPERATION_NEW     = 1 << 1; // 2
     int CHANGE_OPERATION_CHANGED = 1 << 2; // 4
     int CHANGE_OPERATION_DELETE  = 1 << 3; // 8

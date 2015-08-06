@@ -117,7 +117,7 @@ public class NGWVectorLayer
         mNet = new NetworkUtil(context);
 
         // table name is the same as the folder name of the layer + "_changes"
-        mChangeTableName = mPath.getName() + "_changes";
+        mChangeTableName = mPath.getName() + Constants.CHANGES_NAME_POSTFIX;
         mSyncType = Constants.SYNC_NONE;
         mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
         mNGWLayerType = Connection.NGWResourceTypeNone;
@@ -857,7 +857,7 @@ public class NGWVectorLayer
     }
 
 
-    protected boolean sendLocalChanges(SyncResult syncResult)
+    public boolean sendLocalChanges(SyncResult syncResult)
     {
         long changesCount = FeatureChanges.getChangeCount(mChangeTableName);
         Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
@@ -1204,7 +1204,7 @@ public class NGWVectorLayer
     }
 
 
-    protected boolean getChangesFromServer(
+    public boolean getChangesFromServer(
             String authority,
             SyncResult syncResult)
     {
