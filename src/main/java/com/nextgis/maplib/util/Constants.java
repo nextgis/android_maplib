@@ -150,6 +150,7 @@ public interface Constants
     int SYNC_DATA       = SYNC_GEOMETRY | SYNC_ATTRIBUTES;
     int SYNC_ATTACH     = 1 << 3;
     int SYNC_ALL        = SYNC_DATA | SYNC_ATTACH;
+    long DEFAULT_SYNC_PERIOD = 3600; //1 hour
 
     String CHANGES_NAME_POSTFIX = "_changes";
     int CHANGE_OPERATION_NEW     = 1 << 1; // 2
