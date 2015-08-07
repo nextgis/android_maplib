@@ -61,8 +61,10 @@ public interface Constants
     //from 1 and higher
     //As more than more memory needed
     float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
-    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 7;
-    int   DEFAULT_DOWNLOAD_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_BACKGROUND + 5;
+    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 11;
+    int   DEFAULT_DOWNLOAD_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_BACKGROUND + 3;
+    int   DEFAULT_LOAD_LAYER_THREAD_PRIORITY = Thread.MIN_PRIORITY;
+    int   DEFAULT_EXECUTION_DELAY = 450;
 
     int DEFAULT_TILE_SIZE = 256;
 
@@ -140,8 +142,8 @@ public interface Constants
     long     ONE_WEEK                        = ONE_DAY * 7;
     long     DEFAULT_MAXIMUM_CACHED_FILE_AGE = ONE_WEEK;
     long     ONE_YEAR                        = ONE_DAY * 365;
-    int      KEEP_ALIVE_TIME                 = 65;
-    int      TERMINATE_TIME                  = 5;
+    int      KEEP_ALIVE_TIME                 = 35;
+    int      TERMINATE_TIME                  = 1;
     TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
 
     int SYNC_NONE       = 1 << 0;

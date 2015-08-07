@@ -711,7 +711,7 @@ public class VectorLayer
                         reloadCache();
                     }
                 });
-                t.setPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+                t.setPriority(Constants.DEFAULT_LOAD_LAYER_THREAD_PRIORITY);
                 t.start();
             }
         }
@@ -1961,7 +1961,7 @@ public class VectorLayer
                     reloadCache();
                 }
             });
-            t.setPriority(Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+            t.setPriority(Constants.DEFAULT_LOAD_LAYER_THREAD_PRIORITY);
             t.start();
         }
     }

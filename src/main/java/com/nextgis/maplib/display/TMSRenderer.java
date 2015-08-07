@@ -28,6 +28,7 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
+import android.os.Handler;
 import android.util.Log;
 
 import com.nextgis.maplib.api.ILayer;
@@ -196,8 +197,6 @@ public class TMSRenderer
     public void runDraw(final GISDisplay display)
             throws NullPointerException
     {
-        cancelDraw();
-
         final double zoom = display.getZoomLevel();
 
 
@@ -211,29 +210,23 @@ public class TMSRenderer
 
         List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
-            tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
+                }
+            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
+
+        cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
         synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
-            {
-                @Override
-                public void rejectedExecution(
-                        Runnable r,
-                        ThreadPoolExecutor executor)
-                {
-                    try {
-                        executor.getQueue().put(r);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        //throw new RuntimeException("Interrupted while submitting task", e);
-                    }
-                }
-            });
+                    new LinkedBlockingQueue<Runnable>());
         }
 
         /*if (null == mDrawThreadPool) {
@@ -273,7 +266,7 @@ public class TMSRenderer
 
                                 tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
 
-                                Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tileListSize + " layer: " + mLayer.getName());
+                                //Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tileListSize + " layer: " + mLayer.getName());
                             }
                         }
                     });
@@ -289,7 +282,7 @@ public class TMSRenderer
             synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
                 try {
-                    mDrawThreadPool.awaitTermination(650, TimeUnit.MILLISECONDS);
+                    mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
                     mDrawThreadPool.purge();
                 } catch (InterruptedException e) {
                     e.printStackTrace();

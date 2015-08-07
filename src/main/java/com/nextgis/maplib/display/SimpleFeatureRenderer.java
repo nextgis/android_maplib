@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.display;
 
+import android.os.Handler;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
@@ -77,14 +78,19 @@ public class SimpleFeatureRenderer
             return;
         }
 
-        cancelDraw();
 
         GeoEnvelope env = display.getBounds();
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
         GeoEnvelope layerEnv = vectorLayer.getExtents();
 
         if (null == layerEnv || !env.intersects(layerEnv)) {
-            vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+                }
+            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
@@ -92,29 +98,23 @@ public class SimpleFeatureRenderer
         final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
 
         if (cache.size() == 0) {
-            vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+                }
+            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
+
+        cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
         synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
-            {
-                @Override
-                public void rejectedExecution(
-                        Runnable r,
-                        ThreadPoolExecutor executor)
-                {
-                    try {
-                        executor.getQueue().put(r);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        //throw new RuntimeException("Interrupted while submitting task", e);
-                    }
-                }
-            });
+                    new LinkedBlockingQueue<Runnable>());
         }
 
         synchronized (mLayer) {
@@ -192,13 +192,14 @@ public class SimpleFeatureRenderer
             synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
             }
-            /*try {
-                mDrawThreadPool.awaitTermination(Constants.TERMINATE_TIME, Constants.KEEP_ALIVE_TIME_UNIT);
+            try {
+                mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
+                mDrawThreadPool.purge();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                mDrawThreadPool.shutdownNow();
-                Thread.currentThread().interrupt();
-            }*/
+                //mDrawThreadPool.shutdownNow();
+                //Thread.currentThread().interrupt();
+            }
         }
     }
 
