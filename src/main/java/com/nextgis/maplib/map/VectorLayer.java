@@ -71,6 +71,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -79,10 +81,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.FTDate;
 
 
 public class VectorLayer
@@ -359,6 +363,7 @@ public class VectorLayer
                     }
 
                     if (fieldIndex != NOT_FOUND) {
+                        value = parseDateTime(value, fields.get(fieldIndex).getType());
                         feature.setFieldValue(fieldIndex, value);
                     }
                 }
@@ -370,6 +375,31 @@ public class VectorLayer
             e.printStackTrace();
             return e.getLocalizedMessage();
         }
+    }
+
+    protected Object parseDateTime(Object value, int type) {
+        SimpleDateFormat sdf = null;
+
+        switch (type) {
+            case FTDate:
+                sdf = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault());
+                break;
+            case FTTime:
+                sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                break;
+            case FTDateTime:
+                sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault());
+                break;
+        }
+
+        if (sdf != null && value instanceof String)
+            try {
+                value = sdf.parse((String) value).getTime();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+        return value;
     }
 
 
@@ -417,6 +447,8 @@ public class VectorLayer
                     tableCreate += "REAL";
                     break;
                 case FTDateTime:
+                case FTDate:
+                case FTTime:
                     tableCreate += "TIMESTAMP";
                     break;
             }
@@ -502,6 +534,8 @@ public class VectorLayer
                         Log.d(TAG, "skip value: " + realVal.toString());
                     }
                     break;
+                case FTDate:
+                case FTTime:
                 case FTDateTime:
                     Object dateVal = feature.getFieldValue(i);
                     if(dateVal instanceof Date){
