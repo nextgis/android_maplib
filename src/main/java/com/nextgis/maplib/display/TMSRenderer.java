@@ -29,23 +29,26 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.os.Handler;
-import android.util.Log;
+import android.os.Looper;
 
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
+import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
+import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
+import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
+import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
 
 
 public class TMSRenderer
@@ -210,7 +213,7 @@ public class TMSRenderer
 
         List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
-            final Handler handler = new Handler();
+            final Handler handler = new Handler(Looper.getMainLooper());
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {

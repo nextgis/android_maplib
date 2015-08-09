@@ -24,14 +24,20 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Looper;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.map.TrackLayer;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+
+import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
 
 
 public class TrackRenderer
@@ -69,14 +75,20 @@ public class TrackRenderer
     @Override
     public void runDraw(GISDisplay display)
     {
-        TrackLayer layer = (TrackLayer) mLayer;
+        final TrackLayer layer = (TrackLayer) mLayer;
 
         mPaint.setColor(layer.getColor());
         mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
 
         List<GeoLineString> trackLines = layer.getTracks();
         if (trackLines.size() < 1) {
-            layer.onDrawFinished(layer.getId(), 1.0f);
+            final Handler handler = new Handler(Looper.getMainLooper());
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    layer.onDrawFinished(layer.getId(), 1.0f);
+                }
+            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
