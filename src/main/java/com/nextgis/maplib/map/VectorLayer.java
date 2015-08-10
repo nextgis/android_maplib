@@ -1147,7 +1147,7 @@ public class VectorLayer
             //get attach path
             File attachFolder = new File(mPath, featureId);
             //we start files from MIN_LOCAL_FEATURE_ID to not overlap with NGW files id's
-            long maxId = NOT_FOUND;
+            long maxId = MIN_LOCAL_FEATURE_ID;
             if (attachFolder.isDirectory()) {
                 for (File attachFile : attachFolder.listFiles()) {
                     if (attachFile.getName().equals(META)) {
