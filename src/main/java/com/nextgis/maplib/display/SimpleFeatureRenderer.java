@@ -39,6 +39,7 @@ import org.json.JSONObject;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
@@ -122,7 +123,21 @@ public class SimpleFeatureRenderer
         synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                    new LinkedBlockingQueue<Runnable>());
+                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+                    {
+                        @Override
+                        public void rejectedExecution(
+                                Runnable r,
+                                ThreadPoolExecutor executor)
+                        {
+                            try {
+                                executor.getQueue().put(r);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                                //throw new RuntimeException("Interrupted while submitting task", e);
+                            }
+                        }
+                    });
         }
 
         synchronized (mLayer) {
