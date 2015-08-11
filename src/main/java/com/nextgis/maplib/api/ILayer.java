@@ -24,6 +24,7 @@
 package com.nextgis.maplib.api;
 
 import android.content.Context;
+
 import com.nextgis.maplib.datasource.GeoEnvelope;
 
 import java.io.File;
@@ -50,7 +51,7 @@ public interface ILayer
     /**
      * @return Layer identofoctor - set by map on current session
      */
-    long getId();
+    int getId();
 
     /**
      * Get Layer type (@see com.nextgis.maplib.util.Constants)
@@ -103,7 +104,7 @@ public interface ILayer
      * Set layer internal identifictor - set by map on current session
      * @param id New layer identificator
      */
-    void setId(short id);
+    void setId(int id);
 
     /**
      * @return Is layer valid (all data are present, .etc.)

@@ -24,16 +24,20 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.display.GISDisplay;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.JSON_MAXLEVEL_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MINLEVEL_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_VISIBILITY_KEY;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MIN_ZOOM;
 
@@ -142,7 +146,7 @@ public class Layer extends Table
 
     @Override
     public void onDrawFinished(
-            long id,
+            int id,
             float percent)
     {
         if (mParent != null && mParent instanceof ILayerView) {

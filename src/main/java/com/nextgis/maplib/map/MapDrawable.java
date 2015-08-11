@@ -26,6 +26,7 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -45,7 +46,7 @@ public class MapDrawable
         implements IMapView
 {
     protected int  mLimitsType;
-    protected Long mTopVisibleLayerId;
+    protected int mTopVisibleLayerId;
 
     protected RunnableFuture<Void> mDrawThreadTask;
 
@@ -254,7 +255,7 @@ public class MapDrawable
     }
 
 
-    public Long getTopVisibleLayerId()
+    public int getTopVisibleLayerId()
     {
         return mTopVisibleLayerId;
     }
@@ -263,7 +264,7 @@ public class MapDrawable
     public boolean findTopVisibleLayer()
     {
         mTopVisibleLayerId = getVisibleTopLayerId();
-        return null != mTopVisibleLayerId;
+        return Constants.NOT_FOUND != mTopVisibleLayerId;
     }
 
 

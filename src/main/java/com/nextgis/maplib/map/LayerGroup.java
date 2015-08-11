@@ -25,12 +25,15 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.text.TextUtils;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
+import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,7 +45,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.JSON_LAYERS_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_PATH_KEY;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_GROUP;
+import static com.nextgis.maplib.util.Constants.LAYER_PREFIX;
 
 
 public class LayerGroup
@@ -78,7 +84,7 @@ public class LayerGroup
      *
      * @return Layer or null
      */
-    public ILayer getLayerById(long id)
+    public ILayer getLayerById(int id)
     {
         if (mId == id) {
             return this;
@@ -307,14 +313,14 @@ public class LayerGroup
     }
 
 
-    public Long getVisibleTopLayerId()
+    public int getVisibleTopLayerId()
     {
         for (int i = mLayers.size() - 1; i >= 0; i--) {
             ILayer layer = mLayers.get(i);
             if (layer instanceof LayerGroup) {
                 LayerGroup layerGroup = (LayerGroup) layer;
-                Long visibleTopLayerId = layerGroup.getVisibleTopLayerId();
-                if (null != visibleTopLayerId) {
+                int visibleTopLayerId = layerGroup.getVisibleTopLayerId();
+                if (Constants.NOT_FOUND != visibleTopLayerId) {
                     return visibleTopLayerId;
                 }
 
@@ -328,7 +334,7 @@ public class LayerGroup
             }
         }
 
-        return null;
+        return Constants.NOT_FOUND;
     }
 
 
@@ -446,7 +452,7 @@ public class LayerGroup
     }
 
 
-    protected void onLayerDeleted(long id)
+    protected void onLayerDeleted(int id)
     {
         for (ILayer layer : mLayers) {
             if (layer.getId() == id) {

@@ -41,6 +41,7 @@ import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -58,6 +59,7 @@ import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -78,7 +80,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 
 public class NGWVectorLayer
         extends VectorLayer
@@ -103,7 +108,6 @@ public class NGWVectorLayer
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
     protected static final String JSON_NGWLAYER_TYPE_KEY = "ngw_layer_type";
     protected static final String JSON_SERVERWHERE_KEY   = "server_where";
-
 
     public NGWVectorLayer(
             Context context,
@@ -1718,23 +1722,11 @@ public class NGWVectorLayer
         return mSyncType;
     }
 
-
-    public void setSyncType(int syncType)
-    {
-        if( !isSyncable() ) {
-            return;
-        }
-
-        if (mSyncType == syncType) {
-            return;
-        }
-
-        if (syncType == Constants.SYNC_NONE) {
-            mSyncType = syncType;
+    protected synchronized void applySync(int syncType){
+        if(syncType == Constants.SYNC_NONE) {
             FeatureChanges.removeAllChanges(mChangeTableName);
-        } else if (mSyncType == Constants.SYNC_NONE && 0 != (syncType & Constants.SYNC_DATA)) {
-            mSyncType = syncType;
-
+        }
+        else{
             if(mCacheLoaded)
                 reloadCache();
 
@@ -1756,6 +1748,44 @@ public class NGWVectorLayer
                     }
                 }
             }
+        }
+    }
+
+    public void setSyncType(int syncType)
+    {
+        if( !isSyncable() ) {
+            return;
+        }
+
+        if (mSyncType == syncType) {
+            return;
+        }
+
+        if (syncType == Constants.SYNC_NONE) {
+            mSyncType = syncType;
+
+            new Thread( new Runnable()
+            {
+                public void run()
+                {
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    applySync(Constants.SYNC_NONE);
+                }
+            }).start();
+
+        } else if (mSyncType == Constants.SYNC_NONE && 0 != (syncType & Constants.SYNC_DATA)) {
+            mSyncType = syncType;
+
+            new Thread( new Runnable()
+            {
+                public void run()
+                {
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    applySync(Constants.SYNC_ALL);
+                }
+            }).start();
+
+
         } else {
             mSyncType = syncType;
         }

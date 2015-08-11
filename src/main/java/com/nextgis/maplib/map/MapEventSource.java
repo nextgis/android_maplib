@@ -27,6 +27,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -100,7 +101,7 @@ public class MapEventSource
 
     @Override
     public void onDrawFinished(
-            long id,
+            int id,
             float percent)
     {
         super.onDrawFinished(id, percent);
@@ -123,7 +124,7 @@ public class MapEventSource
         }
 
         Bundle bundle = new Bundle();
-        bundle.putLong(BUNDLE_ID_KEY, layer.getId());
+        bundle.putInt(BUNDLE_ID_KEY, layer.getId());
         bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerAdded);
 
         Message msg = new Message();
@@ -147,7 +148,7 @@ public class MapEventSource
         }
 
         Bundle bundle = new Bundle();
-        bundle.putLong(BUNDLE_ID_KEY, layer.getId());
+        bundle.putInt(BUNDLE_ID_KEY, layer.getId());
         bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerChanged);
 
         Message msg = new Message();
@@ -163,7 +164,7 @@ public class MapEventSource
      *         A deleted layer identificator
      */
     @Override
-    protected void onLayerDeleted(long id)
+    protected void onLayerDeleted(int id)
     {
         super.onLayerDeleted(id);
         if (mListeners == null) {
@@ -171,7 +172,7 @@ public class MapEventSource
         }
 
         Bundle bundle = new Bundle();
-        bundle.putLong(BUNDLE_ID_KEY, id);
+        bundle.putInt(BUNDLE_ID_KEY, id);
         bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDeleted);
 
         Message msg = new Message();
@@ -234,7 +235,7 @@ public class MapEventSource
      * Send layers draw finished event to all listeners
      */
     protected void onLayerDrawFinished(
-            long id,
+            int id,
             float percent)
     {
         if (mListeners == null) {
@@ -243,7 +244,7 @@ public class MapEventSource
 
         Bundle bundle = new Bundle();
         bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDrawFinished);
-        bundle.putLong(BUNDLE_ID_KEY, id);
+        bundle.putInt(BUNDLE_ID_KEY, id);
         bundle.putFloat(BUNDLE_DONE_KEY, percent);
 
         Message msg = new Message();
@@ -290,13 +291,13 @@ public class MapEventSource
                 for (MapEventListener listener : mListeners) {
                     switch (resultData.getInt(BUNDLE_TYPE_KEY)) {
                         case EVENT_onLayerAdded:
-                            listener.onLayerAdded(resultData.getLong(BUNDLE_ID_KEY));
+                            listener.onLayerAdded(resultData.getInt(BUNDLE_ID_KEY));
                             break;
                         case EVENT_onLayerDeleted:
-                            listener.onLayerDeleted(resultData.getLong(BUNDLE_ID_KEY));
+                            listener.onLayerDeleted(resultData.getInt(BUNDLE_ID_KEY));
                             break;
                         case EVENT_onLayerChanged:
-                            listener.onLayerChanged(resultData.getLong(BUNDLE_ID_KEY));
+                            listener.onLayerChanged(resultData.getInt(BUNDLE_ID_KEY));
                             break;
                         case EVENT_onExtentChanged:
                             listener.onExtentChanged(
@@ -306,7 +307,7 @@ public class MapEventSource
                             break;
                         case EVENT_onLayerDrawFinished:
                             listener.onLayerDrawFinished(
-                                    resultData.getLong(BUNDLE_ID_KEY),
+                                    resultData.getInt(BUNDLE_ID_KEY),
                                     resultData.getFloat(BUNDLE_DONE_KEY));
                             break;
                         case EVENT_onLayersReordered:
