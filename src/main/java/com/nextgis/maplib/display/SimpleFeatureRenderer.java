@@ -23,15 +23,15 @@
 
 package com.nextgis.maplib.display;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
+
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.VectorCacheItem;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -44,7 +44,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
+import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
+import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
 
 
 public class SimpleFeatureRenderer
@@ -88,13 +93,6 @@ public class SimpleFeatureRenderer
         GeoEnvelope layerEnv = vectorLayer.getExtents();
 
         if (null == layerEnv || !env.intersects(layerEnv)) {
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
-                }
-            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
@@ -102,13 +100,6 @@ public class SimpleFeatureRenderer
         final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
 
         if (cache.size() == 0) {
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
-                }
-            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
@@ -165,6 +156,9 @@ public class SimpleFeatureRenderer
         }
 
         // wait for draw ending
+        int nStep = futures.size() / 10;
+        if(nStep == 0)
+            nStep = 1;
         for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
@@ -174,8 +168,9 @@ public class SimpleFeatureRenderer
                 Future future = futures.get(i);
                 future.get(); // wait for task ending
 
-                float percent = i / futuresSize;
-                vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
+                float percent = (float) i / futuresSize;
+                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
+                    vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
 
                 //Log.d(TAG, "Vector percent: " + percent + " complete: " + i + " geom count: " +
                 //        cacheSize + " layer :" + mLayer.getName());

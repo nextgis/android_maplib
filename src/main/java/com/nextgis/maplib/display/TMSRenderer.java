@@ -28,8 +28,6 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
-import android.os.Handler;
-import android.os.Looper;
 
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
@@ -49,7 +47,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
 import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
 import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
 import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
@@ -227,13 +224,6 @@ public class TMSRenderer
 
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-            tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
-                }
-            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
@@ -289,6 +279,9 @@ public class TMSRenderer
         }
 
         // wait for draw ending
+        int nStep = futures.size() / 10;
+        if(nStep == 0)
+            nStep = 1;
         for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
@@ -298,8 +291,9 @@ public class TMSRenderer
                 Future future = futures.get(i);
                 future.get(); // wait for task ending
 
-                float percent = i / futuresSize;
-                tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                float percent = (float) i / futuresSize;
+                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
+                    tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
 
                 //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
                 //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());

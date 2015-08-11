@@ -24,18 +24,16 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
-import android.os.Handler;
-import android.os.Looper;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.map.TrackLayer;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
-
-import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
 
 
 public class TrackRenderer
@@ -80,16 +78,12 @@ public class TrackRenderer
 
         List<GeoLineString> trackLines = layer.getTracks();
         if (trackLines.size() < 1) {
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-            layer.onDrawFinished(layer.getId(), 1.0f);
-                }
-            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
+        int nStep = trackLines.size() / 10;
+        if(nStep == 0)
+            nStep = 1;
         for (int i = 0, trackLinesSize = trackLines.size(); i < trackLinesSize; i++) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
@@ -108,7 +102,9 @@ public class TrackRenderer
                         (float) points.get(k).getX(), (float) points.get(k).getY(), mPaint);
             }
 
-            layer.onDrawFinished(layer.getId(), i / trackLinesSize);
+            float percent = (float) i / trackLinesSize;
+            if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
+                layer.onDrawFinished(layer.getId(), percent);
         }
     }
 

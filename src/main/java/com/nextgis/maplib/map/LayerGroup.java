@@ -258,19 +258,10 @@ public class LayerGroup
                         IRenderer renderer = (IRenderer) layer;
                         renderer.runDraw(mDisplay);
 
-                    } else {
-                        //fake notify
-                        onDrawFinished(layer.getId(), 1.0f);
                     }
-
-                } else {
-                    //fake notify
-                    onDrawFinished(layer.getId(), 1.0f);
                 }
             }
         }
-
-        onDrawFinished(this.getId(), 1.0f);
     }
 
 

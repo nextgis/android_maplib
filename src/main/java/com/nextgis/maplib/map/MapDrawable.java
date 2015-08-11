@@ -46,7 +46,6 @@ public class MapDrawable
         implements IMapView
 {
     protected int  mLimitsType;
-    protected int mTopVisibleLayerId;
 
     protected RunnableFuture<Void> mDrawThreadTask;
 
@@ -254,20 +253,6 @@ public class MapDrawable
         return null;
     }
 
-
-    public int getTopVisibleLayerId()
-    {
-        return mTopVisibleLayerId;
-    }
-
-
-    public boolean findTopVisibleLayer()
-    {
-        mTopVisibleLayerId = getVisibleTopLayerId();
-        return Constants.NOT_FOUND != mTopVisibleLayerId;
-    }
-
-
     @Override
     public void runDraw(final GISDisplay display)
     {
@@ -281,33 +266,30 @@ public class MapDrawable
 
         mDisplay.clearLayer();
 
-        if (findTopVisibleLayer()) {
-
-            mDrawThreadTask = new FutureTask<Void>(
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            android.os.Process.setThreadPriority(
-                                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
-                            MapDrawable.super.runDraw(mDisplay);
-                        }
-
-                    }, null)
-            {
-                @Override
-                protected void done()
+        mDrawThreadTask = new FutureTask<Void>(
+                new Runnable()
                 {
-                    super.done();
-                    if (!isCancelled()) {
-                        onDrawFinished(MapDrawable.this.getId(), 1.0f);
+                    @Override
+                    public void run()
+                    {
+                        android.os.Process.setThreadPriority(
+                                Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+                        MapDrawable.super.runDraw(mDisplay);
                     }
-                }
-            };
 
-            new Thread(mDrawThreadTask).start();
-        }
+                }, null)
+        {
+            @Override
+            protected void done()
+            {
+                super.done();
+                //if (!isCancelled()) {
+                    onDrawFinished(MapDrawable.this.getId(), 1.0f);
+                //}
+            }
+        };
+
+        new Thread(mDrawThreadTask).start();
     }
 
 

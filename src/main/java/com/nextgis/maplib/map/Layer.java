@@ -65,7 +65,7 @@ public class Layer extends Table
     {
         if (mRenderer != null) {
             mRenderer.runDraw(display);
-            onDrawFinished(this.getId(), 1.0f);
+            //onDrawFinished(this.getId(), 1.0f);
         }
     }
 
