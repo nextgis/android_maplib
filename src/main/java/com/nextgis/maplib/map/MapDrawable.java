@@ -314,6 +314,7 @@ public class MapDrawable
     @Override
     public void cancelDraw()
     {
+        super.cancelDraw();
         if (null != mDrawThreadTask) {
             mDrawThreadTask.cancel(true);
         }
