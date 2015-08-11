@@ -78,10 +78,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.*;
 
 public class NGWVectorLayer
         extends VectorLayer
@@ -387,6 +384,8 @@ public class NGWVectorLayer
                 JSONArray featuresJSONArray = new JSONArray(data);
                 List<Feature> features = jsonToFeatures(featuresJSONArray, fields, nSRS);
 
+                Log.d(Constants.TAG, "feature count: " + features.size());
+
                 return initialize(fields, features, geomType);
             }
             else{
@@ -442,11 +441,16 @@ public class NGWVectorLayer
     protected void loadFeaturesFromNGWStream(InputStream in, List<Field> fields, SQLiteDatabase db, int nSRS) throws IOException {
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         reader.beginArray();
+        int featureCount = 0;
         while (reader.hasNext()) {
             //TODO: download attachments if needed
             Feature feature = readNGWFeature(reader, fields, nSRS);
             createFeature(feature, fields, db);
+            ++featureCount;
         }
+
+        Log.d(Constants.TAG, "feature count: " + featureCount);
+
         reader.endArray();
         reader.close();
     }
