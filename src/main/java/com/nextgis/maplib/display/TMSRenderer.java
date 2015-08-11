@@ -30,26 +30,24 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.util.Constants;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
-import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
-import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class TMSRenderer
@@ -70,7 +68,6 @@ public class TMSRenderer
     protected float              mContrast;
     protected float              mBrightness;
     protected boolean            mForceToGrayScale;
-    protected int                mTileCompleteCount;
     protected final Object lock = new Object();
 
 
@@ -212,13 +209,13 @@ public class TMSRenderer
             remoteTMSLayer.onPrepare();
         }
 
-        List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
+        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
             final Handler handler = new Handler(Looper.getMainLooper());
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
+            tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
                 }
             }, DEFAULT_EXECUTION_DELAY);
             return;
@@ -230,67 +227,73 @@ public class TMSRenderer
         synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                    new LinkedBlockingQueue<Runnable>(),
-                    new RejectedExecutionHandler()
-                    {
-                        @Override
-                        public void rejectedExecution(
-                                Runnable r,
-                                ThreadPoolExecutor executor)
-                        {
-                            try {
-                                executor.getQueue().put(r);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                                //throw new RuntimeException("Interrupted while submitting task", e);
-                            }
-                        }
-                    });
+                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+            {
+                @Override
+                public void rejectedExecution(
+                        Runnable r,
+                        ThreadPoolExecutor executor)
+                {
+                    try {
+                        executor.getQueue().put(r);
+                    } catch (InterruptedException e) {
+                        //e.printStackTrace();
+                    }
+                }
+            });
         }
 
-        /*if (null == mDrawThreadPool) {
-            tmsLayer.onDrawFinished(tmsLayer.getId(), 1);
-            return;
-        }*/
+        // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
+        int tilesSize = tiles.size();
+        List<Future> futures = new ArrayList<>(tilesSize);
 
-        synchronized (mLayer) {
-            mTileCompleteCount = 0;
-        }
+        for (int i = 0; i < tilesSize; ++i) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
 
-        final int tileListSize = tiles.size();
-        for (int i = 0; i < tileListSize; ++i) {
             final TileItem tile = tiles.get(i);
-            mDrawThreadPool.execute(
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            android.os.Process.setThreadPriority(
-                                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                            final Bitmap bmp = tmsLayer.getBitmap(tile);
-                            if (bmp != null) {
-                                display.drawTile(bmp, tile.getPoint(), mRasterPaint);
-                            }
+            futures.add(
+                    mDrawThreadPool.submit(
+                            new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    android.os.Process.setThreadPriority(
+                                            Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                            synchronized (mLayer) {
-                        /*long complete = mDrawThreadPool.getCompletedTaskCount() + 1;
-                        if (mDrawThreadPool.getTaskCount() > 1)
-                            percent = (float) (complete) / mDrawThreadPool.getTaskCount();
-                        tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
-                        Log.d(TAG, "percent: " + percent + " complete: " + complete + " task count: " + mDrawThreadPool.getTaskCount());*/
-                                mTileCompleteCount++;
-                                float percent = (float) (mTileCompleteCount) / tileListSize;
-
-                                tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
-
-                                //Log.d(TAG, "TMS percent: " + percent + " complete: " + mTileCompleteCount + " tiles count: " + tileListSize + " layer: " + mLayer.getName());
-                            }
-                        }
-                    });
+                                    final Bitmap bmp = tmsLayer.getBitmap(tile);
+                                    if (bmp != null) {
+                                        display.drawTile(bmp, tile.getPoint(), mRasterPaint);
+                                    }
+                                }
+                            }));
         }
-        mDrawThreadPool.shutdown();
+
+        // wait for draw ending
+        for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
+            try {
+                Future future = futures.get(i);
+                future.get(); // wait for task ending
+
+                float percent = i / futuresSize;
+                tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+
+                //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
+                //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
+
+            } catch (CancellationException | InterruptedException e) {
+                //e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -304,9 +307,7 @@ public class TMSRenderer
                     mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
                     mDrawThreadPool.purge();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    //mDrawThreadPool.shutdownNow();
-                    //Thread.currentThread().interrupt();
+                    //e.printStackTrace();
                 }
             }
         }

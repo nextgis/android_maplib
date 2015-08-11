@@ -30,8 +30,11 @@ import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
+import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
 
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
@@ -41,8 +44,10 @@ public class MapDrawable
         extends MapEventSource
         implements IMapView
 {
+    protected int  mLimitsType;
+    protected Long mTopVisibleLayerId;
 
-    protected int mLimitsType;
+    protected RunnableFuture<Void> mDrawThreadTask;
 
 
     public MapDrawable(
@@ -249,24 +254,67 @@ public class MapDrawable
     }
 
 
+    public Long getTopVisibleLayerId()
+    {
+        return mTopVisibleLayerId;
+    }
+
+
+    public boolean findTopVisibleLayer()
+    {
+        mTopVisibleLayerId = getVisibleTopLayerId();
+        return null != mTopVisibleLayerId;
+    }
+
+
     @Override
     public void runDraw(final GISDisplay display)
     {
+        cancelDraw();
+
         onLayerDrawStarted();
 
-        mLayerDrawIndex = 0;
+        if (null != display && mDisplay != display) {
+            mDisplay = display;
+        }
 
-        if (display != null) {
-            //print current view to layer or background
-            //display.clearBackground();
-            display.clearLayer();
+        mDisplay.clearLayer();
 
-            drawNext(display);
-        } else {
-            //mDisplay.clearBackground();
-            mDisplay.clearLayer();
+        if (findTopVisibleLayer()) {
 
-            drawNext(mDisplay);
+            mDrawThreadTask = new FutureTask<Void>(
+                    new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            android.os.Process.setThreadPriority(
+                                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+                            MapDrawable.super.runDraw(mDisplay);
+                        }
+
+                    }, null)
+            {
+                @Override
+                protected void done()
+                {
+                    super.done();
+                    if (!isCancelled()) {
+                        onDrawFinished(MapDrawable.this.getId(), 1.0f);
+                    }
+                }
+            };
+
+            new Thread(mDrawThreadTask).start();
+        }
+    }
+
+
+    @Override
+    public void cancelDraw()
+    {
+        if (null != mDrawThreadTask) {
+            mDrawThreadTask.cancel(true);
         }
     }
 

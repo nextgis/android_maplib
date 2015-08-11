@@ -26,29 +26,25 @@ package com.nextgis.maplib.display;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.VectorCacheItem;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.DEFAULT_EXECUTION_DELAY;
-import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class SimpleFeatureRenderer
@@ -57,7 +53,6 @@ public class SimpleFeatureRenderer
 
     protected Style              mStyle;
     protected ThreadPoolExecutor mDrawThreadPool;
-    protected int                mGeomCompleteCount;
     protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
@@ -124,60 +119,73 @@ public class SimpleFeatureRenderer
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
                     new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
-                    {
-                        @Override
-                        public void rejectedExecution(
-                                Runnable r,
-                                ThreadPoolExecutor executor)
-                        {
-                            try {
-                                executor.getQueue().put(r);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                                //throw new RuntimeException("Interrupted while submitting task", e);
-                            }
-                        }
-                    });
+            {
+                @Override
+                public void rejectedExecution(
+                        Runnable r,
+                        ThreadPoolExecutor executor)
+                {
+                    try {
+                        executor.getQueue().put(r);
+                    } catch (InterruptedException e) {
+                        //e.printStackTrace();
+                    }
+                }
+            });
         }
 
-        synchronized (mLayer) {
-            mGeomCompleteCount = 0;
-        }
+        // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
+        int cacheSize = cache.size();
+        List<Future> futures = new ArrayList<>(cacheSize);
 
-        for (int i = 0; i < cache.size(); i++) {
+        for (int i = 0; i < cacheSize; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
             final VectorCacheItem item = cache.get(i);
             final Style style = getStyle(item.getId());
 
-            mDrawThreadPool.execute(
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            android.os.Process.setThreadPriority(
-                                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+            futures.add(
+                    mDrawThreadPool.submit(
+                            new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    android.os.Process.setThreadPriority(
+                                            Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                            GeoGeometry geometry = item.getGeoGeometry();
-                            if (null != geometry) {
-                                style.onDraw(geometry, display);
-                            }
-
-                            synchronized (mLayer) {
-                                mGeomCompleteCount++;
-                                float percent = (float) (mGeomCompleteCount) / cache.size();
-                                vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
-
-                                //Log.d(TAG, "Vector percent: " + percent + " complete: " +
-                                //        mGeomCompleteCount + " geom count: " + cache.size() +
-                                //        " layer :" + mLayer.getName());
-                            }
-                            //vectorLayer.onDrawFinished(vectorLayer.getId(), 1);
-                        }
-
-                    });
-
+                                    GeoGeometry geometry = item.getGeoGeometry();
+                                    if (null != geometry) {
+                                        style.onDraw(geometry, display);
+                                    }
+                                }
+                            }));
         }
-        mDrawThreadPool.shutdown();
+
+        // wait for draw ending
+        for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
+            try {
+                Future future = futures.get(i);
+                future.get(); // wait for task ending
+
+                float percent = i / futuresSize;
+                vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
+
+                //Log.d(TAG, "Vector percent: " + percent + " complete: " + i + " geom count: " +
+                //        cacheSize + " layer :" + mLayer.getName());
+
+            } catch (CancellationException | InterruptedException e) {
+                //e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -219,9 +227,7 @@ public class SimpleFeatureRenderer
                 mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
                 mDrawThreadPool.purge();
             } catch (InterruptedException e) {
-                e.printStackTrace();
-                //mDrawThreadPool.shutdownNow();
-                //Thread.currentThread().interrupt();
+                //e.printStackTrace();
             }
         }
     }

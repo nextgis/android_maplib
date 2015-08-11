@@ -25,7 +25,6 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.text.TextUtils;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
@@ -98,7 +97,8 @@ public class LayerGroup
      * @param name Name to search
      * @return ILayer or null
      */
-    public ILayer getLayerByName(String name){
+    public ILayer getLayerByName(String name)
+    {
         if (mName.equals(name)) {
             return this;
         }
@@ -222,14 +222,49 @@ public class LayerGroup
     @Override
     public void runDraw(GISDisplay display)
     {
-        if (mDisplay == null) {
+        if (null != display && mDisplay != display) {
             mDisplay = display;
         }
-        if (mDisplay != display) {
-            mDisplay = display;
+
+        if (mLayers.size() == 0) {
+            return;
         }
-        mLayerDrawIndex = 0;
-        drawNext(display);
+
+        for (ILayer layer : mLayers) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                layerGroup.runDraw(mDisplay);
+
+            } else {
+
+                if (layer.isValid() && layer instanceof ILayerView) {
+
+                    ILayerView layerView = (ILayerView) layer;
+                    if (layerView.isVisible() && layer instanceof IRenderer &&
+                            mDisplay.getZoomLevel() <= layerView.getMaxZoom() &&
+                            mDisplay.getZoomLevel() >= layerView.getMinZoom()) {
+                        // Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
+
+                        IRenderer renderer = (IRenderer) layer;
+                        renderer.runDraw(mDisplay);
+
+                    } else {
+                        //fake notify
+                        onDrawFinished(layer.getId(), 1.0f);
+                    }
+
+                } else {
+                    //fake notify
+                    onDrawFinished(layer.getId(), 1.0f);
+                }
+            }
+        }
+
+        onDrawFinished(this.getId(), 1.0f);
     }
 
 
@@ -269,6 +304,55 @@ public class LayerGroup
                 layerView.setVisible(visible);
             }
         }
+    }
+
+
+    public Long getVisibleTopLayerId()
+    {
+        for (int i = mLayers.size() - 1; i >= 0; i--) {
+            ILayer layer = mLayers.get(i);
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                Long visibleTopLayerId = layerGroup.getVisibleTopLayerId();
+                if (null != visibleTopLayerId) {
+                    return visibleTopLayerId;
+                }
+
+            } else {
+                if (layer.isValid() && layer instanceof ILayerView) {
+                    ILayerView layerView = (ILayerView) layer;
+                    if (layerView.isVisible()) {
+                        return layer.getId();
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    public int getVisibleLayerCount()
+    {
+        int visibleLayerCount = 0;
+
+        for (int i = mLayers.size() - 1; i >= 0; i--) {
+            ILayer layer = mLayers.get(i);
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                visibleLayerCount += layerGroup.getVisibleLayerCount();
+
+            } else {
+                if (layer.isValid() && layer instanceof ILayerView) {
+                    ILayerView layerView = (ILayerView) layer;
+                    if (layerView.isVisible()) {
+                        ++visibleLayerCount;
+                    }
+                }
+            }
+        }
+
+        return visibleLayerCount;
     }
 
 
@@ -338,59 +422,9 @@ public class LayerGroup
 
 
     @Override
-    public void onDrawFinished(
-            int id,
-            float percent)
-    {
-        // notify group layer draw finished?
-        //
-        //if (mLayers.size() <= mLayerDrawIndex) {
-        //    if (mParent != null && mParent instanceof ILayerView) {
-        //        ILayerView layerView = (ILayerView) mParent;
-        //        layerView.onDrawFinished(getId(), 100);
-        //    }
-        //} else {
-        //}
-
-        if (percent >= 1.0f) {
-            drawNext(mDisplay);
-        }
-
-        super.onDrawFinished(id, percent);
-    }
-
-
-    @Override
     public GeoEnvelope getExtents()
     {
         return mExtents;
-    }
-
-
-    protected void drawNext(final GISDisplay display)
-    {
-        if (mLayers.size() == 0 || mLayers.size() <= mLayerDrawIndex) {
-            return;
-        }
-
-        ILayer layer = mLayers.get(mLayerDrawIndex);
-        mLayerDrawIndex++;
-        if (layer.isValid() && layer instanceof ILayerView) {
-            ILayerView layerView = (ILayerView) layer;
-            if (layerView.isVisible() && layer instanceof IRenderer &&
-                    display.getZoomLevel() <= layerView.getMaxZoom() &&
-                    display.getZoomLevel() >= layerView.getMinZoom()) {
-                // Log.d(Constants.TAG, "Layer Draw Index: " + mLayerDrawIndex);
-
-                IRenderer renderer = (IRenderer) layer;
-                renderer.runDraw(display);
-            } else {
-                drawNext(display);
-            }
-        } else {
-            //fake notify
-            onDrawFinished(layer.getId(), 1.0f);
-        }
     }
 
 
@@ -412,7 +446,7 @@ public class LayerGroup
     }
 
 
-    protected void onLayerDeleted(int id)
+    protected void onLayerDeleted(long id)
     {
         for (ILayer layer : mLayers) {
             if (layer.getId() == id) {

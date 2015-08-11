@@ -26,12 +26,10 @@ package com.nextgis.maplib.display;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.map.TrackLayer;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -86,27 +84,31 @@ public class TrackRenderer
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    layer.onDrawFinished(layer.getId(), 1.0f);
+            layer.onDrawFinished(layer.getId(), 1.0f);
                 }
             }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
-        int linesCompleteCount = 0;
-        for (GeoLineString trackLine : trackLines) {
+        for (int i = 0, trackLinesSize = trackLines.size(); i < trackLinesSize; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
+            GeoLineString trackLine = trackLines.get(i);
             List<GeoPoint> points = trackLine.getPoints();
 
-            for (int i = 1; i < points.size(); i++) {
+            for (int k = 1; k < points.size(); k++) {
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
+
                 display.drawLine(
-                        (float) points.get(i - 1).getX(), (float) points.get(i - 1).getY(),
-                        (float) points.get(i).getX(), (float) points.get(i).getY(), mPaint);
+                        (float) points.get(k - 1).getX(), (float) points.get(k - 1).getY(),
+                        (float) points.get(k).getX(), (float) points.get(k).getY(), mPaint);
             }
 
-            linesCompleteCount++;
-            synchronized (mLayer) {
-                layer.onDrawFinished(
-                        layer.getId(), (float) (linesCompleteCount) / trackLines.size());
-            }
+            layer.onDrawFinished(layer.getId(), i / trackLinesSize);
         }
     }
 

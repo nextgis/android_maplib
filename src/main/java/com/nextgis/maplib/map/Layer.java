@@ -24,19 +24,14 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteException;
-import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.display.GISDisplay;
-import com.nextgis.maplib.util.FileUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
@@ -66,6 +61,7 @@ public class Layer extends Table
     {
         if (mRenderer != null) {
             mRenderer.runDraw(display);
+            onDrawFinished(this.getId(), 1.0f);
         }
     }
 
@@ -146,7 +142,7 @@ public class Layer extends Table
 
     @Override
     public void onDrawFinished(
-            int id,
+            long id,
             float percent)
     {
         if (mParent != null && mParent instanceof ILayerView) {
