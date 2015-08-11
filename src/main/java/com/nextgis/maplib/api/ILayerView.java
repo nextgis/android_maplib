@@ -66,7 +66,7 @@ public interface ILayerView
      * @param percent The draw progress percent
      */
     void onDrawFinished(
-            int id,
+            long id,
             float percent);
 
     /**

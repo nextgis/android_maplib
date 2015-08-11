@@ -23,12 +23,10 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteException;
-
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.util.FileUtil;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -42,11 +40,11 @@ import static com.nextgis.maplib.util.Constants.*;
  */
 public class Table implements ILayer, IJSONStore {
 
-    protected String      mName;
-    protected short       mId;
-    protected File mPath;
-    protected int         mLayerType;
-    protected ILayer      mParent;
+    protected String  mName;
+    protected long    mId;
+    protected File    mPath;
+    protected int     mLayerType;
+    protected ILayer  mParent;
     protected Context mContext;
 
     public Table(
@@ -73,7 +71,7 @@ public class Table implements ILayer, IJSONStore {
 
 
     @Override
-    public short getId()
+    public long getId()
     {
         return mId;
     }

@@ -33,19 +33,19 @@ public interface MapEventListener
      * Executed then new layer added
      * @param id The new layer identificator set in this session. May be another in next execution.
      */
-    void onLayerAdded(int id);
+    void onLayerAdded(long id);
 
     /**
      * Executed then layer deleted
      * @param id The deleted layer identificator.
      */
-    void onLayerDeleted(int id);
+    void onLayerDeleted(long id);
 
     /**
      * Executed then layer changed
      * @param id The changed layer identificator.
      */
-    void onLayerChanged(int id);
+    void onLayerChanged(long id);
 
     /**
      * Executed then map extent changed (i.e. user zoom in or out)
@@ -67,7 +67,7 @@ public interface MapEventListener
      * @param percent The percent of layer drawn
      */
     void onLayerDrawFinished(
-            int id,
+            long id,
             float percent);
 
     /**

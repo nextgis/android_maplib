@@ -50,7 +50,7 @@ public interface ILayer
     /**
      * @return Layer identofoctor - set by map on current session
      */
-    short getId();
+    long getId();
 
     /**
      * Get Layer type (@see com.nextgis.maplib.util.Constants)
