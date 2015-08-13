@@ -34,7 +34,9 @@ import com.nextgis.maplib.datasource.GeoPoint;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class MapEventSource
@@ -57,6 +59,9 @@ public class MapEventSource
     protected static Handler                mHandler;
     protected        boolean                mFreeze;
 
+    protected Map<Integer, Long> mLastMessages;
+    //skip event timeout ms
+    public static final int SKIP_TIMEOUT = 150;
 
     public MapEventSource(
             Context context,
@@ -66,6 +71,7 @@ public class MapEventSource
         super(context, mapPath, layerFactory);
         mListeners = new ArrayList<>();
         mFreeze = false;
+        mLastMessages = new HashMap<>();
 
         createHandler();
     }
@@ -287,6 +293,12 @@ public class MapEventSource
                 }
 
                 Bundle resultData = msg.getData();
+
+                Long lastTime = mLastMessages.get(resultData.getInt(BUNDLE_TYPE_KEY));
+                if(lastTime != null && System.currentTimeMillis() - lastTime < SKIP_TIMEOUT &&
+                        EVENT_onLayerDrawFinished != resultData.getInt(BUNDLE_TYPE_KEY))
+                    return;
+                mLastMessages.put(resultData.getInt(BUNDLE_TYPE_KEY), System.currentTimeMillis());
 
                 for (MapEventListener listener : mListeners) {
                     switch (resultData.getInt(BUNDLE_TYPE_KEY)) {
