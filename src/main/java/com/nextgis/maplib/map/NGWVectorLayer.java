@@ -843,7 +843,9 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
+        syncResult.clear();
         if (0 != (mSyncType & Constants.SYNC_NONE) || !mIsInitialized) {
+            Log.d(Constants.TAG, "Layer " + getName() + " is not checked to sync or not inited");
             return;
         }
 
@@ -1416,6 +1418,8 @@ public class NGWVectorLayer
             // remove features not exist on server from local layer
             // if no operation is in changes array or change operation for local feature present
 
+            List<Long> deleteItems = new ArrayList<>();
+
             for (VectorCacheItem item : mVectorCacheItems) {
                 boolean bDeleteFeature = true;
                 for (Feature remoteFeature : features) {
@@ -1430,11 +1434,15 @@ public class NGWVectorLayer
                         mChangeTableName, item.getId(), Constants.CHANGE_OPERATION_NEW);
 
                 if (bDeleteFeature) {
-                    Log.d(
-                            Constants.TAG,
-                            "Delete feature #" + item.getId() + " not exist on server");
-                    delete(item.getId(), Constants.FIELD_ID + " = " + item.getId(), null);
+                    deleteItems.add(item.getId());
                 }
+            }
+
+            for(long itemId : deleteItems){
+                Log.d(
+                        Constants.TAG,
+                        "Delete feature #" + itemId + " not exist on server");
+                delete(itemId, Constants.FIELD_ID + " = " + itemId, null);
             }
 
             Cursor changeCursor = FeatureChanges.getChanges(mChangeTableName);
