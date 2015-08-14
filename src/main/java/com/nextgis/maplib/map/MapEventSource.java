@@ -31,6 +31,7 @@ import android.os.Message;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
 import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class MapEventSource
 
     protected Map<Integer, Long> mLastMessages;
     //skip event timeout ms
-    public static final int SKIP_TIMEOUT = 150;
+    public static final int SKIP_TIMEOUT = 250;
 
     public MapEventSource(
             Context context,
@@ -295,9 +296,12 @@ public class MapEventSource
                 Bundle resultData = msg.getData();
 
                 Long lastTime = mLastMessages.get(resultData.getInt(BUNDLE_TYPE_KEY));
-                if(lastTime != null && System.currentTimeMillis() - lastTime < SKIP_TIMEOUT &&
-                        EVENT_onLayerDrawFinished != resultData.getInt(BUNDLE_TYPE_KEY))
-                    return;
+                if(lastTime != null && System.currentTimeMillis() - lastTime < SKIP_TIMEOUT){
+                    if(EVENT_onLayerDrawFinished != resultData.getInt(BUNDLE_TYPE_KEY))
+                        return;
+                    if(resultData.getInt(BUNDLE_ID_KEY) != Constants.NOT_FOUND) //don't filter end drawing of whole map
+                        return;
+                }
                 mLastMessages.put(resultData.getInt(BUNDLE_TYPE_KEY), System.currentTimeMillis());
 
                 for (MapEventListener listener : mListeners) {
