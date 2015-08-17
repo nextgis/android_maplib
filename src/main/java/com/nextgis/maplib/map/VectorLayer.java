@@ -468,6 +468,7 @@ public class VectorLayer
             createFeature(feature, fields, db);
         }
 
+        mCacheLoaded = true;
         mIsInitialized = true;
         setDefaultRenderer();
 
@@ -584,6 +585,8 @@ public class VectorLayer
         }
         reader.endArray();
         reader.close();
+
+        mCacheLoaded = true;
     }
 
     protected Feature readGeoJSONFeature(JsonReader reader, List<Field> fields){

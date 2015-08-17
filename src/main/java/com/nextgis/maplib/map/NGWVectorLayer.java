@@ -457,6 +457,8 @@ public class NGWVectorLayer
 
         reader.endArray();
         reader.close();
+
+        mCacheLoaded = true;
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
