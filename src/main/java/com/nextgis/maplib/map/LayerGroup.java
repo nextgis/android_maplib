@@ -78,7 +78,7 @@ public class LayerGroup
      *
      * @return Layer or null
      */
-    public ILayer getLayerById(int id)
+    public ILayer getLayerById(long id)
     {
         if (mId == id) {
             return this;
