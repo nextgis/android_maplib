@@ -100,6 +100,10 @@ public class GeoEnvelope
         return new GeoPoint(x, y);
     }
 
+    public final double getArea(){
+        return width() * height();
+    }
+
 
     public final double width()
     {
