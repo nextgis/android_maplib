@@ -28,13 +28,13 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
-import android.os.Handler;
-import android.os.Looper;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -47,7 +47,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
+import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
+import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
+import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
 
 
 public class TMSRenderer
@@ -60,6 +63,7 @@ public class TMSRenderer
     protected static final String JSON_TMSRENDERER_CONTRAST   = "contrast";
     protected static final String JSON_TMSRENDERER_BRIGHTNESS = "brightness";
     protected static final String JSON_TMSRENDERER_GRAYSCALE  = "greyscale";
+    protected static final String JSON_TMSRENDERER_ALPHA      = "alpha";
     protected ThreadPoolExecutor mDrawThreadPool;
     protected Paint              mRasterPaint;
     protected boolean            mAntiAlias;
@@ -68,6 +72,7 @@ public class TMSRenderer
     protected float              mContrast;
     protected float              mBrightness;
     protected boolean            mForceToGrayScale;
+    protected int                mAlpha;
     protected final Object lock = new Object();
 
 
@@ -82,10 +87,12 @@ public class TMSRenderer
         mContrast = 1;
         mBrightness = 0;
         mForceToGrayScale = false;
+        mAlpha = 255;
 
         mRasterPaint.setAntiAlias(mAntiAlias);
         mRasterPaint.setFilterBitmap(mFilterBitmap);
         mRasterPaint.setDither(mDither);
+        mRasterPaint.setAlpha(mAlpha);
     }
 
 
@@ -101,6 +108,7 @@ public class TMSRenderer
         renderer.put(JSON_TMSRENDERER_CONTRAST, mContrast);
         renderer.put(JSON_TMSRENDERER_BRIGHTNESS, mBrightness);
         renderer.put(JSON_TMSRENDERER_GRAYSCALE, mForceToGrayScale);
+        renderer.put(JSON_TMSRENDERER_ALPHA, mAlpha);
         return renderer;
     }
 
@@ -116,9 +124,14 @@ public class TMSRenderer
         mBrightness = (float) jsonObject.getDouble(JSON_TMSRENDERER_BRIGHTNESS);
         mForceToGrayScale = jsonObject.getBoolean(JSON_TMSRENDERER_GRAYSCALE);
 
+        if(jsonObject.has(JSON_TMSRENDERER_ALPHA))
+            mAlpha = jsonObject.getInt(JSON_TMSRENDERER_ALPHA);
+        else
+            mAlpha = 255;
         mRasterPaint.setAntiAlias(mAntiAlias);
         mRasterPaint.setFilterBitmap(mFilterBitmap);
         mRasterPaint.setDither(mDither);
+        mRasterPaint.setAlpha(mAlpha);
 
         setContrastBrightness(mContrast, mBrightness, mForceToGrayScale);
     }
@@ -211,13 +224,6 @@ public class TMSRenderer
 
         final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
         if (tiles.size() == 0) {
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-            tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
-                }
-            }, DEFAULT_EXECUTION_DELAY);
             return;
         }
 
@@ -273,6 +279,9 @@ public class TMSRenderer
         }
 
         // wait for draw ending
+        int nStep = futures.size() / 10;
+        if(nStep == 0)
+            nStep = 1;
         for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
@@ -282,8 +291,9 @@ public class TMSRenderer
                 Future future = futures.get(i);
                 future.get(); // wait for task ending
 
-                float percent = i / futuresSize;
-                tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+                float percent = (float) i / futuresSize;
+                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
+                    tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
 
                 //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
                 //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
@@ -329,5 +339,27 @@ public class TMSRenderer
     public float getContrast()
     {
         return mContrast;
+    }
+
+    public int getAlpha() {
+        return mAlpha;
+    }
+
+    public void setAlpha(int alpha) {
+        mAlpha = alpha;
+        if (mRasterPaint != null) {
+            mRasterPaint.setAlpha(mAlpha);
+        }
+    }
+
+    public boolean isAntiAlias() {
+        return mAntiAlias;
+    }
+
+    public void setAntiAlias(boolean antiAlias) {
+        mAntiAlias = antiAlias;
+        if (mRasterPaint != null) {
+            mRasterPaint.setAntiAlias(mAntiAlias);
+        }
     }
 }

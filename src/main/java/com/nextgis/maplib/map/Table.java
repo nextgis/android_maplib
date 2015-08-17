@@ -23,17 +23,21 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteException;
+
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.util.FileUtil;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.CONFIG;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_TYPE_KEY;
 
 /**
  * Plain table without geometry
@@ -41,7 +45,7 @@ import static com.nextgis.maplib.util.Constants.*;
 public class Table implements ILayer, IJSONStore {
 
     protected String  mName;
-    protected long    mId;
+    protected int     mId;
     protected File    mPath;
     protected int     mLayerType;
     protected ILayer  mParent;
@@ -71,7 +75,7 @@ public class Table implements ILayer, IJSONStore {
 
 
     @Override
-    public long getId()
+    public int getId()
     {
         return mId;
     }
@@ -174,7 +178,7 @@ public class Table implements ILayer, IJSONStore {
     }
 
     @Override
-    public void setId(short id)
+    public void setId(int id)
     {
         mId = id;
     }

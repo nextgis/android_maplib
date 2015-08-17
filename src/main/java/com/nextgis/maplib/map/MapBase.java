@@ -24,6 +24,7 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.util.FileUtil;
@@ -36,7 +37,7 @@ import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 public class MapBase
         extends LayerGroup
 {
-    protected short mNewId;
+    protected int mNewId;
     protected static MapBase mInstance = null;
     protected String mFileName;
 
@@ -59,7 +60,7 @@ public class MapBase
      *
      * @return new id
      */
-    public short getNewId()
+    public int getNewId()
     {
         return mNewId++;
     }
