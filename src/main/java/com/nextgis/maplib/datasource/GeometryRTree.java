@@ -23,12 +23,13 @@
 
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.api.IGeometryCache;
+import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.util.GeoConstants;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 
 /**
@@ -37,7 +38,7 @@ import java.util.Set;
  *
  * This class is not thread-safe.
  */
-public class RTree {
+public class GeometryRTree implements IGeometryCache {
     public enum SeedPicker { LINEAR, QUADRATIC }
 
     private final int maxEntries;
@@ -49,6 +50,8 @@ public class RTree {
 
     private volatile int size;
 
+    protected GeoEnvelope mExtent;
+
     /**
      * Creates a new RTree.
      *
@@ -57,7 +60,7 @@ public class RTree {
      * @param minEntries
      *          minimum number of entries per node (except for the root node)
      */
-    public RTree(int maxEntries, int minEntries, SeedPicker seedPicker){
+    public GeometryRTree(int maxEntries, int minEntries, SeedPicker seedPicker){
         assert (minEntries <= (maxEntries / 2));
         this.maxEntries = maxEntries;
         this.minEntries = minEntries;
@@ -65,7 +68,7 @@ public class RTree {
         root = buildRoot(true);
     }
 
-    public RTree(int maxEntries, int minEntries){
+    public GeometryRTree(int maxEntries, int minEntries){
         this(maxEntries, minEntries, SeedPicker.LINEAR);
     }
 
@@ -79,7 +82,7 @@ public class RTree {
      * Builds a new RTree using default parameters: maximum 50 entries per node
      * minimum 2 entries per node
      */
-    public RTree(){
+    public GeometryRTree(){
         this(50, 4, SeedPicker.LINEAR);
     }
 
@@ -100,6 +103,71 @@ public class RTree {
         return minEntries;
     }
 
+    @Override
+    public boolean isItemExist(long featureId) {
+        return isItemExist(featureId, root);
+    }
+
+    public boolean isItemExist(long featureId, Node n) {
+        if (n.mLeaf)
+        {
+            for (Node e : n.mChildren){
+                Entry entry = (Entry)e;
+                if (entry.getFeatureId() == featureId){
+                    return true;
+                }
+            }
+        }
+        else{
+            for (Node c : n.mChildren)
+            {
+                if (isItemExist(featureId, c))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public IGeometryCacheItem addItem(long id, GeoGeometry geometry) {
+        IGeometryCacheItem result = insert(id, geometry);
+        mExtent.merge(geometry.getEnvelope());
+        return result;
+    }
+
+    @Override
+    public IGeometryCacheItem getItem(long featureId) {
+        return getItem(featureId, root);
+    }
+
+    public IGeometryCacheItem getItem(long featureId, Node n) {
+        if (n.mLeaf){
+            for (Node e : n.mChildren){
+                Entry entry = (Entry)e;
+                if (entry.getFeatureId() == featureId){
+                    return entry;
+                }
+            }
+        }
+        else{
+            for (Node c : n.mChildren)
+            {
+                IGeometryCacheItem entry = getItem(featureId, c);
+                if (null != entry){
+                    return entry;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public GeoEnvelope getExtent() {
+        return mExtent;
+    }
+
     /**
      * @return the number of items in this tree.
      */
@@ -115,14 +183,36 @@ public class RTree {
      * @return a list of objects whose envelopes overlap with the given
      *         envelope.
      */
-    public List<Entry> search(GeoEnvelope extent){
-        LinkedList<Entry> results = new LinkedList<>();
+    @Override
+    public List<IGeometryCacheItem> search(GeoEnvelope extent){
+        LinkedList<IGeometryCacheItem> results = new LinkedList<>();
         search(extent, root, results);
         return results;
     }
 
+    @Override
+    public List<IGeometryCacheItem> getAll() {
+        LinkedList<IGeometryCacheItem> result = new LinkedList<>();
+        getAll(root, result);
+        return result;
+    }
+
+    protected void getAll(Node n, LinkedList<IGeometryCacheItem> results){
+        if (n.mLeaf){
+            for (Node e : n.mChildren){
+                Entry entry = (Entry)e;
+                results.add(entry);
+            }
+        }
+        else{
+            for (Node c : n.mChildren){
+                getAll(c, results);
+            }
+        }
+    }
+
     private void search(GeoEnvelope extent, Node n,
-                        LinkedList<Entry> results){
+                        LinkedList<IGeometryCacheItem> results){
         if (n.mLeaf)
         {
             for (Node e : n.mChildren)
@@ -153,61 +243,41 @@ public class RTree {
      *          the feature id to delete
      * @return true if the entry was deleted from the RTree.
      */
-    public boolean delete(long featureId){
+    @Override
+    public IGeometryCacheItem removeItem(long featureId){
         Node l = findLeaf(root, featureId);
         if ( l == null ) {
-            return false;
+            return null;
         }
 
-        ListIterator<Node> li = l.mChildren.listIterator();
-        boolean result = false;
-        while (li.hasNext())
-        {
-            @SuppressWarnings("unchecked")
-            Entry e = (Entry) li.next();
-            if (e.mFeatureId == featureId)
-            {
-                result = true;
-                li.remove();
-                break;
-            }
-        }
-        if (result)
-        {
-            condenseTree(l);
+        condenseTree(l);
             size--;
-        }
-        if ( size == 0 )
-        {
+
+        if ( size == 0 ){
             root = buildRoot(true);
         }
-        return result;
+        return (IGeometryCacheItem) l;
     }
 
     private Node findLeaf(Node n, long featureId){
-        if (n.mLeaf)
-        {
-            for (Node c : n.mChildren)
-            {
+        if (n.mLeaf){
+            for (Node c : n.mChildren){
                 if (((Entry) c).mFeatureId == featureId)
                 {
                     return n;
                 }
             }
-            return null;
         }
-        else
-        {
-            for (Node c : n.mChildren)
-            {
+        else{
+            for (Node c : n.mChildren){
                 Node result = findLeaf(c, featureId);
                 if (result != null)
                 {
                     return result;
                 }
             }
-            return null;
         }
+        return null;
     }
 
     private void condenseTree(Node n){
@@ -221,7 +291,7 @@ public class RTree {
                 // probably a more efficient way to do this...
                 LinkedList<Node> toVisit = new LinkedList<>(n.mChildren);
                 while (!toVisit.isEmpty()){
-                    Node c = toVisit.pop();
+                    Node c = toVisit.removeFirst();
                     if (c.mLeaf){
                         q.addAll(c.mChildren);
 
@@ -251,7 +321,7 @@ public class RTree {
         for (Node ne : q){
             @SuppressWarnings("unchecked")
             Entry e = (Entry) ne;
-            insert(e.mFeatureId, e.mGeometry, e.mLabel);
+            insert(e.mFeatureId, e.mGeometry);
         }
         size -= q.size();
     }
@@ -272,24 +342,22 @@ public class RTree {
      *          the feature identificator
      * @param geometry
      *          the geometry
-     * @param label
-     *          the label to show on map
      */
-    public void insert(long featureId, GeoGeometry geometry, String label){
-        Entry e = new Entry(featureId, geometry, label);
+    public IGeometryCacheItem insert(long featureId, GeoGeometry geometry){
+        Entry e = new Entry(featureId, geometry);
         Node l = chooseLeaf(root, e);
         l.mChildren.add(e);
         size++;
         e.mParent = l;
-        if (l.mChildren.size() > maxEntries)
-        {
+        if (l.mChildren.size() > maxEntries){
             Node[] splits = splitNode(l);
             adjustTree(splits[0], splits[1]);
         }
-        else
-        {
+        else{
             adjustTree(l, null);
         }
+
+        return e;
     }
 
     private void adjustTree(Node n, Node nn){
@@ -324,7 +392,7 @@ public class RTree {
         // could be modified and inlined because it's only adjusting for the addition
         // of a single node.  Left as-is for now for readability.
         @SuppressWarnings("unchecked")
-        Node[] nn = new RTree.Node[]
+        Node[] nn = new GeometryRTree.Node[]
                 { n, new Node(n.mCoords, n.mLeaf) };
         nn[1].mParent = n.mParent;
         if (nn[1].mParent != null){
@@ -541,7 +609,7 @@ public class RTree {
      * @param cc the children to be divided between the new nodes, one item will be removed from this list.
      */
     private Node lPickNext(LinkedList<Node> cc){
-        return cc.pop();
+        return cc.removeFirst();
     }
 
     private void tighten(Node... nodes){
@@ -635,25 +703,38 @@ public class RTree {
 
     }
 
-    private class Entry extends Node
+    protected class Entry extends Node implements IGeometryCacheItem
     {
-        protected final long mFeatureId;
+        protected long mFeatureId;
         protected final GeoGeometry mGeometry;
-        protected String mLabel;
 
         // TODO: 17.08.15 add pyramid geom levels Map<level, GeoGeometry>
 
-        public Entry(long featureId, GeoGeometry geometry, String label)
+        public Entry(long featureId, GeoGeometry geometry)
         {
             super(geometry.getEnvelope(), true);
             mGeometry = geometry;
             mFeatureId = featureId;
-            mLabel = label;
         }
 
         public boolean intersects(GeoEnvelope extent) {
             // TODO: 17.08.15 more intellectual intersect - geometry or geom for specific zoom level
             return mCoords.intersects(extent);
+        }
+
+        @Override
+        public GeoGeometry getGeometry() {
+            return mGeometry;
+        }
+
+        @Override
+        public long getFeatureId() {
+            return mFeatureId;
+        }
+
+        @Override
+        public void setFeatureId(long id) {
+            mFeatureId = id;
         }
     }
 }

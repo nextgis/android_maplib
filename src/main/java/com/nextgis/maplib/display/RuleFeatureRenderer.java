@@ -28,10 +28,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+
+import com.nextgis.maplib.api.IGeometryCache;
+import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
-import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -102,12 +104,13 @@ public class RuleFeatureRenderer
         }
 
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
-        final List<VectorCacheItem> vectorCache = vectorLayer.getVectorCache();
+        final IGeometryCache vectorCache = vectorLayer.getGeometryCache();
+        final List<IGeometryCacheItem> cacheItems = vectorCache.getAll();
 
         try {
 
-            for (int i = 0; i < vectorCache.size(); i++) {
-                putParametrizedStyle(vectorCache.get(i).getId());
+            for (int i = 0; i < cacheItems.size(); i++) {
+                putParametrizedStyle(cacheItems.get(i).getFeatureId());
             }
 
         } catch (CloneNotSupportedException e) {

@@ -25,12 +25,12 @@ package com.nextgis.maplib.display;
 
 import android.util.Log;
 
+import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.VectorCacheItem;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -97,7 +97,7 @@ public class SimpleFeatureRenderer
         }
 
         //add drawing routine
-        final List<VectorCacheItem> cache = vectorLayer.getVectorCache();
+        final List<IGeometryCacheItem> cache = vectorLayer.query(env);
 
         if (cache.size() == 0) {
             return;
@@ -134,8 +134,8 @@ public class SimpleFeatureRenderer
                 break;
             }
 
-            final VectorCacheItem item = cache.get(i);
-            final Style style = getStyle(item.getId());
+            final IGeometryCacheItem item = cache.get(i);
+            final Style style = getStyle(item.getFeatureId());
 
             futures.add(
                     mDrawThreadPool.submit(
@@ -147,7 +147,7 @@ public class SimpleFeatureRenderer
                                     android.os.Process.setThreadPriority(
                                             Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                                    GeoGeometry geometry = item.getGeoGeometry();
+                                    GeoGeometry geometry = item.getGeometry();
                                     if (null != geometry) {
                                         style.onDraw(geometry, display);
                                     }

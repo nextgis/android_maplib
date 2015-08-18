@@ -31,6 +31,10 @@ import com.nextgis.maplib.map.MapBase;
 
 
 /**
+ * Interface that all applications using the library should implements. It used in content
+ * provider. If your application will not implement this interface - the synchronization vector
+ * layers with server will not work.
+ *
  * If you plan to fix maplib or maplibui libraries, you nee to clone the sources such way:
  * <ul>
  *     <li>clone maplib and/or maplibui as submodules</li>
@@ -50,11 +54,6 @@ import com.nextgis.maplib.map.MapBase;
  * </ul>
  * <p>
  * Note: Expected that project was created via Android studio new project wizard.
- * </p>
- * <p>
- * Interface that all applications using the library should implements. This is use in content
- * provider. If your application will not implement this interface - the synchronize vector layers
- * with server will not work.
  * </p>
  * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
  */

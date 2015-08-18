@@ -44,6 +44,7 @@ import android.widget.Toast;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
@@ -58,7 +59,6 @@ import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
-import com.nextgis.maplib.util.VectorCacheItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -1187,11 +1187,9 @@ public class NGWVectorLayer
         }
 
         //update id in cache
-        for (VectorCacheItem cacheItem : mVectorCacheItems) {
-            if (cacheItem.getId() == oldFeatureId) {
-                cacheItem.setId(newFeatureId);
-            }
-        }
+        final IGeometryCacheItem cacheItem = mGeometryCache.getItem(oldFeatureId);
+        if(null != cacheItem)
+            cacheItem.setFeatureId(newFeatureId);
 
         //rename photo id folder if exist
         File photoFolder = new File(mPath, "" + oldFeatureId);
@@ -1420,21 +1418,12 @@ public class NGWVectorLayer
 
             List<Long> deleteItems = new ArrayList<>();
 
-            for (VectorCacheItem item : mVectorCacheItems) {
-                boolean bDeleteFeature = true;
-                for (Feature remoteFeature : features) {
-                    if (remoteFeature.getId() == item.getId()) {
-                        bDeleteFeature = false;
-                        break;
+            for(Feature remoteFeature : features) {
+                if(mGeometryCache.isItemExist(remoteFeature.getId())){
+                    if(!FeatureChanges.isChanges(
+                            mChangeTableName, remoteFeature.getId(), Constants.CHANGE_OPERATION_NEW)){
+                        deleteItems.add(remoteFeature.getId());
                     }
-                }
-
-                // if local item is in update list and state ADD_NEW skip delete
-                bDeleteFeature = bDeleteFeature && !FeatureChanges.isChanges(
-                        mChangeTableName, item.getId(), Constants.CHANGE_OPERATION_NEW);
-
-                if (bDeleteFeature) {
-                    deleteItems.add(item.getId());
                 }
             }
 
@@ -1738,8 +1727,9 @@ public class NGWVectorLayer
             if(mCacheLoaded)
                 reloadCache();
 
-            for (VectorCacheItem cacheItem : mVectorCacheItems) {
-                long id = cacheItem.getId();
+            final List<IGeometryCacheItem> cacheItems = mGeometryCache.getAll();
+            for (IGeometryCacheItem cacheItem : cacheItems) {
+                long id = cacheItem.getFeatureId();
                 addChange(id, Constants.CHANGE_OPERATION_NEW);
                 //add attach
                 File attacheFolder = new File(mPath, "" + id);

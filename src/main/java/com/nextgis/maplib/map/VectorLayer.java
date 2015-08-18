@@ -43,6 +43,8 @@ import android.util.JsonReader;
 import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.api.IGeometryCache;
+import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.datasource.Feature;
@@ -50,6 +52,7 @@ import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.datasource.GeometryPlainList;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
@@ -61,7 +64,6 @@ import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
-import com.nextgis.maplib.util.VectorCacheItem;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -88,18 +90,85 @@ import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 import static com.nextgis.maplib.util.GeoConstants.FTDate;
 
+/**
+ * The vector layer class. It stores geometry and attributes.
+ *
+ * Here some examples of code to work with this layer.
+ *
+ * <b>To put image to the feature</b>
+ * <code>
+ *     Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/attach
+ *     Uri uri = getContentResolver().insert(newUri, null);
+ *     try {
+ *          OutputStream outStream = getContentResolver().openOutputStream(uri);
+ *          sourceBitmap.compress(Bitmap.CompressFormat.JPEG, 50, outStream);
+ *          outStream.close();
+ *     } catch (Exception e) {
+ *          Log.e(TAG, "exception while writing image", e);
+ *     }
+ * </code>
+ *
+ * <b>To get bitmap from uri</b>
+ * <code>
+ *     private Bitmap getBitmapFromUri(Uri uri) throws IOException {
+ *          ParcelFileDescriptor parcelFileDescriptor =
+ *          getContentResolver().openFileDescriptor(uri, "r");
+ *          FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+ *          Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+ *          parcelFileDescriptor.close();
+ *          return image;
+ *     }
+ * </code>
+ *
+ * <b>To get image using uri</b>
+ * <code>
+ *     Uri featureUri = content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1
+ *     Uri thisAttachUri =
+ *     ContentUris.withAppendedId(featureUri, attachId);
+ *     InputStream inStream = null;
+ *     try {
+ *          inStream = resolver.openInputStream(thisAttachUri);
+ *          // what to do with the stream is up to you
+ *          // I simply create a bitmap to display it
+ *          Bitmap bm = BitmapFactory.decodeStream(inStream);
+ *          FrameLayout frame =
+ *          (FrameLayout)findViewById(R.id.picture_frame);
+ *          ImageView view = new ImageView(getApplicationContext());
+ *          view.setImageBitmap(bm);
+ *          frame.addView(view);
+ *      } catch (FileNotFoundException e) {
+ *          Log.e(TAG, "file not found " + thisAttachUri, e);
+ *      }
+ *      finally {
+ *          if (inStream != null) {
+ *          try {
+ *              inStream.close();
+ *          } catch (IOException e) {
+ *              Log.e(TAG, "could not close stream", e);
+ *          }
+ *      }
+ * </code>
+ *
+ * <b>Also it can be used</b>
+ * <code>
+ *     Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/attach
+ *     Cursor cursor = resolver.query(newUri, {MediaStore.MediaColumns.DATA}, null....)
+ *     File bitmapFile = new File(cursor.getString(ATTACH_DATA))
+ *          and open using real path
+ * </code>
+ *
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 
 public class VectorLayer
         extends Layer
 {
     protected boolean               mIsInitialized;
     protected int                   mGeometryType;
-    protected List<VectorCacheItem> mVectorCacheItems;
     protected Uri                   mContentUri;
     protected UriMatcher            mUriMatcher;
     protected String                mAuthority;
     protected Map<String, Field>    mFields;
-    protected VectorCacheItem       mTempCacheItem;
     protected long                  mUniqId;
     protected boolean mCacheLoaded;
 
@@ -138,10 +207,15 @@ public class VectorLayer
     public static final String ATTACH_DATE_ADDED   = MediaStore.MediaColumns.DATE_ADDED;
     public static final String ATTACH_DESCRIPTION  = MediaStore.Images.ImageColumns.DESCRIPTION;
 
-    public static final int COLUMNTYPE_UNKNOWN = 0;
-    public static final int COLUMNTYPE_STRING  = 1;
-    public static final int COLUMNTYPE_LONG    = 2;
+    public static final int COLUMN_TYPE_UNKNOWN = 0;
+    public static final int COLUMN_TYPE_STRING = 1;
+    public static final int COLUMN_TYPE_LONG = 2;
 
+    /**
+     * The geometry cache for fast quering and drawing
+     */
+    protected IGeometryCache mGeometryCache;
+    protected IGeometryCacheItem mTempCacheItem;
 
     protected Map<String, Map<String, AttachItem>> mAttaches;
 
@@ -181,7 +255,8 @@ public class VectorLayer
         CONTENT_ITEM_TYPE =
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
 
-        mVectorCacheItems = new ArrayList<>();
+        mGeometryCache = initGeometryCache();
+
         mAttaches = new HashMap<>();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
@@ -189,6 +264,9 @@ public class VectorLayer
         mUniqId = Constants.NOT_FOUND;
     }
 
+    protected IGeometryCache initGeometryCache(){
+        return new GeometryPlainList();
+    }
 
     public String createFromGeoJSON(JSONObject geoJSONObject)
     {
@@ -494,9 +572,8 @@ public class VectorLayer
         if(!mCacheLoaded)
             reloadCache();
 
-        for(VectorCacheItem item : mVectorCacheItems){
-            if(item.getId() == feature.getId())
-                return;
+        if(mGeometryCache.isItemExist(feature.getId())){
+            return;
         }
 
         ContentValues values = new ContentValues();
@@ -561,10 +638,11 @@ public class VectorLayer
         if (null == feature.getGeometry()) {
             return;
         }
-        //update bbox
-        updateExtent(feature.getGeometry().getEnvelope());
+
         //add to cache
-        mVectorCacheItems.add(new VectorCacheItem(feature.getGeometry(), feature.getId()));
+        mGeometryCache.addItem(feature.getId(), feature.getGeometry());
+        //update bbox
+        mExtents = mGeometryCache.getExtent();
 
         if (mGeometryType == NOT_FOUND || mGeometryType != feature.getGeometry().getType()) {
             mGeometryType = feature.getGeometry().getType();
@@ -693,10 +771,7 @@ public class VectorLayer
         }
 
         if(mCacheLoaded){
-            mExtents.unInit();
-            for(VectorCacheItem item : mVectorCacheItems){
-                updateExtent(item.getGeoGeometry().getEnvelope());
-            }
+            mExtents = mGeometryCache.getExtent();
         }
 
         if(mExtents.isInit()) {
@@ -777,8 +852,7 @@ public class VectorLayer
                         GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
                         if (null != geoGeometry) {
                             long nId = cursor.getLong(0);
-                            mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
-                            updateExtent(geoGeometry.getEnvelope());
+                            mGeometryCache.addItem(nId, geoGeometry);
                             updateUniqId(nId);
                         }
                     } catch (IOException | ClassNotFoundException e) {
@@ -787,6 +861,7 @@ public class VectorLayer
                 } while (cursor.moveToNext());
             }
             cursor.close();
+            mExtents = mGeometryCache.getExtent();
         }
 
         mCacheLoaded = true;
@@ -808,9 +883,9 @@ public class VectorLayer
     }
 
 
-    public List<VectorCacheItem> getVectorCache()
+    public IGeometryCache getGeometryCache()
     {
-        return mVectorCacheItems;
+        return mGeometryCache;
     }
 
 
@@ -941,7 +1016,7 @@ public class VectorLayer
                         }
 
                         if (-1 < sortIndex) {
-                            int columnType = COLUMNTYPE_UNKNOWN;
+                            int columnType = COLUMN_TYPE_UNKNOWN;
 
                             if (projection[sortIndex].compareToIgnoreCase(
                                     ATTACH_DISPLAY_NAME) == 0 ||
@@ -954,13 +1029,13 @@ public class VectorLayer
                                 projection[sortIndex].compareToIgnoreCase(
                                         ATTACH_DESCRIPTION) == 0) {
 
-                                columnType = COLUMNTYPE_STRING;
+                                columnType = COLUMN_TYPE_STRING;
 
                             } else if (projection[sortIndex].compareToIgnoreCase(
                                     ATTACH_SIZE) == 0 || projection[sortIndex].compareToIgnoreCase(
                                     ATTACH_DATE_ADDED) == 0) {
 
-                                columnType = COLUMNTYPE_LONG;
+                                columnType = COLUMN_TYPE_LONG;
                             }
 
                             final int columnTypeF = columnType;
@@ -975,15 +1050,15 @@ public class VectorLayer
                                                 Object[] rhs)
                                         {
                                             switch (columnTypeF) {
-                                                case COLUMNTYPE_STRING:
+                                                case COLUMN_TYPE_STRING:
                                                     return ((String) lhs[sortIndexF]).compareTo(
                                                             (String) rhs[sortIndexF]);
 
-                                                case COLUMNTYPE_LONG:
+                                                case COLUMN_TYPE_LONG:
                                                     return ((Long) lhs[sortIndexF]).compareTo(
                                                             (Long) rhs[sortIndexF]);
 
-                                                case COLUMNTYPE_UNKNOWN:
+                                                case COLUMN_TYPE_UNKNOWN:
                                                 default:
                                                     return 0;
                                             }
@@ -1128,17 +1203,6 @@ public class VectorLayer
         updateUniqId(rowID);
 
         return rowID;
-    }
-
-
-    protected void updateExtent(GeoEnvelope env)
-    {
-        //update extent
-        if (mExtents.isInit()) {
-            mExtents.merge(env);
-        } else {
-            mExtents = env;
-        }
     }
 
     protected long insertAttach(String featureId, ContentValues contentValues){
@@ -1595,65 +1659,6 @@ public class VectorLayer
         }
     }
 
-    /*
-    To put image to the feature
-    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/attach
-    Uri uri = getContentResolver().insert(newUri, null);
-    try {
-        OutputStream outStream = getContentResolver().openOutputStream(uri);
-        sourceBitmap.compress(Bitmap.CompressFormat.JPEG, 50, outStream);
-        outStream.close();
-    } catch (Exception e) {
-        Log.e(TAG, "exception while writing image", e);
-    }
-
-    private Bitmap getBitmapFromUri(Uri uri) throws IOException {
-        ParcelFileDescriptor parcelFileDescriptor =
-                getContentResolver().openFileDescriptor(uri, "r");
-        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-        Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
-        parcelFileDescriptor.close();
-        return image;
-    }
-
-    To get image using uri
-
-    Uri featureUri = content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1
-    Uri thisAttachUri =
-          ContentUris.withAppendedId(featureUri, attachId);
-    InputStream inStream = null;
-    try {
-       inStream = resolver.openInputStream(thisAttachUri);
-
-       // what to do with the stream is up to you
-       // I simply create a bitmap to display it
-       Bitmap bm = BitmapFactory.decodeStream(inStream);
-       FrameLayout frame =
-             (FrameLayout)findViewById(R.id.picture_frame);
-       ImageView view = new ImageView(getApplicationContext());
-       view.setImageBitmap(bm);
-       frame.addView(view);
-    } catch (FileNotFoundException e) {
-       Log.e(TAG, "file not found " + thisAttachUri, e);
-    }
-    finally {
-       if (inStream != null) {
-          try {
-             inStream.close();
-          } catch (IOException e) {
-             Log.e(TAG, "could not close stream", e);
-          }
-       }
-    }
-
-    also it can be used
-    Uri newUri = ... content://com.nextgis.mobile.provider/layer_xxxxxxxxx/1/attach
-    Cursor cursor = resolver.query(newUri, {MediaStore.MediaColumns.DATA}, null....)
-    File bitmapFile = new File(cursor.getString(ATTACH_DATA))
-    and open using real path
-    */
-
-
     protected void addChange(
             long featureId,
             int operation)
@@ -1688,25 +1693,16 @@ public class VectorLayer
         if(!mCacheLoaded)
             reloadCache();
 
-        return mVectorCacheItems.size();
+        return mGeometryCache.size();
     }
 
 
-    public List<VectorCacheItem> query(GeoEnvelope envelope)
+    public List<IGeometryCacheItem> query(GeoEnvelope envelope)
     {
         if(!mCacheLoaded)
             reloadCache();
-        List<VectorCacheItem> ret = new ArrayList<>();
-        for (VectorCacheItem cacheItem : mVectorCacheItems) {
-            GeoGeometry geom = cacheItem.getGeoGeometry();
-            if (null == geom) {
-                continue;
-            }
-            if (geom.intersects(envelope)) {
-                ret.add(cacheItem);
-            }
-        }
-        return ret;
+
+        return mGeometryCache.search(envelope);
     }
 
 
@@ -1802,17 +1798,12 @@ public class VectorLayer
     }
 
 
-    public VectorCacheItem getCacheItem(long id)
+    public IGeometryCacheItem getCacheItem(long id)
     {
         if(!mCacheLoaded)
             reloadCache();
 
-        for (VectorCacheItem cacheItem : mVectorCacheItems) {
-            if (cacheItem.getId() == id) {
-                return cacheItem;
-            }
-        }
-        return null;
+        return mGeometryCache.getItem(id);
     }
 
 
@@ -1821,26 +1812,16 @@ public class VectorLayer
         if(!mCacheLoaded)
             reloadCache();
 
-        Iterator<VectorCacheItem> cacheItemIterator = mVectorCacheItems.iterator();
-        while (cacheItemIterator.hasNext()) {
-            VectorCacheItem cacheItem = cacheItemIterator.next();
-
-            if (cacheItem.getId() == id) {
-                mTempCacheItem = cacheItem;
-                cacheItemIterator.remove();
-
-                notifyLayerChanged();
-
-                break;
-            }
-        }
+        mTempCacheItem = mGeometryCache.removeItem(id);
+        if(null != mTempCacheItem)
+            notifyLayerChanged();
     }
 
 
     public void restoreCacheItem()
     {
         if (mTempCacheItem != null) {
-            mVectorCacheItems.add(mTempCacheItem);
+            mGeometryCache.addItem(mTempCacheItem.getFeatureId(), mTempCacheItem.getGeometry());
             mTempCacheItem = null;
             notifyLayerChanged();
         }
@@ -1879,62 +1860,48 @@ public class VectorLayer
     }
 
 
-    public void notifyDelete(long rowID)
+    public void notifyDelete(long rowId)
     {
         //remove cached item
-        for (VectorCacheItem item : mVectorCacheItems) {
-            if (item.getId() == rowID) {
-                mVectorCacheItems.remove(item);
-                break;
-            }
-        }
-        notifyLayerChanged();
+        if(null != mGeometryCache.removeItem(rowId))
+            notifyLayerChanged();
     }
 
 
     public void notifyDeleteAll()
     {
         //clear cache
-        mVectorCacheItems.clear();
+        mGeometryCache.clear();
         notifyLayerChanged();
     }
 
 
-    public void notifyInsert(long rowID)
+    public void notifyInsert(long rowId)
     {
-        GeoGeometry geom = getGeometryForId(rowID);
+        GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            mVectorCacheItems.add(new VectorCacheItem(geom, (int) rowID));
-
-            updateExtent(geom.getEnvelope());
-
+            mGeometryCache.addItem(rowId, geom);
+            mExtents = mGeometryCache.getExtent();
             notifyLayerChanged();
         }
     }
 
 
     public void notifyUpdate(
-            long rowID,
-            long rowOldID)
+            long rowId,
+            long oldRowId)
     {
-        GeoGeometry geom = getGeometryForId(rowID);
+        GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            for (VectorCacheItem item : mVectorCacheItems) {
-                if (rowOldID != NOT_FOUND) {
-                    if (item.getId() == rowOldID) {
-                        item.setId(rowID);
-                        item.setGeoGeometry(geom);
-                        break;
-                    }
-                } else {
-                    if (item.getId() == rowID) {
-                        item.setGeoGeometry(geom);
-                        break;
-                    }
-                }
+            if (oldRowId != NOT_FOUND) {
+                mGeometryCache.removeItem(oldRowId);
+            }
+            else{
+                mGeometryCache.removeItem(rowId);
             }
 
-            updateExtent(geom.getEnvelope());
+            mGeometryCache.addItem(rowId, geom);
+            mExtents = mGeometryCache.getExtent();
 
             notifyLayerChanged();
         }
@@ -1948,12 +1915,12 @@ public class VectorLayer
     }
 
 
-    protected GeoGeometry getGeometryForId(long rowID)
+    protected GeoGeometry getGeometryForId(long rowId)
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_GEOM};
-        String selection = FIELD_ID + " = " + rowID;
+        String selection = FIELD_ID + " = " + rowId;
         Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
         if (null != cursor) {
             if (cursor.moveToFirst()) {
