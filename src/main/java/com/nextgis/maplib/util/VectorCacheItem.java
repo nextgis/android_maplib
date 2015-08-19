@@ -24,6 +24,8 @@
 package com.nextgis.maplib.util;
 
 import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoLinearRing;
+import com.nextgis.maplib.datasource.GeoPolygon;
 
 
 public class VectorCacheItem
@@ -51,6 +53,22 @@ public class VectorCacheItem
     public void setGeoGeometry(GeoGeometry geoGeometry)
     {
         mGeoGeometry = geoGeometry;
+
+        if (mGeoGeometry instanceof GeoPolygon) {
+            GeoPolygon polygon = (GeoPolygon) mGeoGeometry;
+            GeoLinearRing ring = polygon.getOuterRing();
+
+            if (ring.isClosed())
+                ring.remove(ring.getPointCount() - 1);
+
+            for (int i = 0; i < polygon.getInnerRingCount(); i++) {
+                ring = polygon.getInnerRing(i);
+
+                if (ring.isClosed())
+                    ring.remove(ring.getPointCount() - 1);
+            }
+        }
+        // TODO GeoMultiPolygon
     }
 
 
