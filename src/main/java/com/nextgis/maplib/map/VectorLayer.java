@@ -856,7 +856,7 @@ public class VectorLayer
                             updateUniqId(nId);
                         }
                     } catch (IOException | ClassNotFoundException e) {
-                        // e.printStackTrace();
+                        e.printStackTrace();
                     }
                 } while (cursor.moveToNext());
             }

@@ -52,6 +52,8 @@ public class GeoLinearRing
     @Override
     public boolean intersects(GeoEnvelope envelope)
     {
+        return super.intersects(envelope);
+        /*
         if (super.intersects(envelope)) {
             return true;
         }
@@ -77,7 +79,7 @@ public class GeoLinearRing
             }
         }
 
-        return intersection % 2 == 1;
+        return intersection % 2 == 1;*/
     }
 
 

@@ -224,6 +224,10 @@ public class GeoLineString
     public boolean intersects(GeoEnvelope envelope)
     {
         if (super.intersects(envelope)) {
+
+            if(envelope.contains(getEnvelope()))
+                return true;
+
             GeoPoint pte1 = new GeoPoint(envelope.getMinX(), envelope.getMaxY());
             GeoPoint pte2 = new GeoPoint(envelope.getMaxX(), envelope.getMaxY());
             GeoPoint pte3 = new GeoPoint(envelope.getMaxX(), envelope.getMinY());
