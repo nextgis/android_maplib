@@ -72,6 +72,8 @@ public class ResourceGroup
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
             String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(null == sResponse)
+                return;
             JSONArray children = new JSONArray(sResponse);
             for (int i = 0; i < children.length(); i++) {
                 addResource(children.getJSONObject(i));

@@ -54,7 +54,7 @@ public class NetworkUtil
     protected       boolean             mLastState;
     protected       Context             mContext;
 
-    protected final static int TIMEOUT_CONNECTION = 3000;
+    protected final static int TIMEOUT_CONNECTION = 7000;
     protected final static int TIMEOUT_SOCKET = 30000;
 
 
@@ -112,8 +112,6 @@ public class NetworkUtil
 
         // Allow Inputs
         conn.setDoInput(true);
-        // Allow Outputs
-        conn.setDoOutput(true);
         // Don't use a cached copy.
         conn.setUseCaches(false);
         // Use a post method.
@@ -209,6 +207,8 @@ public class NetworkUtil
             return null;
         }
         conn.setRequestProperty("Content-type", "application/json");
+        // Allow Outputs
+        conn.setDoOutput(true);
 
         OutputStream os = conn.getOutputStream();
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -265,6 +265,8 @@ public class NetworkUtil
             return null;
         }
         conn.setRequestProperty("Content-type", "application/json");
+        // Allow Outputs
+        conn.setDoOutput(true);
 
         OutputStream os = conn.getOutputStream();
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -305,6 +307,9 @@ public class NetworkUtil
         HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
         conn.setRequestProperty("Connection", "Keep-Alive");
         conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+        // Allow Outputs
+        conn.setDoOutput(true);
+
         DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
         dos.writeBytes(twoHyphens + boundary + lineEnd);
         dos.writeBytes(

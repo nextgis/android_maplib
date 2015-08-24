@@ -130,6 +130,8 @@ public class Connection
         try {
             String sURL = mURL + "/resource/schema";
             String sResponse = NetworkUtil.get(sURL, getLogin(), getPassword());
+            if(null == sResponse)
+                return;
             JSONObject schema = new JSONObject(sResponse);
             JSONObject resources = schema.getJSONObject("resources");
             if (null != resources) {

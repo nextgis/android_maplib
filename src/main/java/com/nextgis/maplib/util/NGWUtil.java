@@ -31,8 +31,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.util.List;
-import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
@@ -65,7 +63,10 @@ public class NGWUtil
             Log.d(TAG, "Error get connection object");
             return null;
         }
-        conn.setRequestProperty("Content-type", "application/json");
+        conn.setInstanceFollowRedirects(false);
+        conn.setDefaultUseCaches(false);
+        conn.setDoOutput(true);
+        conn.connect();
 
         OutputStream os = conn.getOutputStream();
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
@@ -76,21 +77,21 @@ public class NGWUtil
         os.close();
 
         int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
+        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
             Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " +
                     responseCode);
             return null;
         }
 
-        Map<String, List<String>> headerFields = conn.getHeaderFields();
-        List<String> cookiesHeader = headerFields.get("Set-Cookie");
+        String headerName;
+        for (int i = 1; (headerName = conn.getHeaderFieldKey(i)) != null; i++) {
+            if (headerName.equals("Set-Cookie")) {
+                return conn.getHeaderField(i);
+            }
+        }
 
-        if(cookiesHeader != null && !cookiesHeader.isEmpty()) {
-            return cookiesHeader.get(0);
-        }
-        else{
-            return null;
-        }
+        return null;
     }
 
 

@@ -98,6 +98,8 @@ public abstract class Resource
         try {
             String sURL = mConnection.getURL() + "/api/resource/" + mRemoteId + "/permission";
             String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(null == sResponse)
+                return;
             mPermissions = new JSONObject(sResponse);
         } catch (IOException | JSONException e) {
             e.printStackTrace();
