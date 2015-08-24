@@ -766,6 +766,7 @@ public class VectorLayer
         //load vector cache
         mExtents.unInit();
         mCacheLoaded = false;
+        mVectorCacheItems.clear();
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
@@ -1014,7 +1015,7 @@ public class VectorLayer
                 AttachItem item = getAttach(featureId, attachId);
                 if (null != item) {
                     File attachFile = new File(
-                            mPath, featureId + "/" +
+                            mPath, featureId + File.separator +
                                    item.getAttachId()); //the attaches store in id folder in layer folder
                     Object[] row = new Object[projection.length];
                     for (int i = 0; i < projection.length; i++) {
@@ -1355,7 +1356,7 @@ public class VectorLayer
                 long attachIdL = Long.parseLong(attachId);
 
                 //get attach path
-                File attachFile = new File(mPath, featureId + "/" + attachId);
+                File attachFile = new File(mPath, featureId + File.separator + attachId);
                 if (attachFile.delete()) {
 
                     deleteAttach(featureId, attachId);
@@ -1589,7 +1590,7 @@ public class VectorLayer
                 }
 
                 return ParcelFileDescriptor.open(
-                        new File(mPath, featureId + "/" + attachId), nMode);
+                        new File(mPath, featureId + File.separator + attachId), nMode);
             default:
                 throw new FileNotFoundException();
         }
@@ -1867,7 +1868,7 @@ public class VectorLayer
             AttachItem item,
             String newAttachId)
     {
-        File attachFile = new File(mPath, featureId + "/" + item.getAttachId());
+        File attachFile = new File(mPath, featureId + File.separator + item.getAttachId());
         attachFile.renameTo(new File(attachFile.getParentFile(), newAttachId));
 
         //save changes to meta.json
