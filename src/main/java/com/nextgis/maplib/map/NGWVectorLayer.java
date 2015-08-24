@@ -1101,7 +1101,7 @@ public class NGWVectorLayer
         }
 
         String fileName = attach.getDisplayName();
-        File filePath = new File(mPath, featureId + "/" + attach.getAttachId());
+        File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
         String fileMime = attach.getMimetype();
 
         try {
