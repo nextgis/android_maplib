@@ -24,10 +24,9 @@
 package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+
+import com.nextgis.maplib.util.NetworkUtil;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -98,12 +97,8 @@ public abstract class Resource
     {
         try {
             String sURL = mConnection.getURL() + "/api/resource/" + mRemoteId + "/permission";
-            HttpGet get = new HttpGet(sURL);
-            get.setHeader("Cookie", mConnection.getCookie());
-            get.setHeader("Accept", "*/*");
-            HttpResponse response = mConnection.getHttpClient().execute(get);
-            HttpEntity entity = response.getEntity();
-            mPermissions = new JSONObject(EntityUtils.toString(entity));
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            mPermissions = new JSONObject(sResponse);
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }

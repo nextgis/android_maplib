@@ -25,20 +25,10 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.params.ClientPNames;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.CoreConnectionPNames;
-import org.apache.http.params.CoreProtocolPNames;
-import org.apache.http.util.EntityUtils;
+
+import com.nextgis.maplib.util.NGWUtil;
+import com.nextgis.maplib.util.NetworkUtil;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,8 +36,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import static com.nextgis.maplib.util.Constants.*;
 
 
 public class Connection
@@ -106,21 +94,10 @@ public class Connection
     public boolean connect()
     {
         try {
-            String url = mURL + "/login";
-            HttpPost httppost = new HttpPost(url);
-            List<NameValuePair> nameValuePairs = new ArrayList<>(2);
-            nameValuePairs.add(new BasicNameValuePair("login", mLogin));
-            nameValuePairs.add(new BasicNameValuePair("password", mPassword));
-            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-            HttpClient httpclient = getHttpClient();
-
-            HttpResponse response = httpclient.execute(httppost);
-            //2 get cookie
-            Header head = response.getFirstHeader("Set-Cookie");
-            if (head == null) {
+            mCookie = NGWUtil.getConnectionCookie(mURL, mLogin, mPassword);
+            if(null == mCookie) {
                 return false;
             }
-            mCookie = head.getValue();
 
             mIsConnected = true;
 
@@ -134,20 +111,6 @@ public class Connection
             return false;
         }
     }
-
-
-    public HttpClient getHttpClient()
-    {
-        HttpClient httpclient = new DefaultHttpClient();
-        httpclient.getParams().setParameter(CoreProtocolPNames.USER_AGENT, APP_USER_AGENT);
-        httpclient.getParams()
-                .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, TIMEOUT_CONNECTION);
-        httpclient.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, TIMEOUT_SOKET);
-        httpclient.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS, Boolean.FALSE);
-
-        return httpclient;
-    }
-
 
     public String getCookie()
     {
@@ -166,13 +129,8 @@ public class Connection
         mSupportedTypes.clear();
         try {
             String sURL = mURL + "/resource/schema";
-            HttpGet get = new HttpGet(sURL);
-            get.setHeader("Cookie", getCookie());
-            get.setHeader("Accept", "*/*");
-            HttpResponse response = getHttpClient().execute(get);
-            HttpEntity entity = response.getEntity();
-
-            JSONObject schema = new JSONObject(EntityUtils.toString(entity));
+            String sResponse = NetworkUtil.get(sURL, getLogin(), getPassword());
+            JSONObject schema = new JSONObject(sResponse);
             JSONObject resources = schema.getJSONObject("resources");
             if (null != resources) {
                 Iterator<String> keys = resources.keys();
