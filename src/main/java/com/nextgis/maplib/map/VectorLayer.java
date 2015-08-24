@@ -468,7 +468,6 @@ public class VectorLayer
             createFeature(feature, fields, db);
         }
 
-        mCacheLoaded = true;
         mIsInitialized = true;
         setDefaultRenderer();
 
@@ -585,8 +584,6 @@ public class VectorLayer
         }
         reader.endArray();
         reader.close();
-
-        mCacheLoaded = true;
     }
 
     protected Feature readGeoJSONFeature(JsonReader reader, List<Field> fields){
@@ -769,6 +766,7 @@ public class VectorLayer
         //load vector cache
         mExtents.unInit();
         mCacheLoaded = false;
+        mVectorCacheItems.clear();
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
