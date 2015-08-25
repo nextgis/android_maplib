@@ -25,11 +25,10 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+
 import com.nextgis.maplib.util.NGWUtil;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+import com.nextgis.maplib.util.NetworkUtil;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -124,12 +123,10 @@ public class LayerWithStyles
         mStyles = new ArrayList<>();
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            HttpGet get = new HttpGet(sURL);
-            get.setHeader("Cookie", mConnection.getCookie());
-            get.setHeader("Accept", "*/*");
-            HttpResponse response = mConnection.getHttpClient().execute(get);
-            HttpEntity entity = response.getEntity();
-            JSONArray children = new JSONArray(EntityUtils.toString(entity));
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(null == sResponse)
+                return;
+            JSONArray children = new JSONArray(sResponse);
             for (int i = 0; i < children.length(); i++) {
                 //Only store style id
                 //To get more style properties need to create style class extended from Resource

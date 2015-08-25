@@ -25,7 +25,6 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.text.TextUtils;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
@@ -33,7 +32,6 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.util.Constants;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,10 +43,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
-import static com.nextgis.maplib.util.Constants.JSON_LAYERS_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_PATH_KEY;
-import static com.nextgis.maplib.util.Constants.LAYERTYPE_GROUP;
-import static com.nextgis.maplib.util.Constants.LAYER_PREFIX;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class LayerGroup

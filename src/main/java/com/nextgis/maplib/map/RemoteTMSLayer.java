@@ -27,30 +27,30 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
+
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.DEFAULT_MAXIMUM_CACHED_FILE_AGE;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_REMOTE_TMS;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.TILE_EXT;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 
@@ -121,51 +121,15 @@ public class RemoteTMSLayer
         Log.d(TAG, "url: " + url);
         try {
 
-            final HttpGet get = new HttpGet(url);
-
-            // basic auth
-            // Here we must use getLogin() and getPassword() for subclasses
-            // which override these methods
-            String basicAuth  = NetworkUtil.getHTTPBaseAuth(getLogin(), getPassword());
-            if (null != basicAuth) {
-                get.setHeader("Authorization", basicAuth);
-            }
-            get.setHeader("Accept", "*/*");
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            mNet.setProxy(HTTPClient, url);
             if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) {
                 return;
             }
 
-            final HttpResponse response = HTTPClient.execute(get);
-            mAvailable.release();
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem downloading MapTile: " + url + " HTTP response: " +
-                                line);
-                return;
-            }
-
-            final HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading MapTile: " + url);
-                return;
-            }
-
             FileUtil.createDir(tilePath.getParentFile());
-
-            InputStream input = entity.getContent();
             OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
-            byte data[] = new byte[IO_BUFFER_SIZE];
+            NetworkUtil.getStream(url, getLogin(), getPassword(), output);
 
-            FileUtil.copyStream(input, output, data, IO_BUFFER_SIZE);
-
-            output.close();
-            input.close();
+            mAvailable.release();
 
         } catch (InterruptedException | IOException | IllegalArgumentException e) {
             e.printStackTrace();
@@ -215,19 +179,6 @@ public class RemoteTMSLayer
         Log.d(TAG, "url: " + url);
         try {
 
-            final HttpGet get = new HttpGet(url);
-
-            // basic auth
-            // Here we must use getLogin() and getPassword() for subclasses
-            // which override these methods
-            String basicAuth  = NetworkUtil.getHTTPBaseAuth(getLogin(), getPassword());
-            if (null != basicAuth) {
-                get.setHeader("Authorization", basicAuth);
-            }
-            get.setHeader("Accept", "*/*");
-
-            final DefaultHttpClient HTTPClient = mNet.getHttpClient();
-            mNet.setProxy(HTTPClient, url);
             if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
                 if (exist) //if exist but not reload from internet
                 {
@@ -238,38 +189,13 @@ public class RemoteTMSLayer
                 return ret;
             }
             Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
-            final HttpResponse response = HTTPClient.execute(get);
-            mAvailable.release();
-
-            // Check to see if we got success
-            final org.apache.http.StatusLine line = response.getStatusLine();
-            if (line.getStatusCode() != 200) {
-                Log.d(
-                        TAG, "Problem downloading MapTile: " + url + " HTTP response: " +
-                             line);
-                ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-                putBitmapToCache(tile.getHash(), ret);
-                return ret;
-            }
-
-            final HttpEntity entity = response.getEntity();
-            if (entity == null) {
-                Log.d(TAG, "No content downloading MapTile: " + url);
-                ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-                putBitmapToCache(tile.getHash(), ret);
-                return ret;
-            }
 
             FileUtil.createDir(tilePath.getParentFile());
-
-            InputStream input = entity.getContent();
             OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
-            byte data[] = new byte[IO_BUFFER_SIZE];
+            NetworkUtil.getStream(url, getLogin(), getPassword(), output);
 
-            FileUtil.copyStream(input, output, data, IO_BUFFER_SIZE);
+            mAvailable.release();
 
-            output.close();
-            input.close();
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             putBitmapToCache(tile.getHash(), ret);
             return ret;
