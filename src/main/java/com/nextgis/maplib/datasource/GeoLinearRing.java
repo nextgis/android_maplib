@@ -50,6 +50,62 @@ public class GeoLinearRing
         return first.equals(last);
     }
 
+    public GeoPoint getCentroid(){
+        return getCentroidOfFiniteSetOfPoints();
+    }
+
+    /**
+     * @see https://en.wikipedia.org/wiki/Centroid#Of_a_finite_set_of_points
+     * @return Centroid of ring
+     */
+    protected GeoPoint getCentroidOfFiniteSetOfPoints(){
+        double x = 0.;
+        double y = 0.;
+        int pointCount = mPoints.size();
+        for (int i = 0; i < pointCount - 1; i++){
+            final GeoPoint point = mPoints.get(i);
+            x += point.getX();
+            y += point.getY();
+        }
+
+        x = x/pointCount;
+        y = y/pointCount;
+
+        GeoPoint result = new GeoPoint(x, y);
+        result.setCRS(mCRS);
+        return result;
+    }
+
+    /**
+     * @see https://en.wikipedia.org/wiki/Centroid#Of_a_finite_set_of_points
+     * @return Centroid of ring
+     */
+    protected GeoPoint getCentroidPolygon(){
+        double x = 0.;
+        double y = 0.;
+        double area = 0.;
+
+        for (int i = 0; i < mPoints.size() - 1; i++) {
+            final GeoPoint point = mPoints.get(i);
+            final GeoPoint pointN = mPoints.get(i + 1);
+
+            final double temp = point.getX() * pointN.getY() - pointN.getX() * point.getY();
+            x += (point.getX() + pointN.getX()) * temp;
+            y += (point.getY() + pointN.getY()) * temp;
+
+            area += temp;
+        }
+
+        area *= 0.5;
+
+        x *= 1 / 6.0 * area;
+        y *= 1 / 6.0 * area;
+
+        GeoPoint result = new GeoPoint(x, y);
+        result.setCRS(mCRS);
+        return result;
+    }
+
 /*
     @Override
     public boolean intersects(GeoEnvelope envelope)
