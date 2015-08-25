@@ -24,6 +24,15 @@
 package com.nextgis.maplib.util;
 
 import android.text.TextUtils;
+import android.util.Log;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+
+import static com.nextgis.maplib.util.Constants.TAG;
 
 public class NGWUtil
 {
@@ -45,6 +54,45 @@ public class NGWUtil
      /*
     NGW API Functions
      */
+
+    public static String getConnectionCookie(String sUrl, String login, String password) throws IOException {
+        sUrl += "/login";
+        String sPayload = "login=" + login + "&password=" + password;
+        final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
+        if(null == conn){
+            Log.d(TAG, "Error get connection object");
+            return null;
+        }
+        conn.setInstanceFollowRedirects(false);
+        conn.setDefaultUseCaches(false);
+        conn.setDoOutput(true);
+        conn.connect();
+
+        OutputStream os = conn.getOutputStream();
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+        writer.write(sPayload);
+
+        writer.flush();
+        writer.close();
+        os.close();
+
+        int responseCode = conn.getResponseCode();
+        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
+            Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " +
+                    responseCode);
+            return null;
+        }
+
+        String headerName;
+        for (int i = 1; (headerName = conn.getHeaderFieldKey(i)) != null; i++) {
+            if (headerName.equals("Set-Cookie")) {
+                return conn.getHeaderField(i);
+            }
+        }
+
+        return null;
+    }
 
 
     public static String getFileUploadUrl(String server)
