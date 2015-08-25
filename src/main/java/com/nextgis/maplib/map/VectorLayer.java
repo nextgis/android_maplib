@@ -841,7 +841,7 @@ public class VectorLayer
         //load vector cache
         mExtents.unInit();
         mCacheLoaded = false;
-        mVectorCacheItems.clear();
+        mGeometryCache.clear();
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
