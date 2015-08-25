@@ -7,6 +7,10 @@
  * *****************************************************************************
  * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
  *
+ * The simplify algorithm adapted from simplify-java project under the MIT license
+ * Copyright (c) 2013 Heinrich Göbl
+ * @see https://github.com/hgoebl/simplify-java
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -25,6 +29,7 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -350,4 +355,127 @@ public class GeoLineString
     }
 
 
+    public GeoLineString simplify(double tolerance){
+        double sqTolerance = tolerance * tolerance;
+        return simplifyRadialDistance(sqTolerance);
+    }
+
+    protected GeoLineString simplifyRadialDistance(double sqTolerance){
+        if(mPoints.isEmpty())
+            return null;
+
+        GeoPoint point = null;
+        GeoPoint prevPoint = mPoints.get(0);
+
+        GeoLineString result = new GeoLineString();
+        result.setCRS(mCRS);
+        result.add(prevPoint);
+
+        for (int i = 1; i < mPoints.size(); ++i) {
+            point = mPoints.get(i);
+
+            if (getSquareDistance(point, prevPoint) > sqTolerance) {
+                result.add(point);
+                prevPoint = point;
+            }
+        }
+
+        if (prevPoint != point) {
+            result.add(point);
+        }
+
+        return result;
+    }
+
+    protected double getSquareDistance(GeoPoint p1, GeoPoint p2){
+        double dx = p1.getX() - p2.getX();
+        double dy = p1.getY() - p2.getY();
+
+        return dx * dx + dy * dy;
+    }
+
+
+    protected GeoLineString simplifyDouglasPeucker(double sqTolerance){
+        BitSet bitSet = new BitSet(mPoints.size());
+        bitSet.set(0);
+        bitSet.set(mPoints.size() - 1);
+
+        List<Range> stack = new LinkedList<>();
+        stack.add(new Range(0, mPoints.size() - 1));
+
+        while (!stack.isEmpty()) {
+            Range range = stack.remove(stack.size() - 1);
+
+            int index = -1;
+            double maxSqDist = 0f;
+
+            // find index of point with maximum square distance from first and last point
+            for (int i = range.first + 1; i < range.last; ++i) {
+                double sqDist = getSquareSegmentDistance(mPoints.get(i), mPoints.get(range.first), mPoints.get(range.last));
+
+                if (sqDist > maxSqDist) {
+                    index = i;
+                    maxSqDist = sqDist;
+                }
+            }
+
+            if (maxSqDist > sqTolerance) {
+                bitSet.set(index);
+
+                stack.add(new Range(range.first, index));
+                stack.add(new Range(index, range.last));
+            }
+        }
+
+
+        GeoLineString result = new GeoLineString();
+        result.setCRS(mCRS);
+        for (int index = bitSet.nextSetBit(0); index >= 0; index = bitSet.nextSetBit(index + 1)) {
+            result.add(mPoints.get(index));
+        }
+
+        return result;
+    }
+
+    protected double getSquareSegmentDistance(GeoPoint p0, GeoPoint p1, GeoPoint p2){
+        double x0, y0, x1, y1, x2, y2, dx, dy, t;
+
+        x1 = p1.getX();
+        y1 = p1.getY();
+        x2 = p2.getX();
+        y2 = p2.getY();
+        x0 = p0.getX();
+        y0 = p0.getY();
+
+        dx = x2 - x1;
+        dy = y2 - y1;
+
+        if (dx != 0.0d || dy != 0.0d) {
+            t = ((x0 - x1) * dx + (y0 - y1) * dy)
+                    / (dx * dx + dy * dy);
+
+            if (t > 1.0d) {
+                x1 = x2;
+                y1 = y2;
+            } else if (t > 0.0d) {
+                x1 += dx * t;
+                y1 += dy * t;
+            }
+        }
+
+        dx = x0 - x1;
+        dy = y0 - y1;
+
+        return dx * dx + dy * dy;
+    }
+
+    protected static class Range {
+        private Range(int first, int last) {
+            this.first = first;
+            this.last = last;
+        }
+
+        int first;
+        int last;
+    }
 }
