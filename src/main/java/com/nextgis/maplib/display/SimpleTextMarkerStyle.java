@@ -97,7 +97,11 @@ public class SimpleTextMarkerStyle
         fillPaint.setColor(mColor);
         fillPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        display.drawCircle((float) pt.getX(), (float) pt.getY(), radius, fillPaint);
+        if (radius < 2) {
+            fillPaint.setStrokeWidth(radius);
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), fillPaint);
+        } else
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), radius, fillPaint);
 
         Paint outPaint = new Paint();
         outPaint.setColor(mOutColor);
@@ -105,7 +109,8 @@ public class SimpleTextMarkerStyle
         outPaint.setStyle(Paint.Style.STROKE);
         outPaint.setAntiAlias(true);
 
-        display.drawCircle((float) pt.getX(), (float) pt.getY(), radius, outPaint);
+        if (radius >= 2)
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), radius, outPaint);
 
         Paint textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
