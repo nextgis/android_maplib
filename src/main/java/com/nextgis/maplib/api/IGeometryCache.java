@@ -41,9 +41,9 @@ public interface IGeometryCache {
     /**
      * Add item to cache
      * @param id Feature identificator
-     * @param geometry Geometry
+     * @param envelope Envelope
      */
-    IGeometryCacheItem addItem(long id, GeoGeometry geometry);
+    IGeometryCacheItem addItem(long id, GeoEnvelope envelope);
 
     /**
      * Return cache item by feature identificator
@@ -63,7 +63,7 @@ public interface IGeometryCache {
      * Return full extent of all cached items
      * @return GeoEnvelope object
      */
-    GeoEnvelope getExtent();
+    GeoEnvelope getEnvelope();
 
     /**
      * Return count of items

@@ -26,10 +26,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRIES;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_GeometryCollection;
+import static com.nextgis.maplib.util.GeoConstants.GTGeometryCollection;
 
 
 public class GeoGeometryCollection
@@ -41,13 +44,13 @@ public class GeoGeometryCollection
 
     public GeoGeometryCollection()
     {
-        mGeometries = new ArrayList<>();
+        mGeometries = new LinkedList<>();
     }
 
 
     public GeoGeometryCollection(GeoGeometryCollection collection)
     {
-        mGeometries = new ArrayList<>();
+        mGeometries = new LinkedList<>();
         for (GeoGeometry geometry : collection.mGeometries) {
             mGeometries.add(geometry.copy());
         }

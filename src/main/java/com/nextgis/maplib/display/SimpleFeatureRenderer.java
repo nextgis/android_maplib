@@ -23,14 +23,19 @@
 
 package com.nextgis.maplib.display;
 
+import android.graphics.Paint;
 import android.util.Log;
+import android.util.Pair;
 
 import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoLineString;
+import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,11 +61,12 @@ public class SimpleFeatureRenderer
         extends Renderer
 {
 
-    protected Style              mStyle;
+    protected Style              mStyle, mPointStyle, mLineStyle;
     protected ThreadPoolExecutor mDrawThreadPool;
-    protected final Object lock = new Object();
+    //protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
+    protected static final int GEOMETRY_PER_TASK = 5;
 
 
     public SimpleFeatureRenderer(Layer layer)
@@ -76,8 +82,43 @@ public class SimpleFeatureRenderer
     {
         super(layer);
         mStyle = style;
+        initStyles();
     }
 
+    protected void initStyles(){
+        final VectorLayer vectorLayer = (VectorLayer) mLayer;
+        if(vectorLayer.getGeometryType() == GeoConstants.GTPolygon ||
+                vectorLayer.getGeometryType() == GeoConstants.GTMultiPolygon){
+            float width = 1.0f;
+            if(mStyle instanceof SimplePolygonStyle){
+                SimplePolygonStyle polyStyle = (SimplePolygonStyle) mStyle;
+                width = polyStyle.mWidth * 2;
+                if(width < 1)
+                    width = 3;
+            }
+            mPointStyle = new SimpleMarkerStyle(mStyle.getColor(), mStyle.getColor(), width,
+                    SimpleMarkerStyle.MarkerStylePoint);
+            SimpleLineStyle lineStyle = new SimpleLineStyle(mStyle.getColor(), mStyle.getColor(),
+                    SimpleLineStyle.LineStyleSolid);
+            lineStyle.mWidth = width;
+            lineStyle.mStrokeCap = Paint.Cap.ROUND;
+
+            mLineStyle = lineStyle;
+        }
+        else if(vectorLayer.getGeometryType() == GeoConstants.GTLineString ||
+                vectorLayer.getGeometryType() == GeoConstants.GTMultiLineString){
+            float width = 1.0f;
+            if(mStyle instanceof SimpleLineStyle){
+                SimpleLineStyle lineStyle = (SimpleLineStyle) mStyle;
+                width = lineStyle.mWidth * 2;
+                if(width < 1)
+                    width = 3;
+            }
+            mPointStyle = new SimpleMarkerStyle(mStyle.getColor(), mStyle.getColor(), width,
+                    SimpleMarkerStyle.MarkerStylePoint);
+        }
+
+    }
 
     @Override
     public void runDraw(final GISDisplay display)
@@ -96,6 +137,8 @@ public class SimpleFeatureRenderer
             return;
         }
 
+        cancelDraw();
+
         //add drawing routine
         final List<IGeometryCacheItem> cache = vectorLayer.query(env);
 
@@ -103,10 +146,8 @@ public class SimpleFeatureRenderer
             return;
         }
 
-        cancelDraw();
-
         int threadCount = DRAWING_SEPARATE_THREADS;
-        synchronized (lock) {
+        //synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
                     new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
@@ -123,40 +164,63 @@ public class SimpleFeatureRenderer
                     }
                 }
             });
-        }
+        //}
+
+        long startTime = System.currentTimeMillis();
 
         // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
-        int cacheSize = cache.size();
+        int cacheSize = cache.size() / GEOMETRY_PER_TASK;
         List<Future> futures = new ArrayList<>(cacheSize);
 
-        for (int i = 0; i < cacheSize; i++) {
+        int counter = 0;
+        double pointArea = display.screenToMap(new GeoEnvelope(0, 4, 0, 4)).getArea(); // 4 x 4 screen pixels is point
+        double lineArea =  display.screenToMap(new GeoEnvelope(0, 8, 0, 8)).getArea(); // 8 x 8 screen pixels is line
+
+        for (int i = 0; i < cache.size(); i += GEOMETRY_PER_TASK) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
             }
 
-            final IGeometryCacheItem item = cache.get(i);
-            final Style style = getStyle(item.getFeatureId());
+            DrawTask task = new DrawTask(display);
 
-            futures.add(
-                    mDrawThreadPool.submit(
-                            new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    android.os.Process.setThreadPriority(
-                                            Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+            for(int j = 0; j < GEOMETRY_PER_TASK; j++){
+                counter++;
 
-                                    GeoGeometry geometry = item.getGeometry();
-                                    if (null != geometry) {
-                                        style.onDraw(geometry, display);
-                                    }
-                                }
-                            }));
+                if(counter >= cache.size())
+                    break;
+
+                final IGeometryCacheItem item = cache.get(counter);
+
+                //check if geometry can be represent as primitive point or line
+                final GeoEnvelope envelope = item.getEnvelope();
+                double area = envelope.getArea();
+                if(pointArea > area){
+                    GeoPoint pt = envelope.getCenter();
+                    task.addTaskData(pt, mPointStyle);
+                }
+                else if(lineArea > area){
+                    GeoLineString line = new GeoLineString();
+                    line.add(new GeoPoint(envelope.getMinX(), envelope.getMinY()));
+                    line.add(new GeoPoint(envelope.getMaxX(), envelope.getMaxY()));
+                    task.addTaskData(line, mLineStyle);
+                }
+                else {
+
+                    final Style style = getStyle(item.getFeatureId());
+                    task.addTaskData(vectorLayer.getGeometryForId(item.getFeatureId()), style);
+                }
+
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
+            }
+
+            futures.add(mDrawThreadPool.submit(task));
+            vectorLayer.onDrawFinished(vectorLayer.getId(), 0.01f);
         }
 
         // wait for draw ending
-        int nStep = futures.size() / 10;
+        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
         if(nStep == 0)
             nStep = 1;
         for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
@@ -181,6 +245,12 @@ public class SimpleFeatureRenderer
                 e.printStackTrace();
             }
         }
+        vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+
+        Log.d(TAG, "Vector layer exec time: " + elapsedTime);
     }
 
 
@@ -215,12 +285,12 @@ public class SimpleFeatureRenderer
     public void cancelDraw()
     {
         if (mDrawThreadPool != null) {
-            synchronized (lock) {
+            //synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
-            }
+            //}
             try {
                 mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
-                mDrawThreadPool.purge();
+                //mDrawThreadPool.purge();
             } catch (InterruptedException e) {
                 //e.printStackTrace();
             }
@@ -278,6 +348,33 @@ public class SimpleFeatureRenderer
                 break;
             default:
                 throw new JSONException("Unknown style type: " + styleName);
+        }
+
+        initStyles();
+    }
+
+    protected class DrawTask implements Runnable {
+        protected final GISDisplay mDisplay;
+        protected final List<Pair<GeoGeometry, Style>> mTaskData = new ArrayList<>(GEOMETRY_PER_TASK);
+
+        public DrawTask(GISDisplay display) {
+            mDisplay = display;
+        }
+
+        public void addTaskData(final GeoGeometry geometry, final Style style){
+            mTaskData.add(new Pair<>(geometry, style));
+        }
+
+        @Override
+        public void run() {
+            android.os.Process.setThreadPriority(
+                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+
+            for(Pair<GeoGeometry, Style> p : mTaskData) {
+                if (null != p.first) {
+                    p.second.onDraw(p.first, mDisplay);
+                }
+            }
         }
     }
 }

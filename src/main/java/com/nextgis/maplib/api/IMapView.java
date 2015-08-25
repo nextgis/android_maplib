@@ -92,13 +92,19 @@ public interface IMapView
     float getZoomLevel();
 
     /**
-     * Set new map extent according zoom level and center
+     * Set new map extent according to the zoom level and coordinates of center
      * @param zoom A zoom level
      * @param center A map center coordinates
      */
     void setZoomAndCenter(
             float zoom,
             GeoPoint center);
+
+    /**
+     * Zoom to fill provided extent
+     * @param envelope Extent to zoom
+     */
+    void zoomToExtent(GeoEnvelope envelope);
 
     /**
      * @return Map center coordinates

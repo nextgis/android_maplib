@@ -25,7 +25,7 @@ package com.nextgis.maplib.datasource;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
@@ -40,13 +40,13 @@ public class GeoLineString
 
     public GeoLineString()
     {
-        mPoints = new ArrayList<>();
+        mPoints = new LinkedList<>();
     }
 
 
     public GeoLineString(GeoLineString geoLineString)
     {
-        mPoints = new ArrayList<>();
+        mPoints = new LinkedList<>();
         for (GeoPoint point : geoLineString.mPoints) {
             mPoints.add((GeoPoint) point.copy());
         }

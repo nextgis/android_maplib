@@ -28,6 +28,8 @@ import java.util.List;
 public class GeoLinearRing
         extends GeoLineString
 {
+    protected static final long serialVersionUID = -1241179697270831769L;
+
     public GeoLinearRing()
     {
         super();
@@ -48,12 +50,12 @@ public class GeoLinearRing
         return first.equals(last);
     }
 
-
+/*
     @Override
     public boolean intersects(GeoEnvelope envelope)
     {
         return super.intersects(envelope);
-        /*
+
         if (super.intersects(envelope)) {
             return true;
         }
@@ -79,13 +81,39 @@ public class GeoLinearRing
             }
         }
 
-        return intersection % 2 == 1;*/
+        return intersection % 2 == 1;
     }
+    */
 
 
     @Override
     public GeoGeometry copy()
     {
         return new GeoLinearRing(this);
+    }
+
+    public boolean contains(GeoEnvelope envelope) {
+        //check each corner, not exactly accurate, but fast
+        GeoPoint pt = new GeoPoint(envelope.getMinX(), envelope.getMinY());
+        if(!intersects(pt.getEnvelope()))
+            return false;
+
+        pt.setCoordinates(envelope.getMinX(), envelope.getMaxY());
+        if(!intersects(pt.getEnvelope()))
+            return false;
+
+        pt.setCoordinates(envelope.getMaxX(), envelope.getMaxY());
+        if(!intersects(pt.getEnvelope()))
+            return false;
+
+        pt.setCoordinates(envelope.getMaxX(), envelope.getMinY());
+        if(!intersects(pt.getEnvelope()))
+            return false;
+
+        pt.setCoordinates(envelope.getMinX(), envelope.getMinY());
+        if(!intersects(pt.getEnvelope()))
+            return false;
+
+        return true;
     }
 }

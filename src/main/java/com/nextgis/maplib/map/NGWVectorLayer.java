@@ -77,6 +77,7 @@ import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -376,11 +377,13 @@ public class NGWVectorLayer
                 return getContext().getString(R.string.error_crs_unsupported);
             }
 
+            String sURL = NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere);
+            Log.d(Constants.TAG, "download features from: " + sURL);
+
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 
                 //get layer data
-                data = mNet.get(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere),
-                            mCacheLogin, mCachePassword);
+                data = mNet.get(sURL, mCacheLogin, mCachePassword);
                 if (null == data) {
                     return getContext().getString(R.string.error_download_data);
                 }
@@ -401,7 +404,7 @@ public class NGWVectorLayer
                 mIsInitialized = false;
 
                 // get features and fill them
-                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere));
+                URL url = new URL(sURL);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 final String basicAuth = NetworkUtil.getHTTPBaseAuth(mCacheLogin, mCachePassword);
                 if(null != basicAuth)
@@ -428,11 +431,11 @@ public class NGWVectorLayer
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     protected List<Feature> loadFeaturesFromNGWStream(InputStream in, List<Field> fields, int nSRS) throws IOException {
-        List<Feature> result = new ArrayList<>();
+        List<Feature> result = new LinkedList<>();
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         reader.beginArray();
         while (reader.hasNext()) {
-            Feature feature = readNGWFeature(reader, fields, nSRS);
+            final Feature feature = readNGWFeature(reader, fields, nSRS);
             result.add(feature);
         }
         reader.endArray();
@@ -448,7 +451,7 @@ public class NGWVectorLayer
         int featureCount = 0;
         while (reader.hasNext()) {
             //TODO: download attachments if needed
-            Feature feature = readNGWFeature(reader, fields, nSRS);
+            final Feature feature = readNGWFeature(reader, fields, nSRS);
             createFeature(feature, fields, db);
             ++featureCount;
         }
@@ -461,7 +464,7 @@ public class NGWVectorLayer
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     protected Feature readNGWFeature(JsonReader reader, List<Field> fields, int nSRS) throws IOException {
-        Feature feature = new Feature(Constants.NOT_FOUND, fields);
+        final Feature feature = new Feature(Constants.NOT_FOUND, fields);
 
         reader.beginObject();
         while (reader.hasNext()) {
@@ -489,7 +492,7 @@ public class NGWVectorLayer
                 reader.skipValue();
         }
         reader.endObject();
-        return  feature;
+        return feature;
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -1418,12 +1421,21 @@ public class NGWVectorLayer
 
             List<Long> deleteItems = new ArrayList<>();
 
-            for(Feature remoteFeature : features) {
-                if(mGeometryCache.isItemExist(remoteFeature.getId())){
-                    if(!FeatureChanges.isChanges(
-                            mChangeTableName, remoteFeature.getId(), Constants.CHANGE_OPERATION_NEW)){
-                        deleteItems.add(remoteFeature.getId());
+            for(IGeometryCacheItem cacheItem : mGeometryCache.getAll()) {
+                boolean bDeleteFeature = true;
+                for (Feature remoteFeature : features) {
+                    if (remoteFeature.getId() == cacheItem.getFeatureId()) {
+                        bDeleteFeature = false;
+                        break;
                     }
+                }
+
+                // if local item is in update list and state ADD_NEW skip delete
+                bDeleteFeature = bDeleteFeature && !FeatureChanges.isChanges(
+                        mChangeTableName, cacheItem.getFeatureId(), Constants.CHANGE_OPERATION_NEW);
+
+                if (bDeleteFeature) {
+                    deleteItems.add(cacheItem.getFeatureId());
                 }
             }
 

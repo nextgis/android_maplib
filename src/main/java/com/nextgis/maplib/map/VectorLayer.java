@@ -212,7 +212,7 @@ public class VectorLayer
     public static final int COLUMN_TYPE_LONG = 2;
 
     /**
-     * The geometry cache for fast quering and drawing
+     * The geometry cache for fast querying and drawing
      */
     protected IGeometryCache mGeometryCache;
     protected IGeometryCacheItem mTempCacheItem;
@@ -576,7 +576,7 @@ public class VectorLayer
             return;
         }
 
-        ContentValues values = new ContentValues();
+        final ContentValues values = new ContentValues();
         values.put(FIELD_ID, feature.getId());
         try {
             values.put(FIELD_GEOM, feature.getGeometry().toBlob());
@@ -633,22 +633,24 @@ public class VectorLayer
             }
         }
 
-        db.insert(mPath.getName(), "", values);
+        Log.d(TAG, "Inserting " + values);
+        if(db.insert(mPath.getName(), "", values) > 0) {
 
-        if (null == feature.getGeometry()) {
-            return;
+            if (null == feature.getGeometry()) {
+                return;
+            }
+
+            //add to cache
+            mGeometryCache.addItem(feature.getId(), feature.getGeometry().getEnvelope());
+            //update bbox
+            mExtents.set(mGeometryCache.getEnvelope());
+
+            if (mGeometryType == NOT_FOUND || mGeometryType != feature.getGeometry().getType()) {
+                mGeometryType = feature.getGeometry().getType();
+            }
+
+            save();
         }
-
-        //add to cache
-        mGeometryCache.addItem(feature.getId(), feature.getGeometry());
-        //update bbox
-        mExtents = mGeometryCache.getExtent();
-
-        if (mGeometryType == NOT_FOUND || mGeometryType != feature.getGeometry().getType()) {
-            mGeometryType = feature.getGeometry().getType();
-        }
-
-        save();
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -771,7 +773,7 @@ public class VectorLayer
         }
 
         if(mCacheLoaded){
-            mExtents = mGeometryCache.getExtent();
+            mExtents.set(mGeometryCache.getEnvelope());
         }
 
         if(mExtents.isInit()) {
@@ -837,6 +839,7 @@ public class VectorLayer
     {
         if(!mIsInitialized)
             return;
+        // TODO: 19.08.15 read from file
 
         //load vector cache
         mExtents.unInit();
@@ -849,10 +852,10 @@ public class VectorLayer
             if (cursor.moveToFirst()) {
                 do {
                     try {
-                        GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                        final GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
                         if (null != geoGeometry) {
                             long nId = cursor.getLong(0);
-                            mGeometryCache.addItem(nId, geoGeometry);
+                            mGeometryCache.addItem(nId, geoGeometry.getEnvelope());
                             updateUniqId(nId);
                         }
                     } catch (IOException | ClassNotFoundException e) {
@@ -861,7 +864,7 @@ public class VectorLayer
                 } while (cursor.moveToNext());
             }
             cursor.close();
-            mExtents = mGeometryCache.getExtent();
+            mExtents.set(mGeometryCache.getEnvelope());
         }
 
         mCacheLoaded = true;
@@ -1821,7 +1824,7 @@ public class VectorLayer
     public void restoreCacheItem()
     {
         if (mTempCacheItem != null) {
-            mGeometryCache.addItem(mTempCacheItem.getFeatureId(), mTempCacheItem.getGeometry());
+            mGeometryCache.addItem(mTempCacheItem.getFeatureId(), mTempCacheItem.getEnvelope());
             mTempCacheItem = null;
             notifyLayerChanged();
         }
@@ -1880,8 +1883,8 @@ public class VectorLayer
     {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            mGeometryCache.addItem(rowId, geom);
-            mExtents = mGeometryCache.getExtent();
+            mGeometryCache.addItem(rowId, geom.getEnvelope());
+            mExtents.set(mGeometryCache.getEnvelope());
             notifyLayerChanged();
         }
     }
@@ -1900,8 +1903,8 @@ public class VectorLayer
                 mGeometryCache.removeItem(rowId);
             }
 
-            mGeometryCache.addItem(rowId, geom);
-            mExtents = mGeometryCache.getExtent();
+            mGeometryCache.addItem(rowId, geom.getEnvelope());
+            mExtents.set(mGeometryCache.getEnvelope());
 
             notifyLayerChanged();
         }
@@ -1915,7 +1918,7 @@ public class VectorLayer
     }
 
 
-    protected GeoGeometry getGeometryForId(long rowId)
+    public GeoGeometry getGeometryForId(long rowId)
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);

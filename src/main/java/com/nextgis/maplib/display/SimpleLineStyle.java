@@ -49,6 +49,7 @@ public class SimpleLineStyle
     protected int   mType;
     protected float mWidth;
     protected int   mOutColor;
+    protected Paint.Cap mStrokeCap;
 
 
     public SimpleLineStyle()
@@ -66,6 +67,7 @@ public class SimpleLineStyle
         mType = type;
         mOutColor = outColor;
         mWidth = 3;
+        mStrokeCap = Paint.Cap.BUTT;
     }
 
 
@@ -139,7 +141,7 @@ public class SimpleLineStyle
         paint.setColor(mColor);
         paint.setAntiAlias(true);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeCap(Paint.Cap.BUTT);
+        paint.setStrokeCap(mStrokeCap);
         paint.setStrokeWidth((float) (mWidth / display.getScale()));
 
         List<GeoPoint> points = lineString.getPoints();

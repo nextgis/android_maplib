@@ -282,7 +282,7 @@ public class GeoPolygon
             }
 
             for (GeoLinearRing ring : mInnerRings) {
-                if (ring.intersects(envelope)) {
+                if (ring.contains(envelope)) {
                     return false;
                 }
             }

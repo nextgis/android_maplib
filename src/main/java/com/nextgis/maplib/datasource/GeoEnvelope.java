@@ -332,4 +332,11 @@ public class GeoEnvelope
         setMaxX(jsonObject.getDouble(JSON_BBOX_MAXX_KEY));
         setMaxY(jsonObject.getDouble(JSON_BBOX_MAXY_KEY));
     }
+
+    public void set(GeoEnvelope env) {
+        mMinX = env.mMinX;
+        mMaxX = env.mMaxX;
+        mMinY = env.mMinY;
+        mMaxY = env.mMaxY;
+    }
 }

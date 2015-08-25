@@ -19,30 +19,52 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.nextgis.maplib.api;
+package com.nextgis.maplib.datasource;
 
-import com.nextgis.maplib.datasource.GeoEnvelope;
+import android.util.Pair;
+
+import java.io.File;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- * A geometry cache item
+ * Created by bishop on 21.08.15.
  */
-public interface IGeometryCacheItem {
-    /**
-     *
-     * @return Return an envelope
-     */
-    GeoEnvelope getEnvelope();
+public class GeoGeometryStorage {
 
-    /**
-     *
-     * @return A feature identificator connected with this cache item
-     */
-    long getFeatureId();
+    protected static final String GEOMETRY = "shape";
 
+    protected List<Pair<Long, Long>> mOffsetList;
+    protected static final long MAX_GEOMETRY_COUNT = 500000;
+    protected static final long LIST_OFFSET = MAX_GEOMETRY_COUNT * (Long.SIZE + Long.SIZE) + Long.SIZE;
 
-    /**
-     * Set a eature identificator connected with this cache item
-     * @param id Feature identificator
-     */
-    void setFeatureId(long id);
+    protected File mPath;
+
+    public GeoGeometryStorage(File path) {
+        mPath = new File(path, GEOMETRY);
+        mOffsetList = new LinkedList<>();
+
+        init();
+    }
+
+    protected void init(){
+        if(mPath.exists()){
+
+        }
+        else{
+
+        }
+    }
+
+    public boolean addGeometry(long featureId, GeoGeometry geometry){
+
+    }
+
+    public boolean deleteGeometry(long featureId){
+
+    }
+
+    public boolean updateGeometry(long featureId, GeoGeometry geometry){
+
+    }
 }

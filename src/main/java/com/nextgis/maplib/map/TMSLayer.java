@@ -59,10 +59,10 @@ public abstract class TMSLayer
 
 
     protected TMSLayer(
-            Context contex,
+            Context context,
             File path)
     {
-        super(contex, path);
+        super(context, path);
 
         mCacheSizeMult = 0;
         mRenderer = new TMSRenderer(this);
@@ -316,7 +316,9 @@ public abstract class TMSLayer
             String tileHash,
             Bitmap bitmap)
     {
-
+        if (mCacheSizeMult == 0) {
+            return;
+        }
         synchronized (lock) {
             if (mBitmapCache != null) {
                 mBitmapCache.put(tileHash, bitmap);
@@ -327,6 +329,9 @@ public abstract class TMSLayer
 
     protected Bitmap getBitmapFromCache(String tileHash)
     {
+        if (mCacheSizeMult == 0) {
+            return null;
+        }
         synchronized (lock) {
             if (mBitmapCache != null) {
                 return mBitmapCache.get(tileHash);

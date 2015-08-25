@@ -19,30 +19,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.nextgis.maplib.api;
-
-import com.nextgis.maplib.datasource.GeoEnvelope;
+package com.nextgis.maplib.util;
 
 /**
- * A geometry cache item
+ * Created by bishop on 20.08.15.
  */
-public interface IGeometryCacheItem {
-    /**
-     *
-     * @return Return an envelope
-     */
-    GeoEnvelope getEnvelope();
+public class MapUtil {
+    public static double lg(double x)
+    {
+        return Math.log(x) / Math.log(2.0);
+    }
 
-    /**
-     *
-     * @return A feature identificator connected with this cache item
-     */
-    long getFeatureId();
-
-
-    /**
-     * Set a eature identificator connected with this cache item
-     * @param id Feature identificator
-     */
-    void setFeatureId(long id);
+    public static float getZoomForScaleFactor(double scale, float currentZoom)
+    {
+        float zoom = currentZoom;
+        if (scale > 1) {
+            zoom = (float) (currentZoom + MapUtil.lg(scale));
+        } else if (scale < 1) {
+            zoom = (float) (currentZoom - MapUtil.lg(1 / scale));
+        }
+        return zoom;
+    }
 }

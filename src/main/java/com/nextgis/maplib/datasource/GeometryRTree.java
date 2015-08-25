@@ -131,9 +131,9 @@ public class GeometryRTree implements IGeometryCache {
     }
 
     @Override
-    public IGeometryCacheItem addItem(long id, GeoGeometry geometry) {
-        IGeometryCacheItem result = insert(id, geometry);
-        mExtent.merge(geometry.getEnvelope());
+    public IGeometryCacheItem addItem(long id, GeoEnvelope envelope) {
+        IGeometryCacheItem result = insert(id, envelope);
+        mExtent.merge(envelope);
         return result;
     }
 
@@ -164,7 +164,7 @@ public class GeometryRTree implements IGeometryCache {
     }
 
     @Override
-    public GeoEnvelope getExtent() {
+    public GeoEnvelope getEnvelope() {
         return mExtent;
     }
 
@@ -321,7 +321,7 @@ public class GeometryRTree implements IGeometryCache {
         for (Node ne : q){
             @SuppressWarnings("unchecked")
             Entry e = (Entry) ne;
-            insert(e.mFeatureId, e.mGeometry);
+            insert(e.mFeatureId, e.mCoords);
         }
         size -= q.size();
     }
@@ -339,12 +339,12 @@ public class GeometryRTree implements IGeometryCache {
      * rectangle.
      *
      * @param featureId
-     *          the feature identificator
-     * @param geometry
-     *          the geometry
+     *          a feature identificator
+     * @param envelope
+     *          an envelope
      */
-    public IGeometryCacheItem insert(long featureId, GeoGeometry geometry){
-        Entry e = new Entry(featureId, geometry);
+    public IGeometryCacheItem insert(long featureId, GeoEnvelope envelope){
+        Entry e = new Entry(featureId, envelope);
         Node l = chooseLeaf(root, e);
         l.mChildren.add(e);
         size++;
@@ -706,25 +706,20 @@ public class GeometryRTree implements IGeometryCache {
     protected class Entry extends Node implements IGeometryCacheItem
     {
         protected long mFeatureId;
-        protected final GeoGeometry mGeometry;
 
-        // TODO: 17.08.15 add pyramid geom levels Map<level, GeoGeometry>
-
-        public Entry(long featureId, GeoGeometry geometry)
+        public Entry(long featureId, GeoEnvelope envelope)
         {
-            super(geometry.getEnvelope(), true);
-            mGeometry = geometry;
+            super(envelope, true);
             mFeatureId = featureId;
         }
 
         public boolean intersects(GeoEnvelope extent) {
-            // TODO: 17.08.15 more intellectual intersect - geometry or geom for specific zoom level
             return mCoords.intersects(extent);
         }
 
         @Override
-        public GeoGeometry getGeometry() {
-            return mGeometry;
+        public GeoEnvelope getEnvelope() {
+            return mCoords;
         }
 
         @Override
