@@ -550,8 +550,7 @@ public class GISDisplay
     }
 
 
-    public final GeoEnvelope getBounds()
-    {
+    public final GeoEnvelope getBounds() {
         return new GeoEnvelope(mCurrentBounds);
     }
 

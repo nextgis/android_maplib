@@ -22,8 +22,16 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.io.IOException;
 
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 
@@ -56,7 +64,7 @@ public class GeoMultiPoint
     @Override
     public int getType()
     {
-        return GTMultiPoint;
+        return GeoConstants.GTMultiPoint;
     }
 
 
@@ -71,6 +79,17 @@ public class GeoMultiPoint
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()){
+            GeoPoint pt = new GeoPoint();
+            pt.setCoordinatesFromJSONStream(reader);
+            mGeometries.add(pt);
+        }
+        reader.endArray();
+    }
 
     @Override
     public void setCoordinatesFromWKT(String wkt)
@@ -119,5 +138,8 @@ public class GeoMultiPoint
         return buf.toString();
     }
 
-
+    @Override
+    protected GeoGeometryCollection getInstance() {
+        return new GeoMultiPoint();
+    }
 }

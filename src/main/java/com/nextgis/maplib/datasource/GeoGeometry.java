@@ -22,11 +22,17 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -115,6 +121,10 @@ public abstract class GeoGeometry
     public abstract void setCoordinatesFromJSON(JSONArray coordinates)
             throws JSONException;
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public abstract void setCoordinatesFromJSONStream(JsonReader reader)
+            throws IOException;
+
     public abstract void setCoordinatesFromWKT(String wkt);
 
 
@@ -158,4 +168,19 @@ public abstract class GeoGeometry
      * remove all points from geometry
      */
     public abstract void clear();
+
+    public abstract GeoGeometry simplify(double tolerance);
+
+    public abstract GeoGeometry clip(GeoEnvelope envelope);
+
+    public void write(DataOutputStream stream) throws IOException{
+        stream.writeInt(getType());
+        stream.writeInt(mCRS);
+    }
+
+    public void read(DataInputStream stream) throws IOException{
+        mCRS = stream.readInt();
+    }
+
+    public abstract boolean isValid();
 }

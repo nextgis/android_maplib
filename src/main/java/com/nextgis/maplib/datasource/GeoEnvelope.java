@@ -37,6 +37,10 @@ public class GeoEnvelope
     protected Double mMinY;
     protected Double mMaxY;
 
+    public final static int enumGISPtPosLeft = 1;
+    public final static int enumGISPtPosRight = 2;
+    public final static int enumGISPtPosBottom = 3;
+    public final static int enumGISPtPosTop = 4;
 
     public GeoEnvelope()
     {
@@ -338,5 +342,27 @@ public class GeoEnvelope
         mMaxX = env.mMaxX;
         mMinY = env.mMinY;
         mMaxY = env.mMaxY;
+    }
+
+
+    /**
+     * Sutherland-Hodgman Polygon Clipping
+     * @param pt Test point
+     * @param nPos Test type
+     * @return true if point inside envelope or false
+     */
+    public boolean isInside(final GeoPoint pt, int nPos) {
+        switch(nPos)
+        {
+            case enumGISPtPosLeft://XMin
+                return (pt.getX() > mMinX);
+            case enumGISPtPosRight://XMax
+                return (pt.getX() < mMaxX);
+            case enumGISPtPosBottom://YMin
+                return (pt.getY() < mMaxY);
+            case enumGISPtPosTop://YMax
+                return (pt.getY() > mMinY);
+        }
+        return false;
     }
 }

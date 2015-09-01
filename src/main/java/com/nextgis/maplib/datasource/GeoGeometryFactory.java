@@ -23,11 +23,18 @@
 
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
@@ -39,6 +46,53 @@ import static com.nextgis.maplib.util.GeoConstants.*;
  */
 public class GeoGeometryFactory
 {
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static GeoGeometry fromJsonStream(JsonReader reader) throws IOException {
+        GeoGeometry geometry = null;
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String name = reader.nextName();
+            if(name.equalsIgnoreCase(GeoConstants.GEOJSON_TYPE)){
+                int type = typeFromString(reader.nextString());
+                switch (type) {
+                    case GTPoint:
+                        geometry = new GeoPoint();
+                        break;
+                    case GTLineString:
+                        geometry = new GeoLineString();
+                        break;
+                    case GTPolygon:
+                        geometry = new GeoPolygon();
+                        break;
+                    case GTMultiPoint:
+                        geometry = new GeoMultiPoint();
+                        break;
+                    case GTMultiLineString:
+                        geometry = new GeoMultiLineString();
+                        break;
+                    case GTMultiPolygon:
+                        geometry = new GeoMultiPolygon();
+                        break;
+                    case GTGeometryCollection:
+                        geometry = new GeoGeometryCollection();
+                    case GTNone:
+                    default:
+                        break;
+                }
+            }
+            else if(name.equalsIgnoreCase(GeoConstants.GEOJSON_COORDINATES)){
+                if(geometry == null)
+                    reader.skipValue();
+                else
+                    geometry.setCoordinatesFromJSONStream(reader);
+            }
+        }
+        reader.endObject();
+        if(geometry != null && !geometry.isValid())
+            return null;
+        return geometry;
+    }
+
     public static GeoGeometry fromJson(JSONObject jsonObject)
             throws JSONException
     {
@@ -174,5 +228,53 @@ public class GeoGeometryFactory
             output.setCoordinatesFromWKT(wkt.substring(18).trim());
         }
         return output;
+    }
+
+    public static GeoGeometry fromDataStream(DataInputStream stream) throws IOException {
+        int geometryType = stream.readInt();
+        GeoGeometry result = null;
+        switch (geometryType){
+            case GeoConstants.GTPoint:
+                result = new GeoPoint();
+                result.read(stream);
+                break;
+            case GeoConstants.GTLineString:
+                result = new GeoLineString();
+                result.read(stream);
+                break;
+            case GeoConstants.GTLinearRing:
+                result = new GeoLinearRing();
+                result.read(stream);
+                break;
+            case GeoConstants.GTPolygon:
+                result = new GeoPolygon();
+                result.read(stream);
+                break;
+            case GeoConstants.GTMultiPoint:
+                result = new GeoMultiPoint();
+                result.read(stream);
+                break;
+            case GeoConstants.GTMultiLineString:
+                result = new GeoMultiLineString();
+                result.read(stream);
+                break;
+            case GeoConstants.GTMultiPolygon:
+                result = new GeoPolygon();
+                result.read(stream);
+                break;
+            case GeoConstants.GTGeometryCollection:
+                result = new GeoGeometryCollection();
+                result.read(stream);
+                break;
+            case GeoConstants.GTTiledPolygon:
+                result = new TiledPolygon();
+                result.read(stream);
+                break;
+            case GeoConstants.GTMultiTiledPolygon:
+                result = new MultiTiledPolygon();
+                result.read(stream);
+                break;
+        }
+        return result;
     }
 }

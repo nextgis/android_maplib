@@ -34,6 +34,7 @@ import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.MapUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -222,7 +223,7 @@ public class TMSRenderer
             remoteTMSLayer.onPrepare();
         }
 
-        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
+        final List<TileItem> tiles = MapUtil.getTileItems(display.getBounds(), zoom, tmsLayer.getTMSType());
         if (tiles.size() == 0) {
             return;
         }

@@ -22,6 +22,9 @@
  */
 package com.nextgis.maplib.datasource;
 
+import com.nextgis.maplib.util.GeoConstants;
+
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -36,9 +39,9 @@ public class GeoLinearRing
     }
 
 
-    public GeoLinearRing(GeoLinearRing geoLineRing)
+    public GeoLinearRing(GeoLinearRing geoLinearRing)
     {
-        super(geoLineRing);
+        super(geoLinearRing);
     }
 
 
@@ -171,5 +174,126 @@ public class GeoLinearRing
             return false;
 
         return true;
+    }
+
+    @Override
+    protected GeoLineString getInstance() {
+        return new GeoLinearRing();
+    }
+
+    @Override
+    public GeoGeometry simplify(double tolerance){
+        double sqTolerance = tolerance * tolerance;
+
+        GeoEnvelope env = getEnvelope();
+        double area = env.getArea() * 2;
+        if(sqTolerance > area){
+            GeoLinearRing result = new GeoLinearRing();
+            result.setCRS(getCRS());
+            result.add(new GeoPoint(env.getMinX(), env.getMinY()));
+            result.add(new GeoPoint(env.getMinX(), env.getMaxY()));
+            result.add(new GeoPoint(env.getMaxX(), env.getMaxY()));
+            result.add(new GeoPoint(env.getMaxX(), env.getMinY()));
+            result.add(new GeoPoint(env.getMinX(), env.getMinY()));
+            return result;
+        }
+
+        return simplifyRadialDistance(sqTolerance);
+    }
+
+    public GeoLinearRing simplify(double tolerance, boolean canNull){
+        double sqTolerance = tolerance * tolerance;
+
+        GeoEnvelope env = getEnvelope();
+        double area = env.getArea() * 2;
+        if(sqTolerance > area && canNull){
+            return null;
+        }
+        if(sqTolerance > area){
+            GeoLinearRing result = new GeoLinearRing();
+            result.setCRS(getCRS());
+            result.add(new GeoPoint(env.getMinX(), env.getMinY()));
+            result.add(new GeoPoint(env.getMinX(), env.getMaxY()));
+            result.add(new GeoPoint(env.getMaxX(), env.getMaxY()));
+            result.add(new GeoPoint(env.getMinX(), env.getMinY()));
+            return result;
+        }
+
+        return (GeoLinearRing) super.simplify(sqTolerance);
+    }
+
+    @Override
+    public GeoGeometry clip(GeoEnvelope envelope) {
+        if(mPoints.isEmpty())
+            return null;
+        GeoLinearRing result = new GeoLinearRing();
+        clip(mPoints, result.mPoints, envelope, true);
+
+        if(result.getPointCount() < 4)
+            return null;
+        return result;
+    }
+
+    @Override
+    public int getType() {
+        return GeoConstants.GTLinearRing;
+    }
+
+    public void clipForTiled(GeoLinearRing newRing, GeoLineString newBorder, GeoEnvelope envelope) {
+        List<GeoPoint> tmpPointsOut = new LinkedList<>();
+        trimPoints(mPoints, tmpPointsOut, GeoEnvelope.enumGISPtPosRight, envelope, false);
+        if(tmpPointsOut.size() < 4)
+            return;
+        List<GeoPoint> tmpPointsOutAdd = new LinkedList<>();
+        trimPoints(tmpPointsOut, tmpPointsOutAdd, GeoEnvelope.enumGISPtPosTop, envelope, false);
+        if(tmpPointsOutAdd.size() < 4)
+            return;
+        tmpPointsOut.clear();
+        trimPoints(tmpPointsOutAdd, tmpPointsOut, GeoEnvelope.enumGISPtPosLeft, envelope, false);
+        if(tmpPointsOut.size() < 4)
+            return;
+        trimPoints(tmpPointsOut, newRing.mPoints, GeoEnvelope.enumGISPtPosLeft, envelope, false);
+        //trimPoints(tmpPointsOut, newRing.mPoints, newBorder.mPoints, GeoEnvelope.enumGISPtPosBottom, envelope);
+    }
+
+    protected void trimPoints(List<GeoPoint> pointsIn, List<GeoPoint> pointsOut, List<GeoPoint> borderOut, int pos, GeoEnvelope envelope) {
+        // The shapeOpen parameter selects whether this function treats the
+        // shape as open or closed. False is appropriate for polygons and
+        // true for polylines.
+
+        int i1 = pointsIn.size() - 1; // start with last point
+
+        // and compare to the first point initially.
+        for ( int i2 = 0; i2 < pointsIn.size(); ++i2 ) { // look at each edge of the polygon in turn
+            if ( envelope.isInside(pointsIn.get(i2), pos) ) { // end point of edge is inside boundary
+                if(envelope.isInside(pointsIn.get(i1), pos)) {
+                    pointsOut.add(pointsIn.get(i2));
+                    borderOut.add(pointsIn.get(i2));
+                }
+                else {
+                    // edge crosses into the boundary, so trim back to the boundary, and
+                    // store both ends of the new edge
+                    if ( !( i2 == 0 ) ) {
+                        GeoPoint pointNew = solveIntersection(pointsIn.get(i1), pointsIn.get(i2), pos, envelope);
+                        if (null != pointNew) {
+                            pointsOut.add(pointNew);
+                        }
+                    }
+                    pointsOut.add(pointsIn.get(i2));
+                    borderOut.add(pointsIn.get(i2));
+                }
+            }
+            else { // end point of edge is outside boundary
+                // start point is in boundary, so need to trim back
+                if ( envelope.isInside(pointsIn.get(i1), pos)) {
+                    if ( !( i2 == 0 ) ) {
+                        GeoPoint pointNew = solveIntersection(pointsIn.get(i1), pointsIn.get(i2), pos, envelope);
+                        if (null != pointNew)
+                            pointsOut.add(pointNew);
+                    }
+                }
+            }
+            i1 = i2;
+        }
     }
 }

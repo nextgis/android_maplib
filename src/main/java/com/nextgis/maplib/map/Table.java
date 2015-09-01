@@ -99,7 +99,7 @@ public class Table implements ILayer, IJSONStore {
         return true;
     }
 
-    protected void notifyLayerChanged()
+    public void notifyLayerChanged()
     {
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;

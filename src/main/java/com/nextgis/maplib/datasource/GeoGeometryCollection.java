@@ -22,10 +22,19 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -89,7 +98,7 @@ public class GeoGeometryCollection
     @Override
     public int getType()
     {
-        return GTGeometryCollection;
+        return GeoConstants.GTGeometryCollection;
     }
 
 
@@ -108,8 +117,7 @@ public class GeoGeometryCollection
 
 
     @Override
-    public GeoEnvelope getEnvelope()
-    {
+    public GeoEnvelope getEnvelope() {
         GeoEnvelope envelope = new GeoEnvelope();
 
         for (GeoGeometry geometry : mGeometries) {
@@ -122,8 +130,7 @@ public class GeoGeometryCollection
 
     @Override
     public JSONObject toJSON()
-            throws JSONException
-    {
+            throws JSONException {
         if (getType() != GTGeometryCollection) {
             return super.toJSON();
         } else {
@@ -150,6 +157,18 @@ public class GeoGeometryCollection
             GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
             add(geometry);
         }
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()){
+            GeoGeometry geometry = GeoGeometryFactory.fromJsonStream(reader);
+            if(null != geometry)
+                mGeometries.add(geometry);
+        }
+        reader.endArray();
     }
 
 
@@ -246,5 +265,65 @@ public class GeoGeometryCollection
     public void clear()
     {
         mGeometries.clear();
+    }
+
+    @Override
+    public GeoGeometry simplify(double tolerance) {
+        GeoGeometryCollection collection = getInstance();
+        for (GeoGeometry geom : mGeometries) {
+            GeoGeometry newGeometry = geom.simplify(tolerance);
+            if(null != newGeometry)
+                collection.add(newGeometry);
+        }
+
+        if(collection.size() < 1)
+            return null;
+        return collection;
+    }
+
+    @Override
+    public GeoGeometry clip(GeoEnvelope envelope) {
+        GeoGeometryCollection collection = getInstance();
+        collection.setCRS(mCRS);
+        for (GeoGeometry geom : mGeometries) {
+            GeoGeometry newGeometry = geom.clip(envelope);
+            if(null != newGeometry)
+                collection.add(newGeometry);
+        }
+
+        if(collection.size() < 1)
+            return null;
+        return collection;
+    }
+
+    @Override
+    public void write(DataOutputStream stream) throws IOException {
+        super.write(stream);
+        int collectionSize = mGeometries.size();
+        stream.writeInt(collectionSize);
+        for(int i = 0; i < collectionSize; i++){
+            GeoGeometry geometry = mGeometries.get(i);
+            geometry.write(stream);
+        }
+    }
+
+    @Override
+    public void read(DataInputStream stream) throws IOException {
+        super.read(stream);
+        int collectionSize = stream.readInt();
+        for (int i = 0; i < collectionSize; i++) {
+            GeoGeometry geometry = GeoGeometryFactory.fromDataStream(stream);
+            if(null != geometry)
+                mGeometries.add(geometry);
+        }
+    }
+
+    @Override
+    public boolean isValid() {
+        return !mGeometries.isEmpty();
+    }
+
+    protected GeoGeometryCollection getInstance(){
+        return new GeoGeometryCollection();
     }
 }

@@ -24,15 +24,14 @@ package com.nextgis.maplib.map;
 import android.accounts.Account;
 import android.content.Context;
 import android.content.SyncResult;
-import android.database.sqlite.SQLiteException;
-import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
+import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -52,7 +51,6 @@ import java.util.Map;
 public class NGWLookupTable extends Table
         implements INGWLayer {
 
-    protected boolean mIsInitialized;
     protected String mAccountName;
     protected String mCacheUrl;
     protected String mCacheLogin;
@@ -66,11 +64,9 @@ public class NGWLookupTable extends Table
     protected static final String JSON_ACCOUNT_KEY = "account";
     protected static final String JSON_LT_DATA_KEY = "lookup_table";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
-    protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
 
     public NGWLookupTable(Context context, File path) {
         super(context, path);
-        mIsInitialized = false;
 
         mNet = new NetworkUtil(context);
         mSyncType = Constants.SYNC_NONE;
@@ -82,7 +78,6 @@ public class NGWLookupTable extends Table
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_IS_INITIALIZED_KEY, mIsInitialized);
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
         rootConfig.put(Constants.JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
@@ -106,7 +101,6 @@ public class NGWLookupTable extends Table
         mData = new HashMap<>();
 
         super.fromJSON(jsonObject);
-        mIsInitialized = jsonObject.getBoolean(JSON_IS_INITIALIZED_KEY);
         setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
         JSONObject dataArray = jsonObject.getJSONObject(JSON_LT_DATA_KEY);
 
@@ -119,11 +113,6 @@ public class NGWLookupTable extends Table
             String key = iter.next();
             String value = dataArray.getString(key);
             mData.put(key, value);
-        }
-
-        if (!mIsInitialized) {
-            //init in separate thread
-            downloadAsync();
         }
     }
 
@@ -147,20 +136,23 @@ public class NGWLookupTable extends Table
     }
 
     @Override
-    public void setSyncType(int syncType)
-    {
+    public void setSyncType(int syncType) {
         mSyncType = syncType;
     }
 
     @Override
     public void sync(String authority, SyncResult syncResult) {
-        if (0 != (mSyncType & Constants.SYNC_NONE) || !mIsInitialized) {
+        if (0 != (mSyncType & Constants.SYNC_NONE)) {
             return;
         }
 
         Map<String, String> remoteData = new Hashtable<>();
-        String result = download(remoteData);
-        if(null != result){
+
+        try {
+            fillFromNGW(remoteData, null);
+        } catch (IOException | NGException | JSONException e) {
+            e.printStackTrace();
+            Log.d(Constants.TAG, e.getLocalizedMessage());
             syncResult.stats.numParseExceptions++;
             return;
         }
@@ -219,71 +211,37 @@ public class NGWLookupTable extends Table
 
     @Override
     public boolean isValid() {
-        return mIsInitialized;
+        return null != mData;
     }
 
-    public String download(){
+    public void fillFromNGW(IProgressor progressor) throws JSONException, NGException, IOException {
         if(null == mData)
             mData = new HashMap<>();
-        return download(mData);
+        fillFromNGW(mData, progressor);
     }
 
-    protected String download(Map<String, String> dataMap)
-    {
+    protected void fillFromNGW(Map<String, String> dataMap, IProgressor progressor) throws IOException, NGException, JSONException {
         if (!mNet.isNetworkAvailable()) { //return tile from cache
-            return getContext().getString(R.string.error_network_unavailable);
+            throw new NGException(getContext().getString(R.string.error_network_unavailable));
         }
 
-        try {
-            Log.d(Constants.TAG, "download layer " + getName());
-            String data = mNet.get(
-                    NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
-            if (null == data) {
-                return getContext().getString(R.string.error_download_data);
-            }
-            JSONObject geoJSONObject = new JSONObject(data);
-            JSONObject lookupTable = geoJSONObject.getJSONObject("lookup_table");
-            JSONObject itemsObject = lookupTable.getJSONObject("items");
-            for (Iterator<String> iter = itemsObject.keys(); iter.hasNext(); ) {
-                String key = iter.next();
-                String value = itemsObject.getString(key);
-                dataMap.put(key, value);
-            }
-
-            mIsInitialized = true;
-            return null;
-        } catch (IOException e) {
-            Log.d(Constants.TAG, "Problem downloading GeoJSON: " + mCacheUrl + " Error: " +
-                    e.getLocalizedMessage());
-            return getContext().getString(R.string.error_download_data);
-        } catch (JSONException | SQLiteException e) {
-            e.printStackTrace();
-            return getContext().getString(R.string.error_download_data);
-        }
-    }
-
-    public void downloadAsync()
-    {
-        new DownloadTask().execute();
-    }
-
-    protected class DownloadTask
-            extends AsyncTask<Void, Void, String>
-    {
-
-        @Override
-        protected String doInBackground(Void... voids)
-        {
-            return download(mData);
+        if(null != progressor){
+            progressor.setMessage(getContext().getString(R.string.message_loading));
         }
 
-
-        @Override
-        protected void onPostExecute(String error)
-        {
-            if (null != error && error.length() > 0) {
-                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-            }
+        Log.d(Constants.TAG, "download layer " + getName());
+        String data = NetworkUtil.get(
+                NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
+        if (null == data) {
+            throw new NGException(getContext().getString(R.string.error_download_data));
+        }
+        JSONObject geoJSONObject = new JSONObject(data);
+        JSONObject lookupTable = geoJSONObject.getJSONObject("lookup_table");
+        JSONObject itemsObject = lookupTable.getJSONObject("items");
+        for (Iterator<String> iter = itemsObject.keys(); iter.hasNext(); ) {
+            String key = iter.next();
+            String value = itemsObject.getString(key);
+            dataMap.put(key, value);
         }
     }
 

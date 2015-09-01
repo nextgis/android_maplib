@@ -22,9 +22,17 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.io.IOException;
 
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 
@@ -57,7 +65,7 @@ public class GeoMultiPolygon
     @Override
     public int getType()
     {
-        return GTMultiPolygon;
+        return GeoConstants.GTMultiPolygon;
     }
 
 
@@ -72,6 +80,17 @@ public class GeoMultiPolygon
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()){
+            GeoPolygon polygon = new GeoPolygon();
+            polygon.setCoordinatesFromJSONStream(reader);
+            mGeometries.add(polygon);
+        }
+        reader.endArray();
+    }
 
     @Override
     public String toWKT(boolean full)
@@ -125,8 +144,13 @@ public class GeoMultiPolygon
     }
 
 
-    public void add(GeoPolygon lineString)
+    public void add(GeoPolygon polygon)
     {
-        super.add(lineString);
+        super.add(polygon);
+    }
+
+    @Override
+    protected GeoGeometryCollection getInstance() {
+        return new GeoMultiPolygon();
     }
 }

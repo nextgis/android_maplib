@@ -65,6 +65,11 @@ public class Feature
         mAttachments = new HashMap<>();
     }
 
+    public Feature(){
+        mFields = new ArrayList<>();
+        mFieldValues = new ArrayList<>();
+    }
+
 
     public long getId()
     {
