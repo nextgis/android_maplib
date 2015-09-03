@@ -170,10 +170,8 @@ public class GeoLinearRing
             return false;
 
         pt.setCoordinates(envelope.getMinX(), envelope.getMinY());
-        if(!intersects(pt.getEnvelope()))
-            return false;
+        return intersects(pt.getEnvelope());
 
-        return true;
     }
 
     @Override
