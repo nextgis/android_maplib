@@ -33,4 +33,9 @@
     <string name="W">W</string>
     <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
     <string name="tracks">My tracks</string>
+    <string name="create_features">Create features</string>
+    <string name="parse_features">Parse features</string>
+    <string name="message_loading">Loading…</string>
+    <string name="error_layer_create">Create layer failed</string>
+    <string name="start_fill_layer">Start fill layer with data</string>
 </resources>

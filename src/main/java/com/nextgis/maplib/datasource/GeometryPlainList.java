@@ -24,7 +24,7 @@ package com.nextgis.maplib.datasource;
 import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,11 +34,9 @@ import java.util.List;
  */
 public class GeometryPlainList implements IGeometryCache {
     protected List<VectorCacheItem> mVectorCacheItems;
-    protected GeoEnvelope mExtent;
 
     public GeometryPlainList() {
-        mVectorCacheItems = new ArrayList<>();
-        mExtent = new GeoEnvelope();
+        mVectorCacheItems = new LinkedList<>();
     }
 
     @Override
@@ -51,10 +49,9 @@ public class GeometryPlainList implements IGeometryCache {
     }
 
     @Override
-    public IGeometryCacheItem addItem(long id, GeoGeometry geometry) {
-        VectorCacheItem item = new VectorCacheItem(geometry, id);
+    public IGeometryCacheItem addItem(long id, GeoEnvelope envelope) {
+        final VectorCacheItem item = new VectorCacheItem(envelope, id);
         mVectorCacheItems.add(item);
-        mExtent.merge(geometry.getEnvelope());
         return item;
     }
 
@@ -84,11 +81,6 @@ public class GeometryPlainList implements IGeometryCache {
     }
 
     @Override
-    public GeoEnvelope getExtent() {
-        return mExtent;
-    }
-
-    @Override
     public int size() {
         return mVectorCacheItems.size();
     }
@@ -100,14 +92,10 @@ public class GeometryPlainList implements IGeometryCache {
 
     @Override
     public List<IGeometryCacheItem> search(final GeoEnvelope extent) {
-        final List<IGeometryCacheItem> ret = new ArrayList<>();
-        for (VectorCacheItem cacheItem : mVectorCacheItems) {
-            GeoGeometry geom = cacheItem.getGeometry();
-            if (null == geom) {
-                continue;
-            }
 
-            if (geom.intersects(extent)) {
+        final List<IGeometryCacheItem> ret = new LinkedList<>();
+        for (VectorCacheItem cacheItem : mVectorCacheItems) {
+            if (cacheItem.getEnvelope().intersects(extent)) {
                 ret.add(cacheItem);
             }
         }
@@ -123,32 +111,49 @@ public class GeometryPlainList implements IGeometryCache {
         return result;
     }
 
+    @Override
+    public void changeId(long oldFeatureId, long newFeatureId) {
+        IGeometryCacheItem item = getItem(oldFeatureId);
+        item.setFeatureId(newFeatureId);
+    }
+
+    @Override
+    public void save(File path) {
+        // TODO: 02.09.15
+    }
+
+    @Override
+    public void load(File path) {
+        // TODO: 02.09.15
+    }
+
     protected class VectorCacheItem implements IGeometryCacheItem
     {
-        protected GeoGeometry mGeoGeometry;
+        protected GeoEnvelope mEnvelope;
         protected long        mId;
 
 
         public VectorCacheItem(
-                GeoGeometry geoGeometry,
+                GeoEnvelope envelope,
                 long id)
         {
-            mGeoGeometry = geoGeometry;
+            mEnvelope = envelope;
             mId = id;
         }
 
 
         @Override
-        public GeoGeometry getGeometry()
+        public GeoEnvelope getEnvelope()
         {
-            return mGeoGeometry;
+            return mEnvelope;
         }
 
 
-        public void setGeometry(GeoGeometry geoGeometry)
+        public void setEnvelope(GeoEnvelope envelope)
         {
-            mGeoGeometry = geoGeometry;
+            mEnvelope = envelope;
         }
+
 
         @Override
         public long getFeatureId()

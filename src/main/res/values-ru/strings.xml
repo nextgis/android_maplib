@@ -33,4 +33,9 @@
     <string name="W">З</string>
     <string name="warning_remove_field">Поле \'%s\' запрещено, поле удалено</string>
     <string name="tracks">Мои треки</string>
+    <string name="create_features">Create features</string>
+    <string name="parse_features">Parse features</string>
+    <string name="message_loading">Загрузка…</string>
+    <string name="error_layer_create">Не удалось создать слой</string>
+    <string name="start_fill_layer">Start fill layer with data</string>
 </resources>

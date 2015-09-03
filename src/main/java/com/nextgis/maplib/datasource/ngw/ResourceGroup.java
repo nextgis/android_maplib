@@ -25,10 +25,9 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+
+import com.nextgis.maplib.util.NetworkUtil;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,12 +71,10 @@ public class ResourceGroup
         }
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            HttpGet get = new HttpGet(sURL);
-            get.setHeader("Cookie", mConnection.getCookie());
-            get.setHeader("Accept", "*/*");
-            HttpResponse response = mConnection.getHttpClient().execute(get);
-            HttpEntity entity = response.getEntity();
-            JSONArray children = new JSONArray(EntityUtils.toString(entity));
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(null == sResponse)
+                return;
+            JSONArray children = new JSONArray(sResponse);
             for (int i = 0; i < children.length(); i++) {
                 addResource(children.getJSONObject(i));
             }
@@ -104,13 +101,10 @@ public class ResourceGroup
                 resource = layer;
                 break;
             case Connection.NGWResourceTypeWMSClient:
-                LayerWithStyles WMSlayer = new LayerWithStyles(data, mConnection);
-                resource = WMSlayer;
+                resource = new LayerWithStyles(data, mConnection);
                 break;
             case Connection.NGWResourceTypeLookupTable:
-                ResourceWithoutChildren resourceWoChildren =
-                        new ResourceWithoutChildren(data, mConnection);
-                resource = resourceWoChildren;
+                resource = new ResourceWithoutChildren(data, mConnection);
                 break;
         }
 

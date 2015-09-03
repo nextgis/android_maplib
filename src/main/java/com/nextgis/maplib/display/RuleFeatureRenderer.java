@@ -104,13 +104,10 @@ public class RuleFeatureRenderer
         }
 
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
-        final IGeometryCache vectorCache = vectorLayer.getGeometryCache();
-        final List<IGeometryCacheItem> cacheItems = vectorCache.getAll();
-
         try {
 
-            for (int i = 0; i < cacheItems.size(); i++) {
-                putParametrizedStyle(cacheItems.get(i).getFeatureId());
+            for (Long featureId : vectorLayer.query(null)) {
+                putParametrizedStyle(featureId);
             }
 
         } catch (CloneNotSupportedException e) {

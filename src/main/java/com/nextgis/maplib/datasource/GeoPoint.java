@@ -22,8 +22,18 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
@@ -136,7 +146,7 @@ public class GeoPoint
     @Override
     public final int getType()
     {
-        return GTPoint;
+        return GeoConstants.GTPoint;
     }
 
 
@@ -146,6 +156,23 @@ public class GeoPoint
     {
         mX = coordinates.getDouble(0);
         mY = coordinates.getDouble(1);
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+        reader.beginArray();
+        int pos = 0;
+        while (reader.hasNext()) {
+            if(pos == 0)
+                mX = reader.nextDouble();
+            else if(pos == 1)
+                mY = reader.nextDouble();
+            else
+                reader.skipValue();
+            pos++;
+        }
+        reader.endArray();
     }
 
 
@@ -211,5 +238,34 @@ public class GeoPoint
     public void clear()
     {
         mX = mY = 0.0;
+    }
+
+    @Override
+    public GeoGeometry simplify(double tolerance) {
+        return new GeoPoint(this);
+    }
+
+    @Override
+    public GeoGeometry clip(GeoEnvelope envelope) {
+        return new GeoPoint(this);
+    }
+
+    @Override
+    public void write(DataOutputStream stream) throws IOException {
+        super.write(stream);
+        stream.writeDouble(mX);
+        stream.writeDouble(mY);
+    }
+
+    @Override
+    public void read(DataInputStream stream) throws IOException{
+        super.read(stream);
+        mX = stream.readDouble();
+        mY = stream.readDouble();
+    }
+
+    @Override
+    public boolean isValid() {
+        return true;
     }
 }

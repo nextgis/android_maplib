@@ -23,7 +23,6 @@
 
 package com.nextgis.maplib.map;
 
-import android.annotation.TargetApi;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -39,20 +38,20 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.JsonReader;
 import android.util.Log;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
-import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.datasource.GeometryPlainList;
+import com.nextgis.maplib.datasource.GeometryRTree;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
@@ -63,32 +62,60 @@ import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
+import com.nextgis.maplib.util.GeoJSONUtil;
+import com.nextgis.maplib.util.MapUtil;
+import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-import static com.nextgis.maplib.util.Constants.*;
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
+import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
+import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.GeoConstants.FTDate;
+import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
+import static com.nextgis.maplib.util.GeoConstants.FTInteger;
+import static com.nextgis.maplib.util.GeoConstants.FTReal;
+import static com.nextgis.maplib.util.GeoConstants.FTString;
+import static com.nextgis.maplib.util.GeoConstants.FTTime;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 
 /**
  * The vector layer class. It stores geometry and attributes.
@@ -161,80 +188,74 @@ import static com.nextgis.maplib.util.GeoConstants.FTDate;
  */
 
 public class VectorLayer
-        extends Layer
-{
-    protected boolean               mIsInitialized;
-    protected int                   mGeometryType;
-    protected Uri                   mContentUri;
-    protected UriMatcher            mUriMatcher;
-    protected String                mAuthority;
-    protected Map<String, Field>    mFields;
-    protected long                  mUniqId;
+        extends Layer {
     protected boolean mCacheLoaded;
+    protected int mGeometryType;
+    protected Uri mContentUri;
+    protected UriMatcher mUriMatcher;
+    protected String mAuthority;
+    protected Map<String, Field> mFields;
+    protected long mUniqId;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
 
-    protected static final String JSON_GEOMETRY_TYPE_KEY  = "geometry_type";
-    protected static final String JSON_IS_INITIALIZED_KEY = "is_inited";
-    protected static final String JSON_FIELDS_KEY         = "fields";
+    protected static final String JSON_GEOMETRY_TYPE_KEY = "geometry_type";
+    protected static final String JSON_FIELDS_KEY = "fields";
 
-    public static final String NOTIFY_DELETE            = "com.nextgis.maplib.notify_delete";
-    public static final String NOTIFY_DELETE_ALL        = "com.nextgis.maplib.notify_delete_all";
-    public static final String NOTIFY_INSERT            = "com.nextgis.maplib.notify_insert";
-    public static final String NOTIFY_UPDATE            = "com.nextgis.maplib.notify_update";
-    public static final String NOTIFY_UPDATE_ALL        = "com.nextgis.maplib.notify_update_all";
-    public static final String NOTIFY_UPDATE_FIELDS     = "com.nextgis.maplib.notify_update_fields";
+    public static final String NOTIFY_DELETE = "com.nextgis.maplib.notify_delete";
+    public static final String NOTIFY_DELETE_ALL = "com.nextgis.maplib.notify_delete_all";
+    public static final String NOTIFY_INSERT = "com.nextgis.maplib.notify_insert";
+    public static final String NOTIFY_UPDATE = "com.nextgis.maplib.notify_update";
+    public static final String NOTIFY_UPDATE_ALL = "com.nextgis.maplib.notify_update_all";
+    public static final String NOTIFY_UPDATE_FIELDS = "com.nextgis.maplib.notify_update_fields";
     public static final String NOTIFY_FEATURE_ID_CHANGE = "com.nextgis.maplib.notify_change_id";
-    public static final String NOTIFY_LAYER_NAME        = "layer_name";
+    public static final String NOTIFY_LAYER_NAME = "layer_name";
 
 
     protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
-    protected static final String NO_SYNC             = "no_sync";
+    protected static final String NO_SYNC = "no_sync";
 
-    protected static final int TYPE_TABLE     = 1;
-    protected static final int TYPE_FEATURE   = 2;
-    protected static final int TYPE_ATTACH    = 3;
+    protected static final int TYPE_TABLE = 1;
+    protected static final int TYPE_FEATURE = 2;
+    protected static final int TYPE_ATTACH = 3;
     protected static final int TYPE_ATTACH_ID = 4;
 
     protected static final String META = "meta.json";
+    protected static final String CACHE = "cache";
+    protected static final String SAMPLE_EXT = ".samp";
+    protected static final String RTREE = "rtree";
 
     public static final String ATTACH_DISPLAY_NAME = MediaStore.MediaColumns.DISPLAY_NAME;
-    public static final String ATTACH_SIZE         = MediaStore.MediaColumns.SIZE;
-    public static final String ATTACH_ID           = MediaStore.MediaColumns._ID;
-    public static final String ATTACH_MIME_TYPE    = MediaStore.MediaColumns.MIME_TYPE;
-    public static final String ATTACH_DATA         = MediaStore.MediaColumns.DATA;
-    public static final String ATTACH_DATE_ADDED   = MediaStore.MediaColumns.DATE_ADDED;
-    public static final String ATTACH_DESCRIPTION  = MediaStore.Images.ImageColumns.DESCRIPTION;
+    public static final String ATTACH_SIZE = MediaStore.MediaColumns.SIZE;
+    public static final String ATTACH_ID = MediaStore.MediaColumns._ID;
+    public static final String ATTACH_MIME_TYPE = MediaStore.MediaColumns.MIME_TYPE;
+    public static final String ATTACH_DATA = MediaStore.MediaColumns.DATA;
+    public static final String ATTACH_DATE_ADDED = MediaStore.MediaColumns.DATE_ADDED;
+    public static final String ATTACH_DESCRIPTION = MediaStore.Images.ImageColumns.DESCRIPTION;
 
     public static final int COLUMN_TYPE_UNKNOWN = 0;
     public static final int COLUMN_TYPE_STRING = 1;
     public static final int COLUMN_TYPE_LONG = 2;
 
     /**
-     * The geometry cache for fast quering and drawing
+     * The geometry cache for fast querying and drawing
      */
-    protected IGeometryCache mGeometryCache;
-    protected IGeometryCacheItem mTempCacheItem;
 
+    protected GeometryRTree mRTree;
     protected Map<String, Map<String, AttachItem>> mAttaches;
-
 
     public VectorLayer(
             Context context,
-            File path)
-    {
+            File path) {
         super(context, path);
-
-        mCacheLoaded = false;
 
         if (!(context instanceof IGISApplication)) {
             throw new IllegalArgumentException(
                     "The context should be the instance of IGISApplication");
         }
 
-
-        mIsInitialized = false;
+        mCacheLoaded = false;
         mGeometryType = GTNone;
 
         IGISApplication application = (IGISApplication) context;
@@ -255,247 +276,24 @@ public class VectorLayer
         CONTENT_ITEM_TYPE =
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
 
-        mGeometryCache = initGeometryCache();
-
         mAttaches = new HashMap<>();
+        mRTree = new GeometryRTree();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
 
         mUniqId = Constants.NOT_FOUND;
     }
 
-    protected IGeometryCache initGeometryCache(){
-        return new GeometryPlainList();
-    }
-
-    public String createFromGeoJSON(JSONObject geoJSONObject)
-    {
-        try {
-            //check crs
-            boolean isWGS84 = true; //if no crs tag - WGS84 CRS
-            if (geoJSONObject.has(GEOJSON_CRS)) {
-                JSONObject crsJSONObject = geoJSONObject.getJSONObject(GEOJSON_CRS);
-                //the link is unsupported yet.
-                if (!crsJSONObject.getString(GEOJSON_TYPE).equals(GEOJSON_NAME)) {
-                    return mContext.getString(R.string.error_crs_unsupported);
-                }
-                JSONObject crsPropertiesJSONObject =
-                        crsJSONObject.getJSONObject(GEOJSON_PROPERTIES);
-                String crsName = crsPropertiesJSONObject.getString(GEOJSON_NAME);
-                switch (crsName) {
-                    case "urn:ogc:def:crs:OGC:1.3:CRS84":  // WGS84
-                        isWGS84 = true;
-                        break;
-                    case "urn:ogc:def:crs:EPSG::3857":
-                    case "EPSG:3857":  //Web Mercator
-                        isWGS84 = false;
-                        break;
-                    default:
-                        return mContext.getString(R.string.error_crs_unsupported);
-                }
-            }
-
-            //load contents to memory and reproject if needed
-            JSONArray geoJSONFeatures = geoJSONObject.getJSONArray(GEOJSON_TYPE_FEATURES);
-            if (0 == geoJSONFeatures.length()) {
-                return mContext.getString(R.string.error_empty_dataset);
-            }
-
-            List<Feature> features = new ArrayList<>();
-            List<Field> fields = new ArrayList<>();
-
-            int geometryType = GTNone;
-            for (int i = 0; i < geoJSONFeatures.length(); i++) {
-                JSONObject jsonFeature = geoJSONFeatures.getJSONObject(i);
-                //get geometry
-                JSONObject jsonGeometry = jsonFeature.getJSONObject(GEOJSON_GEOMETRY);
-                GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
-                if (geometryType == GTNone) {
-                    geometryType = geometry.getType();
-                } else if (geometryType != geometry.getType()) {
-                    //skip different geometry type
-                    continue;
-                }
-
-                //reproject if needed
-                if (isWGS84) {
-                    geometry.setCRS(CRS_WGS84);
-                    geometry.project(CRS_WEB_MERCATOR);
-                } else {
-                    geometry.setCRS(CRS_WEB_MERCATOR);
-                }
-
-                int nId = i;
-                if (jsonFeature.has(GEOJSON_ID)) {
-                    nId = jsonFeature.optInt(GEOJSON_ID, nId);
-                }
-                Feature feature = new Feature(nId, fields); // ID == i
-                feature.setGeometry(geometry);
-
-                //normalize attributes
-                JSONObject jsonAttributes = jsonFeature.getJSONObject(GEOJSON_PROPERTIES);
-                Iterator<String> iter = jsonAttributes.keys();
-                while (iter.hasNext()) {
-                    String key = iter.next();
-                    Object value = jsonAttributes.get(key);
-                    int nType = NOT_FOUND;
-                    //check type
-                    if (value instanceof Integer || value instanceof Long) {
-                        nType = FTInteger;
-                    } else if (value instanceof Double || value instanceof Float) {
-                        nType = FTReal;
-                    } else if (value instanceof Date) {
-                        nType = FTDateTime;
-                    } else if (value instanceof String) {
-                        nType = FTString;
-                    } else if (value instanceof JSONObject) {
-                        nType = NOT_FOUND;
-                        //the some list - need to check it type FTIntegerList, FTRealList, FTStringList
-                    }
-
-                    if (nType != NOT_FOUND) {
-                        int fieldIndex = NOT_FOUND;
-                        for (int j = 0; j < fields.size(); j++) {
-                            if (fields.get(j).getName().equals(key)) {
-                                fieldIndex = j;
-                                break;
-                            }
-                        }
-                        if (fieldIndex == NOT_FOUND) { //add new field
-                            Field field = new Field(nType, key, null);
-                            fieldIndex = fields.size();
-                            fields.add(field);
-                        }
-                        feature.setFieldValue(fieldIndex, value);
-                    }
-                }
-                features.add(feature);
-            }
-
-            return initialize(fields, features, NOT_FOUND);
-        } catch (JSONException | SQLiteException e) {
-            e.printStackTrace();
-            return e.getLocalizedMessage();
-        }
-    }
-
-
-    public String createFromGeoJSON(
-            JSONObject geoJSONObject,
-            List<Field> fields,
-            int geometryType,
-            int srs)
-    {
-        try {
-            //check crs
-            boolean isWGS84 = srs == GeoConstants.CRS_WGS84;
-            if (!isWGS84 && srs != GeoConstants.CRS_WEB_MERCATOR) {
-                return mContext.getString(R.string.error_crs_unsupported);
-            }
-
-            //load contents to memory and reproject if needed
-            JSONArray geoJSONFeatures = geoJSONObject.getJSONArray(GEOJSON_TYPE_FEATURES);
-            if (0 == geoJSONFeatures.length()) {
-                return mContext.getString(R.string.error_empty_dataset);
-            }
-
-            List<Feature> features = new ArrayList<>();
-            for (int i = 0; i < geoJSONFeatures.length(); i++) {
-                JSONObject jsonFeature = geoJSONFeatures.getJSONObject(i);
-                //get geometry
-                JSONObject jsonGeometry = jsonFeature.getJSONObject(GEOJSON_GEOMETRY);
-                GeoGeometry geometry = GeoGeometryFactory.fromJson(jsonGeometry);
-                if (geometryType != geometry.getType()) {
-                    //skip different geometry type
-                    continue;
-                }
-
-                //reproject if needed
-                if (isWGS84) {
-                    geometry.setCRS(CRS_WGS84);
-                    geometry.project(CRS_WEB_MERCATOR);
-                } else {
-                    geometry.setCRS(CRS_WEB_MERCATOR);
-                }
-
-                int nId = i;
-                if (jsonFeature.has(GEOJSON_ID)) {
-                    nId = jsonFeature.optInt(GEOJSON_ID, nId);
-                }
-                Feature feature = new Feature(nId, fields); // ID == i
-                feature.setGeometry(geometry);
-
-                //normalize attributes
-                JSONObject jsonAttributes = jsonFeature.getJSONObject(GEOJSON_PROPERTIES);
-                Iterator<String> iter = jsonAttributes.keys();
-                while (iter.hasNext()) {
-                    String key = iter.next();
-                    Object value = jsonAttributes.get(key);
-
-                    int fieldIndex = NOT_FOUND;
-                    for (int j = 0; j < fields.size(); j++) {
-                        if (fields.get(j).getName().equals(key)) {
-                            fieldIndex = j;
-                            break;
-                        }
-                    }
-
-                    if (fieldIndex != NOT_FOUND) {
-                        value = parseDateTime(value, fields.get(fieldIndex).getType());
-                        feature.setFieldValue(fieldIndex, value);
-                    }
-                }
-                features.add(feature);
-            }
-
-            return initialize(fields, features, NOT_FOUND);
-        } catch (JSONException | SQLiteException e) {
-            e.printStackTrace();
-            return e.getLocalizedMessage();
-        }
-    }
-
-    protected Object parseDateTime(Object value, int type) {
-        SimpleDateFormat sdf = null;
-
-        switch (type) {
-            case FTDate:
-                sdf = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault());
-                break;
-            case FTTime:
-                sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-                break;
-            case FTDateTime:
-                sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault());
-                break;
-        }
-
-        if (sdf != null && value instanceof String)
-            try {
-                value = sdf.parse((String) value).getTime();
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-
-        return value;
-    }
-
-
-    public String initialize(
-            List<Field> fields,
-            List<Feature> features,
-            int geometryType)
-            throws SQLiteException
-    {
+    public void create(int geometryType, final List<Field> fields) throws SQLiteException {
+        mGeometryType = geometryType;
         Log.d(TAG, "init layer " + getName());
 
         //filter out forbidden fields
-
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             String fieldName = field.getName();
-            if (NGWUtil.containsCaseInsensitive(fieldName, VECTOR_FORBIDDEN_FIELDS) ||
-                fieldName.startsWith("@")) {
+            if (NGWUtil.containsCaseInsensitive(fieldName, Constants.VECTOR_FORBIDDEN_FIELDS) ||
+                    fieldName.startsWith("@")) {
                 fields.remove(i);
                 i--;
 
@@ -507,9 +305,9 @@ public class VectorLayer
         }
 
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " +
-                             //table name is the same as the folder of the layer
-                             FIELD_ID + " INTEGER PRIMARY KEY, " +
-                             FIELD_GEOM + " BLOB";
+                //table name is the same as the folder of the layer
+                FIELD_ID + " INTEGER PRIMARY KEY, " +
+                FIELD_GEOM + " BLOB";
         for (int i = 0; i < fields.size(); ++i) {
             Field field = fields.get(i);
 
@@ -539,50 +337,100 @@ public class VectorLayer
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         db.execSQL(tableCreate);
-
-        mGeometryType = geometryType;
-
-        for (Feature feature : features) {
-            createFeature(feature, fields, db);
-        }
-
-        mIsInitialized = true;
         setDefaultRenderer();
-
-        mFields = new HashMap<>();
-        for (Field field : fields) {
-            mFields.put(field.getName(), field);
-        }
-
-        save();
-
-        if (null != mParent && mParent instanceof LayerGroup) { //notify the load is over
-            LayerGroup layerGroup = (LayerGroup) mParent;
-            layerGroup.onLayerChanged(this);
-        }
-
-        return null;
     }
 
-    protected void createFeature(Feature feature, List<Field> fields, SQLiteDatabase db)
-            throws SQLiteException{
-        //1. check if such id already used
-        // maybe was added previous session
+    public void createFromNGFP(Uri uri, IProgressor progressor) {
+        /*
 
-        if(!mCacheLoaded)
-            reloadCache();
+         */
+    }
 
-        if(mGeometryCache.isItemExist(feature.getId())){
+    public void createFromGeoJson(Uri uri, IProgressor progressor) throws IOException, JSONException, NGException {
+        InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
+        if (inputStream == null) {
+            throw new NGException(mContext.getString(R.string.error_download_data));
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            int nSize = inputStream.available();
+
+            if (null != progressor) {
+                progressor.setMessage(mContext.getString(R.string.message_loading));
+                progressor.setMax(nSize);
+            }
+
+            int nIncrement = 0;
+            BufferedReader streamReader = new BufferedReader(
+                    new InputStreamReader(inputStream, "UTF-8"));
+            StringBuilder responseStrBuilder = new StringBuilder();
+            String inputStr;
+            while ((inputStr = streamReader.readLine()) != null) {
+                nIncrement += inputStr.length();
+                if (null != progressor) {
+                    if (progressor.isCanceled())
+                        break;
+                    progressor.setValue(nIncrement);
+                }
+                responseStrBuilder.append(inputStr);
+                if (responseStrBuilder.length() > MAX_CONTENT_LENGTH)
+                    throw new NGException(mContext.getString(R.string.error_layer_create));
+            }
+
+            JSONObject jsonObject = new JSONObject(responseStrBuilder.toString());
+            GeoJSONUtil.createLayerFromGeoJSON(this, jsonObject, progressor);
+        } else {
+            if (null != progressor) {
+                progressor.setMessage(mContext.getString(R.string.create_features));
+            }
+            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor);
+        }
+    }
+
+    public void createFromGeoJson(File path, IProgressor progressor) throws IOException, JSONException, NGException {
+        if (null != progressor) {
+            progressor.setMessage(mContext.getString(R.string.create_features));
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            String jsonData = FileUtil.readFromFile(path);
+            JSONObject jsonObject = new JSONObject(jsonData);
+            GeoJSONUtil.createLayerFromGeoJSON(this, jsonObject, progressor);
+        } else {
+            FileInputStream inputStream = new FileInputStream(path);
+            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor);
+        }
+    }
+
+    public void createFeature(Feature feature)
+            throws SQLiteException {
+        // check if geometry type is appropriate layer geometry type
+        if (null == feature.getGeometry() || feature.getGeometry().getType() != mGeometryType) {
             return;
         }
 
-        ContentValues values = new ContentValues();
+        // check if such id already used
+        // maybe was added previous session
+
+        if (!mCacheLoaded)
+            reloadCache();
+
+        if (mRTree.getItem(feature.getId()) != null) {
+            return;
+        }
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
+
+        final ContentValues values = new ContentValues();
         values.put(FIELD_ID, feature.getId());
         try {
             values.put(FIELD_GEOM, feature.getGeometry().toBlob());
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        List<Field> fields = feature.getFields();
         for (int i = 0; i < fields.size(); ++i) {
             if (!feature.isValuePresent(i)) {
                 continue;
@@ -615,62 +463,105 @@ public class VectorLayer
                 case FTTime:
                 case FTDateTime:
                     Object dateVal = feature.getFieldValue(i);
-                    if(dateVal instanceof Date){
+                    if (dateVal instanceof Date) {
                         Date date = (Date) dateVal;
                         values.put(fields.get(i).getName(), date.getTime());
-                    }
-                    else if(dateVal instanceof Long){
+                    } else if (dateVal instanceof Long) {
                         values.put(fields.get(i).getName(), (long) dateVal);
-                    }
-                    else if(dateVal instanceof Calendar){
-                        Calendar cal = (Calendar)dateVal;
+                    } else if (dateVal instanceof Calendar) {
+                        Calendar cal = (Calendar) dateVal;
                         values.put(fields.get(i).getName(), cal.getTimeInMillis());
-                    }
-                    else{
+                    } else {
                         Log.d(TAG, "skip value: " + dateVal.toString());
                     }
                     break;
             }
         }
 
-        db.insert(mPath.getName(), "", values);
+        Log.d(TAG, "Inserting " + values);
+        if (db.insert(mPath.getName(), "", values) > 0) {
 
-        if (null == feature.getGeometry()) {
-            return;
+            if (null == feature.getGeometry()) {
+                return;
+            }
+
+            addGeometryToCache(feature.getId(), feature.getGeometry());
+
+            //update bbox
+            mExtents.merge(feature.getGeometry().getEnvelope());
+
+            save();
         }
-
-        //add to cache
-        mGeometryCache.addItem(feature.getId(), feature.getGeometry());
-        //update bbox
-        mExtents = mGeometryCache.getExtent();
-
-        if (mGeometryType == NOT_FOUND || mGeometryType != feature.getGeometry().getType()) {
-            mGeometryType = feature.getGeometry().getType();
-        }
-
-        save();
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void loadFeaturesFromGeoJSONStream(InputStream in, List<Field> fields, SQLiteDatabase db) throws IOException {
-        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
-        reader.beginArray();
-        while (reader.hasNext()) {
-            //TODO: download attachments if needed
-            Feature feature = readGeoJSONFeature(reader, fields);
-            createFeature(feature, fields, db);
+    protected void saveGeometryToFile(GeoGeometry geometry, File file) {
+        try {
+            FileUtil.createDir(file.getParentFile());
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream);
+            geometry.write(dataOutputStream);
+            dataOutputStream.flush();
+            dataOutputStream.close();
+            fileOutputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        reader.endArray();
-        reader.close();
     }
 
-    protected Feature readGeoJSONFeature(JsonReader reader, List<Field> fields){
-        return null;
+    protected GeoGeometry loadGeometryFromFile(File file) {
+        if (!file.exists()) {
+            return null;
+        }
+        try {
+            FileInputStream fileInputStream = new FileInputStream(file);
+            DataInputStream dataInputStream = new DataInputStream(fileInputStream);
+            GeoGeometry geometry = GeoGeometryFactory.fromDataStream(dataInputStream);
+
+            dataInputStream.close();
+            fileInputStream.close();
+
+            return geometry;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    protected void addGeometryToCache(long featureId, GeoGeometry geometry) {
+        mRTree.addItem(featureId, geometry.getEnvelope());
+        File cachePath = new File(mPath, CACHE);
+        for (int zoom = 18; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+            GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
+            saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+            geometry = newGeometry;
+        }
+    }
+
+    protected void deleteGeometryFromCache(long featureId) {
+        mRTree.removeItem(featureId);
+        File cachePath = new File(mPath, CACHE);
+        for (int zoom = 18; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+            FileUtil.deleteRecursive(new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+        }
+    }
+
+    protected void changeGeometryInCache(long featureId, GeoGeometry newGeometry) {
+        deleteGeometryFromCache(featureId);
+        addGeometryToCache(featureId, newGeometry);
+    }
+
+    protected void changeGeometryIdInTiles(long oldFeatureId, long newFeatureId) {
+        mRTree.changeId(oldFeatureId, newFeatureId);
+        File cachePath = new File(mPath, CACHE);
+        for (int zoom = 18; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+            File from = new File(cachePath, zoom + "/" + oldFeatureId + SAMPLE_EXT);
+            File to = new File(cachePath, zoom + "/" + newFeatureId + SAMPLE_EXT);
+            from.renameTo(to);
+        }
     }
 
     protected Style getDefaultStyle()
-            throws Exception
-    {
+            throws Exception {
         switch (mGeometryType) {
 
             case GTPoint:
@@ -690,12 +581,11 @@ public class VectorLayer
             default:
                 throw new Exception("Unknown geometry type: " + mGeometryType);
         }
+
     }
 
-
-    protected void setDefaultRenderer()
-    {
-        if(null != mRenderer)
+    protected void setDefaultRenderer() {
+        if (null != mRenderer)
             return;
         try {
             mRenderer = new SimpleFeatureRenderer(this, getDefaultStyle());
@@ -705,10 +595,8 @@ public class VectorLayer
         }
     }
 
-
     protected void setRenderer(JSONObject jsonObject)
-            throws JSONException
-    {
+            throws JSONException {
         String renderName = "";
         if (jsonObject.has(JSON_NAME_KEY)) {
             renderName = jsonObject.getString(JSON_NAME_KEY);
@@ -735,26 +623,20 @@ public class VectorLayer
         }
     }
 
-
-    protected IStyleRule getStyleRule()
-    {
+    protected IStyleRule getStyleRule() {
         return null;
     }
 
 
-    protected void reportError(String error)
-    {
+    protected void reportError(String error) {
         Log.w(TAG, error);
     }
 
-
     @Override
     public JSONObject toJSON()
-            throws JSONException
-    {
+            throws JSONException {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_GEOMETRY_TYPE_KEY, mGeometryType);
-        rootConfig.put(JSON_IS_INITIALIZED_KEY, mIsInitialized);
 
         if (null != mFields) {
             JSONArray fields = new JSONArray();
@@ -770,28 +652,23 @@ public class VectorLayer
             rootConfig.put(Constants.JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
         }
 
-        if(mCacheLoaded){
-            mExtents = mGeometryCache.getExtent();
-        }
-
-        if(mExtents.isInit()) {
+        if (mExtents.isInit()) {
             rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
             rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
             rootConfig.put(Constants.JSON_BBOX_MAXY_KEY, mExtents.getMaxY());
             rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
         }
 
+        mRTree.save(new File(mPath, RTREE));
+
         return rootConfig;
     }
 
-
     @Override
     public void fromJSON(JSONObject jsonObject)
-            throws JSONException, SQLiteException
-    {
+            throws JSONException, SQLiteException {
         super.fromJSON(jsonObject);
         mGeometryType = jsonObject.getInt(JSON_GEOMETRY_TYPE_KEY);
-        mIsInitialized = jsonObject.getBoolean(JSON_IS_INITIALIZED_KEY);
 
         if (jsonObject.has(JSON_FIELDS_KEY)) {
             mFields = new HashMap<>();
@@ -812,97 +689,76 @@ public class VectorLayer
         if (jsonObject.has(Constants.JSON_BBOX_MINY_KEY))
             mExtents.setMinY(jsonObject.getDouble(Constants.JSON_BBOX_MINY_KEY));
 
-        if (mIsInitialized) {
-            if(mIsVisible) {
-                // load the layer contents async
-                Thread t = new Thread(new Runnable() {
-                    public void run() {
-                        reloadCache();
-                    }
-                });
-                t.setPriority(Constants.DEFAULT_LOAD_LAYER_THREAD_PRIORITY);
-                t.start();
-            }
-        }
+        setVisible(mIsVisible);
 
-        if (jsonObject.has(JSON_RENDERERPROPS_KEY)) {
-            setRenderer(jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY));
+        if (jsonObject.has(Constants.JSON_RENDERERPROPS_KEY)) {
+            setRenderer(jsonObject.getJSONObject(Constants.JSON_RENDERERPROPS_KEY));
         } else {
             setDefaultRenderer();
         }
     }
 
 
-    protected synchronized void reloadCache() throws SQLiteException
-    {
-        if(!mIsInitialized)
+    protected synchronized void reloadCache() throws SQLiteException {
+        if (null == mFields || mFields.isEmpty()) {
+            mCacheLoaded = true;
             return;
+        }
 
         //load vector cache
-        mExtents.unInit();
         mCacheLoaded = false;
+
+        /*mFeatureIds.clear();
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(false);
-        String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
+        SQLiteDatabase db = map.getDatabase(true);
+        String[] columns = new String[] {FIELD_ID};//, FIELD_GEOM};
         Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
         if (null != cursor) {
             if (cursor.moveToFirst()) {
                 do {
                     try {
-                        GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                        final GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
                         if (null != geoGeometry) {
                             long nId = cursor.getLong(0);
-                            mGeometryCache.addItem(nId, geoGeometry);
+                            mFeatureIds.add(nId);
                             updateUniqId(nId);
                         }
-                    } catch (IOException | ClassNotFoundException e) {
+                    } catch (IOException | ClassNotFoundException | IllegalStateException e) {
                         e.printStackTrace();
                     }
                 } while (cursor.moveToNext());
             }
             cursor.close();
-            mExtents = mGeometryCache.getExtent();
-        }
+        }*/
+
+        mRTree.load(new File(mPath, RTREE));
 
         mCacheLoaded = true;
-        notifyLayerChanged();
     }
-
 
     @Override
     public boolean delete()
-            throws SQLiteException
-    {
+            throws SQLiteException {
         //drop table
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
+        SQLiteDatabase db = map.getDatabase(false);
         String tableDrop = "DROP TABLE IF EXISTS " + mPath.getName();
         db.execSQL(tableDrop);
 
         return super.delete();
     }
 
-
-    public IGeometryCache getGeometryCache()
-    {
-        return mGeometryCache;
-    }
-
-
     @Override
-    public boolean isValid()
-    {
-        return mIsInitialized && mExtents.isInit();
+    public boolean isValid() {
+        return mExtents.isInit();
     }
-
 
     public Cursor query(
             String[] projection,
             String selection,
             String[] selectionArgs,
             String sortOrder,
-            String limit)
-    {
+            String limit) {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
             Log.d(TAG, "The map should extends MapContentProviderHelper or inherited");
@@ -928,8 +784,7 @@ public class VectorLayer
             String selection,
             String[] selectionArgs,
             String sortOrder,
-            String limit)
-    {
+            String limit) {
         Cursor cursor;
         MatrixCursor matrixCursor;
         String featureId;
@@ -966,7 +821,7 @@ public class VectorLayer
                 featureId = pathSegments.get(pathSegments.size() - 2);
 
                 if (projection == null) {
-                    projection = new String[] {
+                    projection = new String[]{
                             ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
 
@@ -1020,14 +875,14 @@ public class VectorLayer
 
                             if (projection[sortIndex].compareToIgnoreCase(
                                     ATTACH_DISPLAY_NAME) == 0 ||
-                                projection[sortIndex].compareToIgnoreCase(
-                                        ATTACH_DATA) == 0 ||
-                                projection[sortIndex].compareToIgnoreCase(
-                                        ATTACH_MIME_TYPE) == 0 ||
-                                projection[sortIndex].compareToIgnoreCase(
-                                        ATTACH_ID) == 0 ||
-                                projection[sortIndex].compareToIgnoreCase(
-                                        ATTACH_DESCRIPTION) == 0) {
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_DATA) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_MIME_TYPE) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_ID) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(
+                                            ATTACH_DESCRIPTION) == 0) {
 
                                 columnType = COLUMN_TYPE_STRING;
 
@@ -1042,13 +897,11 @@ public class VectorLayer
                             final int sortIndexF = sortIndex;
 
                             Collections.sort(
-                                    rowArray, new Comparator<Object[]>()
-                                    {
+                                    rowArray, new Comparator<Object[]>() {
                                         @Override
                                         public int compare(
                                                 Object[] lhs,
-                                                Object[] rhs)
-                                        {
+                                                Object[] rhs) {
                                             switch (columnTypeF) {
                                                 case COLUMN_TYPE_STRING:
                                                     return ((String) lhs[sortIndexF]).compareTo(
@@ -1081,7 +934,7 @@ public class VectorLayer
                 featureId = pathSegments.get(pathSegments.size() - 3);
                 attachId = uri.getLastPathSegment();
                 if (projection == null) {
-                    projection = new String[] {
+                    projection = new String[]{
                             ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
                 matrixCursor = new MatrixCursor(projection);
@@ -1089,8 +942,8 @@ public class VectorLayer
                 AttachItem item = getAttach(featureId, attachId);
                 if (null != item) {
                     File attachFile = new File(
-                            mPath, featureId + "/" +
-                                   item.getAttachId()); //the attaches store in id folder in layer folder
+                            mPath, featureId + File.separator +
+                            item.getAttachId()); //the attaches store in id folder in layer folder
                     Object[] row = new Object[projection.length];
                     for (int i = 0; i < projection.length; i++) {
                         if (projection[i].compareToIgnoreCase(ATTACH_DISPLAY_NAME) == 0) {
@@ -1118,8 +971,7 @@ public class VectorLayer
     }
 
 
-    public String getType(Uri uri)
-    {
+    public String getType(Uri uri) {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_TABLE:
@@ -1143,8 +995,7 @@ public class VectorLayer
 
     public String[] getStreamTypes(
             Uri uri,
-            String mimeTypeFilter)
-    {
+            String mimeTypeFilter) {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_ATTACH_ID:
@@ -1153,33 +1004,35 @@ public class VectorLayer
                 String attachId = uri.getLastPathSegment();
                 AttachItem item = getAttach(featureId, attachId);
                 if (null != item) {
-                    return new String[] {item.getMimetype()};
+                    return new String[]{item.getMimetype()};
                 }
         }
         return null;
     }
 
-
-    public long insertAddChanges(ContentValues contentValues)
-    {
-        long rowID = insert(contentValues);
-        if (rowID != NOT_FOUND) {
-            addChange(rowID, CHANGE_OPERATION_NEW);
+    /**
+     * Insert new values and add information to changes table for sync purposes
+     *
+     * @param contentValues Values to add
+     * @return New row identifiactor or -1
+     */
+    public long insertAddChanges(ContentValues contentValues) {
+        long rowId = insert(contentValues);
+        if (rowId != NOT_FOUND) {
+            addChange(rowId, CHANGE_OPERATION_NEW);
         }
-        return rowID;
+        return rowId;
     }
 
 
-    protected void updateUniqId(long id)
-    {
+    protected void updateUniqId(long id) {
         if (mUniqId <= id) {
             mUniqId = id + 1;
         }
     }
 
 
-    protected long insert(ContentValues contentValues)
-    {
+    protected long insert(ContentValues contentValues) {
         if (!contentValues.containsKey(FIELD_GEOM)) {
             return NOT_FOUND;
         }
@@ -1191,21 +1044,32 @@ public class VectorLayer
         }
 
         SQLiteDatabase db = map.getDatabase(false);
-        long rowID = db.insert(mPath.getName(), null, contentValues);
+        long rowId = db.insert(mPath.getName(), null, contentValues);
 
-        if (rowID != NOT_FOUND) {
+        if (rowId != NOT_FOUND) {
+
+            // add geometry to tiles
+            if (contentValues.containsKey(FIELD_GEOM)) {
+                try {
+                    GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(FIELD_GEOM));
+                    addGeometryToCache(rowId, geometry);
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+
             Intent notify = new Intent(NOTIFY_INSERT);
-            notify.putExtra(FIELD_ID, rowID);
+            notify.putExtra(FIELD_ID, rowId);
             notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
         }
 
-        updateUniqId(rowID);
+        updateUniqId(rowId);
 
-        return rowID;
+        return rowId;
     }
 
-    protected long insertAttach(String featureId, ContentValues contentValues){
+    protected long insertAttach(String featureId, ContentValues contentValues) {
         if (contentValues.containsKey(ATTACH_DISPLAY_NAME) &&
                 contentValues.containsKey(ATTACH_MIME_TYPE)) {
             //get attach path
@@ -1253,8 +1117,7 @@ public class VectorLayer
 
     public Uri insert(
             Uri uri,
-            ContentValues contentValues)
-    {
+            ContentValues contentValues) {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_TABLE:
@@ -1276,7 +1139,7 @@ public class VectorLayer
                 List<String> pathSegments = uri.getPathSegments();
                 String featureId = pathSegments.get(pathSegments.size() - 2);
                 long attachID = insertAttach(featureId, contentValues);
-                if(attachID != NOT_FOUND){
+                if (attachID != NOT_FOUND) {
                     Uri resultUri = ContentUris.withAppendedId(uri, attachID);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
@@ -1299,36 +1162,53 @@ public class VectorLayer
         }
     }
 
+    /**
+     * Delete feature and add information to changes table for sync purposes
+     *
+     * @param id Feature identificator to delete
+     * @return Count of deleted features
+     */
+    public int deleteAddChanges(long id) {
+        int result;
+        if (id == Constants.NOT_FOUND)
+            result = delete(id, null, null);
+        else
+            result = delete(id, FIELD_ID + " = " + id, null);
 
-    public int deleteAddChanges(long id)
-    {
-        int result = delete(id, FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, CHANGE_OPERATION_DELETE);
         }
+
         return result;
     }
 
 
     protected int delete(
-            long rowID,
+            long rowId,
             String selection,
-            String[] selectionArgs)
-    {
+            String[] selectionArgs) {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
             throw new IllegalArgumentException(
                     "The map should extends MapContentProviderHelper or inherited");
         }
+
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
         if (result > 0) {
+
+            if (rowId == Constants.NOT_FOUND) {
+                FileUtil.deleteRecursive(new File(mPath, CACHE));
+            } else {
+                deleteGeometryFromCache(rowId);
+            }
+
             Intent notify;
-            if (rowID == NOT_FOUND) {
+            if (rowId == NOT_FOUND) {
                 notify = new Intent(NOTIFY_DELETE_ALL);
             } else {
                 notify = new Intent(NOTIFY_DELETE);
-                notify.putExtra(FIELD_ID, rowID);
+                notify.putExtra(FIELD_ID, rowId);
             }
             notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
@@ -1340,8 +1220,7 @@ public class VectorLayer
     public int delete(
             Uri uri,
             String selection,
-            String[] selectionArgs)
-    {
+            String[] selectionArgs) {
         String featureId;
         long featureIdL;
         String attachId;
@@ -1419,7 +1298,7 @@ public class VectorLayer
                 long attachIdL = Long.parseLong(attachId);
 
                 //get attach path
-                File attachFile = new File(mPath, featureId + "/" + attachId);
+                File attachFile = new File(mPath, featureId + File.separator + attachId);
                 if (attachFile.delete()) {
 
                     deleteAttach(featureId, attachId);
@@ -1440,11 +1319,16 @@ public class VectorLayer
         }
     }
 
-
+    /**
+     * Change feature and add information to changes table for sync purposes
+     *
+     * @param values New values to set
+     * @param id     Feature identificator
+     * @return Count of changed features
+     */
     public int updateAddChanges(
             ContentValues values,
-            long id)
-    {
+            long id) {
         int result = update(id, values, FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, CHANGE_OPERATION_CHANGED);
@@ -1454,22 +1338,41 @@ public class VectorLayer
 
 
     protected int update(
-            long rowID,
+            long rowId,
             ContentValues values,
             String selection,
-            String[] selectionArgs)
-    {
+            String[] selectionArgs) {
+        if (null == values || values.size() > 0)
+            return 0;
+
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
             throw new IllegalArgumentException(
                     "The map should extends MapContentProviderHelper or inherited");
         }
+
+        GeoEnvelope env = null;
+        GeoGeometry newGeometry = null;
+        if (values.containsKey(FIELD_GEOM) && values.containsKey(FIELD_ID)) {
+            GeoGeometry geometry = getGeometryForId(values.getAsLong(FIELD_ID));
+            env = geometry.getEnvelope();
+            try {
+                newGeometry = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
         SQLiteDatabase db = map.getDatabase(false);
-        int result = values != null && values.size() > 0 ? db.update(
-                mPath.getName(), values, selection, selectionArgs) : 0;
+        int result = db.update(mPath.getName(), values, selection, selectionArgs);
         if (result > 0) {
+
+            if (null != env && null != newGeometry) {
+                changeGeometryInCache(rowId, newGeometry);
+            }
+
             Intent notify;
-            if (rowID == NOT_FOUND) {
+            if (rowId == NOT_FOUND) {
                 if (values.containsKey(FIELD_GEOM)) {
                     notify = new Intent(NOTIFY_UPDATE_ALL);
                     notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
@@ -1480,14 +1383,14 @@ public class VectorLayer
                     notify = new Intent(NOTIFY_UPDATE);
                     boolean bNotify = false;
                     if (values.containsKey(FIELD_GEOM)) {
-                        notify.putExtra(FIELD_ID, rowID);
+                        notify.putExtra(FIELD_ID, rowId);
                         bNotify = true;
                     }
 
                     if (values.containsKey(FIELD_ID)) {
                         updateUniqId(values.getAsLong(FIELD_ID));
 
-                        notify.putExtra(FIELD_OLD_ID, rowID);
+                        notify.putExtra(FIELD_OLD_ID, rowId);
                         notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
                         bNotify = true;
                     }
@@ -1500,7 +1403,7 @@ public class VectorLayer
 
                 } else {
                     notify = new Intent(NOTIFY_UPDATE_FIELDS);
-                    notify.putExtra(FIELD_ID, rowID);
+                    notify.putExtra(FIELD_ID, rowId);
                     getContext().sendBroadcast(notify);
                 }
             }
@@ -1513,8 +1416,7 @@ public class VectorLayer
             Uri uri,
             ContentValues values,
             String selection,
-            String[] selectionArgs)
-    {
+            String[] selectionArgs) {
         String featureId;
         long featureIdL;
         String attachId;
@@ -1583,8 +1485,8 @@ public class VectorLayer
                 }
             case TYPE_ATTACH_ID:
                 if (values.containsKey(ATTACH_ID) || values.containsKey(ATTACH_DESCRIPTION) ||
-                    values.containsKey(ATTACH_DISPLAY_NAME) ||
-                    values.containsKey(ATTACH_MIME_TYPE)) {
+                        values.containsKey(ATTACH_DISPLAY_NAME) ||
+                        values.containsKey(ATTACH_MIME_TYPE)) {
                     pathSegments = uri.getPathSegments();
                     featureId = pathSegments.get(pathSegments.size() - 3);
                     featureIdL = Long.parseLong(featureId);
@@ -1627,8 +1529,7 @@ public class VectorLayer
     public ParcelFileDescriptor openFile(
             Uri uri,
             String mode)
-            throws FileNotFoundException
-    {
+            throws FileNotFoundException {
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_ATTACH_ID:
@@ -1653,7 +1554,7 @@ public class VectorLayer
                 }
 
                 return ParcelFileDescriptor.open(
-                        new File(mPath, featureId + "/" + attachId), nMode);
+                        new File(mPath, featureId + File.separator + attachId), nMode);
             default:
                 throw new FileNotFoundException();
         }
@@ -1661,8 +1562,7 @@ public class VectorLayer
 
     protected void addChange(
             long featureId,
-            int operation)
-    {
+            int operation) {
         //nothing to do
     }
 
@@ -1670,44 +1570,29 @@ public class VectorLayer
     protected void addChange(
             long featureId,
             long attachId,
-            int attachOperation)
-    {
+            int attachOperation) {
         //nothing to do
     }
 
 
-    public int getGeometryType()
-    {
+    public int getGeometryType() {
         return mGeometryType;
     }
 
 
-    public List<Field> getFields()
-    {
-        return new ArrayList<>(mFields.values());
+    public List<Field> getFields() {
+        return new LinkedList<>(mFields.values());
     }
 
 
-    public int getCount()
-    {
-        if(!mCacheLoaded)
+    public int getCount() {
+        if (!mCacheLoaded)
             reloadCache();
 
-        return mGeometryCache.size();
+        return mRTree.size();
     }
 
-
-    public List<IGeometryCacheItem> query(GeoEnvelope envelope)
-    {
-        if(!mCacheLoaded)
-            reloadCache();
-
-        return mGeometryCache.search(envelope);
-    }
-
-
-    protected Map<String, AttachItem> getAttachMap(String featureId)
-    {
+    protected Map<String, AttachItem> getAttachMap(String featureId) {
         Map<String, AttachItem> attachMap = mAttaches.get(featureId);
         if (null == attachMap) {
             loadAttach(featureId);
@@ -1720,8 +1605,7 @@ public class VectorLayer
 
     protected AttachItem getAttach(
             String featureId,
-            String attachId)
-    {
+            String attachId) {
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null == attachMap) {
             return null;
@@ -1731,8 +1615,7 @@ public class VectorLayer
     }
 
 
-    protected void loadAttach(String featureId)
-    {
+    protected void loadAttach(String featureId) {
         File attachFolder = new File(mPath, featureId);
         File meta = new File(attachFolder, META);
         try {
@@ -1753,8 +1636,7 @@ public class VectorLayer
     }
 
 
-    protected void saveAttach(String featureId)
-    {
+    protected void saveAttach(String featureId) {
         Map<String, AttachItem> attachMap = mAttaches.get(featureId);
         if (null != attachMap) {
             JSONArray jsonArray = new JSONArray();
@@ -1779,8 +1661,7 @@ public class VectorLayer
     }
 
 
-    protected void deleteAttaches(String featureId)
-    {
+    protected void deleteAttaches(String featureId) {
         mAttaches.remove(featureId);
         saveAttach(featureId);
     }
@@ -1788,8 +1669,7 @@ public class VectorLayer
 
     protected void deleteAttach(
             String featureId,
-            String attachId)
-    {
+            String attachId) {
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null != attachMap) {
             attachMap.remove(attachId);
@@ -1797,41 +1677,9 @@ public class VectorLayer
         }
     }
 
-
-    public IGeometryCacheItem getCacheItem(long id)
-    {
-        if(!mCacheLoaded)
-            reloadCache();
-
-        return mGeometryCache.getItem(id);
-    }
-
-
-    public void deleteCacheItem(long id)
-    {
-        if(!mCacheLoaded)
-            reloadCache();
-
-        mTempCacheItem = mGeometryCache.removeItem(id);
-        if(null != mTempCacheItem)
-            notifyLayerChanged();
-    }
-
-
-    public void restoreCacheItem()
-    {
-        if (mTempCacheItem != null) {
-            mGeometryCache.addItem(mTempCacheItem.getFeatureId(), mTempCacheItem.getGeometry());
-            mTempCacheItem = null;
-            notifyLayerChanged();
-        }
-    }
-
-
     protected void addAttach(
             String featureId,
-            AttachItem item)
-    {
+            AttachItem item) {
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null == attachMap) {
             attachMap = new HashMap<>();
@@ -1846,9 +1694,8 @@ public class VectorLayer
     protected void setNewAttachId(
             String featureId,
             AttachItem item,
-            String newAttachId)
-    {
-        File attachFile = new File(mPath, featureId + "/" + item.getAttachId());
+            String newAttachId) {
+        File attachFile = new File(mPath, featureId + File.separator + item.getAttachId());
         attachFile.renameTo(new File(attachFile.getParentFile(), newAttachId));
 
         //save changes to meta.json
@@ -1860,28 +1707,26 @@ public class VectorLayer
     }
 
 
-    public void notifyDelete(long rowId)
-    {
+    public void notifyDelete(long rowId) {
         //remove cached item
-        if(null != mGeometryCache.removeItem(rowId))
+        if (mRTree.removeItem(rowId) != null) {
             notifyLayerChanged();
+        }
     }
 
 
-    public void notifyDeleteAll()
-    {
+    public void notifyDeleteAll() {
         //clear cache
-        mGeometryCache.clear();
+        mRTree.clear();
         notifyLayerChanged();
     }
 
 
-    public void notifyInsert(long rowId)
-    {
+    public void notifyInsert(long rowId) {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            mGeometryCache.addItem(rowId, geom);
-            mExtents = mGeometryCache.getExtent();
+            mRTree.addItem(rowId, geom.getEnvelope());
+            mExtents.merge(geom.getEnvelope());
             notifyLayerChanged();
         }
     }
@@ -1889,37 +1734,33 @@ public class VectorLayer
 
     public void notifyUpdate(
             long rowId,
-            long oldRowId)
-    {
+            long oldRowId) {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
             if (oldRowId != NOT_FOUND) {
-                mGeometryCache.removeItem(oldRowId);
-            }
-            else{
-                mGeometryCache.removeItem(rowId);
+                mRTree.removeItem(oldRowId);
+            } else {
+                mRTree.removeItem(rowId);
             }
 
-            mGeometryCache.addItem(rowId, geom);
-            mExtents = mGeometryCache.getExtent();
+            mRTree.addItem(rowId, geom.getEnvelope());
+            mExtents.merge(geom.getEnvelope());
 
             notifyLayerChanged();
         }
     }
 
 
-    public void notifyUpdateAll()
-    {
+    public void notifyUpdateAll() {
         reloadCache();
         notifyLayerChanged();
     }
 
 
-    protected GeoGeometry getGeometryForId(long rowId)
-    {
+    public GeoGeometry getGeometryForId(long rowId) {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(false);
-        String[] columns = new String[] {FIELD_GEOM};
+        SQLiteDatabase db = map.getDatabase(true);
+        String[] columns = new String[]{FIELD_GEOM};
         String selection = FIELD_ID + " = " + rowId;
         Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
         if (null != cursor) {
@@ -1937,8 +1778,7 @@ public class VectorLayer
     }
 
 
-    public long getUniqId()
-    {
+    public long getUniqId() {
         if (Constants.NOT_FOUND == mUniqId) {
             String columns[] = {FIELD_ID};
             String sortOrder = FIELD_ID + " DESC";
@@ -1954,8 +1794,11 @@ public class VectorLayer
 
     @Override
     public void setVisible(boolean visible) {
+        if (mIsVisible == visible && mCacheLoaded)
+            return;
+
         super.setVisible(visible);
-        if(mIsVisible) {
+        if (mIsVisible) {
             // load the layer contents async
             Thread t = new Thread(new Runnable() {
                 public void run() {
@@ -1965,5 +1808,26 @@ public class VectorLayer
             t.setPriority(Constants.DEFAULT_LOAD_LAYER_THREAD_PRIORITY);
             t.start();
         }
+    }
+
+    public GeoGeometry getGeometryForId(long featureId, int zoom) {
+        if(zoom > 18)
+            return getGeometryForId(featureId);
+        GeoGeometry geometry = loadGeometryFromFile(new File(mPath, CACHE + "/" + zoom + "/" + featureId + SAMPLE_EXT));
+        if(null != geometry)
+            return geometry;
+        return getGeometryForId(featureId);
+    }
+
+    public List<Long> query(GeoEnvelope env) {
+        List<IGeometryCacheItem> items;
+        if(null == env || env.contains(mExtents))
+            items = mRTree.getAll();
+        else
+            items = mRTree.search(env);
+        List<Long> result = new ArrayList<>(items.size());
+        for(IGeometryCacheItem item : items)
+            result.add(item.getFeatureId());
+        return result;
     }
 }

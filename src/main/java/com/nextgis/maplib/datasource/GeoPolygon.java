@@ -22,11 +22,21 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
@@ -43,7 +53,7 @@ public class GeoPolygon
     public GeoPolygon()
     {
         mOuterRing = new GeoLinearRing();
-        mInnerRings = new ArrayList<>();
+        mInnerRings = new LinkedList<>();
     }
 
 
@@ -111,7 +121,7 @@ public class GeoPolygon
     @Override
     public int getType()
     {
-        return GTPolygon;
+        return GeoConstants.GTPolygon;
     }
 
 
@@ -153,6 +163,25 @@ public class GeoPolygon
 
             addInnerRing(innerRing);
         }
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+        boolean outerRingFilled = false;
+        reader.beginArray();
+        while (reader.hasNext()){
+            if(!outerRingFilled){
+                mOuterRing.setCoordinatesFromJSONStream(reader);
+                outerRingFilled = true;
+            }
+            else{
+                GeoLinearRing ring = new GeoLinearRing();
+                ring.setCoordinatesFromJSONStream(reader);
+                mInnerRings.add(ring);
+            }
+        }
+        reader.endArray();
     }
 
 
@@ -282,7 +311,7 @@ public class GeoPolygon
             }
 
             for (GeoLinearRing ring : mInnerRings) {
-                if (ring.intersects(envelope)) {
+                if (ring.contains(envelope)) {
                     return false;
                 }
             }
@@ -304,5 +333,96 @@ public class GeoPolygon
     {
         mOuterRing.clear();
         mInnerRings.clear();
+    }
+
+    @Override
+    public GeoGeometry simplify(double tolerance) {
+        GeoGeometry outerRingSimple = mOuterRing.simplify(tolerance);
+        if(outerRingSimple == null) // this is point
+            return null;
+
+        GeoPolygon result = new GeoPolygon();
+        result.setCRS(mCRS);
+        result.mOuterRing = (GeoLinearRing) outerRingSimple;
+        for(GeoLinearRing ring : mInnerRings){
+            GeoLinearRing innerRingSimple = ring.simplify(tolerance, true);
+            if(innerRingSimple == null) // skip points
+                continue;
+            result.addInnerRing(innerRingSimple);
+        }
+
+        return result;
+    }
+
+    public TiledPolygon clipForTiled(GeoEnvelope envelope) {
+        TiledPolygon result = new TiledPolygon();
+        result.setCRS(mCRS);
+        GeoLineString border = new GeoLineString();
+        mOuterRing.clipForTiled(result.mOuterRing, border, envelope);
+
+        if(result.mOuterRing.getPointCount() < 4)
+            return null;
+
+        result.mBorders.add(border);
+
+        for(GeoLinearRing ring : mInnerRings){
+            GeoLinearRing newRing = new GeoLinearRing();
+            GeoLineString newBorder = new GeoLineString();
+            ring.clipForTiled(newRing, newBorder, envelope);
+            if(newRing.getPointCount() > 4) {
+                result.addInnerRing(newRing);
+                result.mBorders.add(newBorder);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public GeoGeometry clip(GeoEnvelope envelope) {
+        GeoPolygon result = new GeoPolygon();
+        result.setCRS(mCRS);
+        result.mOuterRing = (GeoLinearRing) mOuterRing.clip(envelope);
+
+        if(result.mOuterRing.getPointCount() < 4)
+            return null;
+
+        for(GeoLinearRing ring : mInnerRings){
+            GeoLinearRing geometry = (GeoLinearRing) ring.clip(envelope);
+            if(null != geometry)
+                result.addInnerRing(geometry);
+        }
+
+        return result;
+    }
+
+    @Override
+    public void read(DataInputStream stream) throws IOException {
+        super.read(stream);
+        mOuterRing = (GeoLinearRing) GeoGeometryFactory.fromDataStream(stream);
+        int innerRingCount = stream.readInt();
+        for (int i = 0; i < innerRingCount; i++){
+            GeoGeometry geometry = GeoGeometryFactory.fromDataStream(stream);
+            if(null != geometry && geometry instanceof GeoLinearRing){
+                mInnerRings.add((GeoLinearRing) geometry);
+            }
+        }
+    }
+
+    @Override
+    public boolean isValid() {
+        return mOuterRing.isValid();
+    }
+
+    @Override
+    public void write(DataOutputStream stream) throws IOException {
+        super.write(stream);
+        mOuterRing.write(stream);
+        int innerRingCount = mInnerRings.size();
+        stream.writeInt(innerRingCount);
+        for (int i = 0; i < innerRingCount; i++){
+            GeoLinearRing ring = mInnerRings.get(i);
+            ring.write(stream);
+        }
     }
 }

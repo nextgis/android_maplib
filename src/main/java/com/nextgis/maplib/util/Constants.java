@@ -36,8 +36,6 @@ public interface Constants
      * HTTP parameters
      */
     String APP_USER_AGENT     = "NextGIS Mobile";
-    int    TIMEOUT_CONNECTION = 3000;
-    int    TIMEOUT_SOKET      = 30000;
     int    IO_BUFFER_SIZE     = 64 * 1024; //64k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
@@ -143,8 +141,8 @@ public interface Constants
     long     DEFAULT_MAXIMUM_CACHED_FILE_AGE = ONE_WEEK;
     long     ONE_YEAR                        = ONE_DAY * 365;
     int      KEEP_ALIVE_TIME                 = 35;
-    int      TERMINATE_TIME                  = 1;
-    TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.SECONDS;
+    int      TERMINATE_TIME                  = 350;
+    TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.MILLISECONDS;
 
     int SYNC_NONE       = 1 << 0;
     int SYNC_GEOMETRY   = 1 << 1;
@@ -160,7 +158,8 @@ public interface Constants
     int CHANGE_OPERATION_DELETE  = 1 << 3; // 8
     int CHANGE_OPERATION_ATTACH  = 1 << 4; // 16
 
-    int DRAWING_SEPARATE_THREADS = 6;
+    int DRAWING_SEPARATE_THREADS = 9;
+    int DRAW_NOTIFY_STEP_PERCENT = 20; // 5%
 
     String[] VECTOR_FORBIDDEN_FIELDS = {
             "ABORT",
@@ -287,4 +286,6 @@ public interface Constants
             "WHERE",
             "WITH",
             "WITHOUT"};
+
+    int SAMPLE_DISTANCE_PX = 5;
 }

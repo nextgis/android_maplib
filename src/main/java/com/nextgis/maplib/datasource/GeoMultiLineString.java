@@ -22,9 +22,17 @@
  */
 package com.nextgis.maplib.datasource;
 
+import android.annotation.TargetApi;
+import android.os.Build;
+import android.util.JsonReader;
+
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.io.IOException;
 
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 
@@ -57,7 +65,7 @@ public class GeoMultiLineString
     @Override
     public int getType()
     {
-        return GTMultiLineString;
+        return GeoConstants.GTMultiLineString;
     }
 
 
@@ -72,6 +80,17 @@ public class GeoMultiLineString
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @Override
+    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()){
+            GeoLineString line = new GeoLineString();
+            line.setCoordinatesFromJSONStream(reader);
+            mGeometries.add(line);
+        }
+        reader.endArray();
+    }
 
     @Override
     public void setCoordinatesFromWKT(String wkt)
@@ -128,5 +147,10 @@ public class GeoMultiLineString
             buf.append(")");
         }
         return buf.toString();
+    }
+
+    @Override
+    protected GeoGeometryCollection getInstance() {
+        return new GeoMultiLineString();
     }
 }

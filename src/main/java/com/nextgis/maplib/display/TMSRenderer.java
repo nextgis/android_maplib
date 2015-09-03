@@ -34,6 +34,7 @@ import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.MapUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -73,7 +74,7 @@ public class TMSRenderer
     protected float              mBrightness;
     protected boolean            mForceToGrayScale;
     protected int                mAlpha;
-    protected final Object lock = new Object();
+    //protected final Object lock = new Object();
 
 
     public TMSRenderer(ILayer layer)
@@ -222,7 +223,7 @@ public class TMSRenderer
             remoteTMSLayer.onPrepare();
         }
 
-        final List<TileItem> tiles = tmsLayer.getTielsForBounds(display.getFullBounds(), display.getBounds(), zoom);
+        final List<TileItem> tiles = MapUtil.getTileItems(display.getBounds(), zoom, tmsLayer.getTMSType());
         if (tiles.size() == 0) {
             return;
         }
@@ -230,7 +231,7 @@ public class TMSRenderer
         cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
-        synchronized (lock) {
+        //synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
                     new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
@@ -247,7 +248,7 @@ public class TMSRenderer
                     }
                 }
             });
-        }
+        //}
 
         // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
         int tilesSize = tiles.size();
@@ -279,7 +280,7 @@ public class TMSRenderer
         }
 
         // wait for draw ending
-        int nStep = futures.size() / 10;
+        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
         if(nStep == 0)
             nStep = 1;
         for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
@@ -304,6 +305,8 @@ public class TMSRenderer
                 e.printStackTrace();
             }
         }
+
+        tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
     }
 
 
@@ -311,15 +314,15 @@ public class TMSRenderer
     public void cancelDraw()
     {
         if (mDrawThreadPool != null) {
-            synchronized (lock) {
+            //synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
                 try {
                     mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
-                    mDrawThreadPool.purge();
+                    //mDrawThreadPool.purge();
                 } catch (InterruptedException e) {
                     //e.printStackTrace();
                 }
-            }
+            //}
         }
     }
 

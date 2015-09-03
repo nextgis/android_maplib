@@ -72,7 +72,7 @@ public class LocalTMSLayer
 
         TileCacheLevelDescItem item = mLimits.get(tile.getZoomLevel());
         if (item != null && item.isInside(tile.getX(), tile.getY())) {
-            File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
+            File tilePath = new File(mPath, tile.toString() + TILE_EXT);
             if (tilePath.exists()) {
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
                 putBitmapToCache(tile.getHash(), ret);

@@ -21,7 +21,7 @@
 
 package com.nextgis.maplib.api;
 
-import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 
 /**
  * A geometry cache item
@@ -29,9 +29,9 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 public interface IGeometryCacheItem {
     /**
      *
-     * @return Return a geometry
+     * @return Return an envelope
      */
-    GeoGeometry getGeometry();
+    GeoEnvelope getEnvelope();
 
     /**
      *

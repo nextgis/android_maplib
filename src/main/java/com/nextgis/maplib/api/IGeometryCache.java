@@ -24,6 +24,7 @@ package com.nextgis.maplib.api;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -41,9 +42,9 @@ public interface IGeometryCache {
     /**
      * Add item to cache
      * @param id Feature identificator
-     * @param geometry Geometry
+     * @param envelope Envelope
      */
-    IGeometryCacheItem addItem(long id, GeoGeometry geometry);
+    IGeometryCacheItem addItem(long id, GeoEnvelope envelope);
 
     /**
      * Return cache item by feature identificator
@@ -58,12 +59,6 @@ public interface IGeometryCache {
      * @return removed item or null
      */
     IGeometryCacheItem removeItem(long featureId);
-
-    /**
-     * Return full extent of all cached items
-     * @return GeoEnvelope object
-     */
-    GeoEnvelope getExtent();
 
     /**
      * Return count of items
@@ -88,4 +83,10 @@ public interface IGeometryCache {
      * @return List of all items
      */
     List<IGeometryCacheItem> getAll();
+
+    void changeId(long oldFeatureId, long newFeatureId);
+
+    void save(File path);
+
+    void load(File path);
 }

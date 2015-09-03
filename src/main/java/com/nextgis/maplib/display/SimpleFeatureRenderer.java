@@ -23,14 +23,23 @@
 
 package com.nextgis.maplib.display;
 
+import android.graphics.Paint;
 import android.util.Log;
+import android.util.Pair;
 
 import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoLineString;
+import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.datasource.TileItem;
+import com.nextgis.maplib.datasource.TiledPolygon;
+import com.nextgis.maplib.datasource.VectorTile;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
+import com.nextgis.maplib.util.MapUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -58,9 +67,10 @@ public class SimpleFeatureRenderer
 
     protected Style              mStyle;
     protected ThreadPoolExecutor mDrawThreadPool;
-    protected final Object lock = new Object();
+    //protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
+    protected static final int GEOMETRY_PER_TASK = 5;
 
 
     public SimpleFeatureRenderer(Layer layer)
@@ -78,15 +88,16 @@ public class SimpleFeatureRenderer
         mStyle = style;
     }
 
-
     @Override
     public void runDraw(final GISDisplay display)
     {
+        long startTime = System.currentTimeMillis();
+
         if (null == mStyle) {
             Log.d(TAG, "mStyle == null");
             return;
         }
-
+        final double zoom = display.getZoomLevel();
 
         GeoEnvelope env = display.getBounds();
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
@@ -96,17 +107,16 @@ public class SimpleFeatureRenderer
             return;
         }
 
-        //add drawing routine
-        final List<IGeometryCacheItem> cache = vectorLayer.query(env);
+        int decimalZoom = (int) zoom;
+        if(decimalZoom % 2 != 0)
+            decimalZoom++;
 
-        if (cache.size() == 0) {
-            return;
-        }
+        List<Long> featureIds = vectorLayer.query(env);
 
         cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
-        synchronized (lock) {
+        //synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
                     threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
                     new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
@@ -123,40 +133,40 @@ public class SimpleFeatureRenderer
                     }
                 }
             });
-        }
+        //}
 
         // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
-        int cacheSize = cache.size();
-        List<Future> futures = new ArrayList<>(cacheSize);
+        int tilesSize = featureIds.size();
+        List<Future> futures = new ArrayList<>(tilesSize);
 
-        for (int i = 0; i < cacheSize; i++) {
+        final int finalDecimalZoom = decimalZoom;
+
+        for (int i = 0; i < tilesSize; ++i) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
             }
 
-            final IGeometryCacheItem item = cache.get(i);
-            final Style style = getStyle(item.getFeatureId());
+            final long featureId = featureIds.get(i);
 
             futures.add(
                     mDrawThreadPool.submit(
-                            new Runnable()
-                            {
+                            new Runnable() {
                                 @Override
-                                public void run()
-                                {
+                                public void run() {
                                     android.os.Process.setThreadPriority(
                                             Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-                                    GeoGeometry geometry = item.getGeometry();
-                                    if (null != geometry) {
-                                        style.onDraw(geometry, display);
+                                    final GeoGeometry geometry = vectorLayer.getGeometryForId(featureId, finalDecimalZoom);
+                                    if (geometry != null) {
+                                            final Style style = getStyle(featureId);
+                                            style.onDraw(geometry, display);
                                     }
                                 }
                             }));
         }
 
         // wait for draw ending
-        int nStep = futures.size() / 10;
+        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
         if(nStep == 0)
             nStep = 1;
         for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
@@ -172,8 +182,8 @@ public class SimpleFeatureRenderer
                 if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
                     vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
 
-                //Log.d(TAG, "Vector percent: " + percent + " complete: " + i + " geom count: " +
-                //        cacheSize + " layer :" + mLayer.getName());
+                //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
+                //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
 
             } catch (CancellationException | InterruptedException e) {
                 //e.printStackTrace();
@@ -181,6 +191,13 @@ public class SimpleFeatureRenderer
                 e.printStackTrace();
             }
         }
+
+        vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+
+        Log.d(TAG, "Vector layer " + mLayer.getName() + " exec time: " + elapsedTime);
     }
 
 
@@ -215,12 +232,12 @@ public class SimpleFeatureRenderer
     public void cancelDraw()
     {
         if (mDrawThreadPool != null) {
-            synchronized (lock) {
+            //synchronized (lock) {
                 mDrawThreadPool.shutdownNow();
-            }
+            //}
             try {
                 mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
-                mDrawThreadPool.purge();
+                //mDrawThreadPool.purge();
             } catch (InterruptedException e) {
                 //e.printStackTrace();
             }
@@ -258,26 +275,25 @@ public class SimpleFeatureRenderer
         switch (styleName) {
             case "SimpleMarkerStyle":
                 mStyle = new SimpleMarkerStyle();
-                mStyle.fromJSON(styleJsonObject);
                 break;
             case "SimpleTextMarkerStyle":
                 mStyle = new SimpleTextMarkerStyle();
-                mStyle.fromJSON(styleJsonObject);
                 break;
             case "SimpleLineStyle":
                 mStyle = new SimpleLineStyle();
-                mStyle.fromJSON(styleJsonObject);
                 break;
             case "SimpleTextLineStyle":
                 mStyle = new SimpleTextLineStyle();
-                mStyle.fromJSON(styleJsonObject);
                 break;
             case "SimplePolygonStyle":
                 mStyle = new SimplePolygonStyle();
-                mStyle.fromJSON(styleJsonObject);
+                break;
+            case "SimpleTiledPolygonStyle":
+                mStyle = new SimpleTiledPolygonStyle();
                 break;
             default:
                 throw new JSONException("Unknown style type: " + styleName);
         }
+        mStyle.fromJSON(styleJsonObject);
     }
 }

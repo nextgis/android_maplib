@@ -297,10 +297,14 @@ public class MapEventSource
 
                 Long lastTime = mLastMessages.get(resultData.getInt(BUNDLE_TYPE_KEY));
                 if(lastTime != null && System.currentTimeMillis() - lastTime < SKIP_TIMEOUT){
-                    if(EVENT_onLayerDrawFinished != resultData.getInt(BUNDLE_TYPE_KEY))
+                    if(EVENT_onLayerDrawFinished != resultData.getInt(BUNDLE_TYPE_KEY)) {
                         return;
-                    if(resultData.getInt(BUNDLE_ID_KEY) != Constants.NOT_FOUND) //don't filter end drawing of whole map
-                        return;
+                    }
+                    else{
+                        if(resultData.getFloat(BUNDLE_DONE_KEY) < 1){
+                            return;
+                        }
+                    }
                 }
                 mLastMessages.put(resultData.getInt(BUNDLE_TYPE_KEY), System.currentTimeMillis());
 

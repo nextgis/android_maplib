@@ -32,6 +32,8 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
+import com.nextgis.maplib.util.MapUtil;
 
 import java.io.File;
 import java.util.concurrent.FutureTask;
@@ -161,6 +163,23 @@ public class MapDrawable
 
             mDisplay.setZoomAndCenter(newZoom, center);
             onExtentChanged((int) newZoom, center);
+        }
+    }
+
+    @Override
+    public void zoomToExtent(GeoEnvelope envelope){
+        if(envelope.isInit()) {
+            double size = GeoConstants.MERCATOR_MAX * 2;
+            double scale = Math.min(envelope.width() / size,
+                    envelope.height() / size);
+            double zoom = MapUtil.lg(1 / scale);
+            if (zoom < getMinZoom())
+                zoom = getMinZoom();
+            if (zoom > getMaxZoom())
+                zoom = getMaxZoom();
+
+
+            setZoomAndCenter((float) zoom, envelope.getCenter());
         }
     }
 

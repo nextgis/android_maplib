@@ -26,6 +26,8 @@ package com.nextgis.maplib.datasource;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.nextgis.maplib.util.FileUtil;
+
 
 public class TileItem
         implements Parcelable
@@ -43,22 +45,23 @@ public class TileItem
             return new TileItem[size];
         }
     };
+
     protected int      mZoomLevel;
     protected int      mX;
     protected int      mY;
-    protected GeoPoint mTopLeftCorner;
+    protected GeoEnvelope mEnvelope;
 
 
     public TileItem(
             int x,
             int y,
             int zoom,
-            GeoPoint topLeftCorner)
+            GeoEnvelope envelope)
     {
         mZoomLevel = zoom;
         mX = x;
         mY = y;
-        mTopLeftCorner = topLeftCorner;
+        mEnvelope = envelope;
     }
 
 
@@ -67,9 +70,11 @@ public class TileItem
         mZoomLevel = in.readInt();
         mX = in.readInt();
         mY = in.readInt();
-        double x = in.readDouble();
-        double y = in.readDouble();
-        mTopLeftCorner = new GeoPoint(x, y);
+        double minX = in.readDouble();
+        double minY = in.readDouble();
+        double maxX = in.readDouble();
+        double maxY = in.readDouble();
+        mEnvelope = new GeoEnvelope(minX, maxX, minY, maxY);
     }
 
 
@@ -88,18 +93,13 @@ public class TileItem
         parcel.writeInt(mX);
         parcel.writeInt(mY);
         parcel.writeInt(mZoomLevel);
-        parcel.writeDouble(mTopLeftCorner.getX());
-        parcel.writeDouble(mTopLeftCorner.getY());
+        parcel.writeDouble(mEnvelope.getMinX());
+        parcel.writeDouble(mEnvelope.getMinY());
+        parcel.writeDouble(mEnvelope.getMaxX());
+        parcel.writeDouble(mEnvelope.getMaxY());
     }
 
-
-    public final GeoPoint getPoint()
-    {
-        return mTopLeftCorner;
-    }
-
-
-    public String toString(final String pattern)
+    public final String toString(final String pattern)
     {
         String out = pattern;
         out = out.replace("{z}", Integer.toString(getZoomLevel()));
@@ -109,6 +109,17 @@ public class TileItem
 
     }
 
+    public final String toString(){
+        return "" + getZoomLevel() + FileUtil.getPathSeparator() + getX() + FileUtil.getPathSeparator() + getY();
+    }
+
+    public final GeoPoint getPoint(){
+        return new GeoPoint(mEnvelope.getMinX(), mEnvelope.getMaxY());
+    }
+
+    public final GeoEnvelope getEnvelope(){
+        return mEnvelope;
+    }
 
     public final int getZoomLevel()
     {
