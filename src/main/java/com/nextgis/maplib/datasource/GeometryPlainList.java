@@ -24,6 +24,7 @@ package com.nextgis.maplib.datasource;
 import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 
+import java.io.File;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,11 +34,9 @@ import java.util.List;
  */
 public class GeometryPlainList implements IGeometryCache {
     protected List<VectorCacheItem> mVectorCacheItems;
-    protected final GeoEnvelope mEnvelope;
 
     public GeometryPlainList() {
         mVectorCacheItems = new LinkedList<>();
-        mEnvelope = new GeoEnvelope();
     }
 
     @Override
@@ -53,7 +52,6 @@ public class GeometryPlainList implements IGeometryCache {
     public IGeometryCacheItem addItem(long id, GeoEnvelope envelope) {
         final VectorCacheItem item = new VectorCacheItem(envelope, id);
         mVectorCacheItems.add(item);
-        mEnvelope.merge(envelope);
         return item;
     }
 
@@ -83,11 +81,6 @@ public class GeometryPlainList implements IGeometryCache {
     }
 
     @Override
-    public GeoEnvelope getEnvelope() {
-        return mEnvelope;
-    }
-
-    @Override
     public int size() {
         return mVectorCacheItems.size();
     }
@@ -100,16 +93,9 @@ public class GeometryPlainList implements IGeometryCache {
     @Override
     public List<IGeometryCacheItem> search(final GeoEnvelope extent) {
 
-        boolean testIntersect = !extent.contains(mEnvelope);
-
         final List<IGeometryCacheItem> ret = new LinkedList<>();
         for (VectorCacheItem cacheItem : mVectorCacheItems) {
-            if(testIntersect) {
-                if (cacheItem.getEnvelope().intersects(extent)) {
-                    ret.add(cacheItem);
-                }
-            }
-            else{
+            if (cacheItem.getEnvelope().intersects(extent)) {
                 ret.add(cacheItem);
             }
         }
@@ -123,6 +109,22 @@ public class GeometryPlainList implements IGeometryCache {
             result.add(item);
         }
         return result;
+    }
+
+    @Override
+    public void changeId(long oldFeatureId, long newFeatureId) {
+        IGeometryCacheItem item = getItem(oldFeatureId);
+        item.setFeatureId(newFeatureId);
+    }
+
+    @Override
+    public void save(File path) {
+        // TODO: 02.09.15
+    }
+
+    @Override
+    public void load(File path) {
+        // TODO: 02.09.15
     }
 
     protected class VectorCacheItem implements IGeometryCacheItem

@@ -40,7 +40,6 @@ import android.util.Log;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
-import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
@@ -237,7 +236,7 @@ public class NGWVectorLayer
             // add geometry to tiles
             try {
                 GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(FIELD_GEOM));
-                addGeometryToTiles(rowId, geometry);
+                addGeometryToCache(rowId, geometry);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -1119,7 +1118,7 @@ public class NGWVectorLayer
 
             List<Long> deleteItems = new ArrayList<>();
 
-            for(Long featureId : mFeatureIds) {
+            for(Long featureId : query(null)) {
                 boolean bDeleteFeature = true;
                 for (Feature remoteFeature : features) {
                     if (remoteFeature.getId() == featureId) {
@@ -1437,7 +1436,7 @@ public class NGWVectorLayer
             if(mCacheLoaded)
                 reloadCache();
 
-            for (Long featureId : mFeatureIds) {
+            for (Long featureId : query(null)) {
                 addChange(featureId, Constants.CHANGE_OPERATION_NEW);
                 //add attach
                 File attacheFolder = new File(mPath, "" + featureId);

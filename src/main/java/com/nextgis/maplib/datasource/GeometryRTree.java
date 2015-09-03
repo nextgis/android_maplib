@@ -25,8 +25,15 @@ package com.nextgis.maplib.datasource;
 
 import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
+import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,18 +46,15 @@ import java.util.Set;
  * This class is not thread-safe.
  */
 public class GeometryRTree implements IGeometryCache {
+
     public enum SeedPicker { LINEAR, QUADRATIC }
-
-    private final int maxEntries;
-    private final int minEntries;
-
     private final SeedPicker seedPicker;
 
+    private int maxEntries;
+    private int minEntries;
     private Node root;
 
     private volatile int size;
-
-    protected GeoEnvelope mExtent;
 
     /**
      * Creates a new RTree.
@@ -132,14 +136,66 @@ public class GeometryRTree implements IGeometryCache {
 
     @Override
     public IGeometryCacheItem addItem(long id, GeoEnvelope envelope) {
-        IGeometryCacheItem result = insert(id, envelope);
-        mExtent.merge(envelope);
-        return result;
+        return insert(id, envelope);
     }
 
     @Override
     public IGeometryCacheItem getItem(long featureId) {
         return getItem(featureId, root);
+    }
+
+    @Override
+    public void changeId(long oldFeatureId, long newFeatureId) {
+        IGeometryCacheItem item = getItem(oldFeatureId);
+        item.setFeatureId(newFeatureId);
+    }
+
+    @Override
+    public void save(File path) {
+        try {
+            FileUtil.createDir(path.getParentFile());
+            FileOutputStream fileOutputStream = new FileOutputStream(path);
+            DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream);
+
+            dataOutputStream.writeInt(maxEntries);
+            dataOutputStream.writeInt(minEntries);
+            dataOutputStream.writeInt(size);
+
+            root.write(dataOutputStream);
+
+            dataOutputStream.flush();
+            dataOutputStream.close();
+            fileOutputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void load(File path) {
+        clear();
+
+        if (!path.exists()) {
+            return;
+        }
+        try {
+            FileInputStream fileInputStream = new FileInputStream(path);
+            DataInputStream dataInputStream = new DataInputStream(fileInputStream);
+
+            maxEntries = dataInputStream.readInt();
+            minEntries = dataInputStream.readInt();
+            size = dataInputStream.readInt();
+
+            boolean tmp = dataInputStream.readBoolean();
+            root = new Node();
+            root.read(dataInputStream);
+
+            dataInputStream.close();
+            fileInputStream.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public IGeometryCacheItem getItem(long featureId, Node n) {
@@ -161,11 +217,6 @@ public class GeometryRTree implements IGeometryCache {
             }
         }
         return null;
-    }
-
-    @Override
-    public GeoEnvelope getEnvelope() {
-        return mExtent;
     }
 
     /**
@@ -686,28 +737,76 @@ public class GeometryRTree implements IGeometryCache {
         return (expanded - area);
     }
 
-    private class Node
+    protected class Node
     {
-        protected final GeoEnvelope mCoords;
-        protected final LinkedList<Node> mChildren;
-        protected final boolean mLeaf;
+        protected GeoEnvelope mCoords;
+        protected LinkedList<Node> mChildren;
+        protected boolean mLeaf;
 
         protected Node mParent;
 
-        private Node(GeoEnvelope coords, boolean leaf)
+        protected Node(){
+            mCoords = new GeoEnvelope();
+        }
+
+        protected Node(GeoEnvelope coords, boolean leaf)
         {
             mCoords = coords;
             mLeaf = leaf;
             mChildren = new LinkedList<>();
         }
 
+        public void write(DataOutputStream stream) throws IOException {
+            stream.writeBoolean(isNode());
+            stream.writeBoolean(mLeaf);
+            stream.writeDouble(mCoords.getMinX());
+            stream.writeDouble(mCoords.getMinY());
+            stream.writeDouble(mCoords.getMaxX());
+            stream.writeDouble(mCoords.getMaxY());
+            stream.writeInt(mChildren.size());
+            for(Node node : mChildren){
+                node.write(stream);
+            }
+        }
+
+        public void read(DataInputStream stream) throws IOException {
+            mLeaf = stream.readBoolean();
+            double minX = stream.readDouble();
+            double minY = stream.readDouble();
+            double maxX = stream.readDouble();
+            double maxY = stream.readDouble();
+            mCoords.setMin(minX, minY);
+            mCoords.setMax(maxX, maxY);
+            int size = stream.readInt();
+            for(int i = 0; i < size; i++){
+                if(stream.readBoolean()){
+                    Node childNode = new Node();
+                    childNode.read(stream);
+                    childNode.mParent = this;
+                    mChildren.add(childNode);
+                }
+                else {
+                    Entry childEntry = new Entry();
+                    childEntry.read(stream);
+                    childEntry.mParent = this;
+                    mChildren.add(childEntry);
+                }
+            }
+        }
+
+        protected boolean isNode(){ return true; }
     }
 
     protected class Entry extends Node implements IGeometryCacheItem
     {
         protected long mFeatureId;
 
-        public Entry(long featureId, GeoEnvelope envelope)
+        protected Entry()
+        {
+            super();
+        }
+
+        protected Entry(long featureId, GeoEnvelope envelope)
         {
             super(envelope, true);
             mFeatureId = featureId;
@@ -730,6 +829,23 @@ public class GeometryRTree implements IGeometryCache {
         @Override
         public void setFeatureId(long id) {
             mFeatureId = id;
+        }
+
+        @Override
+        public void read(DataInputStream stream) throws IOException {
+            super.read(stream);
+            mFeatureId = stream.readLong();
+        }
+
+        @Override
+        public void write(DataOutputStream stream) throws IOException {
+            super.write(stream);
+            stream.writeLong(mFeatureId);
+        }
+
+        @Override
+        protected boolean isNode() {
+            return false;
         }
     }
 }

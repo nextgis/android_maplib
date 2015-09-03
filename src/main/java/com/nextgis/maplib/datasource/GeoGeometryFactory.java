@@ -259,7 +259,7 @@ public class GeoGeometryFactory
                 result.read(stream);
                 break;
             case GeoConstants.GTMultiPolygon:
-                result = new GeoPolygon();
+                result = new GeoMultiPolygon();
                 result.read(stream);
                 break;
             case GeoConstants.GTGeometryCollection:

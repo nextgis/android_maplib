@@ -286,4 +286,6 @@ public interface Constants
             "WHERE",
             "WITH",
             "WITHOUT"};
+
+    int SAMPLE_DISTANCE_PX = 5;
 }

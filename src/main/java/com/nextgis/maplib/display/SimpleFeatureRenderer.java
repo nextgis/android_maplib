@@ -111,10 +111,7 @@ public class SimpleFeatureRenderer
         if(decimalZoom % 2 != 0)
             decimalZoom++;
 
-        final List<TileItem> tiles = MapUtil.getTileItems(env, decimalZoom, GeoConstants.TMSTYPE_NORMAL);
-        if (tiles.size() == 0) {
-            return;
-        }
+        List<Long> featureIds = vectorLayer.query(env);
 
         cancelDraw();
 
@@ -139,17 +136,17 @@ public class SimpleFeatureRenderer
         //}
 
         // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
-        int tilesSize = tiles.size();
+        int tilesSize = featureIds.size();
         List<Future> futures = new ArrayList<>(tilesSize);
 
-        //final int[] count = {0};
+        final int finalDecimalZoom = decimalZoom;
 
         for (int i = 0; i < tilesSize; ++i) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
             }
 
-            final TileItem tile = tiles.get(i);
+            final long featureId = featureIds.get(i);
 
             futures.add(
                     mDrawThreadPool.submit(
@@ -159,22 +156,10 @@ public class SimpleFeatureRenderer
                                     android.os.Process.setThreadPriority(
                                             Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
-
-                                    final VectorTile vectorTile = vectorLayer.getTile(tile);
-                                    if (vectorTile != null) {
-
-                                        for (int i = 0; i < vectorTile.size(); i++) {
-                                            /*if(count[0] > 1)
-                                                continue;
-                                            count[0]++;
-                                            if(!tile.toString().equals("16/57462/42514"))
-                                                continue;*/
-                                            VectorTile.VectorTileItem item = vectorTile.item(i);
-                                            final GeoGeometry geometry = item.getGeometry();
-                                            final Style style = getStyle(item.getId());
+                                    final GeoGeometry geometry = vectorLayer.getGeometryForId(featureId, finalDecimalZoom);
+                                    if (geometry != null) {
+                                            final Style style = getStyle(featureId);
                                             style.onDraw(geometry, display);
-                                            //Log.d(Constants.TAG, "draw tile " + tile + " count:" + vectorTile.size());
-                                        }
                                     }
                                 }
                             }));

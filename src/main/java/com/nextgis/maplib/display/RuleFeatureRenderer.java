@@ -106,7 +106,7 @@ public class RuleFeatureRenderer
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
         try {
 
-            for (Long featureId : vectorLayer.getFeatureIds()) {
+            for (Long featureId : vectorLayer.query(null)) {
                 putParametrizedStyle(featureId);
             }
 
