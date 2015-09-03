@@ -90,6 +90,20 @@ public class Connection
         mSupportedTypes = new ArrayList<>();
     }
 
+    public boolean connect(boolean guest){
+        if(guest){
+            mIsConnected = true;
+
+            fillCapabilities();
+
+            mRootResource = new ResourceGroup(0, this);
+            mRootResource.setParent(this);
+            return true;
+        }
+        else {
+            return connect();
+        }
+    }
 
     public boolean connect()
     {
