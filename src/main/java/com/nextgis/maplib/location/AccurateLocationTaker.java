@@ -24,10 +24,12 @@ package com.nextgis.maplib.location;
 
 import android.content.Context;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import com.nextgis.maplib.api.GpsEventListener;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.util.Constants;
 
@@ -35,8 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 
-public class AccurateLocationTaker
-        implements GpsEventListener
+public class AccurateLocationTaker implements LocationListener
 {
     protected Integer mMaxTakeCount;
     protected Long    mMaxTakeTimeMillis;
@@ -53,14 +54,12 @@ public class AccurateLocationTaker
     protected Long mLastLocationTime;
 
     protected ArrayList<Location> mGpsTakings;
-    protected GpsEventSource      mGpsEventSource;
+    protected LocationManager mLocationManager;
 
     // Create a Handler that uses the Main Looper to run in
     protected Handler mHandler = new Handler(Looper.getMainLooper());
     private Runnable mStopTakingRunner;
     private Runnable mProgressUpdateRunner;
-
-    protected boolean mTakeOnBestLocation = false;
 
     protected boolean mIsStopped   = false;
     protected boolean mIsCancelled = false;
@@ -90,7 +89,7 @@ public class AccurateLocationTaker
             String circularErrorStr)
     {
         IGISApplication app = (IGISApplication) context.getApplicationContext();
-        mGpsEventSource = app.getGpsEventSource();
+        mLocationManager = app.getGpsEventSource().mLocationManager;
         mMaxTakeCount = maxTakeCount;
         mMaxTakeTimeMillis = maxTakeTimeMillis;
         mPublishProgressDelayMillis = publishProgressDelayMillis;
@@ -200,39 +199,25 @@ public class AccurateLocationTaker
     }
 
 
-    public void setTakeOnBestLocation(boolean takeOnBestLocation)
-    {
-        mTakeOnBestLocation = takeOnBestLocation;
-    }
-
-
-    public boolean isTakeOnBestLocation()
-    {
-        return mTakeOnBestLocation;
-    }
-
-
     @Override
     public void onLocationChanged(Location location)
     {
-        if (!mTakeOnBestLocation) {
-            takeLocation(location);
-        }
+        takeLocation(location);
     }
 
-
     @Override
-    public void onBestLocationChanged(Location location)
-    {
-        if (mTakeOnBestLocation) {
-            takeLocation(location);
-        }
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
     }
 
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
 
     @Override
-    public void onGpsStatusChanged(int event)
-    {
+    public void onProviderDisabled(String provider) {
+
     }
 
 
@@ -250,8 +235,8 @@ public class AccurateLocationTaker
 
         Log.d(Constants.TAG, "Start the GPS taking");
 
-        if (null != mGpsEventSource) {
-            mGpsEventSource.addListener(this);
+        if (null != mLocationManager) {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
         }
 
         mStopTakingRunner = new Runnable()
@@ -318,8 +303,8 @@ public class AccurateLocationTaker
     {
         mIsStopped = true;
 
-        if (null != mGpsEventSource) {
-            mGpsEventSource.removeListener(this);
+        if (null != mLocationManager) {
+            mLocationManager.removeUpdates(this);
         }
 
         mHandler.removeCallbacks(mStopTakingRunner);
