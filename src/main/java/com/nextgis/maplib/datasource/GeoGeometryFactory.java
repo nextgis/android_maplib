@@ -266,14 +266,6 @@ public class GeoGeometryFactory
                 result = new GeoGeometryCollection();
                 result.read(stream);
                 break;
-            case GeoConstants.GTTiledPolygon:
-                result = new TiledPolygon();
-                result.read(stream);
-                break;
-            case GeoConstants.GTMultiTiledPolygon:
-                result = new MultiTiledPolygon();
-                result.read(stream);
-                break;
         }
         return result;
     }

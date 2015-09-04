@@ -10,8 +10,6 @@ import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
-import com.nextgis.maplib.datasource.MultiTiledPolygon;
-import com.nextgis.maplib.datasource.TiledPolygon;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,10 +22,8 @@ import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiTiledPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
-import static com.nextgis.maplib.util.GeoConstants.GTTiledPolygon;
 
 /**
  * Style to draw tiled polygons
@@ -103,15 +99,6 @@ public class SimpleTiledPolygonStyle extends Style {
                     onDraw(multiLineString.get(i), display);
                 }
                 break;
-            case GTTiledPolygon:
-                onDraw((TiledPolygon) geoGeometry, display);
-                break;
-            case GTMultiTiledPolygon:
-                MultiTiledPolygon tiledPolygon = (MultiTiledPolygon) geoGeometry;
-                for (int i = 0; i < tiledPolygon.size(); i++) {
-                    onDraw(tiledPolygon.item(i), display);
-                }
-                break;
         }
     }
 
@@ -167,36 +154,6 @@ public class SimpleTiledPolygonStyle extends Style {
         lnPaint.setStyle(Paint.Style.STROKE);
         lnPaint.setAlpha(128);
         display.drawPath(linePath, lnPaint);
-    }
-
-    protected void onDraw(
-            TiledPolygon tiledPolygon,
-            GISDisplay display)
-    {
-        final Paint lnPaint = new Paint();
-        lnPaint.setColor(mColor);
-        lnPaint.setAntiAlias(true);
-
-        if(mFill){
-            final Path polygonPath = getPath(tiledPolygon);
-            lnPaint.setStyle(Paint.Style.FILL);
-            //lnPaint.setStyle(Paint.Style.STROKE);
-            //lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-
-            lnPaint.setAlpha(64);
-            display.drawPath(polygonPath, lnPaint);
-        }
-
-        lnPaint.setStrokeCap(Paint.Cap.ROUND);
-        lnPaint.setStyle(Paint.Style.STROKE);
-        lnPaint.setAlpha(128);
-        lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-
-        List<GeoLineString> borders = tiledPolygon.getBorders();
-        for(GeoLineString border : borders) {
-            final Path linePath = getPath(border);
-            display.drawPath(linePath, lnPaint);
-        }
     }
 
     @Override

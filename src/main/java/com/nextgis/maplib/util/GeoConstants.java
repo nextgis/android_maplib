@@ -52,9 +52,7 @@ public interface GeoConstants
     int GTMultiPolygon       = 6;
     int GTGeometryCollection = 7;
     int GTNone               = 100;
-    int GTTiledPolygon       = 203;
-    int GTMultiTiledPolygon  = 206;
-    int GTLinearRing         = 300;
+    int GTLinearRing         = 200;
 
     int GTPointCheck              = 1 << GTPoint;
     int GTLineStringCheck         = 1 << GTLineString;

@@ -42,6 +42,7 @@ import android.util.Log;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.IProgressor;
@@ -242,7 +243,7 @@ public class VectorLayer
      * The geometry cache for fast querying and drawing
      */
 
-    protected GeometryRTree mRTree;
+    protected IGeometryCache mCache;
     protected Map<String, Map<String, AttachItem>> mAttaches;
 
     public VectorLayer(
@@ -277,7 +278,7 @@ public class VectorLayer
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
 
         mAttaches = new HashMap<>();
-        mRTree = new GeometryRTree();
+        mCache = new GeometryRTree();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
 
@@ -423,7 +424,7 @@ public class VectorLayer
         if (!mCacheLoaded)
             reloadCache();
 
-        if (mRTree.getItem(feature.getId()) != null) {
+        if (mCache.getItem(feature.getId()) != null) {
             return;
         }
 
@@ -536,7 +537,8 @@ public class VectorLayer
     }
 
     protected void addGeometryToCache(long featureId, GeoGeometry geometry) {
-        mRTree.addItem(featureId, geometry.getEnvelope());
+        // TODO: 04.09.15 filter out small lines and polygons, points close each other
+        mCache.addItem(featureId, geometry.getEnvelope());
         File cachePath = new File(mPath, CACHE);
         for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
             GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
@@ -546,7 +548,7 @@ public class VectorLayer
     }
 
     protected void deleteGeometryFromCache(long featureId) {
-        mRTree.removeItem(featureId);
+        mCache.removeItem(featureId);
         File cachePath = new File(mPath, CACHE);
         for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
             FileUtil.deleteRecursive(new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
@@ -559,7 +561,7 @@ public class VectorLayer
     }
 
     protected void changeGeometryIdInTiles(long oldFeatureId, long newFeatureId) {
-        mRTree.changeId(oldFeatureId, newFeatureId);
+        mCache.changeId(oldFeatureId, newFeatureId);
         File cachePath = new File(mPath, CACHE);
         for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
             File from = new File(cachePath, zoom + "/" + oldFeatureId + SAMPLE_EXT);
@@ -669,7 +671,7 @@ public class VectorLayer
             rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
         }
 
-        mRTree.save(new File(mPath, RTREE));
+        mCache.save(new File(mPath, RTREE));
 
         return rootConfig;
     }
@@ -717,30 +719,7 @@ public class VectorLayer
         //load vector cache
         mCacheLoaded = false;
 
-        /*mFeatureIds.clear();
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-        String[] columns = new String[] {FIELD_ID};//, FIELD_GEOM};
-        Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
-        if (null != cursor) {
-            if (cursor.moveToFirst()) {
-                do {
-                    try {
-                        final GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                        if (null != geoGeometry) {
-                            long nId = cursor.getLong(0);
-                            mFeatureIds.add(nId);
-                            updateUniqId(nId);
-                        }
-                    } catch (IOException | ClassNotFoundException | IllegalStateException e) {
-                        e.printStackTrace();
-                    }
-                } while (cursor.moveToNext());
-            }
-            cursor.close();
-        }*/
-
-        mRTree.load(new File(mPath, RTREE));
+        mCache.load(new File(mPath, RTREE));
 
         mCacheLoaded = true;
     }
@@ -1598,7 +1577,7 @@ public class VectorLayer
         if (!mCacheLoaded)
             reloadCache();
 
-        return mRTree.size();
+        return mCache.size();
     }
 
     protected Map<String, AttachItem> getAttachMap(String featureId) {
@@ -1718,7 +1697,7 @@ public class VectorLayer
 
     public void notifyDelete(long rowId) {
         //remove cached item
-        if (mRTree.removeItem(rowId) != null) {
+        if (mCache.removeItem(rowId) != null) {
             notifyLayerChanged();
         }
     }
@@ -1726,7 +1705,7 @@ public class VectorLayer
 
     public void notifyDeleteAll() {
         //clear cache
-        mRTree.clear();
+        mCache.clear();
         notifyLayerChanged();
     }
 
@@ -1734,7 +1713,7 @@ public class VectorLayer
     public void notifyInsert(long rowId) {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            mRTree.addItem(rowId, geom.getEnvelope());
+            mCache.addItem(rowId, geom.getEnvelope());
             mExtents.merge(geom.getEnvelope());
             notifyLayerChanged();
         }
@@ -1747,12 +1726,12 @@ public class VectorLayer
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
             if (oldRowId != NOT_FOUND) {
-                mRTree.removeItem(oldRowId);
+                mCache.removeItem(oldRowId);
             } else {
-                mRTree.removeItem(rowId);
+                mCache.removeItem(rowId);
             }
 
-            mRTree.addItem(rowId, geom.getEnvelope());
+            mCache.addItem(rowId, geom.getEnvelope());
             mExtents.merge(geom.getEnvelope());
 
             notifyLayerChanged();
@@ -1831,9 +1810,9 @@ public class VectorLayer
     public List<Long> query(GeoEnvelope env) {
         List<IGeometryCacheItem> items;
         if(null == env || env.contains(mExtents))
-            items = mRTree.getAll();
+            items = mCache.getAll();
         else
-            items = mRTree.search(env);
+            items = mCache.search(env);
         List<Long> result = new ArrayList<>(items.size());
         for(IGeometryCacheItem item : items)
             result.add(item.getFeatureId());

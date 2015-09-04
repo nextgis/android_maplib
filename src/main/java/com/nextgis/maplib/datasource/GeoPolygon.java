@@ -354,30 +354,6 @@ public class GeoPolygon
         return result;
     }
 
-    public TiledPolygon clipForTiled(GeoEnvelope envelope) {
-        TiledPolygon result = new TiledPolygon();
-        result.setCRS(mCRS);
-        GeoLineString border = new GeoLineString();
-        mOuterRing.clipForTiled(result.mOuterRing, border, envelope);
-
-        if(result.mOuterRing.getPointCount() < 4)
-            return null;
-
-        result.mBorders.add(border);
-
-        for(GeoLinearRing ring : mInnerRings){
-            GeoLinearRing newRing = new GeoLinearRing();
-            GeoLineString newBorder = new GeoLineString();
-            ring.clipForTiled(newRing, newBorder, envelope);
-            if(newRing.getPointCount() > 4) {
-                result.addInnerRing(newRing);
-                result.mBorders.add(newBorder);
-            }
-        }
-
-        return result;
-    }
-
     @Override
     public GeoGeometry clip(GeoEnvelope envelope) {
         GeoPolygon result = new GeoPolygon();

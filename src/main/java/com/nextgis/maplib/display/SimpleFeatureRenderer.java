@@ -23,23 +23,13 @@
 
 package com.nextgis.maplib.display;
 
-import android.graphics.Paint;
 import android.util.Log;
-import android.util.Pair;
 
-import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
-import com.nextgis.maplib.datasource.GeoLineString;
-import com.nextgis.maplib.datasource.GeoPoint;
-import com.nextgis.maplib.datasource.TileItem;
-import com.nextgis.maplib.datasource.TiledPolygon;
-import com.nextgis.maplib.datasource.VectorTile;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.GeoConstants;
-import com.nextgis.maplib.util.MapUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;

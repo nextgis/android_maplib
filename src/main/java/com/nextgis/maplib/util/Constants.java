@@ -138,7 +138,7 @@ public interface Constants
     long     ONE_HOUR                        = ONE_MINUTE * 60;
     long     ONE_DAY                         = ONE_HOUR * 24;
     long     ONE_WEEK                        = ONE_DAY * 7;
-    long     DEFAULT_MAXIMUM_CACHED_FILE_AGE = ONE_WEEK;
+    long DEFAULT_TILE_MAX_AGE = ONE_WEEK;
     long     ONE_YEAR                        = ONE_DAY * 365;
     int      KEEP_ALIVE_TIME                 = 35;
     int      TERMINATE_TIME                  = 350;
