@@ -38,6 +38,7 @@ public interface GeoConstants
     int TMSTYPE_OSM    = 2;
 
     int DEFAULT_MAX_ZOOM = 25;
+    int DEFAULT_CACHE_MAX_ZOOM = 18;
     int DEFAULT_MIN_ZOOM = 0;
 
     /**

@@ -288,6 +288,11 @@ public class VectorLayer
         mGeometryType = geometryType;
         Log.d(TAG, "init layer " + getName());
 
+        if(null == mFields)
+            mFields = new HashMap<>();
+        else
+            mFields.clear();
+
         //filter out forbidden fields
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
@@ -299,9 +304,12 @@ public class VectorLayer
 
                 String warning = getContext().getString(R.string.warning_remove_field);
                 reportError(String.format(warning, fieldName));
+                continue;
             } else if (fieldName.contains(":")) {
                 field.setName(fieldName.replace(":", "_"));
             }
+
+            mFields.put(field.getName(), field);
         }
 
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " +
@@ -530,7 +538,7 @@ public class VectorLayer
     protected void addGeometryToCache(long featureId, GeoGeometry geometry) {
         mRTree.addItem(featureId, geometry.getEnvelope());
         File cachePath = new File(mPath, CACHE);
-        for (int zoom = 18; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+        for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
             GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
             saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
             geometry = newGeometry;
@@ -540,7 +548,7 @@ public class VectorLayer
     protected void deleteGeometryFromCache(long featureId) {
         mRTree.removeItem(featureId);
         File cachePath = new File(mPath, CACHE);
-        for (int zoom = 18; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+        for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
             FileUtil.deleteRecursive(new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
         }
     }
@@ -553,10 +561,12 @@ public class VectorLayer
     protected void changeGeometryIdInTiles(long oldFeatureId, long newFeatureId) {
         mRTree.changeId(oldFeatureId, newFeatureId);
         File cachePath = new File(mPath, CACHE);
-        for (int zoom = 18; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+        for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
             File from = new File(cachePath, zoom + "/" + oldFeatureId + SAMPLE_EXT);
-            File to = new File(cachePath, zoom + "/" + newFeatureId + SAMPLE_EXT);
-            from.renameTo(to);
+            if(from.exists()) {
+                File to = new File(cachePath, zoom + "/" + newFeatureId + SAMPLE_EXT);
+                from.renameTo(to);
+            }
         }
     }
 
@@ -701,7 +711,6 @@ public class VectorLayer
 
     protected synchronized void reloadCache() throws SQLiteException {
         if (null == mFields || mFields.isEmpty()) {
-            mCacheLoaded = true;
             return;
         }
 
