@@ -391,6 +391,11 @@ public class GeoPolygon
     }
 
     @Override
+    public double distance(GeoGeometry geometry) {
+        return mOuterRing.distance(geometry);
+    }
+
+    @Override
     public void write(DataOutputStream stream) throws IOException {
         super.write(stream);
         mOuterRing.write(stream);

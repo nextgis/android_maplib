@@ -185,7 +185,10 @@ public class GeoLinearRing
 
         GeoEnvelope env = getEnvelope();
         double area = env.getArea() * 2;
-        if(sqTolerance > area){
+        if(sqTolerance > area * 10) { //don't show this geometry on this zoom
+            return null;
+        }
+        else if(sqTolerance > area){
             GeoLinearRing result = new GeoLinearRing();
             result.setCRS(getCRS());
             result.add(new GeoPoint(env.getMinX(), env.getMinY()));

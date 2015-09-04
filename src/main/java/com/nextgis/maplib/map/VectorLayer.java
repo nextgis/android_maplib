@@ -52,6 +52,8 @@ import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.datasource.GeoMultiPoint;
+import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeometryRTree;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
@@ -536,14 +538,51 @@ public class VectorLayer
         }
     }
 
+    protected boolean checkPointOverlaps(GeoPoint pt, double tolerance){
+        GeoEnvelope envelope = new GeoEnvelope(pt.getX() - tolerance, pt.getX() + tolerance,
+                                               pt.getY() - tolerance, pt.getY() + tolerance);
+        return !mCache.search(envelope).isEmpty();
+    }
+
     protected void addGeometryToCache(long featureId, GeoGeometry geometry) {
-        // TODO: 04.09.15 filter out small lines and polygons, points close each other
         mCache.addItem(featureId, geometry.getEnvelope());
         File cachePath = new File(mPath, CACHE);
-        for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
-            GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
-            saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
-            geometry = newGeometry;
+        if(geometry.getType() == GeoConstants.GTPoint){
+            for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+                if(!checkPointOverlaps((GeoPoint) geometry, MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX)){
+                    saveGeometryToFile(geometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                }
+            }
+        }
+        else if(geometry.getType() == GeoConstants.GTMultiPoint){
+            for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+                GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
+                GeoMultiPoint multiPoint = (GeoMultiPoint) newGeometry;
+                if(multiPoint.size() == 0){
+                    break;
+                }
+                else if(multiPoint.size() == 1){
+                    if(!checkPointOverlaps(multiPoint.get(0), MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX)){
+                        saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                    }
+                    else {
+                        break;
+                    }
+                }
+                else {
+                    saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                }
+                geometry = newGeometry;
+            }
+        }
+        else {
+            for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
+                GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
+                if(null == newGeometry)
+                    break;
+                saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                geometry = newGeometry;
+            }
         }
     }
 
@@ -1799,12 +1838,15 @@ public class VectorLayer
     }
 
     public GeoGeometry getGeometryForId(long featureId, int zoom) {
-        if(zoom > 18)
+        if(zoom > GeoConstants.DEFAULT_CACHE_MAX_ZOOM)
             return getGeometryForId(featureId);
+        return loadGeometryFromFile(new File(mPath, CACHE + "/" + zoom + "/" + featureId + SAMPLE_EXT));
+        /*
         GeoGeometry geometry = loadGeometryFromFile(new File(mPath, CACHE + "/" + zoom + "/" + featureId + SAMPLE_EXT));
         if(null != geometry)
             return geometry;
         return getGeometryForId(featureId);
+        */
     }
 
     public List<Long> query(GeoEnvelope env) {

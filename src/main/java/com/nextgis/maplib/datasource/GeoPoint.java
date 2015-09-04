@@ -268,4 +268,14 @@ public class GeoPoint
     public boolean isValid() {
         return true;
     }
+
+    @Override
+    public double distance(GeoGeometry geometry) {
+        if(geometry.getType() == GTPoint){
+            GeoPoint pt = (GeoPoint) geometry;
+            return Math.sqrt((pt.getX() - mX)*(pt.getX() - mX) + (pt.getY() - mY)*(pt.getY() - mY));
+        }
+        // TODO: 04.09.15 release for other types of geometries
+        return 0;
+    }
 }
