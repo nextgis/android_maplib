@@ -477,6 +477,7 @@ public class GISDisplay
         if (null == mMainCanvas) {
             return;
         }
+        checkStrokeWidth(paint);
         mMainCanvas.drawLine(x0, y0, x1, y1, paint);
     }
 
@@ -488,7 +489,27 @@ public class GISDisplay
         if (null == mMainCanvas) {
             return;
         }
+        checkStrokeWidth(paint);
         mMainCanvas.drawLines(pts, paint);
+    }
+
+
+    public void drawCircle(
+            float x,
+            float y,
+            Paint paint)
+    {
+        if (null == mMainCanvas) {
+            return;
+        }
+
+        paint.setAntiAlias(true);
+        float r = (float) Math.ceil(paint.getStrokeWidth() * 1.5);
+        if (r > 0) {
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(r);
+        }
+        mMainCanvas.drawPoint(x, y, paint);
     }
 
 
@@ -501,6 +522,7 @@ public class GISDisplay
         if (null == mMainCanvas) {
             return;
         }
+        checkStrokeWidth(paint);
         mMainCanvas.drawCircle(x, y, radius, paint);
     }
 
@@ -514,6 +536,7 @@ public class GISDisplay
         if (null == mMainCanvas) {
             return;
         }
+        checkStrokeWidth(paint);
         mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
     }
 
@@ -540,7 +563,14 @@ public class GISDisplay
         if (null == mMainCanvas) {
             return;
         }
+        checkStrokeWidth(paint);
         mMainCanvas.drawPath(path, paint);
+    }
+
+
+    private void checkStrokeWidth(Paint paint) {
+        if (paint.getStyle() == Paint.Style.STROKE && paint.getStrokeWidth() < 1f)
+            paint.setStrokeWidth(0);
     }
 
 

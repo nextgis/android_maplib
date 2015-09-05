@@ -169,7 +169,11 @@ public class SimpleMarkerStyle
         fillPaint.setColor(mColor);
         fillPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
+        if (scaledSize < 2) {
+            fillPaint.setStrokeWidth(scaledSize);
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), fillPaint);
+        } else
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
 
         Paint outPaint = new Paint();
         outPaint.setColor(mOutColor);
@@ -177,7 +181,8 @@ public class SimpleMarkerStyle
         outPaint.setStyle(Paint.Style.STROKE);
         outPaint.setAntiAlias(true);
 
-        display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
+        if (scaledSize >= 2)
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
     }
 
 

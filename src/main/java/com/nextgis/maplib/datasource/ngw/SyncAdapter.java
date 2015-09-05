@@ -125,7 +125,7 @@ public class SyncAdapter
         }
 
         SharedPreferences settings = getContext().getSharedPreferences(
-                Constants.PREFERENCES, Context.MODE_PRIVATE | Context.MODE_MULTI_PROCESS);
+                Constants.PREFERENCES, Context.MODE_PRIVATE | Constants.MODE_MULTI_PROCESS);
         SharedPreferences.Editor editor = settings.edit();
         editor.putLong(
                 SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
