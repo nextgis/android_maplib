@@ -183,4 +183,6 @@ public abstract class GeoGeometry
     }
 
     public abstract boolean isValid();
+
+    public abstract double distance(GeoGeometry geometry);
 }

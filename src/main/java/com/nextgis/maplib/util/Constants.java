@@ -31,6 +31,7 @@ public interface Constants
     String PREFERENCES        = "nextgismobile";
     int    MODE_MULTI_PROCESS = 0x4;
     int    NOT_FOUND          = -1;
+    boolean DEBUG_MODE = true;
 
     /**
      * HTTP parameters
@@ -55,20 +56,33 @@ public interface Constants
     int   MAP_LIMITS_Y    = 3; // limit to scroll map by y axis
     int   MAP_LIMITS_XY   = 4; // limit to scroll map by x & y axis
 
-    //the additional size to off screen drawing
-    //from 1 and higher
-    //As more than more memory needed
+    /**
+     * The additional size to off screen drawing
+     * from 1 and higher
+     * As more than more memory needed
+     */
+
     float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
+    int DEFAULT_TILE_SIZE = 256;
+
+    /**
+     * thread priorities and delays
+     */
     int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 11;
     int   DEFAULT_DOWNLOAD_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_BACKGROUND + 3;
     int   DEFAULT_LOAD_LAYER_THREAD_PRIORITY = Thread.MIN_PRIORITY;
     int   DEFAULT_EXECUTION_DELAY = 450;
 
-    int DEFAULT_TILE_SIZE = 256;
+    /**
+     * tune line string and linear ring simplifier
+     */
+    double   SIMPLIFY_TOENV_AREA_MULTIPLY = 1.5; // area multiplier to skip if greater than quad tolerance
+    double   SIMPLIFY_SKIP_AREA_MULTIPLY = 7;
+    int SAMPLE_DISTANCE_PX = 5;
+
 
     String CONFIG       = "config.json";
     String LAYER_PREFIX = "layer_";
-    String TILE_EXT     = ".tile";
     String MAP_EXT      = ".ngm";
 
     /**
@@ -138,7 +152,7 @@ public interface Constants
     long     ONE_HOUR                        = ONE_MINUTE * 60;
     long     ONE_DAY                         = ONE_HOUR * 24;
     long     ONE_WEEK                        = ONE_DAY * 7;
-    long     DEFAULT_MAXIMUM_CACHED_FILE_AGE = ONE_WEEK;
+    long DEFAULT_TILE_MAX_AGE = ONE_WEEK;
     long     ONE_YEAR                        = ONE_DAY * 365;
     int      KEEP_ALIVE_TIME                 = 35;
     int      TERMINATE_TIME                  = 350;
@@ -287,5 +301,4 @@ public interface Constants
             "WITH",
             "WITHOUT"};
 
-    int SAMPLE_DISTANCE_PX = 5;
 }

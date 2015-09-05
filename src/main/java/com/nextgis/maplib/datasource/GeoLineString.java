@@ -30,6 +30,7 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.util.JsonReader;
 
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
 
 import org.json.JSONArray;
@@ -380,8 +381,11 @@ public class GeoLineString
         double sqTolerance = tolerance * tolerance;
 
         GeoEnvelope env = getEnvelope();
-        double area = env.getArea() * 2;
-        if(sqTolerance > area){
+        double area = env.getArea() * Constants.SIMPLIFY_TOENV_AREA_MULTIPLY;
+        if(sqTolerance > area * Constants.SIMPLIFY_SKIP_AREA_MULTIPLY) { //don't show this geometry on this zoom
+            return null;
+        }
+        else if(sqTolerance > area){
             GeoLineString result = new GeoLineString();
             result.setCRS(getCRS());
             result.add(new GeoPoint(env.getMinX(), env.getMinY()));
@@ -641,5 +645,11 @@ public class GeoLineString
     @Override
     public boolean isValid() {
         return mPoints.size() > 1;
+    }
+
+    @Override
+    public double distance(GeoGeometry geometry) {
+        // TODO: 04.09.15 release this
+        return 0;
     }
 }

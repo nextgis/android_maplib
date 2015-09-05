@@ -23,23 +23,14 @@
 
 package com.nextgis.maplib.display;
 
-import android.graphics.Paint;
 import android.util.Log;
 import android.util.Pair;
 
-import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
-import com.nextgis.maplib.datasource.GeoLineString;
-import com.nextgis.maplib.datasource.GeoPoint;
-import com.nextgis.maplib.datasource.TileItem;
-import com.nextgis.maplib.datasource.TiledPolygon;
-import com.nextgis.maplib.datasource.VectorTile;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.GeoConstants;
-import com.nextgis.maplib.util.MapUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -70,7 +61,7 @@ public class SimpleFeatureRenderer
     //protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
-    protected static final int GEOMETRY_PER_TASK = 5;
+    protected static final int GEOMETRY_PER_TASK = 50;
 
 
     public SimpleFeatureRenderer(Layer layer)
@@ -91,7 +82,10 @@ public class SimpleFeatureRenderer
     @Override
     public void runDraw(final GISDisplay display)
     {
-        long startTime = System.currentTimeMillis();
+        long startTime;
+        if(Constants.DEBUG_MODE) {
+            startTime = System.currentTimeMillis();
+        }
 
         if (null == mStyle) {
             Log.d(TAG, "mStyle == null");
@@ -101,11 +95,11 @@ public class SimpleFeatureRenderer
 
         GeoEnvelope env = display.getBounds();
         final VectorLayer vectorLayer = (VectorLayer) mLayer;
-        GeoEnvelope layerEnv = vectorLayer.getExtents();
 
-        if (null == layerEnv || !env.intersects(layerEnv)) {
-            return;
-        }
+        //GeoEnvelope layerEnv = vectorLayer.getExtents();
+        //if (null == layerEnv || !env.intersects(layerEnv)) {
+        //    return;
+        //}
 
         int decimalZoom = (int) zoom;
         if(decimalZoom % 2 != 0)
@@ -116,53 +110,55 @@ public class SimpleFeatureRenderer
         cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
-        //synchronized (lock) {
-            mDrawThreadPool = new ThreadPoolExecutor(
-                    threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+        mDrawThreadPool = new ThreadPoolExecutor(
+                threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+        {
+            @Override
+            public void rejectedExecution(
+                    Runnable r,
+                    ThreadPoolExecutor executor)
             {
-                @Override
-                public void rejectedExecution(
-                        Runnable r,
-                        ThreadPoolExecutor executor)
-                {
-                    try {
-                        executor.getQueue().put(r);
-                    } catch (InterruptedException e) {
-                        //e.printStackTrace();
-                    }
+                try {
+                    executor.getQueue().put(r);
+                } catch (InterruptedException e) {
+                    //e.printStackTrace();
                 }
-            });
-        //}
+            }
+        });
+
+        if(Constants.DEBUG_MODE) {
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+
+            Log.d(TAG, "Vector layer " + mLayer.getName() + " prepare time: " + elapsedTime);
+        }
 
         // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
-        int tilesSize = featureIds.size();
+        int tilesSize = featureIds.size() / GEOMETRY_PER_TASK + 1;
         List<Future> futures = new ArrayList<>(tilesSize);
 
         final int finalDecimalZoom = decimalZoom;
+        int counter = 0;
+        for (int i = 0; i < featureIds.size(); i += GEOMETRY_PER_TASK) {
 
-        for (int i = 0; i < tilesSize; ++i) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
+            DrawTask task = new DrawTask(finalDecimalZoom, vectorLayer, display);
+
+            for(int j = 0; j < GEOMETRY_PER_TASK; j++) {
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
+                counter++;
+                if (counter >= featureIds.size())
+                    break;
+
+                final long featureId = featureIds.get(counter);
+
+                task.addTaskData(featureId);
             }
 
-            final long featureId = featureIds.get(i);
-
-            futures.add(
-                    mDrawThreadPool.submit(
-                            new Runnable() {
-                                @Override
-                                public void run() {
-                                    android.os.Process.setThreadPriority(
-                                            Constants.DEFAULT_DRAW_THREAD_PRIORITY);
-
-                                    final GeoGeometry geometry = vectorLayer.getGeometryForId(featureId, finalDecimalZoom);
-                                    if (geometry != null) {
-                                            final Style style = getStyle(featureId);
-                                            style.onDraw(geometry, display);
-                                    }
-                                }
-                            }));
+            futures.add(mDrawThreadPool.submit(task));
+            vectorLayer.onDrawFinished(vectorLayer.getId(), 0.01f);
         }
 
         // wait for draw ending
@@ -194,10 +190,12 @@ public class SimpleFeatureRenderer
 
         vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
 
-        long stopTime = System.currentTimeMillis();
-        long elapsedTime = stopTime - startTime;
+        if(Constants.DEBUG_MODE) {
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
 
-        Log.d(TAG, "Vector layer " + mLayer.getName() + " exec time: " + elapsedTime);
+            Log.d(TAG, "Vector layer " + mLayer.getName() + " exec time: " + elapsedTime);
+        }
     }
 
 
@@ -295,5 +293,36 @@ public class SimpleFeatureRenderer
                 throw new JSONException("Unknown style type: " + styleName);
         }
         mStyle.fromJSON(styleJsonObject);
+    }
+
+    protected class DrawTask implements Runnable {
+        protected final GISDisplay mDisplay;
+        protected final int mZoom;
+        protected final VectorLayer mLayer;
+        protected final List<Long> mFeatureIds = new ArrayList<>(GEOMETRY_PER_TASK);
+
+        public DrawTask(final int zoom, final VectorLayer layer, final GISDisplay display) {
+            mDisplay = display;
+            mZoom = zoom;
+            mLayer = layer;
+        }
+
+        public void addTaskData(final Long featureId){
+            mFeatureIds.add(featureId);
+        }
+
+        @Override
+        public void run() {
+            android.os.Process.setThreadPriority(
+                    Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+
+            for(Long id : mFeatureIds) {
+                final GeoGeometry geometry = mLayer.getGeometryForId(id, mZoom);
+                if (geometry != null) {
+                    final Style style = getStyle(id);
+                    style.onDraw(geometry, mDisplay);
+                }
+            }
+        }
     }
 }

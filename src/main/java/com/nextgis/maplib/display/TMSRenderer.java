@@ -28,6 +28,7 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
+import android.util.Log;
 
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
@@ -51,6 +52,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
 import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
 import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
+import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
 
 
@@ -212,6 +214,11 @@ public class TMSRenderer
     public void runDraw(final GISDisplay display)
             throws NullPointerException
     {
+        long startTime;
+        if(Constants.DEBUG_MODE) {
+            startTime = System.currentTimeMillis();
+        }
+
         final double zoom = display.getZoomLevel();
 
 
@@ -307,6 +314,13 @@ public class TMSRenderer
         }
 
         tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
+
+        if(Constants.DEBUG_MODE) {
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+
+            Log.d(TAG, "Raster layer " + mLayer.getName() + " exec time: " + elapsedTime);
+        }
     }
 
 

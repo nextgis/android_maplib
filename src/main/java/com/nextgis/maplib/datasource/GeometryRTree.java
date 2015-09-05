@@ -747,6 +747,7 @@ public class GeometryRTree implements IGeometryCache {
 
         protected Node(){
             mCoords = new GeoEnvelope();
+            mChildren = new LinkedList<>();
         }
 
         protected Node(GeoEnvelope coords, boolean leaf)

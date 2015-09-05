@@ -78,12 +78,14 @@ public class MapUtil {
         if (endY > tilesInMapOneDimension) {
             endY = tilesInMapOneDimension;
         }
+        /* this block unlimited X scroll of the map
         if (begX < 0) {
             begX = 0;
         }
         if (endX > tilesInMapOneDimension) {
             endX = tilesInMapOneDimension;
         }
+        */
 
         // normal fill from left bottom corner
         int realX, realY;
@@ -108,7 +110,7 @@ public class MapUtil {
                 }
 
                 double minX = fullBoundsMinX + x * tilesSizeOneDimension;
-                double minY = fullBoundsMinX + y * tilesSizeOneDimension;
+                double minY = fullBoundsMinY + y * tilesSizeOneDimension;
                 final GeoEnvelope env = new GeoEnvelope(
                         minX,
                         minX + tilesSizeOneDimension,

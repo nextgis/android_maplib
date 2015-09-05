@@ -38,6 +38,7 @@ public interface GeoConstants
     int TMSTYPE_OSM    = 2;
 
     int DEFAULT_MAX_ZOOM = 25;
+    int DEFAULT_CACHE_MAX_ZOOM = 18;
     int DEFAULT_MIN_ZOOM = 0;
 
     /**
@@ -51,9 +52,7 @@ public interface GeoConstants
     int GTMultiPolygon       = 6;
     int GTGeometryCollection = 7;
     int GTNone               = 100;
-    int GTTiledPolygon       = 203;
-    int GTMultiTiledPolygon  = 206;
-    int GTLinearRing         = 300;
+    int GTLinearRing         = 200;
 
     int GTPointCheck              = 1 << GTPoint;
     int GTLineStringCheck         = 1 << GTLineString;

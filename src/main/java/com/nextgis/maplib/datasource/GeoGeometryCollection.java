@@ -323,6 +323,21 @@ public class GeoGeometryCollection
         return !mGeometries.isEmpty();
     }
 
+    @Override
+    public double distance(GeoGeometry geometry) {
+        if(mGeometries.isEmpty())
+            return 0;
+        double distance = 0;
+        for(GeoGeometry collectionGeometry : mGeometries){
+            double currentDist = collectionGeometry.distance(geometry);
+            if(distance == 0)
+                distance = currentDist;
+            else if(distance > currentDist)
+                distance = currentDist;
+        }
+        return distance;
+    }
+
     protected GeoGeometryCollection getInstance(){
         return new GeoGeometryCollection();
     }

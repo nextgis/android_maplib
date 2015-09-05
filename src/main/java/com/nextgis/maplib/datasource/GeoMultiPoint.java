@@ -41,6 +41,14 @@ public class GeoMultiPoint
 {
     protected static final long serialVersionUID = -1241179697270831765L;
 
+    public GeoMultiPoint(GeoMultiPoint geoMultiPoint) {
+        super(geoMultiPoint);
+    }
+
+    public GeoMultiPoint() {
+        super();
+    }
+
 
     @Override
     public void add(GeoGeometry geometry)
@@ -108,6 +116,11 @@ public class GeoMultiPoint
         }
     }
 
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoMultiPoint(this);
+    }
 
     public void add(GeoPoint point)
     {
@@ -141,5 +154,26 @@ public class GeoMultiPoint
     @Override
     protected GeoGeometryCollection getInstance() {
         return new GeoMultiPoint();
+    }
+
+    @Override
+    public GeoGeometry simplify(double tolerance) {
+        GeoMultiPoint result = (GeoMultiPoint) copy();
+        double checkTolerance = tolerance + tolerance;
+        for(int i = 0; i < result.mGeometries.size(); i++){
+
+            for(int j = 0; j < result.mGeometries.size(); j++){
+                if(i == j)
+                    continue;
+                GeoPoint pt1 = (GeoPoint) result.mGeometries.get(i);
+                GeoPoint pt2 = (GeoPoint) result.mGeometries.get(j);
+
+                if(Math.abs(pt1.distance(pt2)) < checkTolerance) {
+                    result.mGeometries.remove(j);
+                    j--;
+                }
+            }
+        }
+        return result;
     }
 }

@@ -46,11 +46,10 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import static com.nextgis.maplib.util.Constants.DEFAULT_MAXIMUM_CACHED_FILE_AGE;
+import static com.nextgis.maplib.util.Constants.DEFAULT_TILE_MAX_AGE;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_REMOTE_TMS;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.TILE_EXT;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 
@@ -60,6 +59,7 @@ public class RemoteTMSLayer
     protected static final String JSON_URL_KEY      = "url";
     protected static final String JSON_LOGIN_KEY    = "login";
     protected static final String JSON_PASSWORD_KEY = "password";
+    protected static final String JSON_TILE_AGE_KEY = "tile_age";
 
     protected       String       mURL;
     protected       NetworkUtil  mNet;
@@ -69,6 +69,7 @@ public class RemoteTMSLayer
     protected       String       mLogin;
     protected       String       mPassword;
     protected       Semaphore    mAvailable;
+    protected long mTileMaxAge;
 
     public final static long DELAY = 2150;
 
@@ -83,7 +84,7 @@ public class RemoteTMSLayer
         mSubdomains = new ArrayList<>();
         mCurrentSubdomain = 0;
         mLayerType = LAYERTYPE_REMOTE_TMS;
-
+        mTileMaxAge = DEFAULT_TILE_MAX_AGE;
         setViewSize(100, 100);
     }
 
@@ -107,8 +108,7 @@ public class RemoteTMSLayer
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
-        if (exist && System.currentTimeMillis() - tilePath.lastModified() <
-                DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
+        if (exist && System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge) {
             return;
         }
 
@@ -154,9 +154,8 @@ public class RemoteTMSLayer
         // try to get tile from local cache
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
-        //Log.d(TAG, "time diff: " + (System.currentTimeMillis() - tilePath.lastModified()) + " age: " + DEFAULT_MAXIMUM_CACHED_FILE_AGE);
-        if (exist && System.currentTimeMillis() - tilePath.lastModified() <
-                     DEFAULT_MAXIMUM_CACHED_FILE_AGE) {
+        //Log.d(TAG, "time diff: " + (System.currentTimeMillis() - tilePath.lastModified()) + " age: " + DEFAULT_TILE_MAX_AGE);
+        if (exist && System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge) {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             if (ret != null) {
                 putBitmapToCache(tile.getHash(), ret);
@@ -233,6 +232,8 @@ public class RemoteTMSLayer
             rootConfig.put(JSON_PASSWORD_KEY, mPassword);
         }
 
+        rootConfig.put(JSON_TILE_AGE_KEY, mTileMaxAge);
+
         return rootConfig;
     }
 
@@ -252,6 +253,10 @@ public class RemoteTMSLayer
             // Here we must use mPassword instead of setPassword() for subclasses
             // which do not use mLogin
             mPassword = jsonObject.getString(JSON_PASSWORD_KEY);
+        }
+
+        if(jsonObject.has(JSON_TILE_AGE_KEY)) {
+            mTileMaxAge = jsonObject.getLong(JSON_TILE_AGE_KEY);
         }
 
         analizeURL(mURL);
@@ -373,5 +378,13 @@ public class RemoteTMSLayer
     public void setPassword(String password)
     {
         mPassword = password;
+    }
+
+    public long getTileMaxAge() {
+        return mTileMaxAge;
+    }
+
+    public void setTileMaxAge(long tileMaxAge) {
+        mTileMaxAge = tileMaxAge;
     }
 }
