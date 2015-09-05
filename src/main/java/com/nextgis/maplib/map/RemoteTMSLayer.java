@@ -50,7 +50,6 @@ import static com.nextgis.maplib.util.Constants.DEFAULT_TILE_MAX_AGE;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_REMOTE_TMS;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.TILE_EXT;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 

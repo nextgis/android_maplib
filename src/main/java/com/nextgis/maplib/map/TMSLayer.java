@@ -50,6 +50,7 @@ public abstract class TMSLayer
 {
     protected static final String JSON_TMSTYPE_KEY     = "tms_type";
     protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
+    protected String TILE_EXT     = ".tile";
 
     protected int mTMSType;
     protected static final int HTTP_SEPARATE_THREADS = 2;
