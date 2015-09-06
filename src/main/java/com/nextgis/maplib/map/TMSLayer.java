@@ -25,24 +25,20 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+
 import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.datasource.GeoEnvelope;
-import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
-import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 
 
 public abstract class TMSLayer
@@ -50,7 +46,7 @@ public abstract class TMSLayer
 {
     protected static final String JSON_TMSTYPE_KEY     = "tms_type";
     protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
-    protected String TILE_EXT     = ".tile";
+    public static final String TILE_EXT = ".tile";
 
     protected int mTMSType;
     protected static final int HTTP_SEPARATE_THREADS = 2;

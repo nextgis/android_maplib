@@ -353,13 +353,7 @@ public class VectorLayer
         setDefaultRenderer();
     }
 
-    public void createFromNGFP(Uri uri, IProgressor progressor) {
-        /*
-
-         */
-    }
-
-    public void createFromGeoJson(Uri uri, IProgressor progressor) throws IOException, JSONException, NGException {
+    public void createFromGeoJson(Uri uri, IProgressor progressor) throws IOException, JSONException, NGException, SQLiteException {
         InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
@@ -400,6 +394,48 @@ public class VectorLayer
         }
     }
 
+
+    public void fillFromGeoJson(Uri uri, int srs, IProgressor progressor) throws IOException, JSONException, NGException, SQLiteException {
+        InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
+        if (inputStream == null) {
+            throw new NGException(mContext.getString(R.string.error_download_data));
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            int nSize = inputStream.available();
+
+            if (null != progressor) {
+                progressor.setMessage(mContext.getString(R.string.message_loading));
+                progressor.setMax(nSize);
+            }
+
+            int nIncrement = 0;
+            BufferedReader streamReader = new BufferedReader(
+                    new InputStreamReader(inputStream, "UTF-8"));
+            StringBuilder responseStrBuilder = new StringBuilder();
+            String inputStr;
+            while ((inputStr = streamReader.readLine()) != null) {
+                nIncrement += inputStr.length();
+                if (null != progressor) {
+                    if (progressor.isCanceled())
+                        break;
+                    progressor.setValue(nIncrement);
+                }
+                responseStrBuilder.append(inputStr);
+                if (responseStrBuilder.length() > MAX_CONTENT_LENGTH)
+                    throw new NGException(mContext.getString(R.string.error_layer_create));
+            }
+
+            JSONObject jsonObject = new JSONObject(responseStrBuilder.toString());
+            GeoJSONUtil.fillLayerFromGeoJSON(this, jsonObject, srs, progressor);
+        } else {
+            if (null != progressor) {
+                progressor.setMessage(mContext.getString(R.string.create_features));
+            }
+            GeoJSONUtil.fillLayerFromGeoJSONStream(this, inputStream, srs, progressor);
+        }
+    }
+
     public void createFromGeoJson(File path, IProgressor progressor) throws IOException, JSONException, NGException {
         if (null != progressor) {
             progressor.setMessage(mContext.getString(R.string.create_features));
@@ -415,6 +451,21 @@ public class VectorLayer
         }
     }
 
+    public void fillFromGeoJson(File path, int srs, IProgressor progressor) throws IOException, JSONException, NGException {
+        if (null != progressor) {
+            progressor.setMessage(mContext.getString(R.string.create_features));
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+            String jsonData = FileUtil.readFromFile(path);
+            JSONObject jsonObject = new JSONObject(jsonData);
+            GeoJSONUtil.fillLayerFromGeoJSON(this, jsonObject, srs, progressor);
+        } else {
+            FileInputStream inputStream = new FileInputStream(path);
+            GeoJSONUtil.fillLayerFromGeoJSONStream(this, inputStream, srs, progressor);
+        }
+    }
+
     public void createFeature(Feature feature)
             throws SQLiteException {
         // check if geometry type is appropriate layer geometry type
@@ -422,12 +473,12 @@ public class VectorLayer
             return;
         }
 
-        // check if such id already used
-        // maybe was added previous session
-
         if (!mCacheLoaded)
             reloadCache();
 
+
+        // check if such id already used
+        // maybe was added previous session
         if (mCache.getItem(feature.getId()) != null) {
             return;
         }

@@ -24,7 +24,6 @@
 package com.nextgis.maplib.util;
 
 import android.annotation.TargetApi;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.JsonReader;
@@ -43,8 +42,6 @@ import org.json.JSONObject;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -73,9 +70,9 @@ public class NGWUtil
     public static String NGWKEY_SECOND = "second";
     public static String NGWKEY_FEATURE_COUNT = "total_count";
 
-     /*
-    NGW API Functions
-     */
+     /**
+      * NGW API Functions
+      */
 
     public static String getConnectionCookie(String sUrl, String login, String password) throws IOException {
         sUrl += "/login";

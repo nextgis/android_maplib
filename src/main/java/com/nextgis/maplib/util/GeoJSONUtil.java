@@ -19,13 +19,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +42,7 @@ public class GeoJSONUtil {
             progressor.setMessage(layer.getContext().getString(R.string.start_fill_layer) + " " + layer.getName());
         }
 
-                //check crs
+        //check crs
         boolean isWGS84 = true; //if no crs tag - WGS84 CRS
         if (geoJSONObject.has(GeoConstants.GEOJSON_CRS)) {
             JSONObject crsJSONObject = geoJSONObject.getJSONObject(GeoConstants.GEOJSON_CRS);
@@ -116,8 +116,6 @@ public class GeoJSONUtil {
                     nType = GeoConstants.FTInteger;
                 } else if (value instanceof Double || value instanceof Float) {
                     nType = GeoConstants.FTReal;
-                } else if (value instanceof Date) {
-                    nType = GeoConstants.FTDateTime;
                 } else if (value instanceof String) {
                     nType = GeoConstants.FTString;
                 } else if (value instanceof JSONObject) {
@@ -176,7 +174,11 @@ public class GeoJSONUtil {
         return isWGS84;
     }
 
-    public static void fillLayerFromGeoJSON(VectorLayer layer, JSONObject geoJSONObject, int srs) throws NGException, JSONException, SQLiteException {
+    public static void fillLayerFromGeoJSON(VectorLayer layer, JSONObject geoJSONObject, int srs, IProgressor progressor) throws NGException, JSONException, SQLiteException {
+        if(null != progressor){
+            progressor.setIndeterminate(false);
+            progressor.setMessage(layer.getContext().getString(R.string.start_fill_layer) + " " + layer.getName());
+        }
         //check crs
         boolean isWGS84 = srs == GeoConstants.CRS_WGS84;
         if (!isWGS84 && srs != GeoConstants.CRS_WEB_MERCATOR) {
@@ -191,7 +193,17 @@ public class GeoJSONUtil {
 
         List<Feature> features = new LinkedList<>();
         List<Field> fields = layer.getFields();
+
+        if(null != progressor){
+            progressor.setMax(geoJSONFeatures.length());
+            progressor.setValue(0);
+        }
+
         for (int i = 0; i < geoJSONFeatures.length(); i++) {
+            if(null != progressor){
+                progressor.setValue(i);
+            }
+
             JSONObject jsonFeature = geoJSONFeatures.getJSONObject(i);
             //get geometry
             JSONObject jsonGeometry = jsonFeature.getJSONObject(GeoConstants.GEOJSON_GEOMETRY);
@@ -240,13 +252,35 @@ public class GeoJSONUtil {
             features.add(feature);
         }
 
+        if(null != progressor){
+            progressor.setMax(features.size());
+            progressor.setValue(0);
+        }
+
+        int counter = 0;
         for(Feature feature : features){
             layer.createFeature(feature);
+            if(null != progressor){
+                progressor.setValue(counter++);
+            }
         }
 
         layer.notifyLayerChanged();
     }
 
+    protected static Object parseNumber(String value) {
+        try {
+            if (value.contains(".") || value.contains(",")) {
+                return Double.parseDouble(value);
+            } else {
+                return Long.parseLong(value);
+            }
+        }
+        catch (NumberFormatException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     protected static Object parseDateTime(Object value, int type) {
         SimpleDateFormat sdf = null;
@@ -271,6 +305,41 @@ public class GeoJSONUtil {
             }
 
         return value;
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static void fillLayerFromGeoJSONStream(VectorLayer layer, InputStream in, int srs, IProgressor progressor) throws IOException, NGException {
+        if(null != progressor){
+            progressor.setIndeterminate(true);
+            progressor.setMessage(layer.getContext().getString(R.string.start_fill_layer) + " " + layer.getName());
+        }
+
+        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+        boolean isWGS84 = srs == GeoConstants.CRS_WGS84;
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String name = reader.nextName();
+            if(name.equals(GeoConstants.GEOJSON_TYPE_FEATURES)){
+                reader.beginArray();
+                while (reader.hasNext()) {
+                    Feature feature = readGeoJSONFeature(reader, layer, isWGS84);
+                    if(null != feature) {
+                        if(layer.getFields() != null && !layer.getFields().isEmpty()){
+                            layer.create(feature.getGeometry().getType(), feature.getFields());
+                        }
+                        if(feature.getGeometry() != null) {
+                            layer.createFeature(feature);
+                        }
+                    }
+                }
+                reader.endArray();
+            }
+            else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+        reader.close();
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -360,7 +429,14 @@ public class GeoJSONUtil {
                 if(!isFieldsFilled){
                     feature.getFields().add(new Field(GeoConstants.FTString, name, name));
                 }
-                feature.setFieldValue(name, value);
+                int fieldIndex = feature.getFieldValueIndex(name);
+                int fieldType = feature.getFields().get(fieldIndex).getType();
+                if(fieldType == GeoConstants.FTDate || fieldType == GeoConstants.FTDateTime || fieldType == GeoConstants.FTTime){
+                    feature.setFieldValue(fieldIndex, parseDateTime(value, fieldType));
+                }
+                else{
+                    feature.setFieldValue(fieldIndex, value);
+                }
             }
             else if(jsonToken == JsonToken.BOOLEAN){
                 boolean value = reader.nextBoolean();
@@ -371,27 +447,15 @@ public class GeoJSONUtil {
             }
             else if(jsonToken == JsonToken.NUMBER){
                 String value = reader.nextString();
-                try {
-                    double dfVal = Double.parseDouble(value);
-                    if(!isFieldsFilled){
-                        feature.getFields().add(new Field(GeoConstants.FTReal, name, name));
-                    }
-                    feature.setFieldValue(name, dfVal);
-                }
-                catch (NumberFormatException e){
-                    try{
-                        long lVal = Long.parseLong(value);
-                        if(!isFieldsFilled){
+                Object number = parseNumber(value);
+                if(null != number) {
+                    if (!isFieldsFilled) {
+                        if (number instanceof Double)
+                            feature.getFields().add(new Field(GeoConstants.FTReal, name, name));
+                        else
                             feature.getFields().add(new Field(GeoConstants.FTInteger, name, name));
-                        }
-                        feature.setFieldValue(name, lVal);
                     }
-                    catch (NumberFormatException e1){
-                        if(!isFieldsFilled){
-                            feature.getFields().add(new Field(GeoConstants.FTString, name, name));
-                        }
-                        feature.setFieldValue(name, value);
-                    }
+                    feature.setFieldValue(name, number);
                 }
             }
             else {
@@ -427,6 +491,19 @@ public class GeoJSONUtil {
         }
         reader.endObject();
         return isWGS;
+    }
+
+
+    public static boolean isGeoJsonHasFeatures(File path) throws IOException {
+        FileInputStream inputStream = new FileInputStream(path);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        char[] buffer = new char[Constants.IO_BUFFER_SIZE];
+        inputStreamReader.read(buffer, 0, Constants.IO_BUFFER_SIZE);
+        inputStream.close();
+
+        String testString = new String(buffer);
+
+        return testString.contains("\"features\": []");
     }
 
 }

@@ -27,7 +27,10 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.Log;
+
+import com.nextgis.maplib.map.TMSLayer;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,6 +41,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 
 public class FileUtil
@@ -277,5 +282,42 @@ public class FileUtil
 
     public static String getPathSeparator() {
         return "/";
+    }
+
+    public static void unzipEntry(
+            ZipInputStream zis,
+            ZipEntry entry,
+            byte[] buffer,
+            File outputDir)
+            throws IOException
+    {
+        String entryName = entry.getName();
+        int pos = entryName.indexOf('/');
+
+        //for backward capability where the zip has root directory named "mapnik"
+        if (pos != Constants.NOT_FOUND) {
+            String folderName = entryName.substring(0, pos);
+            if (!TextUtils.isDigitsOnly(folderName)) {
+                entryName = entryName.substring(pos, entryName.length());
+            }
+        }
+
+        if (entry.isDirectory()) {
+            FileUtil.createDir(new File(outputDir, entryName));
+            return;
+        }
+
+        //for prevent searching by media library
+        entryName = entryName.replace(".png", TMSLayer.TILE_EXT);
+        entryName = entryName.replace(".jpg", TMSLayer.TILE_EXT);
+        entryName = entryName.replace(".jpeg", TMSLayer.TILE_EXT);
+
+        File outputFile = new File(outputDir, entryName);
+        if (!outputFile.getParentFile().exists()) {
+            FileUtil.createDir(outputFile.getParentFile());
+        }
+        FileOutputStream fout = new FileOutputStream(outputFile);
+        FileUtil.copyStream(zis, fout, buffer, Constants.IO_BUFFER_SIZE);
+        fout.close();
     }
 }
