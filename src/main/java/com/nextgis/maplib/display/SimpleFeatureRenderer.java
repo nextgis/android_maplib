@@ -24,7 +24,6 @@
 package com.nextgis.maplib.display;
 
 import android.util.Log;
-import android.util.Pair;
 
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
@@ -317,6 +316,8 @@ public class SimpleFeatureRenderer
                     Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
             for(Long id : mFeatureIds) {
+                if(mLayer.isFeatureHidden(id))
+                    continue;
                 final GeoGeometry geometry = mLayer.getGeometryForId(id, mZoom);
                 if (geometry != null) {
                     final Style style = getStyle(id);

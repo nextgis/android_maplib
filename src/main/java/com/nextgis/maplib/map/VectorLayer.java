@@ -116,9 +116,9 @@ import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
-import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTNone;
 import static com.nextgis.maplib.util.GeoConstants.GTPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 /**
  * The vector layer class. It stores geometry and attributes.
@@ -247,6 +247,7 @@ public class VectorLayer
 
     protected IGeometryCache mCache;
     protected Map<String, Map<String, AttachItem>> mAttaches;
+    protected List<Long> mIgnoreFeatures;
 
     public VectorLayer(
             Context context,
@@ -281,6 +282,7 @@ public class VectorLayer
 
         mAttaches = new HashMap<>();
         mCache = new GeometryRTree();
+        mIgnoreFeatures = new LinkedList<>();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
 
@@ -1859,5 +1861,17 @@ public class VectorLayer
         for(IGeometryCacheItem item : items)
             result.add(item.getFeatureId());
         return result;
+    }
+
+    public void hideFeature(long featureId){
+        mIgnoreFeatures.add(featureId);
+    }
+
+    public void showFeature(long featureId){
+        mIgnoreFeatures.remove(featureId);
+    }
+
+    public boolean isFeatureHidden(long featureId){
+        return mIgnoreFeatures.contains(featureId);
     }
 }
