@@ -106,33 +106,35 @@ public class LocalTMSLayer
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        JSONArray jsonArray = new JSONArray();
-        rootConfig.put(JSON_LEVELS_KEY, jsonArray);
-        int nMaxLevel = 0;
-        int nMinLevel = 512;
-        for (Map.Entry<Integer, TileCacheLevelDescItem> entry : mLimits.entrySet()) {
-            int nLevelZ = entry.getKey();
-            TileCacheLevelDescItem item = entry.getValue();
-            JSONObject oJSONLevel = new JSONObject();
-            oJSONLevel.put(JSON_LEVEL_KEY, nLevelZ);
-            oJSONLevel.put(JSON_BBOX_MAXX_KEY, item.getMaxX());
-            oJSONLevel.put(JSON_BBOX_MAXY_KEY, item.getMaxY());
-            oJSONLevel.put(JSON_BBOX_MINX_KEY, item.getMinX());
-            oJSONLevel.put(JSON_BBOX_MINY_KEY, item.getMinY());
 
-            jsonArray.put(oJSONLevel);
+        if(null != mLimits) {
+            JSONArray jsonArray = new JSONArray();
+            rootConfig.put(JSON_LEVELS_KEY, jsonArray);
+            int nMaxLevel = 0;
+            int nMinLevel = 512;
+            for (Map.Entry<Integer, TileCacheLevelDescItem> entry : mLimits.entrySet()) {
+                int nLevelZ = entry.getKey();
+                TileCacheLevelDescItem item = entry.getValue();
+                JSONObject oJSONLevel = new JSONObject();
+                oJSONLevel.put(JSON_LEVEL_KEY, nLevelZ);
+                oJSONLevel.put(JSON_BBOX_MAXX_KEY, item.getMaxX());
+                oJSONLevel.put(JSON_BBOX_MAXY_KEY, item.getMaxY());
+                oJSONLevel.put(JSON_BBOX_MINX_KEY, item.getMinX());
+                oJSONLevel.put(JSON_BBOX_MINY_KEY, item.getMinY());
 
-            if (nMaxLevel < nLevelZ) {
-                nMaxLevel = nLevelZ;
+                jsonArray.put(oJSONLevel);
+
+                if (nMaxLevel < nLevelZ) {
+                    nMaxLevel = nLevelZ;
+                }
+                if (nMinLevel > nLevelZ) {
+                    nMinLevel = nLevelZ;
+                }
             }
-            if (nMinLevel > nLevelZ) {
-                nMinLevel = nLevelZ;
-            }
+
+            rootConfig.put(JSON_MAXLEVEL_KEY, nMaxLevel);
+            rootConfig.put(JSON_MINLEVEL_KEY, nMinLevel);
         }
-
-        rootConfig.put(JSON_MAXLEVEL_KEY, nMaxLevel);
-        rootConfig.put(JSON_MINLEVEL_KEY, nMinLevel);
-
         return rootConfig;
     }
 
@@ -143,16 +145,19 @@ public class LocalTMSLayer
     {
         super.fromJSON(jsonObject);
         mLimits = new HashMap<>();
-        final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LEVELS_KEY);
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonLevel = jsonArray.getJSONObject(i);
-            int nLevel = jsonLevel.getInt(JSON_LEVEL_KEY);
-            int nMaxX = jsonLevel.getInt(JSON_BBOX_MAXX_KEY);
-            int nMaxY = jsonLevel.getInt(JSON_BBOX_MAXY_KEY);
-            int nMinX = jsonLevel.getInt(JSON_BBOX_MINX_KEY);
-            int nMinY = jsonLevel.getInt(JSON_BBOX_MINY_KEY);
 
-            mLimits.put(nLevel, new TileCacheLevelDescItem(nMaxX, nMinX, nMaxY, nMinY));
+        if(jsonObject.has(JSON_LEVELS_KEY)) {
+            final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LEVELS_KEY);
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jsonLevel = jsonArray.getJSONObject(i);
+                int nLevel = jsonLevel.getInt(JSON_LEVEL_KEY);
+                int nMaxX = jsonLevel.getInt(JSON_BBOX_MAXX_KEY);
+                int nMaxY = jsonLevel.getInt(JSON_BBOX_MAXY_KEY);
+                int nMinX = jsonLevel.getInt(JSON_BBOX_MINX_KEY);
+                int nMinY = jsonLevel.getInt(JSON_BBOX_MINY_KEY);
+
+                mLimits.put(nLevel, new TileCacheLevelDescItem(nMaxX, nMinX, nMaxY, nMinY));
+            }
         }
     }
 
@@ -231,7 +236,9 @@ public class LocalTMSLayer
 
     @Override
     public GeoEnvelope getExtents() {
-        Integer firstZoom = 100;
+        if(null == mLimits)
+            return new GeoEnvelope();
+        Integer firstZoom = GeoConstants.DEFAULT_MAX_ZOOM;
         for(Integer key: mLimits.keySet()){
             if(key < firstZoom)
                 firstZoom = key;
