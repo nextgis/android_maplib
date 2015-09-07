@@ -237,7 +237,7 @@ public class LocalTMSLayer
     @Override
     public GeoEnvelope getExtents() {
         if(null == mLimits)
-            return new GeoEnvelope();
+            return super.getExtents();
         Integer firstZoom = GeoConstants.DEFAULT_MAX_ZOOM;
         for(Integer key: mLimits.keySet()){
             if(key < firstZoom)
@@ -315,6 +315,11 @@ public class LocalTMSLayer
             if(null != progressor) {
                 progressor.setValue(counter++);
             }
+
+            if(zoomLevel.getName().equals(Constants.CONFIG)){
+                continue;
+            }
+
             int nMaxX = 0;
             int nMinX = 10000000;
             int nMaxY = 0;
@@ -363,5 +368,15 @@ public class LocalTMSLayer
         }
 
         save();
+    }
+
+    @Override
+    public boolean isValid() {
+        return null != mLimits;
+    }
+
+    @Override
+    public void notifyUpdateAll() {
+        load();
     }
 }

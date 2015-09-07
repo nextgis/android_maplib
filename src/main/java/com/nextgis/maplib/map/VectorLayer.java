@@ -206,16 +206,6 @@ public class VectorLayer
     protected static final String JSON_GEOMETRY_TYPE_KEY = "geometry_type";
     protected static final String JSON_FIELDS_KEY = "fields";
 
-    public static final String NOTIFY_DELETE = "com.nextgis.maplib.notify_delete";
-    public static final String NOTIFY_DELETE_ALL = "com.nextgis.maplib.notify_delete_all";
-    public static final String NOTIFY_INSERT = "com.nextgis.maplib.notify_insert";
-    public static final String NOTIFY_UPDATE = "com.nextgis.maplib.notify_update";
-    public static final String NOTIFY_UPDATE_ALL = "com.nextgis.maplib.notify_update_all";
-    public static final String NOTIFY_UPDATE_FIELDS = "com.nextgis.maplib.notify_update_fields";
-    public static final String NOTIFY_FEATURE_ID_CHANGE = "com.nextgis.maplib.notify_change_id";
-    public static final String NOTIFY_LAYER_NAME = "layer_name";
-
-
     protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
     protected static final String NO_SYNC = "no_sync";
 
@@ -1138,9 +1128,9 @@ public class VectorLayer
                 }
             }
 
-            Intent notify = new Intent(NOTIFY_INSERT);
+            Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
-            notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
         }
 
@@ -1285,12 +1275,12 @@ public class VectorLayer
 
             Intent notify;
             if (rowId == NOT_FOUND) {
-                notify = new Intent(NOTIFY_DELETE_ALL);
+                notify = new Intent(Constants.NOTIFY_DELETE_ALL);
             } else {
-                notify = new Intent(NOTIFY_DELETE);
+                notify = new Intent(Constants.NOTIFY_DELETE);
                 notify.putExtra(FIELD_ID, rowId);
             }
-            notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
         }
         return result;
@@ -1454,13 +1444,13 @@ public class VectorLayer
             Intent notify;
             if (rowId == NOT_FOUND) {
                 if (values.containsKey(FIELD_GEOM)) {
-                    notify = new Intent(NOTIFY_UPDATE_ALL);
-                    notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                    notify = new Intent(Constants.NOTIFY_UPDATE_ALL);
+                    notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                     getContext().sendBroadcast(notify);
                 }
             } else {
                 if (values.containsKey(FIELD_GEOM) || values.containsKey(FIELD_ID)) {
-                    notify = new Intent(NOTIFY_UPDATE);
+                    notify = new Intent(Constants.NOTIFY_UPDATE);
                     boolean bNotify = false;
                     if (values.containsKey(FIELD_GEOM)) {
                         notify.putExtra(FIELD_ID, rowId);
@@ -1477,12 +1467,12 @@ public class VectorLayer
 
                     if (bNotify) {
                         notify.putExtra(
-                                NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                                Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                         getContext().sendBroadcast(notify);
                     }
 
                 } else {
-                    notify = new Intent(NOTIFY_UPDATE_FIELDS);
+                    notify = new Intent(Constants.NOTIFY_UPDATE_FIELDS);
                     notify.putExtra(FIELD_ID, rowId);
                     getContext().sendBroadcast(notify);
                 }
@@ -1786,7 +1776,7 @@ public class VectorLayer
         saveAttach(featureId);
     }
 
-
+    @Override
     public void notifyDelete(long rowId) {
         //remove cached item
         if (mCache.removeItem(rowId) != null) {
@@ -1794,14 +1784,14 @@ public class VectorLayer
         }
     }
 
-
+    @Override
     public void notifyDeleteAll() {
         //clear cache
         mCache.clear();
         notifyLayerChanged();
     }
 
-
+    @Override
     public void notifyInsert(long rowId) {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
@@ -1811,7 +1801,7 @@ public class VectorLayer
         }
     }
 
-
+    @Override
     public void notifyUpdate(
             long rowId,
             long oldRowId) {
@@ -1830,7 +1820,7 @@ public class VectorLayer
         }
     }
 
-
+    @Override
     public void notifyUpdateAll() {
         reloadCache();
         notifyLayerChanged();

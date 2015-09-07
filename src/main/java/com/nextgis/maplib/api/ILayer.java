@@ -110,4 +110,10 @@ public interface ILayer
      * @return Is layer valid (all data are present, .etc.)
      */
     boolean isValid();
+
+    void notifyUpdateAll();
+    void notifyUpdate(long rowId, long oldRowId);
+    void notifyInsert(long rowId);
+    void notifyDeleteAll();
+    void notifyDelete(long rowId);
 }

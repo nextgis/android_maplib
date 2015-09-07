@@ -86,6 +86,19 @@ public interface Constants
     String MAP_EXT      = ".ngm";
 
     /**
+     * notifications
+     */
+    String NOTIFY_DELETE = "com.nextgis.maplib.notify_delete";
+    String NOTIFY_DELETE_ALL = "com.nextgis.maplib.notify_delete_all";
+    String NOTIFY_INSERT = "com.nextgis.maplib.notify_insert";
+    String NOTIFY_UPDATE = "com.nextgis.maplib.notify_update";
+    String NOTIFY_UPDATE_ALL = "com.nextgis.maplib.notify_update_all";
+    String NOTIFY_UPDATE_FIELDS = "com.nextgis.maplib.notify_update_fields";
+    String NOTIFY_FEATURE_ID_CHANGE = "com.nextgis.maplib.notify_change_id";
+
+    String NOTIFY_LAYER_NAME = "layer_name";
+
+    /**
      * JSON keys
      */
     String JSON_ID_KEY            = "id";

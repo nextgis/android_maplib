@@ -30,14 +30,18 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
+import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 
@@ -78,10 +82,14 @@ public class MapContentProviderHelper
 
         // register events from layers modify in services or other applications
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(VectorLayer.NOTIFY_DELETE);
-        intentFilter.addAction(VectorLayer.NOTIFY_DELETE_ALL);
-        intentFilter.addAction(VectorLayer.NOTIFY_INSERT);
-        intentFilter.addAction(VectorLayer.NOTIFY_UPDATE);
+        intentFilter.addAction(Constants.NOTIFY_DELETE);
+        intentFilter.addAction(Constants.NOTIFY_DELETE_ALL);
+        intentFilter.addAction(Constants.NOTIFY_INSERT);
+        intentFilter.addAction(Constants.NOTIFY_UPDATE);
+        intentFilter.addAction(Constants.NOTIFY_UPDATE_ALL);
+        intentFilter.addAction(Constants.NOTIFY_UPDATE_FIELDS);
+        intentFilter.addAction(Constants.NOTIFY_FEATURE_ID_CHANGE);
+
         context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
     }
 
@@ -147,7 +155,7 @@ public class MapContentProviderHelper
     }
 
 
-    protected class VectorLayerNotifyReceiver
+    public class VectorLayerNotifyReceiver
             extends BroadcastReceiver
     {
 
@@ -159,56 +167,36 @@ public class MapContentProviderHelper
             // extreme logging commented
             //Log.d(TAG, "Receive notify: " + intent.getAction());
 
-            VectorLayer layer;
+            if(!intent.hasExtra(Constants.NOTIFY_LAYER_NAME))
+                return;
+
+            ILayer layer = getVectorLayerByPath(MapContentProviderHelper.this,
+                    intent.getStringExtra(Constants.NOTIFY_LAYER_NAME));
+            if(null == layer)
+                return;
 
             switch (intent.getAction()) {
 
-                case VectorLayer.NOTIFY_DELETE:
-                    layer = (VectorLayer) getVectorLayerByPath(
-                            MapContentProviderHelper.this,
-                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                    if (null != layer) {
-                        layer.notifyDelete(
-                                intent.getLongExtra(FIELD_ID, NOT_FOUND));
-                    }
+                case Constants.NOTIFY_DELETE:
+                    layer.notifyDelete(intent.getLongExtra(FIELD_ID, NOT_FOUND));
                     break;
 
-                case VectorLayer.NOTIFY_DELETE_ALL:
-                    layer = (VectorLayer) getVectorLayerByPath(
-                            MapContentProviderHelper.this,
-                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                    if (null != layer) {
-                        layer.notifyDeleteAll();
-                    }
+                case Constants.NOTIFY_DELETE_ALL:
+                    layer.notifyDeleteAll();
                     break;
 
-                case VectorLayer.NOTIFY_UPDATE:
-                    layer = (VectorLayer) getVectorLayerByPath(
-                            MapContentProviderHelper.this,
-                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                    if (null != layer) {
-                        layer.notifyUpdate(
+                case Constants.NOTIFY_UPDATE:
+                    layer.notifyUpdate(
                                 intent.getLongExtra(FIELD_ID, NOT_FOUND),
                                 intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND));
-                    }
                     break;
 
-                case VectorLayer.NOTIFY_UPDATE_ALL:
-                    layer = (VectorLayer) getVectorLayerByPath(
-                            MapContentProviderHelper.this,
-                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                    if (null != layer) {
-                        layer.notifyUpdateAll();
-                    }
+                case Constants.NOTIFY_UPDATE_ALL:
+                    layer.notifyUpdateAll();
                     break;
 
-                case VectorLayer.NOTIFY_INSERT:
-                    layer = (VectorLayer) getVectorLayerByPath(
-                            MapContentProviderHelper.this,
-                            intent.getStringExtra(VectorLayer.NOTIFY_LAYER_NAME));
-                    if (null != layer) {
-                        layer.notifyInsert(intent.getLongExtra(FIELD_ID, NOT_FOUND));
-                    }
+                case Constants.NOTIFY_INSERT:
+                    layer.notifyInsert(intent.getLongExtra(FIELD_ID, NOT_FOUND));
                     break;
             }
         }

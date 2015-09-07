@@ -29,19 +29,22 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import com.nextgis.maplib.api.IGeometryCache;
-import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.VectorLayer;
+import com.nextgis.maplib.util.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class RuleFeatureRenderer
@@ -84,11 +87,11 @@ public class RuleFeatureRenderer
     {
         // register events from layers modify in services or other applications
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(VectorLayer.NOTIFY_DELETE);
-        intentFilter.addAction(VectorLayer.NOTIFY_DELETE_ALL);
-        intentFilter.addAction(VectorLayer.NOTIFY_INSERT);
-        intentFilter.addAction(VectorLayer.NOTIFY_UPDATE);
-        intentFilter.addAction(VectorLayer.NOTIFY_UPDATE_FIELDS);
+        intentFilter.addAction(Constants.NOTIFY_DELETE);
+        intentFilter.addAction(Constants.NOTIFY_DELETE_ALL);
+        intentFilter.addAction(Constants.NOTIFY_INSERT);
+        intentFilter.addAction(Constants.NOTIFY_UPDATE);
+        intentFilter.addAction(Constants.NOTIFY_UPDATE_FIELDS);
         mLayer.getContext().registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
 
         initParametrizedStyles();
@@ -192,17 +195,17 @@ public class RuleFeatureRenderer
 
                 switch (intent.getAction()) {
 
-                    case VectorLayer.NOTIFY_DELETE:
+                    case Constants.NOTIFY_DELETE:
                         featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
                         mParametrizedStyles.remove(featureId);
                         break;
 
-                    case VectorLayer.NOTIFY_DELETE_ALL:
+                    case Constants.NOTIFY_DELETE_ALL:
                         mParametrizedStyles.clear();
                         break;
 
-                    case VectorLayer.NOTIFY_UPDATE:
-                    case VectorLayer.NOTIFY_UPDATE_FIELDS:
+                    case Constants.NOTIFY_UPDATE:
+                    case Constants.NOTIFY_UPDATE_FIELDS:
                         featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
                         putParametrizedStyle(featureId);
 
@@ -213,11 +216,11 @@ public class RuleFeatureRenderer
 
                         break;
 
-                    case VectorLayer.NOTIFY_UPDATE_ALL:
+                    case Constants.NOTIFY_UPDATE_ALL:
                         initParametrizedStyles();
                         break;
 
-                    case VectorLayer.NOTIFY_INSERT:
+                    case Constants.NOTIFY_INSERT:
                         featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
                         putParametrizedStyle(featureId);
                         break;

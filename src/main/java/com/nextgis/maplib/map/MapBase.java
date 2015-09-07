@@ -145,4 +145,9 @@ public class MapBase
         return null;
     }
 
+    @Override
+    public void clearLayers() {
+        super.clearLayers();
+        mNewId = 0;
+    }
 }

@@ -309,7 +309,7 @@ public class TMSRenderer
             } catch (CancellationException | InterruptedException e) {
                 //e.printStackTrace();
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
 

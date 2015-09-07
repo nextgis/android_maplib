@@ -31,6 +31,7 @@ import android.util.Log;
 
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -140,7 +141,7 @@ public class RemoteTMSLayer
     }
 
     @Override
-    public Bitmap getBitmap(TileItem tile)
+    public Bitmap getBitmap(final TileItem tile)
     {
         if (null == tile) {
             return null;
@@ -155,22 +156,25 @@ public class RemoteTMSLayer
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
         //Log.d(TAG, "time diff: " + (System.currentTimeMillis() - tilePath.lastModified()) + " age: " + DEFAULT_TILE_MAX_AGE);
-        if (exist && System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge) {
+        if (exist) {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
             if (ret != null) {
                 putBitmapToCache(tile.getHash(), ret);
+                if(System.currentTimeMillis() - tilePath.lastModified() > mTileMaxAge) {
+                    Log.d(Constants.TAG, "Update old tile " + tile.toString());
+                    // update tile
+                    new Thread(new Runnable() {
+                        public void run() {
+                            downloadTile(tile);
+                        }
+                    }).start();
+                }
                 return ret;
             }
         }
 
         if (!mNet.isNetworkAvailable()) { //return tile from cache
-            if (exist) {
-                ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-                putBitmapToCache(tile.getHash(), ret);
-                return ret;
-            } else {
-                return null;
-            }
+            return null;
         }
 
         // try to get tile from remote
@@ -209,9 +213,10 @@ public class RemoteTMSLayer
         if (exist) //if exist but not reload from internet
         {
             ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+            putBitmapToCache(tile.getHash(), ret);
+            return ret;
         }
-        putBitmapToCache(tile.getHash(), ret);
-        return ret;
+        return null;
     }
 
 

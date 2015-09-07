@@ -241,9 +241,9 @@ public class NGWVectorLayer
                 e.printStackTrace();
             }
 
-            Intent notify = new Intent(NOTIFY_INSERT);
+            Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
-            notify.putExtra(NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
         }
 

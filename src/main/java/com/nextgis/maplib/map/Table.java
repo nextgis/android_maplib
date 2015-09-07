@@ -197,6 +197,31 @@ public class Table implements ILayer, IJSONStore {
     }
 
     @Override
+    public void notifyUpdateAll() {
+
+    }
+
+    @Override
+    public void notifyUpdate(long rowId, long oldRowId) {
+
+    }
+
+    @Override
+    public void notifyInsert(long rowId) {
+
+    }
+
+    @Override
+    public void notifyDeleteAll() {
+
+    }
+
+    @Override
+    public void notifyDelete(long rowId) {
+
+    }
+
+    @Override
     public GeoEnvelope getExtents()
     {
         return null;
