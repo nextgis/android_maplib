@@ -477,7 +477,9 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
 
         final ContentValues values = new ContentValues();
-        values.put(FIELD_ID, feature.getId());
+        if(feature.getId() != Constants.NOT_FOUND)
+            values.put(FIELD_ID, feature.getId());
+
         try {
             values.put(FIELD_GEOM, feature.getGeometry().toBlob());
         } catch (IOException e) {
@@ -533,13 +535,13 @@ public class VectorLayer
         }
 
         Log.d(TAG, "Inserting " + values);
-        if (db.insert(mPath.getName(), "", values) > 0) {
-
+        long rowId = db.insert(mPath.getName(), "", values);
+        if (rowId != Constants.NOT_FOUND) {
             if (null == feature.getGeometry()) {
                 return;
             }
 
-            addGeometryToCache(feature.getId(), feature.getGeometry());
+            addGeometryToCache(rowId, feature.getGeometry());
 
             //update bbox
             mExtents.merge(feature.getGeometry().getEnvelope());
@@ -588,7 +590,6 @@ public class VectorLayer
     }
 
     protected void addGeometryToCache(long featureId, GeoGeometry geometry) {
-        mCache.addItem(featureId, geometry.getEnvelope());
         File cachePath = new File(mPath, CACHE);
         if(geometry.getType() == GeoConstants.GTPoint){
             for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
@@ -627,6 +628,7 @@ public class VectorLayer
                 geometry = newGeometry;
             }
         }
+        mCache.addItem(featureId, geometry.getEnvelope());
     }
 
     protected void deleteGeometryFromCache(long featureId) {
@@ -1116,7 +1118,7 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         long rowId = db.insert(mPath.getName(), null, contentValues);
 
-        if (rowId != NOT_FOUND) {
+        if (rowId != Constants.NOT_FOUND) {
 
             // add geometry to tiles
             if (contentValues.containsKey(FIELD_GEOM)) {
@@ -1192,7 +1194,7 @@ public class VectorLayer
         switch (uriType) {
             case TYPE_TABLE:
                 long rowID = insert(contentValues);
-                if (rowID != NOT_FOUND) {
+                if (rowID != Constants.NOT_FOUND) {
                     Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
@@ -1651,6 +1653,8 @@ public class VectorLayer
 
 
     public List<Field> getFields() {
+        if(null == mFields)
+            return null;
         return new LinkedList<>(mFields.values());
     }
 

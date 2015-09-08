@@ -362,7 +362,7 @@ public class GeoJSONUtil {
                 while (reader.hasNext()) {
                     Feature feature = readGeoJSONFeature(reader, layer, isWGS84);
                     if(null != feature) {
-                        if(layer.getFields() != null && !layer.getFields().isEmpty()){
+                        if(layer.getFields() == null || layer.getFields().isEmpty()){
                             layer.create(feature.getGeometry().getType(), feature.getFields());
                         }
                         if(feature.getGeometry() != null) {
