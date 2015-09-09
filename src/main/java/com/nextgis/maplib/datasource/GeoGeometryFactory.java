@@ -36,9 +36,25 @@ import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_COORDINATES;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRIES;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_GeometryCollection;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_LineString;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_MultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_MultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_MultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_Point;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_Polygon;
+import static com.nextgis.maplib.util.GeoConstants.GTGeometryCollection;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
 /**
@@ -193,8 +209,10 @@ public class GeoGeometryFactory
             return null;
         }
         ByteArrayInputStream in = new ByteArrayInputStream(raw);
-        ObjectInputStream is = new ObjectInputStream(in);
-        return (GeoGeometry) is.readObject();
+        DataInputStream dataInputStream = new DataInputStream(in);
+        return fromDataStream(dataInputStream);
+        //ObjectInputStream is = new ObjectInputStream(in);
+        //return (GeoGeometry) is.readObject();
     }
 
 

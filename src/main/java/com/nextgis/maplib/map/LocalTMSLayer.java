@@ -281,8 +281,9 @@ public class LocalTMSLayer
             throw new NGException(mContext.getString(R.string.error_download_data));
         }
 
+        int streamSize = inputStream.available();
         if(null != progressor){
-            progressor.setMax(inputStream.available());
+            progressor.setMax(streamSize);
         }
 
         int increment = 0;
@@ -295,7 +296,11 @@ public class LocalTMSLayer
             increment += ze.getSize();
             zis.closeEntry();
             if(null != progressor){
+                if(progressor.isCanceled())
+                    return;
                 progressor.setValue(increment);
+                progressor.setMessage(getContext().getString(R.string.proceed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
+
             }
         }
 
@@ -313,7 +318,11 @@ public class LocalTMSLayer
 
         for (File zoomLevel : zoomLevels) {
             if(null != progressor) {
+                if(progressor.isCanceled())
+                    return;
                 progressor.setValue(counter++);
+                progressor.setMessage(getContext().getString(R.string.proceed) + " " + counter + " " + getContext().getString(R.string.of) + " " + zoomLevels.length);
+
             }
 
             if(zoomLevel.getName().equals(Constants.CONFIG)){

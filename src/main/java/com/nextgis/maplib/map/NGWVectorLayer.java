@@ -77,7 +77,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
 import static com.nextgis.maplib.util.Constants.FIELD_ID;
 import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
@@ -209,17 +208,24 @@ public class NGWVectorLayer
 
     @Override
     protected long insert(ContentValues contentValues) {
-        if (!contentValues.containsKey(FIELD_GEOM)) {
+        if (!contentValues.containsKey(Constants.FIELD_GEOM)) {
             return 0;
         }
 
+        try{
+            GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(Constants.FIELD_GEOM));
+            prepareGeometry(geometry, contentValues);
+        }
+        catch (IOException | ClassNotFoundException e){
+            e.printStackTrace();
+        }
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
             throw new IllegalArgumentException(
                     "The map should extends MapContentProviderHelper or inherited");
         }
 
-        if (!contentValues.containsKey(FIELD_ID)) {
+        if (!contentValues.containsKey(Constants.FIELD_ID)) {
 
             long id = getUniqId();
             if (MIN_LOCAL_FEATURE_ID > id) {
@@ -233,13 +239,6 @@ public class NGWVectorLayer
 
         if (rowId != NOT_FOUND) {
 
-            // add geometry to tiles
-            try {
-                GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(FIELD_GEOM));
-                addGeometryToCache(rowId, geometry);
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
 
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
@@ -386,6 +385,7 @@ public class NGWVectorLayer
                     if(progressor.isCanceled())
                         break;
                     progressor.setValue(featureCount++);
+                    progressor.setMessage(getContext().getString(R.string.proceed) + " " + featureCount + " " + getContext().getString(R.string.of) + " " + features.size());
                 }
             }
 
@@ -881,7 +881,7 @@ public class NGWVectorLayer
         }
 
         //update id in cache
-        changeGeometryIdInTiles(oldFeatureId, newFeatureId);
+        mCache.changeId(oldFeatureId, newFeatureId);
 
         //rename photo id folder if exist
         File photoFolder = new File(mPath, "" + oldFeatureId);

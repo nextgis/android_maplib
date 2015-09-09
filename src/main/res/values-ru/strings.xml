@@ -39,4 +39,7 @@
     <string name="error_layer_create">Не удалось создать слой</string>
     <string name="start_fill_layer">Start fill layer with data</string>
     <string name="message_opening">Открывается…</string>
+    <string name="proceed_features">Proceed features</string>
+    <string name="proceed">Proceed</string>
+    <string name="of">of</string>
 </resources>

@@ -23,10 +23,14 @@
 package com.nextgis.maplib.datasource;
 
 import com.nextgis.maplib.api.IJSONStore;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXX_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXY_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_BBOX_MINX_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_BBOX_MINY_KEY;
 
 
 public class GeoEnvelope
@@ -208,15 +212,15 @@ public class GeoEnvelope
 
     public final boolean intersects(final GeoEnvelope other)
     {
-        return mMinX <= other.mMaxX && mMaxX >= other.mMinX && mMinY <= other.mMaxY &&
-               mMaxY >= other.mMinY;
+        return mMinX <= other.mMaxX && mMaxX >= other.mMinX &&
+               mMinY <= other.mMaxY && mMaxY >= other.mMinY;
     }
 
 
     public final boolean contains(final GeoEnvelope other)
     {
-        return mMinX <= other.mMinX && mMinY <= other.mMinY && mMaxX >= other.mMaxX &&
-               mMaxY >= other.mMaxY;
+        return mMinX <= other.mMinX && mMinY <= other.mMinY &&
+               mMaxX >= other.mMaxX && mMaxY >= other.mMaxY;
     }
 
 

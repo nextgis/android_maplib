@@ -99,7 +99,15 @@ public class MapContentProviderHelper
         if (readOnly) {
             return mDatabaseHelper.getReadableDatabase();
         } else {
-            return mDatabaseHelper.getWritableDatabase();
+            SQLiteDatabase db = mDatabaseHelper.getWritableDatabase();
+
+            // speedup writing
+            db.rawQuery("PRAGMA synchronous=OFF", null);
+            db.rawQuery("PRAGMA locking_mode=EXCLUSIVE", null);
+            db.rawQuery("PRAGMA journal_mode=OFF", null);
+            db.rawQuery("PRAGMA count_changes=OFF", null);
+            db.rawQuery("PRAGMA cache_size=15000", null);
+            return db;
         }
     }
 

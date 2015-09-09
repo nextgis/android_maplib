@@ -130,6 +130,7 @@ public interface Constants
     String FIELD_ID               = "_id";
     String FIELD_OLD_ID           = "old_id";
     String FIELD_GEOM             = "_geom";
+    String FIELD_GEOM_            = "_geom_";
     String FIELD_FEATURE_ID       = "feature_id";
     String FIELD_OPERATION        = "operation";
     String FIELD_ATTACH_ID        = "attach_id";

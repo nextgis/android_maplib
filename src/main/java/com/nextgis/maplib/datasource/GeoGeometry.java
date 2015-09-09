@@ -34,10 +34,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WGS84;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_COORDINATES;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_GeometryCollection;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_LineString;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_MultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_MultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_MultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_Point;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_Polygon;
+import static com.nextgis.maplib.util.GeoConstants.GTGeometryCollection;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
 public abstract class GeoGeometry
@@ -132,8 +149,10 @@ public abstract class GeoGeometry
             throws IOException
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ObjectOutputStream os = new ObjectOutputStream(out);
-        os.writeObject(this);
+        DataOutputStream dataOutputStream = new DataOutputStream(out);
+        write(dataOutputStream);
+        /*ObjectOutputStream os = new ObjectOutputStream(out);
+        os.writeObject(this);*/
         return out.toByteArray();
     }
 

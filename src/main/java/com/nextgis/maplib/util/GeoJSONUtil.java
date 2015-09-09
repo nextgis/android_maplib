@@ -144,8 +144,19 @@ public class GeoJSONUtil {
 
         layer.create(geometryType, fields);
 
+        if(null != progressor){
+            progressor.setIndeterminate(false);
+            progressor.setMax(features.size());
+        }
+
+        int counter = 0;
         for(Feature feature : features){
             layer.createFeature(feature);
+            if(null != progressor){
+                if(progressor.isCanceled())
+                    break;
+                progressor.setValue(counter++);
+            }
         }
 
         layer.notifyLayerChanged();
@@ -201,6 +212,8 @@ public class GeoJSONUtil {
 
         for (int i = 0; i < geoJSONFeatures.length(); i++) {
             if(null != progressor){
+                if(progressor.isCanceled())
+                    break;
                 progressor.setValue(i);
             }
 
@@ -261,6 +274,8 @@ public class GeoJSONUtil {
         for(Feature feature : features){
             layer.createFeature(feature);
             if(null != progressor){
+                if (progressor.isCanceled())
+                    break;
                 progressor.setValue(counter++);
             }
         }
@@ -316,6 +331,7 @@ public class GeoJSONUtil {
 
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         boolean isWGS84 = srs == GeoConstants.CRS_WGS84;
+        long counter = 0;
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
@@ -329,6 +345,11 @@ public class GeoJSONUtil {
                         }
                         if(feature.getGeometry() != null) {
                             layer.createFeature(feature);
+                            if(null != progressor){
+                                if (progressor.isCanceled())
+                                    return;
+                                progressor.setMessage(layer.getContext().getString(R.string.proceed_features) + ": " + counter++);
+                            }
                         }
                     }
                 }
@@ -351,6 +372,7 @@ public class GeoJSONUtil {
 
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         boolean isWGS84 = true;
+        long counter = 0;
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
@@ -367,6 +389,11 @@ public class GeoJSONUtil {
                         }
                         if(feature.getGeometry() != null) {
                             layer.createFeature(feature);
+                            if(null != progressor){
+                                if (progressor.isCanceled())
+                                    return;
+                                progressor.setMessage(layer.getContext().getString(R.string.proceed_features) + ": " + counter++);
+                            }
                         }
                     }
                 }

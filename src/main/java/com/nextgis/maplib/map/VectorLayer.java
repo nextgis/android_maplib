@@ -75,12 +75,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -99,7 +96,6 @@ import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
 import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
 import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
 import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
@@ -215,8 +211,6 @@ public class VectorLayer
     protected static final int TYPE_ATTACH_ID = 4;
 
     protected static final String META = "meta.json";
-    protected static final String CACHE = "cache";
-    protected static final String SAMPLE_EXT = ".samp";
     protected static final String RTREE = "rtree";
 
     public static final String ATTACH_DISPLAY_NAME = MediaStore.MediaColumns.DISPLAY_NAME;
@@ -309,26 +303,29 @@ public class VectorLayer
 
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " +
                 //table name is the same as the folder of the layer
-                FIELD_ID + " INTEGER PRIMARY KEY, " +
-                FIELD_GEOM + " BLOB";
+                Constants.FIELD_ID + " INTEGER PRIMARY KEY, ";
+        for(int i = 2; i <= GeoConstants.DEFAULT_CACHE_MAX_ZOOM; i+= 2){
+            tableCreate += Constants.FIELD_GEOM_ + i + " BLOB, ";
+        }
+        tableCreate += Constants.FIELD_GEOM + " BLOB";
         for (int i = 0; i < fields.size(); ++i) {
             Field field = fields.get(i);
 
-            tableCreate += ", " + field.getName() + " ";
+            tableCreate += ", " + field.getName();
             switch (field.getType()) {
                 case FTString:
-                    tableCreate += "TEXT";
+                    tableCreate += " TEXT";
                     break;
                 case FTInteger:
-                    tableCreate += "INTEGER";
+                    tableCreate += " INTEGER";
                     break;
                 case FTReal:
-                    tableCreate += "REAL";
+                    tableCreate += " REAL";
                     break;
                 case FTDateTime:
                 case FTDate:
                 case FTTime:
-                    tableCreate += "TIMESTAMP";
+                    tableCreate += " TIMESTAMP";
                     break;
             }
         }
@@ -478,10 +475,10 @@ public class VectorLayer
 
         final ContentValues values = new ContentValues();
         if(feature.getId() != Constants.NOT_FOUND)
-            values.put(FIELD_ID, feature.getId());
+            values.put(Constants.FIELD_ID, feature.getId());
 
         try {
-            values.put(FIELD_GEOM, feature.getGeometry().toBlob());
+            prepareGeometry(feature.getGeometry(), values);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -541,60 +538,40 @@ public class VectorLayer
                 return;
             }
 
-            addGeometryToCache(rowId, feature.getGeometry());
-
             //update bbox
-            mExtents.merge(feature.getGeometry().getEnvelope());
-
+            cacheGeometryEnvelope(rowId, feature.getGeometry());
             save();
         }
     }
 
-    protected void saveGeometryToFile(GeoGeometry geometry, File file) {
-        try {
-            FileUtil.createDir(file.getParentFile());
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            DataOutputStream dataOutputStream = new DataOutputStream(fileOutputStream);
-            geometry.write(dataOutputStream);
-            dataOutputStream.flush();
-            dataOutputStream.close();
-            fileOutputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    protected void cacheGeometryEnvelope(final long rowId, final GeoGeometry geoGeometry){
+        GeoEnvelope envelope;
+        if(geoGeometry.getType() == GeoConstants.GTPoint){
+            GeoPoint pt = (GeoPoint) geoGeometry;
+            double delta = 0.05;
+            envelope = new GeoEnvelope(pt.getX() - delta, pt.getX() + delta, pt.getY() - delta, pt.getY() + delta);
         }
-    }
-
-    protected GeoGeometry loadGeometryFromFile(File file) {
-        if (!file.exists()) {
-            return null;
+        else {
+            envelope = geoGeometry.getEnvelope();
         }
-        try {
-            FileInputStream fileInputStream = new FileInputStream(file);
-            DataInputStream dataInputStream = new DataInputStream(fileInputStream);
-            GeoGeometry geometry = GeoGeometryFactory.fromDataStream(dataInputStream);
-
-            dataInputStream.close();
-            fileInputStream.close();
-
-            return geometry;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        mExtents.merge(envelope);
+        mCache.addItem(rowId, envelope);
     }
 
     protected boolean checkPointOverlaps(GeoPoint pt, double tolerance){
-        GeoEnvelope envelope = new GeoEnvelope(pt.getX() - tolerance, pt.getX() + tolerance,
-                                               pt.getY() - tolerance, pt.getY() + tolerance);
+        double halfTolerance = tolerance * 0.5;
+        GeoEnvelope envelope = new GeoEnvelope(pt.getX() - halfTolerance, pt.getX() + halfTolerance,
+                                               pt.getY() - halfTolerance, pt.getY() + halfTolerance);
         return !mCache.search(envelope).isEmpty();
     }
 
-    protected void addGeometryToCache(long featureId, GeoGeometry geometry) {
-        File cachePath = new File(mPath, CACHE);
+    protected void prepareGeometry(GeoGeometry geometry, final ContentValues values) throws IOException {
+        values.put(Constants.FIELD_GEOM, geometry.toBlob());
+
         if(geometry.getType() == GeoConstants.GTPoint){
             for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
                 if(!checkPointOverlaps((GeoPoint) geometry, MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX)){
-                    saveGeometryToFile(geometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                    values.put(Constants.FIELD_GEOM_ + zoom, geometry.toBlob());
                 }
             }
         }
@@ -607,14 +584,14 @@ public class VectorLayer
                 }
                 else if(multiPoint.size() == 1){
                     if(!checkPointOverlaps(multiPoint.get(0), MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX)){
-                        saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                        values.put(Constants.FIELD_GEOM_ + zoom, newGeometry.toBlob());
                     }
                     else {
                         break;
                     }
                 }
                 else {
-                    saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                    values.put(Constants.FIELD_GEOM_ + zoom, newGeometry.toBlob());
                 }
                 geometry = newGeometry;
             }
@@ -624,34 +601,8 @@ public class VectorLayer
                 GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
                 if(null == newGeometry)
                     break;
-                saveGeometryToFile(newGeometry, new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
+                values.put(Constants.FIELD_GEOM_ + zoom, newGeometry.toBlob());
                 geometry = newGeometry;
-            }
-        }
-        mCache.addItem(featureId, geometry.getEnvelope());
-    }
-
-    protected void deleteGeometryFromCache(long featureId) {
-        mCache.removeItem(featureId);
-        File cachePath = new File(mPath, CACHE);
-        for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
-            FileUtil.deleteRecursive(new File(cachePath, zoom + "/" + featureId + SAMPLE_EXT));
-        }
-    }
-
-    protected void changeGeometryInCache(long featureId, GeoGeometry newGeometry) {
-        deleteGeometryFromCache(featureId);
-        addGeometryToCache(featureId, newGeometry);
-    }
-
-    protected void changeGeometryIdInTiles(long oldFeatureId, long newFeatureId) {
-        mCache.changeId(oldFeatureId, newFeatureId);
-        File cachePath = new File(mPath, CACHE);
-        for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
-            File from = new File(cachePath, zoom + "/" + oldFeatureId + SAMPLE_EXT);
-            if(from.exists()) {
-                File to = new File(cachePath, zoom + "/" + newFeatureId + SAMPLE_EXT);
-                from.renameTo(to);
             }
         }
     }
@@ -1109,6 +1060,13 @@ public class VectorLayer
             return NOT_FOUND;
         }
 
+        try {
+            GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(FIELD_GEOM));
+            prepareGeometry(geometry, contentValues);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
             throw new IllegalArgumentException(
@@ -1119,17 +1077,6 @@ public class VectorLayer
         long rowId = db.insert(mPath.getName(), null, contentValues);
 
         if (rowId != Constants.NOT_FOUND) {
-
-            // add geometry to tiles
-            if (contentValues.containsKey(FIELD_GEOM)) {
-                try {
-                    GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(FIELD_GEOM));
-                    addGeometryToCache(rowId, geometry);
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
             notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
@@ -1269,14 +1216,14 @@ public class VectorLayer
         int result = db.delete(mPath.getName(), selection, selectionArgs);
         if (result > 0) {
 
-            if (rowId == Constants.NOT_FOUND) {
-                FileUtil.deleteRecursive(new File(mPath, CACHE));
+            /* fill from notify if (rowId == Constants.NOT_FOUND) {
+                mCache.clear();
             } else {
-                deleteGeometryFromCache(rowId);
-            }
+                mCache.removeItem(rowId);
+            }*/
 
             Intent notify;
-            if (rowId == NOT_FOUND) {
+            if (rowId == Constants.NOT_FOUND) {
                 notify = new Intent(Constants.NOTIFY_DELETE_ALL);
             } else {
                 notify = new Intent(Constants.NOTIFY_DELETE);
@@ -1401,7 +1348,7 @@ public class VectorLayer
     public int updateAddChanges(
             ContentValues values,
             long id) {
-        int result = update(id, values, FIELD_ID + " = " + id, null);
+        int result = update(id, values, Constants.FIELD_ID + " = " + id, null);
         if (result > 0) {
             addChange(id, CHANGE_OPERATION_CHANGED);
         }
@@ -1423,13 +1370,10 @@ public class VectorLayer
                     "The map should extends MapContentProviderHelper or inherited");
         }
 
-        GeoEnvelope env = null;
-        GeoGeometry newGeometry = null;
-        if (values.containsKey(FIELD_GEOM) && values.containsKey(FIELD_ID)) {
-            GeoGeometry geometry = getGeometryForId(values.getAsLong(FIELD_ID));
-            env = geometry.getEnvelope();
+        if (values.containsKey(Constants.FIELD_GEOM) && values.containsKey(Constants.FIELD_ID)) {
             try {
-                newGeometry = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
+                GeoGeometry newGeometry = GeoGeometryFactory.fromBlob(values.getAsByteArray(Constants.FIELD_GEOM));
+                prepareGeometry(newGeometry, values);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -1438,32 +1382,27 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.update(mPath.getName(), values, selection, selectionArgs);
         if (result > 0) {
-
-            if (null != env && null != newGeometry) {
-                changeGeometryInCache(rowId, newGeometry);
-            }
-
             Intent notify;
-            if (rowId == NOT_FOUND) {
-                if (values.containsKey(FIELD_GEOM)) {
+            if (rowId == Constants.NOT_FOUND) {
+                if (values.containsKey(Constants.FIELD_GEOM)) {
                     notify = new Intent(Constants.NOTIFY_UPDATE_ALL);
                     notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                     getContext().sendBroadcast(notify);
                 }
             } else {
-                if (values.containsKey(FIELD_GEOM) || values.containsKey(FIELD_ID)) {
+                if (values.containsKey(Constants.FIELD_GEOM) || values.containsKey(Constants.FIELD_ID)) {
                     notify = new Intent(Constants.NOTIFY_UPDATE);
                     boolean bNotify = false;
-                    if (values.containsKey(FIELD_GEOM)) {
-                        notify.putExtra(FIELD_ID, rowId);
+                    if (values.containsKey(Constants.FIELD_GEOM)) {
+                        notify.putExtra(Constants.FIELD_ID, rowId);
                         bNotify = true;
                     }
 
-                    if (values.containsKey(FIELD_ID)) {
-                        updateUniqId(values.getAsLong(FIELD_ID));
+                    if (values.containsKey(Constants.FIELD_ID)) {
+                        updateUniqId(values.getAsLong(Constants.FIELD_ID));
 
-                        notify.putExtra(FIELD_OLD_ID, rowId);
-                        notify.putExtra(FIELD_ID, values.getAsLong(FIELD_ID));
+                        notify.putExtra(Constants.FIELD_OLD_ID, rowId);
+                        notify.putExtra(Constants.FIELD_ID, values.getAsLong(Constants.FIELD_ID));
                         bNotify = true;
                     }
 
@@ -1475,7 +1414,7 @@ public class VectorLayer
 
                 } else {
                     notify = new Intent(Constants.NOTIFY_UPDATE_FIELDS);
-                    notify.putExtra(FIELD_ID, rowId);
+                    notify.putExtra(Constants.FIELD_ID, rowId);
                     getContext().sendBroadcast(notify);
                 }
             }
@@ -1500,7 +1439,7 @@ public class VectorLayer
         int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_TABLE:
-                result = update(NOT_FOUND, values, selection, selectionArgs);
+                result = update(Constants.NOT_FOUND, values, selection, selectionArgs);
 
                 if (result > 0) {
                     String fragment = uri.getFragment();
@@ -1508,7 +1447,7 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(NOT_FOUND, CHANGE_OPERATION_CHANGED);
+                        addChange(Constants.NOT_FOUND, CHANGE_OPERATION_CHANGED);
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
@@ -1799,8 +1738,7 @@ public class VectorLayer
     public void notifyInsert(long rowId) {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            mCache.addItem(rowId, geom.getEnvelope());
-            mExtents.merge(geom.getEnvelope());
+            cacheGeometryEnvelope(rowId, geom);
             notifyLayerChanged();
         }
     }
@@ -1811,15 +1749,13 @@ public class VectorLayer
             long oldRowId) {
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            if (oldRowId != NOT_FOUND) {
+            if (oldRowId != Constants.NOT_FOUND) {
                 mCache.removeItem(oldRowId);
             } else {
                 mCache.removeItem(rowId);
             }
 
-            mCache.addItem(rowId, geom.getEnvelope());
-            mExtents.merge(geom.getEnvelope());
-
+            cacheGeometryEnvelope(rowId, geom);
             notifyLayerChanged();
         }
     }
@@ -1834,8 +1770,8 @@ public class VectorLayer
     public GeoGeometry getGeometryForId(long rowId) {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
-        String[] columns = new String[]{FIELD_GEOM};
-        String selection = FIELD_ID + " = " + rowId;
+        String[] columns = new String[]{Constants.FIELD_GEOM};
+        String selection = Constants.FIELD_ID + " = " + rowId;
         Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
         if (null != cursor) {
             if (cursor.moveToFirst()) {
@@ -1884,16 +1820,27 @@ public class VectorLayer
         }
     }
 
-    public GeoGeometry getGeometryForId(long featureId, int zoom) {
+    public GeoGeometry getGeometryForId(long rowId, int zoom) {
         if(zoom > GeoConstants.DEFAULT_CACHE_MAX_ZOOM)
-            return getGeometryForId(featureId);
-        return loadGeometryFromFile(new File(mPath, CACHE + "/" + zoom + "/" + featureId + SAMPLE_EXT));
-        /*
-        GeoGeometry geometry = loadGeometryFromFile(new File(mPath, CACHE + "/" + zoom + "/" + featureId + SAMPLE_EXT));
-        if(null != geometry)
-            return geometry;
-        return getGeometryForId(featureId);
-        */
+            return getGeometryForId(rowId);
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+        String[] columns = new String[]{Constants.FIELD_GEOM_ + zoom};
+        String selection = Constants.FIELD_ID + " = " + rowId;
+        Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
+        if (null != cursor) {
+            if (cursor.moveToFirst()) {
+                try {
+                    return GeoGeometryFactory.fromBlob(cursor.getBlob(0));
+                } catch (IOException | ClassNotFoundException e) {
+                    // e.printStackTrace();
+                }
+            }
+            cursor.close();
+        }
+
+        return null;
     }
 
     public List<Long> query(GeoEnvelope env) {
