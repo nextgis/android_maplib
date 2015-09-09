@@ -23,11 +23,14 @@
 
 package com.nextgis.maplib.display;
 
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
+import com.nextgis.maplib.map.MapBase;
+import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
 
@@ -315,15 +318,20 @@ public class SimpleFeatureRenderer
             android.os.Process.setThreadPriority(
                     Constants.DEFAULT_DRAW_THREAD_PRIORITY);
 
+            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+            SQLiteDatabase db = map.getDatabase(true);
+
             for(Long id : mFeatureIds) {
                 if(mLayer.isFeatureHidden(id))
                     continue;
-                final GeoGeometry geometry = mLayer.getGeometryForId(id, mZoom);
+                final GeoGeometry geometry = mLayer.getGeometryForId(id, mZoom, db);
                 if (geometry != null) {
                     final Style style = getStyle(id);
                     style.onDraw(geometry, mDisplay);
                 }
             }
+
+            db.close();
         }
     }
 }
