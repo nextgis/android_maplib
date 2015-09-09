@@ -1148,7 +1148,6 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         long rowId = db.insert(mPath.getName(), null, contentValues);
-        db.close();
         if (rowId != Constants.NOT_FOUND) {
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
@@ -1287,7 +1286,6 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
-        db.close();
         if (result > 0) {
 
             /* fill from notify if (rowId == Constants.NOT_FOUND) {
@@ -1455,7 +1453,6 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.update(mPath.getName(), values, selection, selectionArgs);
-        db.close();
         if (result > 0) {
             Intent notify;
             if (rowId == Constants.NOT_FOUND) {
@@ -1852,7 +1849,6 @@ public class VectorLayer
         String[] columns = new String[]{Constants.FIELD_GEOM};
         String selection = Constants.FIELD_ID + " = " + rowId;
         GeoGeometry geometry = getGeometryFromQuery(columns, selection, db);
-        db.close();
         return geometry;
     }
 
@@ -1909,7 +1905,6 @@ public class VectorLayer
         String selection = Constants.FIELD_ID + " = " + rowId;
 
         GeoGeometry geometry = getGeometryFromQuery(columns, selection, db);
-        db.close();
         return geometry;
     }
 

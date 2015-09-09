@@ -358,8 +358,6 @@ public class GeoJSONUtil {
                             layer.createFeatureBatch(feature, db);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
-                                    if(null != db)
-                                        db.close();
                                     return;
                                 }
                                 progressor.setValue(streamSize - in.available());
@@ -376,8 +374,6 @@ public class GeoJSONUtil {
         }
         reader.endObject();
         reader.close();
-        if(null != db)
-            db.close();
         layer.save();
     }
 
@@ -432,8 +428,6 @@ public class GeoJSONUtil {
                             layer.createFeatureBatch(feature, db);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
-                                    if(null != db)
-                                        db.close();
                                     return;
                                 }
                                 progressor.setValue(streamSize - in.available());
@@ -450,8 +444,6 @@ public class GeoJSONUtil {
         }
         reader.endObject();
         reader.close();
-        if(null != db)
-            db.close();
         layer.save();
     }
 
