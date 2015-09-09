@@ -692,6 +692,7 @@ public class NGWVectorLayer
 
             // check records count changing
             if (changesCount != FeatureChanges.getChangeCount(mChangeTableName)) {
+                mCache.save(new File(mPath, RTREE));
                 //notify to reload changes
                 getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
             }
