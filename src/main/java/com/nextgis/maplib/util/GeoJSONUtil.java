@@ -327,8 +327,10 @@ public class GeoJSONUtil {
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static void fillLayerFromGeoJSONStream(VectorLayer layer, InputStream in, int srs, IProgressor progressor) throws IOException, NGException {
+        int streamSize = in.available();
         if(null != progressor){
-            progressor.setIndeterminate(true);
+            progressor.setIndeterminate(false);
+            progressor.setMax(streamSize);
             progressor.setMessage(layer.getContext().getString(R.string.start_fill_layer) + " " + layer.getName());
         }
 
@@ -360,6 +362,7 @@ public class GeoJSONUtil {
                                         db.close();
                                     return;
                                 }
+                                progressor.setValue(streamSize - in.available());
                                 progressor.setMessage(layer.getContext().getString(R.string.proceed_features) + ": " + counter++);
                             }
                         }
@@ -393,8 +396,10 @@ public class GeoJSONUtil {
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static void createLayerFromGeoJSONStream(VectorLayer layer, InputStream in, IProgressor progressor) throws IOException, NGException {
+        int streamSize = in.available();
         if(null != progressor){
-            progressor.setIndeterminate(true);
+            progressor.setIndeterminate(false);
+            progressor.setMax(streamSize);
             progressor.setMessage(layer.getContext().getString(R.string.start_fill_layer) + " " + layer.getName());
         }
 
@@ -431,6 +436,7 @@ public class GeoJSONUtil {
                                         db.close();
                                     return;
                                 }
+                                progressor.setValue(streamSize - in.available());
                                 progressor.setMessage(layer.getContext().getString(R.string.proceed_features) + ": " + counter++);
                             }
                         }
