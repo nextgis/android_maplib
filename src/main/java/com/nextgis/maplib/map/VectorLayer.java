@@ -1148,7 +1148,7 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         long rowId = db.insert(mPath.getName(), null, contentValues);
-
+        db.close();
         if (rowId != Constants.NOT_FOUND) {
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
@@ -1287,6 +1287,7 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.delete(mPath.getName(), selection, selectionArgs);
+        db.close();
         if (result > 0) {
 
             /* fill from notify if (rowId == Constants.NOT_FOUND) {
@@ -1454,6 +1455,7 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         int result = db.update(mPath.getName(), values, selection, selectionArgs);
+        db.close();
         if (result > 0) {
             Intent notify;
             if (rowId == Constants.NOT_FOUND) {
@@ -1842,33 +1844,51 @@ public class VectorLayer
 
     public GeoGeometry getGeometryForId(long rowId) {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
         SQLiteDatabase db = map.getDatabase(true);
         String[] columns = new String[]{Constants.FIELD_GEOM};
         String selection = Constants.FIELD_ID + " = " + rowId;
+        GeoGeometry geometry = getGeometryFromQuery(columns, selection, db);
+        db.close();
+        return geometry;
+    }
+
+    public GeoGeometry getGeometryForId(long rowId, SQLiteDatabase db) {
+        String[] columns = new String[]{Constants.FIELD_GEOM};
+        String selection = Constants.FIELD_ID + " = " + rowId;
+        return getGeometryFromQuery(columns, selection, db);
+    }
+
+    protected GeoGeometry getGeometryFromQuery(String[] columns, String selection, SQLiteDatabase db){
         Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
         if (null != cursor) {
             if (cursor.moveToFirst()) {
                 try {
-                    return GeoGeometryFactory.fromBlob(cursor.getBlob(0));
+                    GeoGeometry result = GeoGeometryFactory.fromBlob(cursor.getBlob(0));
+                    cursor.close();
+                    return result;
                 } catch (IOException | ClassNotFoundException e) {
                     // e.printStackTrace();
                 }
             }
             cursor.close();
         }
-
         return null;
     }
-
 
     public long getUniqId() {
         if (Constants.NOT_FOUND == mUniqId) {
             String columns[] = {FIELD_ID};
             String sortOrder = FIELD_ID + " DESC";
             Cursor cursor = query(columns, null, null, sortOrder, "1");
-
-            if (cursor.moveToFirst()) {
-                mUniqId = cursor.getLong(0) + 1;
+            if(null != cursor) {
+                if (cursor.moveToFirst()) {
+                    mUniqId = cursor.getLong(0) + 1;
+                }
+                cursor.close();
             }
         }
 
@@ -1880,22 +1900,27 @@ public class VectorLayer
             return getGeometryForId(rowId);
 
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
         SQLiteDatabase db = map.getDatabase(true);
         String[] columns = new String[]{Constants.FIELD_GEOM_ + zoom};
         String selection = Constants.FIELD_ID + " = " + rowId;
-        Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
-        if (null != cursor) {
-            if (cursor.moveToFirst()) {
-                try {
-                    return GeoGeometryFactory.fromBlob(cursor.getBlob(0));
-                } catch (IOException | ClassNotFoundException e) {
-                    // e.printStackTrace();
-                }
-            }
-            cursor.close();
-        }
 
-        return null;
+        GeoGeometry geometry = getGeometryFromQuery(columns, selection, db);
+        db.close();
+        return geometry;
+    }
+
+    public GeoGeometry getGeometryForId(long rowId, int zoom, SQLiteDatabase db) {
+        if(zoom > GeoConstants.DEFAULT_CACHE_MAX_ZOOM)
+            return getGeometryForId(rowId, db);
+
+        String[] columns = new String[]{Constants.FIELD_GEOM_ + zoom};
+        String selection = Constants.FIELD_ID + " = " + rowId;
+
+        return getGeometryFromQuery(columns, selection, db);
     }
 
     public List<Long> query(GeoEnvelope env) {
