@@ -453,6 +453,79 @@ public class VectorLayer
         }
     }
 
+    public void createFeatureBatch(final Feature feature, final SQLiteDatabase db)
+            throws SQLiteException {
+        // check if geometry type is appropriate layer geometry type
+        if (null == feature.getGeometry() || feature.getGeometry().getType() != mGeometryType) {
+            return;
+        }
+
+        final ContentValues values = new ContentValues();
+        if(feature.getId() != Constants.NOT_FOUND)
+            values.put(Constants.FIELD_ID, feature.getId());
+
+        try {
+            prepareGeometry(feature.getGeometry(), values);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        List<Field> fields = feature.getFields();
+        for (int i = 0; i < fields.size(); ++i) {
+            if (!feature.isValuePresent(i)) {
+                continue;
+            }
+            switch (fields.get(i).getType()) {
+                case FTString:
+                    values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
+                    break;
+                case FTInteger:
+                    Object intVal = feature.getFieldValue(i);
+                    if (intVal instanceof Integer) {
+                        values.put(fields.get(i).getName(), (int) intVal);
+                    } else if (intVal instanceof Long) {
+                        values.put(fields.get(i).getName(), (long) intVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + intVal.toString());
+                    }
+                    break;
+                case FTReal:
+                    Object realVal = feature.getFieldValue(i);
+                    if (realVal instanceof Double) {
+                        values.put(fields.get(i).getName(), (double) realVal);
+                    } else if (realVal instanceof Float) {
+                        values.put(fields.get(i).getName(), (float) realVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + realVal.toString());
+                    }
+                    break;
+                case FTDate:
+                case FTTime:
+                case FTDateTime:
+                    Object dateVal = feature.getFieldValue(i);
+                    if (dateVal instanceof Date) {
+                        Date date = (Date) dateVal;
+                        values.put(fields.get(i).getName(), date.getTime());
+                    } else if (dateVal instanceof Long) {
+                        values.put(fields.get(i).getName(), (long) dateVal);
+                    } else if (dateVal instanceof Calendar) {
+                        Calendar cal = (Calendar) dateVal;
+                        values.put(fields.get(i).getName(), cal.getTimeInMillis());
+                    } else {
+                        Log.d(TAG, "skip value: " + dateVal.toString());
+                    }
+                    break;
+            }
+        }
+
+        long rowId = db.insert(mPath.getName(), "", values);
+        if (rowId != Constants.NOT_FOUND) {
+            //update bbox
+            cacheGeometryEnvelope(rowId, feature.getGeometry());
+        }
+    }
+
+
     public void createFeature(Feature feature)
             throws SQLiteException {
         // check if geometry type is appropriate layer geometry type
@@ -736,7 +809,7 @@ public class VectorLayer
         if (jsonObject.has(Constants.JSON_BBOX_MINY_KEY))
             mExtents.setMinY(jsonObject.getDouble(Constants.JSON_BBOX_MINY_KEY));
 
-        setVisible(mIsVisible);
+        reloadCache();
 
         if (jsonObject.has(Constants.JSON_RENDERERPROPS_KEY)) {
             setRenderer(jsonObject.getJSONObject(Constants.JSON_RENDERERPROPS_KEY));
@@ -1800,24 +1873,6 @@ public class VectorLayer
         }
 
         return mUniqId;
-    }
-
-    @Override
-    public void setVisible(boolean visible) {
-        if (mIsVisible == visible && mCacheLoaded)
-            return;
-
-        super.setVisible(visible);
-        if (mIsVisible) {
-            // load the layer contents async
-            Thread t = new Thread(new Runnable() {
-                public void run() {
-                    reloadCache();
-                }
-            });
-            t.setPriority(Constants.DEFAULT_LOAD_LAYER_THREAD_PRIORITY);
-            t.start();
-        }
     }
 
     public GeoGeometry getGeometryForId(long rowId, int zoom) {
