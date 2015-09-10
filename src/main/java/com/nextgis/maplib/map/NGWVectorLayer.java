@@ -945,7 +945,7 @@ public class NGWVectorLayer
         }
         else{
             try {
-                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere));
+                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, null/*mServerWhere*/));
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 final String basicAuth = NetworkUtil.getHTTPBaseAuth(mCacheLogin, mCachePassword);
                 if(null != basicAuth)

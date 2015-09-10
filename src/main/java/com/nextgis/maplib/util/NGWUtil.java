@@ -380,6 +380,8 @@ public class NGWUtil
                                 feature.setFieldValue(field.getName(), reader.nextString());
                                 bAdded = true;
                                 break;
+                            case GeoConstants.FTDate:
+                            case GeoConstants.FTTime:
                             case GeoConstants.FTDateTime:
                                 readNGWDate(feature, reader, field.getName());
                                 bAdded = true;
@@ -530,13 +532,31 @@ public class NGWUtil
             feature.setGeometry(geom);
 
             for (Field field : fields) {
-                if (field.getType() == GeoConstants.FTDateTime) {
+                if (field.getType() == GeoConstants.FTDateTime ||
+                        field.getType() == GeoConstants.FTDate ||
+                        field.getType() == GeoConstants.FTTime ) {
                     if (!fieldsJSONObject.isNull(field.getName())) {
                         JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
-                        int nYear = dateJson.getInt("year");
-                        int nMonth = dateJson.getInt("month");
-                        int nDay = dateJson.getInt("day");
-                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
+                        int nYear = 1900;
+                        int nMonth = 1;
+                        int nDay = 1;
+                        int nHour = 0;
+                        int nMinute = 0;
+                        int nSec = 0;
+                        if(dateJson.has(NGWKEY_YEAR))
+                            nYear = dateJson.getInt(NGWKEY_YEAR);
+                        if(dateJson.has(NGWKEY_MONTH))
+                            nMonth = dateJson.getInt(NGWKEY_MONTH);
+                        if(dateJson.has(NGWKEY_DAY))
+                            nDay = dateJson.getInt(NGWKEY_DAY);
+                        if(dateJson.has(NGWKEY_HOUR))
+                            nHour = dateJson.getInt(NGWKEY_HOUR);
+                        if(dateJson.has(NGWKEY_MINUTE))
+                            nMinute = dateJson.getInt(NGWKEY_MINUTE);
+                        if(dateJson.has(NGWKEY_SECOND))
+                            nSec = dateJson.getInt(NGWKEY_SECOND);
+
+                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay, nHour, nMinute, nSec);
                         feature.setFieldValue(field.getName(), calendar.getTime());
                     }
                 } else {

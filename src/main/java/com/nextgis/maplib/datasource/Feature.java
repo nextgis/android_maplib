@@ -26,13 +26,15 @@ package com.nextgis.maplib.datasource;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.util.Log;
+
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.util.AttachItem;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -41,8 +43,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static com.nextgis.maplib.util.Constants.*;
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.GeoConstants.FTDate;
+import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
+import static com.nextgis.maplib.util.GeoConstants.FTInteger;
+import static com.nextgis.maplib.util.GeoConstants.FTReal;
+import static com.nextgis.maplib.util.GeoConstants.FTString;
+import static com.nextgis.maplib.util.GeoConstants.FTTime;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_FEATURE_ID;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRY;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_PROPERTIES;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
+import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_Feature;
 
 
 public class Feature
@@ -200,9 +215,21 @@ public class Feature
             case FTReal:
             case FTInteger:
                 return val.toString();
+            case FTDate:
+                if (val instanceof Date) {
+                    DateFormat dateFormat = DateFormat.getDateInstance();
+                    return dateFormat.format((Date) val);
+                }
+                break;
+            case FTTime:
+                if (val instanceof Date) {
+                    DateFormat dateFormat = DateFormat.getDateInstance();
+                    return dateFormat.format((Date) val);
+                }
+                break;
             case FTDateTime:
                 if (val instanceof Date) {
-                    SimpleDateFormat dateFormat = new SimpleDateFormat();
+                    DateFormat dateFormat = DateFormat.getDateTimeInstance();
                     return dateFormat.format((Date) val);
                 }
                 break;
@@ -292,6 +319,8 @@ public class Feature
                             returnValues.put(field.getName(), (int) value);
                         }
                         break;
+                    case FTDate:
+                    case FTTime:
                     case FTDateTime:
                         if (value instanceof Date) {
                             Date date = (Date) value;
@@ -348,6 +377,8 @@ public class Feature
                         case FTReal:
                             setFieldValue(i, cursor.getDouble(index));
                             break;
+                        case FTDate:
+                        case FTTime:
                         case FTDateTime:
                             Calendar calendar = Calendar.getInstance();
                             calendar.setTimeInMillis(cursor.getLong(index));

@@ -308,7 +308,10 @@ public class GeometryRTree implements IGeometryCache {
         if ( size == 0 ){
             root = buildRoot(true);
         }
-        return (IGeometryCacheItem) l;
+
+        if(l instanceof IGeometryCache)
+            return (IGeometryCacheItem) l;
+        return null;
     }
 
     private Node findLeaf(Node n, long featureId){

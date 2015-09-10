@@ -1433,7 +1433,7 @@ public class VectorLayer
             ContentValues values,
             String selection,
             String[] selectionArgs) {
-        if (null == values || values.size() > 0)
+        if (null == values || values.size() < 1)
             return 0;
 
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
