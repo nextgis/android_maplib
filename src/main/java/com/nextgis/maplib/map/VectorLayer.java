@@ -467,8 +467,8 @@ public class VectorLayer
             values.put(Constants.FIELD_ID, feature.getId());
 
         try {
-            prepareGeometry(feature.getGeometry(), values);
-        } catch (IOException e) {
+            prepareGeometry(values);
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
@@ -553,8 +553,8 @@ public class VectorLayer
             values.put(Constants.FIELD_ID, feature.getId());
 
         try {
-            prepareGeometry(feature.getGeometry(), values);
-        } catch (IOException e) {
+            prepareGeometry(values);
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
@@ -615,7 +615,7 @@ public class VectorLayer
 
             //update bbox
             cacheGeometryEnvelope(rowId, feature.getGeometry());
-            save(); // TODO: 10.09.15 do we need to save after each insert (now main purpose is to save cache in file)
+            save();
         }
     }
 
@@ -640,8 +640,10 @@ public class VectorLayer
         return !mCache.search(envelope).isEmpty();
     }
 
-    protected void prepareGeometry(GeoGeometry geometry, final ContentValues values) throws IOException {
-        values.put(Constants.FIELD_GEOM, geometry.toBlob());
+    protected void prepareGeometry(final ContentValues values) throws IOException, ClassNotFoundException {
+        GeoGeometry geometry = GeoGeometryFactory.fromBlob(values.getAsByteArray(FIELD_GEOM));
+        if(null == geometry)
+            return;
 
         if(geometry.getType() == GeoConstants.GTPoint){
             for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
@@ -1136,8 +1138,7 @@ public class VectorLayer
         }
 
         try {
-            GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(FIELD_GEOM));
-            prepareGeometry(geometry, contentValues);
+            prepareGeometry(contentValues);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -1444,10 +1445,10 @@ public class VectorLayer
                     "The map should extends MapContentProviderHelper or inherited");
         }
 
-        if (values.containsKey(Constants.FIELD_GEOM) && values.containsKey(Constants.FIELD_ID)) {
+        if (values.containsKey(Constants.FIELD_GEOM)) {
             try {
-                GeoGeometry newGeometry = GeoGeometryFactory.fromBlob(values.getAsByteArray(Constants.FIELD_GEOM));
-                prepareGeometry(newGeometry, values);
+                mCache.removeItem(rowId);
+                prepareGeometry(values);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -1797,6 +1798,7 @@ public class VectorLayer
     public void notifyDelete(long rowId) {
         //remove cached item
         if (mCache.removeItem(rowId) != null) {
+            save();
             notifyLayerChanged();
         }
     }
@@ -1805,6 +1807,7 @@ public class VectorLayer
     public void notifyDeleteAll() {
         //clear cache
         mCache.clear();
+        save();
         notifyLayerChanged();
     }
 
@@ -1813,6 +1816,7 @@ public class VectorLayer
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
             cacheGeometryEnvelope(rowId, geom);
+            save();
             notifyLayerChanged();
         }
     }
@@ -1830,6 +1834,7 @@ public class VectorLayer
             }
 
             cacheGeometryEnvelope(rowId, geom);
+            save();
             notifyLayerChanged();
         }
     }

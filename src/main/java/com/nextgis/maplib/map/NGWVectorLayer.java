@@ -213,8 +213,7 @@ public class NGWVectorLayer
         }
 
         try{
-            GeoGeometry geometry = GeoGeometryFactory.fromBlob(contentValues.getAsByteArray(Constants.FIELD_GEOM));
-            prepareGeometry(geometry, contentValues);
+            prepareGeometry(contentValues);
         }
         catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
