@@ -278,7 +278,7 @@ public class VectorLayer
         Log.d(TAG, "init layer " + getName());
 
         if(null == mFields)
-            mFields = new HashMap<>();
+            mFields = new HashMap<>(fields.size());
         else
             mFields.clear();
 
@@ -338,6 +338,8 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(false);
         db.execSQL(tableCreate);
         setDefaultRenderer();
+
+        save();
     }
 
     public void createFromGeoJson(Uri uri, IProgressor progressor) throws IOException, JSONException, NGException, SQLiteException {
@@ -613,7 +615,7 @@ public class VectorLayer
 
             //update bbox
             cacheGeometryEnvelope(rowId, feature.getGeometry());
-            save();
+            save(); // TODO: 10.09.15 do we need to save after each insert (now main purpose is to save cache in file)
         }
     }
 
@@ -621,7 +623,7 @@ public class VectorLayer
         GeoEnvelope envelope;
         if(geoGeometry.getType() == GeoConstants.GTPoint){
             GeoPoint pt = (GeoPoint) geoGeometry;
-            double delta = 0.05;
+            double delta = 0.5; // as this is 3857 - the 0.5 is meters
             envelope = new GeoEnvelope(pt.getX() - delta, pt.getX() + delta, pt.getY() - delta, pt.getY() + delta);
         }
         else {
@@ -632,7 +634,7 @@ public class VectorLayer
     }
 
     protected boolean checkPointOverlaps(GeoPoint pt, double tolerance){
-        double halfTolerance = tolerance * 0.5;
+        double halfTolerance = tolerance * 0.85;
         GeoEnvelope envelope = new GeoEnvelope(pt.getX() - halfTolerance, pt.getX() + halfTolerance,
                                                pt.getY() - halfTolerance, pt.getY() + halfTolerance);
         return !mCache.search(envelope).isEmpty();
@@ -1932,13 +1934,26 @@ public class VectorLayer
 
     public void hideFeature(long featureId){
         mIgnoreFeatures.add(featureId);
+        notifyLayerChanged();
     }
 
     public void showFeature(long featureId){
         mIgnoreFeatures.remove(featureId);
+        notifyLayerChanged();
+    }
+
+    public void showAllFeatures(){
+        mIgnoreFeatures.clear();
+        notifyLayerChanged();
     }
 
     public boolean isFeatureHidden(long featureId){
         return mIgnoreFeatures.contains(featureId);
+    }
+
+    public void swapFeaturesVisibility(long previousFeatureId, long featureId) {
+        mIgnoreFeatures.remove(previousFeatureId);
+        mIgnoreFeatures.add(featureId);
+        notifyLayerChanged();
     }
 }

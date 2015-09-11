@@ -358,6 +358,7 @@ public class GeoJSONUtil {
                             layer.createFeatureBatch(feature, db);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
+                                    layer.save();
                                     return;
                                 }
                                 progressor.setValue(streamSize - in.available());
@@ -428,6 +429,7 @@ public class GeoJSONUtil {
                             layer.createFeatureBatch(feature, db);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
+                                    layer.save();
                                     return;
                                 }
                                 progressor.setValue(streamSize - in.available());

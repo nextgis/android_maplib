@@ -150,13 +150,13 @@ public class SimpleFeatureRenderer
                 if (Thread.currentThread().isInterrupted()) {
                     break;
                 }
-                counter++;
                 if (counter >= featureIds.size())
                     break;
 
                 final long featureId = featureIds.get(counter);
 
                 task.addTaskData(featureId);
+                counter++;
             }
 
             futures.add(mDrawThreadPool.submit(task));
