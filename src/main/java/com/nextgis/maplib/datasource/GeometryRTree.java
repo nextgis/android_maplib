@@ -671,7 +671,7 @@ public class GeometryRTree implements IGeometryCache {
         assert(nodes.length >= 1): "Pass some nodes to tighten!";
         for (Node n: nodes) {
             assert(n.mChildren.size() > 0) : "tighten() called on empty node!";
-            GeoEnvelope minMaxCoords = new GeoEnvelope();
+            n.mCoords.unInit();
 
             for (Node c : n.mChildren)
             {
@@ -680,11 +680,8 @@ public class GeometryRTree implements IGeometryCache {
                 // so here we just enforce the child->parent relationship.
                 c.mParent = n;
 
-                minMaxCoords.merge(c.mCoords);
+                n.mCoords.merge(c.mCoords);
             }
-
-            n.mCoords.setMin(minMaxCoords.getMinX(), minMaxCoords.getMinY());
-            n.mCoords.setMax(minMaxCoords.getMaxX(), minMaxCoords.getMaxY());
         }
     }
 

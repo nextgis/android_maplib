@@ -42,4 +42,5 @@
     <string name="proceed_features">Proceed features</string>
     <string name="proceed">Proceed</string>
     <string name="of">of</string>
+    <string name="rebuild_cache">Rebuild cache</string>
 </resources>

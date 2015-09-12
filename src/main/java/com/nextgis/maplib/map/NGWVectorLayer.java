@@ -340,10 +340,6 @@ public class NGWVectorLayer
 
         String geomTypeString = vectorLayerJSONObject.getString("geometry_type");
         int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
-        if (geomType < 4) {
-            geomType += 3;
-        }
-
         JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
         int nSRS = srs.getInt("id");
         if (nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84) {
@@ -404,26 +400,33 @@ public class NGWVectorLayer
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
             reader.beginArray();
 
+            int streamSize = Math.abs(in.available());
+
             if(null != progressor){
-                progressor.setMessage(getContext().getString(R.string.create_features));
-                if(totalFeatureCount == -1) {
+                if(streamSize > 0) {
+                    progressor.setIndeterminate(false);
+                    progressor.setMax(streamSize);
+                }
+                else {
                     progressor.setIndeterminate(true);
                 }
-                else{
-                    progressor.setMax((int) totalFeatureCount);
-                }
+                progressor.setMessage(getContext().getString(R.string.start_fill_layer) + " " + getName());
             }
 
             int featureCount = 0;
             while (reader.hasNext()) {
                 final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
                 createFeature(feature);
-                ++featureCount;
 
                 if(null != progressor && totalFeatureCount != -1){
-                    if(progressor.isCanceled())
-                        break;
-                    progressor.setValue(featureCount);
+                    if (progressor.isCanceled()) {
+                        save();
+                        return;
+                    }
+                    if(streamSize > 0) {
+                        progressor.setValue(streamSize - Math.abs(in.available()));
+                    }
+                    progressor.setMessage(getContext().getString(R.string.proceed_features) + ": " + featureCount++);
                 }
 
             }
@@ -431,6 +434,8 @@ public class NGWVectorLayer
             reader.close();
 
             urlConnection.disconnect();
+
+            save();
 
             Log.d(Constants.TAG, "feature count: " + featureCount);
         }

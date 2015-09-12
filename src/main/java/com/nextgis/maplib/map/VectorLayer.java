@@ -467,6 +467,7 @@ public class VectorLayer
             values.put(Constants.FIELD_ID, feature.getId());
 
         try {
+            values.put(Constants.FIELD_GEOM, feature.getGeometry().toBlob());
             prepareGeometry(values);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -553,6 +554,7 @@ public class VectorLayer
             values.put(Constants.FIELD_ID, feature.getId());
 
         try {
+            values.put(Constants.FIELD_GEOM, feature.getGeometry().toBlob());
             prepareGeometry(values);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -1960,5 +1962,48 @@ public class VectorLayer
         mIgnoreFeatures.remove(previousFeatureId);
         mIgnoreFeatures.add(featureId);
         notifyLayerChanged();
+    }
+
+    public void rebuildCache(IProgressor progressor){
+        if(null != progressor){
+            progressor.setMessage(mContext.getString(R.string.rebuild_cache));
+        }
+
+        String columns[] = {FIELD_ID, FIELD_GEOM};
+        Cursor cursor = query(columns, null, null, null, null);
+        if(null != cursor) {
+            if (cursor.moveToFirst()) {
+                if(null != progressor){
+                    progressor.setMax(cursor.getCount());
+                }
+
+                mCache.clear();
+                int counter = 0;
+                do {
+                    GeoGeometry geometry = null;
+                    try {
+                        geometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    if(null != geometry) {
+                        long rowId = cursor.getLong(0);
+                        mCache.addItem(rowId, geometry.getEnvelope());
+                    }
+
+                    if(null != progressor){
+                        if(progressor.isCanceled())
+                            break;
+                        progressor.setValue(counter++);
+                        progressor.setMessage(mContext.getString(R.string.proceed_features) + ": " + counter);
+                    }
+
+                } while (cursor.moveToNext());
+
+            }
+            cursor.close();
+            save();
+        }
     }
 }
