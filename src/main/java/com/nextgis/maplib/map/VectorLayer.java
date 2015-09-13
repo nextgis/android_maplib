@@ -1977,7 +1977,7 @@ public class VectorLayer
                     progressor.setMax(cursor.getCount());
                 }
 
-                mCache.clear();
+                mCache = new GeometryRTree();
                 int counter = 0;
                 do {
                     GeoGeometry geometry = null;

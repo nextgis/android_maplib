@@ -87,7 +87,7 @@ public class GeometryRTree implements IGeometryCache {
      * minimum 2 entries per node
      */
     public GeometryRTree(){
-        this(50, 4, SeedPicker.LINEAR);
+        this(8, 2, SeedPicker.LINEAR);
     }
 
     /**
@@ -401,9 +401,8 @@ public class GeometryRTree implements IGeometryCache {
     public IGeometryCacheItem insert(long featureId, GeoEnvelope envelope){
         Entry e = new Entry(featureId, envelope);
         Node l = chooseLeaf(root, e);
-        l.mChildren.add(e);
+        l.add(e);
         size++;
-        e.mParent = l;
         if (l.mChildren.size() > maxEntries){
             Node[] splits = splitNode(l);
             adjustTree(splits[0], splits[1]);
@@ -420,10 +419,8 @@ public class GeometryRTree implements IGeometryCache {
             if (nn != null){
                 // build new root and add children.
                 root = buildRoot(false);
-                root.mChildren.add(n);
-                n.mParent = root;
-                root.mChildren.add(nn);
-                nn.mParent = root;
+                root.add(n);
+                root.add(nn);
             }
             tighten(root);
             return;
@@ -447,29 +444,26 @@ public class GeometryRTree implements IGeometryCache {
         // could be modified and inlined because it's only adjusting for the addition
         // of a single node.  Left as-is for now for readability.
         @SuppressWarnings("unchecked")
-        Node[] nn = new GeometryRTree.Node[]
-                { n, new Node(n.mCoords, n.mLeaf) };
+        Node[] nn = new GeometryRTree.Node[]{ n, new Node(n.mCoords, n.mLeaf) };
         nn[1].mParent = n.mParent;
         if (nn[1].mParent != null){
-            nn[1].mParent.mChildren.add(nn[1]);
+            nn[1].mParent.add(nn[1]);
         }
         LinkedList<Node> cc = new LinkedList<>(n.mChildren);
         n.mChildren.clear();
         Node[] ss = seedPicker == SeedPicker.LINEAR ? lPickSeeds(cc) : qPickSeeds(cc);
-        nn[0].mChildren.add(ss[0]);
-        nn[1].mChildren.add(ss[1]);
+        nn[0].add(ss[0]);
+        nn[1].add(ss[1]);
         tighten(nn);
         while (!cc.isEmpty()){
-            if ((nn[0].mChildren.size() >= minEntries)
-                    && (nn[1].mChildren.size() + cc.size() == minEntries)){
-                nn[1].mChildren.addAll(cc);
+            if ((nn[0].mChildren.size() >= minEntries) && (nn[1].mChildren.size() + cc.size() == minEntries)){
+                nn[1].addAll(cc);
                 cc.clear();
                 tighten(nn); // Not sure this is required.
                 return nn;
             }
-            else if ((nn[1].mChildren.size() >= minEntries)
-                    && (nn[0].mChildren.size() + cc.size() == minEntries)){
-                nn[0].mChildren.addAll(cc);
+            else if ((nn[1].mChildren.size() >= minEntries) && (nn[0].mChildren.size() + cc.size() == minEntries)){
+                nn[0].addAll(cc);
                 cc.clear();
                 tighten(nn); // Not sure this is required.
                 return nn;
@@ -505,7 +499,7 @@ public class GeometryRTree implements IGeometryCache {
                     }
                 }
             }
-            preferred.mChildren.add(c);
+            preferred.add(c);
             tighten(preferred);
         }
         return nn;
@@ -575,7 +569,7 @@ public class GeometryRTree implements IGeometryCache {
         double bestSep = 0.0f;
 
         double dimLb = Double.MAX_VALUE, dimMinUb = Double.MAX_VALUE;
-        double dimUb = -1.0f * Double.MAX_VALUE, dimMaxLb = -1.0f * Double.MAX_VALUE;
+        double dimUb = Double.MIN_VALUE, dimMaxLb = Double.MIN_VALUE;
         Node nMaxLb = null, nMinUb = null;
         for (Node n : nn)
         {
@@ -612,8 +606,8 @@ public class GeometryRTree implements IGeometryCache {
 
         dimLb = Double.MAX_VALUE;
         dimMinUb = Double.MAX_VALUE;
-        dimUb = -1.0f * Double.MAX_VALUE;
-        dimMaxLb = -1.0f * Double.MAX_VALUE;
+        dimUb = Double.MIN_VALUE;
+        dimMaxLb = Double.MIN_VALUE;
         nMaxLb = null;
         nMinUb = null;
 
@@ -678,7 +672,7 @@ public class GeometryRTree implements IGeometryCache {
                 // we may have bulk-added a bunch of children to a node (eg. in
                 // splitNode)
                 // so here we just enforce the child->parent relationship.
-                c.mParent = n;
+                //c.mParent = n;
 
                 n.mCoords.merge(c.mCoords);
             }
@@ -751,9 +745,24 @@ public class GeometryRTree implements IGeometryCache {
             mChildren = new LinkedList<>();
         }
 
+        public int size(){
+            return mChildren.size();
+        }
+
+        public void add(Node node){
+            mChildren.add(node);
+            node.setParent(this);
+        }
+
+        public void addAll(LinkedList<Node> children){
+            for (Node node : children){
+                add(node);
+            }
+        }
+
         protected Node(GeoEnvelope coords, boolean leaf)
         {
-            mCoords = coords;
+            mCoords = new GeoEnvelope(coords);
             mLeaf = leaf;
             mChildren = new LinkedList<>();
         }
@@ -784,19 +793,21 @@ public class GeometryRTree implements IGeometryCache {
                 if(stream.readBoolean()){
                     Node childNode = new Node();
                     childNode.read(stream);
-                    childNode.mParent = this;
-                    mChildren.add(childNode);
+                    add(childNode);
                 }
                 else {
                     Entry childEntry = new Entry();
                     childEntry.read(stream);
-                    childEntry.mParent = this;
-                    mChildren.add(childEntry);
+                    add(childEntry);
                 }
             }
         }
 
         protected boolean isNode(){ return true; }
+
+        public void setParent(Node parent) {
+            mParent = parent;
+        }
     }
 
     protected class Entry extends Node implements IGeometryCacheItem
