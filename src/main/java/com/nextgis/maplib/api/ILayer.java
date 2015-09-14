@@ -24,6 +24,7 @@
 package com.nextgis.maplib.api;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 
 import com.nextgis.maplib.datasource.GeoEnvelope;
 
@@ -111,9 +112,40 @@ public interface ILayer
      */
     boolean isValid();
 
+    /**
+     * Triggered on layer contents or properties changes
+     */
     void notifyUpdateAll();
+
+    /**
+     * Triggered on layer contents changed
+     * @param rowId New record id
+     * @param oldRowId Old record id
+     */
     void notifyUpdate(long rowId, long oldRowId);
+
+    /**
+     * Triggered on layer added new record
+     * @param rowId New record id
+     */
     void notifyInsert(long rowId);
+
+    /**
+     * Triggered on layer delete all records
+     */
     void notifyDeleteAll();
+
+    /**
+     * Triggered on layer delete record
+     * @param rowId Deleted record id
+     */
     void notifyDelete(long rowId);
+
+    /**
+     * Executed then database version is changes. Triggered on application upgrade
+     * @param sqLiteDatabase The database
+     * @param oldVersion Old database version
+     * @param newVersion New database version
+     */
+    void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion);
 }

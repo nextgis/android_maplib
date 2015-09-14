@@ -22,6 +22,7 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 
 import com.nextgis.maplib.api.IJSONStore;
@@ -219,6 +220,11 @@ public class Table implements ILayer, IJSONStore {
     @Override
     public void notifyDelete(long rowId) {
 
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
+        // do nothing by now
     }
 
     @Override

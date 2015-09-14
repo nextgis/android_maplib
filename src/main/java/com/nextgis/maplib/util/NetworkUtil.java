@@ -109,6 +109,7 @@ public class NetworkUtil
         if (null != basicAuth) {
             conn.setRequestProperty("Authorization", basicAuth);
         }
+        conn.setRequestProperty("User-Agent", Constants.APP_USER_AGENT);
 
         // Allow Inputs
         conn.setDoInput(true);

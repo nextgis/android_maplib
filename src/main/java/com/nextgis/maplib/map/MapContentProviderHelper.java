@@ -52,7 +52,7 @@ public class MapContentProviderHelper
     protected DatabaseHelper mDatabaseHelper;
 
     protected static final String DBNAME           = "layers";
-    protected static final int    DATABASE_VERSION = 1;
+    protected static final int    DATABASE_VERSION = 2;
 
 
     public MapContentProviderHelper(

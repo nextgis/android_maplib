@@ -24,6 +24,7 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -423,6 +424,13 @@ public class LayerGroup
     public GeoEnvelope getExtents()
     {
         return mExtents;
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
+        for (ILayer layer : mLayers) {
+            layer.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
+        }
     }
 
 

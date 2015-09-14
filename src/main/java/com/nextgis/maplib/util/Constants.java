@@ -36,7 +36,7 @@ public interface Constants
     /**
      * HTTP parameters
      */
-    String APP_USER_AGENT     = "NextGIS Mobile";
+    String APP_USER_AGENT     = "NextGIS Mobile maplib v2.2";
     int    IO_BUFFER_SIZE     = 64 * 1024; //64k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
@@ -76,9 +76,9 @@ public interface Constants
     /**
      * tune line string and linear ring simplifier
      */
-    double   SIMPLIFY_TOENV_AREA_MULTIPLY = 1.5; // area multiplier to skip if greater than quad tolerance
+    double   SIMPLIFY_TOENV_AREA_MULTIPLY = 1.7; // area multiplier to skip if greater than quad tolerance
     double   SIMPLIFY_SKIP_AREA_MULTIPLY = 7;
-    int SAMPLE_DISTANCE_PX = 5;
+    int SAMPLE_DISTANCE_PX = 7;
 
 
     String CONFIG       = "config.json";

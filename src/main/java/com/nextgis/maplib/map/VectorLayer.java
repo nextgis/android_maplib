@@ -39,6 +39,7 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
@@ -1802,6 +1803,61 @@ public class VectorLayer
         if (mCache.removeItem(rowId) != null) {
             save();
             notifyLayerChanged();
+        }
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
+        // upgrade db geometry storage
+        if(oldVersion == 1){
+            // 1. alter table
+            for(int i = 2; i <= GeoConstants.DEFAULT_CACHE_MAX_ZOOM; i+= 2){
+                String tableAlter = "ALTER TABLE " + mPath.getName() + " ADD COLUMN " + Constants.FIELD_GEOM_ + i + " BLOB;";
+                try {
+                    sqLiteDatabase.execSQL(tableAlter);
+                }
+                catch (SQLiteException e){
+                    e.printStackTrace();
+                }
+            }
+            // 2. get geometry
+            String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
+            Cursor cursor = sqLiteDatabase.query(mPath.getName(), columns, null, null, null, null, null);
+            List<Pair<Long, GeoGeometry>> changeValues = new LinkedList<>();
+            if (null != cursor) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        try {
+                            GeoGeometry geoGeometry = GeoGeometryFactory.fromBlobOld(cursor.getBlob(1));
+                            if (null != geoGeometry) {
+                                long rowId = cursor.getLong(0);
+                                changeValues.add(new Pair<>(rowId, geoGeometry));
+                            }
+                        } catch (IOException | ClassNotFoundException e) {
+                            Log.d(Constants.TAG, "Layer: " + getName());
+                            e.printStackTrace();
+                        }
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
+            // 3. insert geometry
+            for(Pair<Long, GeoGeometry> pair : changeValues) {
+                String selection = FIELD_ID + " = " + pair.first;
+                ContentValues values = new ContentValues();
+                try {
+                    values.put(FIELD_GEOM, pair.second.toBlob());
+                    prepareGeometry(values);
+                    int result = sqLiteDatabase.update(mPath.getName(), values, selection, null);
+                    if (result > 0)
+                        cacheGeometryEnvelope(pair.first, pair.second);
+
+                } catch (IOException | ClassNotFoundException | SQLiteException e) {
+                    e.printStackTrace();
+                }
+            }
+            // 4. save layer
+            save();
         }
     }
 

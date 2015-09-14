@@ -29,6 +29,8 @@ import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
+
+import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.util.DatabaseContext;
 
 import java.io.File;
@@ -64,6 +66,10 @@ public class DatabaseHelper
     }
 
 
+    /**
+     * is called whenever the app is freshly installed
+     * @param sqLiteDatabase Database
+     */
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase)
     {
@@ -71,12 +77,16 @@ public class DatabaseHelper
     }
 
 
+    /**
+     * is called whenever the app is upgraded and launched and the database version is not the same
+     * @param sqLiteDatabase Database
+     * @param oldVersion The previous database version
+     * @param newVersion The current database version
+     */
     @Override
-    public void onUpgrade(
-            SQLiteDatabase sqLiteDatabase,
-            int i,
-            int i2)
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion)
     {
-
+        MapBase map = MapBase.getInstance();
+        map.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
     }
 }

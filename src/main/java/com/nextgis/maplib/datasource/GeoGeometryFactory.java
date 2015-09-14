@@ -36,6 +36,7 @@ import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 
 import static com.nextgis.maplib.util.GeoConstants.GEOJSON_COORDINATES;
 import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRIES;
@@ -201,6 +202,16 @@ public class GeoGeometryFactory
         }
     }
 
+    public static GeoGeometry fromBlobOld(byte[] raw)
+            throws IOException, ClassNotFoundException
+    {
+        if (null == raw) {
+            return null;
+        }
+        ByteArrayInputStream in = new ByteArrayInputStream(raw);
+        ObjectInputStream is = new ObjectInputStream(in);
+        return (GeoGeometry) is.readObject();
+    }
 
     public static GeoGeometry fromBlob(byte[] raw)
             throws IOException, ClassNotFoundException
@@ -211,8 +222,6 @@ public class GeoGeometryFactory
         ByteArrayInputStream in = new ByteArrayInputStream(raw);
         DataInputStream dataInputStream = new DataInputStream(in);
         return fromDataStream(dataInputStream);
-        //ObjectInputStream is = new ObjectInputStream(in);
-        //return (GeoGeometry) is.readObject();
     }
 
 

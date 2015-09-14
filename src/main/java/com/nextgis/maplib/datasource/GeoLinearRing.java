@@ -32,7 +32,7 @@ import java.util.List;
 public class GeoLinearRing
         extends GeoLineString
 {
-    protected static final long serialVersionUID = -1241179697270831769L;
+    protected static final long serialVersionUID = -4158923594455790739L;// -1241179697270831769L;
 
     public GeoLinearRing()
     {
