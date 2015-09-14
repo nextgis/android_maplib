@@ -31,7 +31,7 @@ public interface Constants
     String PREFERENCES        = "nextgismobile";
     int    MODE_MULTI_PROCESS = 0x4;
     int    NOT_FOUND          = -1;
-    boolean DEBUG_MODE = true;
+    boolean DEBUG_MODE = false;
 
     /**
      * HTTP parameters
