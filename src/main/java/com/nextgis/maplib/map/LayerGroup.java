@@ -60,6 +60,13 @@ public class LayerGroup
     protected LayerFactory mLayerFactory;
     protected int          mLayerDrawIndex;
     protected GISDisplay   mDisplay;
+    protected OnAllLayersAddedListener mOnAllLayersAddedListener;
+
+
+    public interface OnAllLayersAddedListener
+    {
+        void onAllLayersAdded(List<ILayer> layers);
+    }
 
 
     public LayerGroup(
@@ -417,6 +424,9 @@ public class LayerGroup
                 }
             }
         }
+
+        if (mOnAllLayersAddedListener != null)
+            mOnAllLayersAddedListener.onAllLayersAdded(mLayers);
     }
 
 
@@ -426,11 +436,23 @@ public class LayerGroup
         return mExtents;
     }
 
+
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
-        for (ILayer layer : mLayers) {
-            layer.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
-        }
+    public void onUpgrade(final SQLiteDatabase sqLiteDatabase, final int oldVersion, final int newVersion) {
+        setOnAllLayersAddedListener(new OnAllLayersAddedListener() {
+            @Override
+            public void onAllLayersAdded(List<ILayer> layers) {
+                for (ILayer layer : mLayers) {
+                    layer.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
+                    setOnAllLayersAddedListener(null);
+                }
+            }
+        });
+    }
+
+
+    protected void setOnAllLayersAddedListener(OnAllLayersAddedListener listener) {
+        mOnAllLayersAddedListener = listener;
     }
 
 
