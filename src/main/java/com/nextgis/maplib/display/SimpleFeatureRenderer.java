@@ -82,7 +82,7 @@ public class SimpleFeatureRenderer
     }
 
     @Override
-    public void runDraw(final GISDisplay display)
+    public synchronized void runDraw(final GISDisplay display)
     {
         long startTime;
         if(Constants.DEBUG_MODE) {

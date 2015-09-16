@@ -55,6 +55,10 @@ public class SimpleLineStyle
     public SimpleLineStyle()
     {
         super();
+
+
+        mWidth = 3;
+        mStrokeCap = Paint.Cap.BUTT;
     }
 
 
@@ -79,6 +83,7 @@ public class SimpleLineStyle
         obj.mType = mType;
         obj.mWidth = mWidth;
         obj.mOutColor = mOutColor;
+        obj.mStrokeCap = mStrokeCap;
         return obj;
     }
 
