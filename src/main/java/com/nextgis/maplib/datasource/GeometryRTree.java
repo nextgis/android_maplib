@@ -152,7 +152,7 @@ public class GeometryRTree implements IGeometryCache {
     }
 
     @Override
-    public void save(File path) {
+    public synchronized void save(File path) {
         try {
             FileUtil.createDir(path.getParentFile());
             FileOutputStream fileOutputStream = new FileOutputStream(path);

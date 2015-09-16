@@ -160,7 +160,7 @@ public class SyncAdapter
             long pollFrequency)
     {
         final AccountManager accountManager = AccountManager.get((Context) application);
-        for (Account account : accountManager.getAccountsByType(NGW_ACCOUNT_TYPE)) {
+        for (Account account : accountManager.getAccountsByType(Constants.NGW_ACCOUNT_TYPE)) {
             ContentResolver.addPeriodicSync(
                     account, application.getAuthority(), extras, pollFrequency);
         }

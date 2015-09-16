@@ -118,6 +118,9 @@ public class MapUtil {
                         minY + tilesSizeOneDimension);
                 TileItem item = new TileItem(realX, realY, decimalZoom, env);
                 result.add(item);
+
+                if(result.size() > 10000) // some limits for tiles array size
+                    return result;
             }
         }
 
