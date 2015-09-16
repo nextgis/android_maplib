@@ -63,7 +63,7 @@ public class SimpleFeatureRenderer
     //protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
-    protected static final int GEOMETRY_PER_TASK = 50;
+    protected static final int GEOMETRY_PER_TASK = 15;
 
 
     public SimpleFeatureRenderer(Layer layer)
@@ -82,7 +82,7 @@ public class SimpleFeatureRenderer
     }
 
     @Override
-    public synchronized void runDraw(final GISDisplay display)
+    public void runDraw(final GISDisplay display)
     {
         long startTime;
         if(Constants.DEBUG_MODE) {

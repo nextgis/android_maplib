@@ -76,9 +76,9 @@ public interface Constants
     /**
      * tune line string and linear ring simplifier
      */
-    double   SIMPLIFY_TOENV_AREA_MULTIPLY = 1.7; // area multiplier to skip if greater than quad tolerance
-    double   SIMPLIFY_SKIP_AREA_MULTIPLY = 7;
-    int SAMPLE_DISTANCE_PX = 7;
+    double   SIMPLIFY_TOENV_AREA_MULTIPLY = 1.5; // area multiplier to skip if greater than quad tolerance
+    double   SIMPLIFY_SKIP_AREA_MULTIPLY = 5;
+    int SAMPLE_DISTANCE_PX = 5;
 
 
     String CONFIG       = "config.json";
@@ -187,7 +187,7 @@ public interface Constants
     int CHANGE_OPERATION_ATTACH  = 1 << 4; // 16
 
     int DRAWING_SEPARATE_THREADS = 9;
-    int DRAW_NOTIFY_STEP_PERCENT = 20; // 5%
+    int DRAW_NOTIFY_STEP_PERCENT = 5; // 5%
 
     String[] VECTOR_FORBIDDEN_FIELDS = {
             "ABORT",
