@@ -41,7 +41,6 @@ import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
 import android.widget.Toast;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -59,7 +58,6 @@ import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.VectorCacheItem;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,10 +78,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.*;
 
 public class NGWVectorLayer
         extends VectorLayer
@@ -421,7 +416,7 @@ public class NGWVectorLayer
                          e.getLocalizedMessage());
             return getContext().getString(R.string.error_download_data);
         } catch (JSONException | SQLiteException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             return getContext().getString(R.string.error_download_data);
         }
     }
@@ -1311,104 +1306,117 @@ public class NGWVectorLayer
                     }
 
                 } else {
-                    cursor.moveToFirst();
-                    // with the given ID (remoteFeature.getId()) must be only one feature
-                    Feature currentFeature = cursorToFeature(cursor);
+                    try {
+                        cursor.moveToFirst();
+                        // with the given ID (remoteFeature.getId()) must be only one feature
+                        Feature currentFeature = cursorToFeature(cursor);
 
-                    //compare features
-                    boolean eqData = remoteFeature.equalsData(currentFeature);
-                    boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
+                        //compare features
+                        boolean eqData = remoteFeature.equalsData(currentFeature);
+                        boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
 
-                    //process data
-                    if (eqData) {
-                        //remove from changes
+                        //process data
+                        if (eqData) {
+                            //remove from changes
 
-                        if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId())) {
+                            if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId())) {
 
-                            if (eqAttach && !FeatureChanges.isAttachesForDelete(
-                                    mChangeTableName, remoteFeature.getId()) ||
-                                    !FeatureChanges.isAttachChanges(
-                                            mChangeTableName, remoteFeature.getId())) {
+                                if (eqAttach && !FeatureChanges.isAttachesForDelete(
+                                        mChangeTableName, remoteFeature.getId()) ||
+                                        !FeatureChanges.isAttachChanges(
+                                                mChangeTableName, remoteFeature.getId())) {
+
+                                    FeatureChanges.removeChanges(
+                                            mChangeTableName, remoteFeature.getId());
+                                }
+                            }
+
+                        } else {
+
+                            // we have local changes ready for sent to server
+                            boolean isChangedLocal = FeatureChanges.isChanges(
+                                    mChangeTableName, remoteFeature.getId());
+
+                            //no local changes - update local feature
+                            if (!isChangedLocal) {
+                                ContentValues values = remoteFeature.getContentValues(false);
+
+                                Uri uri = Uri.parse(
+                                        "content://" + authority + "/" + getPath().getName());
+                                Uri updateUri =
+                                        ContentUris.withAppendedId(uri, remoteFeature.getId());
+                                updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
+                                //prevent add changes
+                                int count = update(updateUri, values, null, null);
+                                Log.d(
+                                        Constants.TAG,
+                                        "Update feature (" + count + ") from server - " +
+                                                remoteFeature.getId());
+                            }
+                        }
+
+                        //process attachments
+                        if (eqAttach) {
+
+                            if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId()) &&
+                                    (eqData || FeatureChanges.isAttachChanges(
+                                            mChangeTableName, remoteFeature.getId()))) {
+
+                                Log.d(
+                                        Constants.TAG, "The feature " + remoteFeature.getId() +
+                                                " already changed on server. Remove changes for it");
 
                                 FeatureChanges.removeChanges(
                                         mChangeTableName, remoteFeature.getId());
                             }
-                        }
 
-                    } else {
+                        } else {
+                            boolean isChangedLocal = FeatureChanges.isAttachChanges(
+                                    mChangeTableName, remoteFeature.getId());
 
-                        // we have local changes ready for sent to server
-                        boolean isChangedLocal =
-                                FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId());
+                            if (!isChangedLocal) {
+                                Iterator<String> iterator =
+                                        currentFeature.getAttachments().keySet().iterator();
 
-                        //no local changes - update local feature
-                        if (!isChangedLocal) {
-                            ContentValues values = remoteFeature.getContentValues(false);
+                                while (iterator.hasNext()) {
+                                    String attachId = iterator.next();
 
-                            Uri uri =
-                                    Uri.parse("content://" + authority + "/" + getPath().getName());
-                            Uri updateUri = ContentUris.withAppendedId(uri, remoteFeature.getId());
-                            updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
-                            //prevent add changes
-                            int count = update(updateUri, values, null, null);
-                            Log.d(
-                                    Constants.TAG, "Update feature (" + count + ") from server - " +
-                                            remoteFeature.getId());
-                        }
-                    }
+                                    //delete attachment which not exist on server
+                                    if (!remoteFeature.getAttachments().containsKey(attachId)) {
+                                        iterator.remove();
+                                        saveAttach("" + currentFeature.getId());
 
-                    //process attachments
-                    if (eqAttach) {
+                                    } else { //or change attachment properties
+                                        AttachItem currentItem =
+                                                currentFeature.getAttachments().get(attachId);
+                                        AttachItem remoteItem =
+                                                remoteFeature.getAttachments().get(attachId);
 
-                        if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId()) &&
-                                (eqData || FeatureChanges.isAttachChanges(
-                                        mChangeTableName, remoteFeature.getId()))) {
+                                        if (null != currentItem &&
+                                                !currentItem.equals(remoteItem)) {
+                                            long attachIdL =
+                                                    Long.parseLong(remoteItem.getAttachId());
+                                            boolean changeOnServer =
+                                                    !FeatureChanges.isAttachChanges(
+                                                            mChangeTableName, remoteFeature.getId(),
+                                                            attachIdL);
 
-                            Log.d(
-                                    Constants.TAG, "The feature " + remoteFeature.getId() +
-                                            " already changed on server. Remove changes for it");
-
-                            FeatureChanges.removeChanges(mChangeTableName, remoteFeature.getId());
-                        }
-
-                    } else {
-                        boolean isChangedLocal = FeatureChanges.isAttachChanges(
-                                mChangeTableName, remoteFeature.getId());
-
-                        if (!isChangedLocal) {
-                            Iterator<String> iterator =
-                                    currentFeature.getAttachments().keySet().iterator();
-
-                            while (iterator.hasNext()) {
-                                String attachId = iterator.next();
-
-                                //delete attachment which not exist on server
-                                if (!remoteFeature.getAttachments().containsKey(attachId)) {
-                                    iterator.remove();
-                                    saveAttach("" + currentFeature.getId());
-
-                                } else { //or change attachment properties
-                                    AttachItem currentItem =
-                                            currentFeature.getAttachments().get(attachId);
-                                    AttachItem remoteItem =
-                                            remoteFeature.getAttachments().get(attachId);
-
-                                    if (null != currentItem && !currentItem.equals(remoteItem)) {
-                                        long attachIdL = Long.parseLong(remoteItem.getAttachId());
-                                        boolean changeOnServer = !FeatureChanges.isAttachChanges(
-                                                mChangeTableName, remoteFeature.getId(), attachIdL);
-
-                                        if (changeOnServer) {
-                                            currentItem.setDescription(remoteItem.getDescription());
-                                            currentItem.setMimetype(remoteItem.getMimetype());
-                                            currentItem.setDisplayName(remoteItem.getDisplayName());
+                                            if (changeOnServer) {
+                                                currentItem.setDescription(
+                                                        remoteItem.getDescription());
+                                                currentItem.setMimetype(remoteItem.getMimetype());
+                                                currentItem.setDisplayName(
+                                                        remoteItem.getDisplayName());
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        saveAttach("" + currentFeature.getId());
+                            saveAttach("" + currentFeature.getId());
+                        }
+                    } catch (Exception e) {
+                        //Log.d(TAG, e.getLocalizedMessage());
                     }
                 }
 
@@ -1451,54 +1459,61 @@ public class NGWVectorLayer
 
             // remove changes already applied on server (delete already deleted id or add already added)
             if (null != changeCursor) {
+                try {
+                    if (changeCursor.moveToFirst()) {
+                        int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
+                        int featureIdColumn =
+                                changeCursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
+                        int operationColumn =
+                                changeCursor.getColumnIndex(Constants.FIELD_OPERATION);
+                        int attachOperationColumn =
+                                changeCursor.getColumnIndex(Constants.FIELD_ATTACH_OPERATION);
 
-                if (changeCursor.moveToFirst()) {
-                    int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
-                    int featureIdColumn = changeCursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
-                    int operationColumn = changeCursor.getColumnIndex(Constants.FIELD_OPERATION);
-                    int attachOperationColumn =
-                            changeCursor.getColumnIndex(Constants.FIELD_ATTACH_OPERATION);
+                        do {
+                            long changeRecordId = changeCursor.getLong(recordIdColumn);
+                            long changeFeatureId = changeCursor.getLong(featureIdColumn);
+                            int changeOperation = changeCursor.getInt(operationColumn);
+                            int attachChangeOperation = changeCursor.getInt(attachOperationColumn);
 
-                    do {
-                        long changeRecordId = changeCursor.getLong(recordIdColumn);
-                        long changeFeatureId = changeCursor.getLong(featureIdColumn);
-                        int changeOperation = changeCursor.getInt(operationColumn);
-                        int attachChangeOperation = changeCursor.getInt(attachOperationColumn);
-
-                        boolean bDeleteChange = true; // if feature not exist on server
-                        for (Feature remoteFeature : features) {
-                            if (remoteFeature.getId() == changeFeatureId) {
-                                if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
-                                    // if feature already exist, just change it
-                                    FeatureChanges.setOperation(
-                                            mChangeTableName, changeRecordId,
-                                            Constants.CHANGE_OPERATION_CHANGED);
+                            boolean bDeleteChange = true; // if feature not exist on server
+                            for (Feature remoteFeature : features) {
+                                if (remoteFeature.getId() == changeFeatureId) {
+                                    if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
+                                        // if feature already exist, just change it
+                                        FeatureChanges.setOperation(
+                                                mChangeTableName, changeRecordId,
+                                                Constants.CHANGE_OPERATION_CHANGED);
+                                    }
+                                    bDeleteChange = false; // in other cases just apply
+                                    break;
                                 }
-                                bDeleteChange = false; // in other cases just apply
-                                break;
                             }
-                        }
 
-                        if ((0 != (changeOperation & Constants.CHANGE_OPERATION_NEW) ||
-                                0 != (attachChangeOperation & Constants.CHANGE_OPERATION_NEW)) &&
-                                bDeleteChange) {
+                            if ((0 != (changeOperation & Constants.CHANGE_OPERATION_NEW) || 0 !=
+                                    (attachChangeOperation & Constants.CHANGE_OPERATION_NEW)) &&
+                                    bDeleteChange) {
 
-                            bDeleteChange = false;
-                        }
+                                bDeleteChange = false;
+                            }
 
-                        if (bDeleteChange) {
-                            Log.d(
-                                    Constants.TAG, "Delete change for feature #" + changeFeatureId +
-                                            ", changeOperation " + changeOperation +
-                                            ", attachChangeOperation " + attachChangeOperation);
-                            // TODO: analise for operation, remove all equal
-                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
-                        }
+                            if (bDeleteChange) {
+                                Log.d(
+                                        Constants.TAG,
+                                        "Delete change for feature #" + changeFeatureId +
+                                                ", changeOperation " + changeOperation +
+                                                ", attachChangeOperation " + attachChangeOperation);
+                                // TODO: analise for operation, remove all equal
+                                FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                            }
 
-                    } while (changeCursor.moveToNext());
+                        } while (changeCursor.moveToNext());
+                    }
+
+                } catch (Exception e) {
+                    //Log.d(TAG, e.getLocalizedMessage());
+                } finally {
+                    changeCursor.close();
                 }
-
-                changeCursor.close();
             }
 
         } catch (SQLiteException | ConcurrentModificationException e) {
@@ -1534,12 +1549,22 @@ public class NGWVectorLayer
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null, null);
-        if (null == cursor || !cursor.moveToFirst()) {
+        if (null == cursor) {
             Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
-            if (null != cursor) {
-                cursor.close();
-            }
             return true; //just remove buggy data
+        }
+
+        try {
+            if (!cursor.moveToFirst()) {
+                Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
+                return true; //just remove buggy data
+            }
+        } catch (Exception e) {
+            Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
+            //Log.d(TAG, e.getLocalizedMessage());
+            return true; //just remove buggy data
+        } finally {
+            cursor.close();
         }
 
         try {
@@ -1606,12 +1631,22 @@ public class NGWVectorLayer
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null, null);
-        if (null == cursor || !cursor.moveToFirst()) {
+        if (null == cursor) {
             Log.d(Constants.TAG, "empty cursor for uri: " + uri);
-            if (null != cursor) {
-                cursor.close();
-            }
             return true; //just remove buggy data
+        }
+
+        try {
+            if (!cursor.moveToFirst()) {
+                Log.d(Constants.TAG, "empty cursor for uri: " + uri);
+                return true; //just remove buggy data
+            }
+        } catch (Exception e) {
+            Log.d(Constants.TAG, "empty cursor for uri: " + uri);
+            //Log.d(TAG, e.getLocalizedMessage());
+            return true; //just remove buggy data
+        } finally {
+            cursor.close();
         }
 
         try {

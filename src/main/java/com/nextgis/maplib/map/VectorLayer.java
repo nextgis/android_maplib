@@ -86,7 +86,6 @@ import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
-import static com.nextgis.maplib.util.GeoConstants.FTDate;
 
 
 public class VectorLayer
@@ -774,22 +773,28 @@ public class VectorLayer
         String[] columns = new String[] {FIELD_ID, FIELD_GEOM};
         Cursor cursor = db.query(mPath.getName(), columns, null, null, null, null, null);
         if (null != cursor) {
-            if (cursor.moveToFirst()) {
-                do {
-                    try {
-                        GeoGeometry geoGeometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                        if (null != geoGeometry) {
-                            long nId = cursor.getLong(0);
-                            mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
-                            updateExtent(geoGeometry.getEnvelope());
-                            updateUniqId(nId);
+            try {
+                if (cursor.moveToFirst()) {
+                    do {
+                        try {
+                            GeoGeometry geoGeometry =
+                                    GeoGeometryFactory.fromBlob(cursor.getBlob(1));
+                            if (null != geoGeometry) {
+                                long nId = cursor.getLong(0);
+                                mVectorCacheItems.add(new VectorCacheItem(geoGeometry, nId));
+                                updateExtent(geoGeometry.getEnvelope());
+                                updateUniqId(nId);
+                            }
+                        } catch (IOException | ClassNotFoundException e) {
+                            // e.printStackTrace();
                         }
-                    } catch (IOException | ClassNotFoundException e) {
-                        // e.printStackTrace();
-                    }
-                } while (cursor.moveToNext());
+                    } while (cursor.moveToNext());
+                }
+            } catch (Exception e) {
+                // e.printStackTrace();
+            } finally {
+                cursor.close();
             }
-            cursor.close();
         }
 
         mCacheLoaded = true;
@@ -1959,14 +1964,15 @@ public class VectorLayer
         String selection = FIELD_ID + " = " + rowID;
         Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
         if (null != cursor) {
-            if (cursor.moveToFirst()) {
-                try {
+            try {
+                if (cursor.moveToFirst()) {
                     return GeoGeometryFactory.fromBlob(cursor.getBlob(0));
-                } catch (IOException | ClassNotFoundException e) {
-                    // e.printStackTrace();
                 }
+            } catch (IOException | ClassNotFoundException e) {
+                // e.printStackTrace();
+            } finally {
+                cursor.close();
             }
-            cursor.close();
         }
 
         return null;
@@ -1980,8 +1986,16 @@ public class VectorLayer
             String sortOrder = FIELD_ID + " DESC";
             Cursor cursor = query(columns, null, null, sortOrder, "1");
 
-            if (cursor.moveToFirst()) {
-                mUniqId = cursor.getLong(0) + 1;
+            if (null != cursor) {
+                try {
+                    if (cursor.moveToFirst()) {
+                        mUniqId = cursor.getLong(0) + 1;
+                    }
+                } catch (Exception e) {
+                    //Log.d(TAG, e.getLocalizedMessage());
+                } finally {
+                    cursor.close();
+                }
             }
         }
 

@@ -94,11 +94,16 @@ public class FeatureChanges
             return ret;
         }
 
-        if (cursor.moveToFirst()) {
-            ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
+        try {
+            if (cursor.moveToFirst()) {
+                ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
+            }
+        } catch (Exception e) {
+            //Log.d(TAG, e.getLocalizedMessage());
+        } finally {
+            cursor.close();
         }
 
-        cursor.close();
         return ret;
     }
 

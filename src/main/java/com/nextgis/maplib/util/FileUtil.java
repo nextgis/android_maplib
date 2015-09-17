@@ -180,12 +180,17 @@ public class FileUtil
             if (uri.getScheme().compareTo("content") == 0) {
                 Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
                 if (null != cursor) {
-                    if (cursor.moveToFirst()) {
-                        int column_index =
-                                cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
-                        fileName = cursor.getString(column_index);
+                    try {
+                        if (cursor.moveToFirst()) {
+                            int column_index =
+                                    cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
+                            fileName = cursor.getString(column_index);
+                        }
+                    } catch (Exception e) {
+                        //Log.d(TAG, e.getLocalizedMessage());
+                    } finally {
+                        cursor.close();
                     }
-                    cursor.close();
                 }
             } else if (uri.getScheme().compareTo("file") == 0) {
                 fileName = uri.getLastPathSegment();
