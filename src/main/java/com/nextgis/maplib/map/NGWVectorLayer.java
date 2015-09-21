@@ -31,7 +31,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SyncResult;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
@@ -1599,43 +1598,38 @@ public class NGWVectorLayer
         }
 
         try {
-            if (!cursor.moveToFirst()) {
+            if (cursor.moveToFirst()) {
+                AccountData accountData = getAccountData(mContext, mAccountName);
+
+                String payload = cursorToJson(cursor);
+                Log.d(Constants.TAG, "payload: " + payload);
+                String data = mNet.post(
+                        NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere), payload,
+                        accountData.login, accountData.password);
+                if (null == data) {
+                    syncResult.stats.numIoExceptions++;
+                    return false;
+                }
+                //set new id from server! {"id": 24}
+                JSONObject result = new JSONObject(data);
+                if (result.has(Constants.JSON_ID_KEY)) {
+                    long id = result.getLong(Constants.JSON_ID_KEY);
+                    changeFeatureId(featureId, id);
+                }
+
+                return true;
+
+            } else {
                 Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
                 return true; //just remove buggy data
             }
+
         } catch (Exception e) {
-            Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
-            //Log.d(TAG, e.getLocalizedMessage());
-            return true; //just remove buggy data
+            Log.d(Constants.TAG, e.getLocalizedMessage());
+            e.printStackTrace();
+            return false;
         } finally {
             cursor.close();
-        }
-
-        AccountData accountData = getAccountData(mContext, mAccountName);
-
-        try {
-            String payload = cursorToJson(cursor);
-            cursor.close();
-            Log.d(Constants.TAG, "payload: " + payload);
-            String data = mNet.post(
-                    NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere), payload,
-                    accountData.login, accountData.password);
-            if (null == data) {
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-            //set new id from server! {"id": 24}
-            JSONObject result = new JSONObject(data);
-            if (result.has(Constants.JSON_ID_KEY)) {
-                long id = result.getLong(Constants.JSON_ID_KEY);
-                changeFeatureId(featureId, id);
-            }
-
-            return true;
-        } catch (SQLiteConstraintException | ClassNotFoundException | JSONException | IOException e) {
-            e.printStackTrace();
-            Log.d(Constants.TAG, e.getLocalizedMessage());
-            return false;
         }
     }
 
@@ -1685,36 +1679,32 @@ public class NGWVectorLayer
         }
 
         try {
-            if (!cursor.moveToFirst()) {
-                Log.d(Constants.TAG, "empty cursor for uri: " + uri);
+            if (cursor.moveToFirst()) {
+                AccountData accountData = getAccountData(mContext, mAccountName);
+
+                String payload = cursorToJson(cursor);
+                Log.d(Constants.TAG, "payload: " + payload);
+                String data = mNet.put(
+                        NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), payload,
+                        accountData.login, accountData.password);
+                if (null == data) {
+                    syncResult.stats.numIoExceptions++;
+                    return false;
+                }
+
+                return true;
+
+            } else {
+                Log.d(Constants.TAG, "changeFeatureOnServer(), empty cursor for uri: " + uri);
                 return true; //just remove buggy data
             }
+
         } catch (Exception e) {
-            Log.d(Constants.TAG, "empty cursor for uri: " + uri);
-            //Log.d(TAG, e.getLocalizedMessage());
-            return true; //just remove buggy data
-        } finally {
-            cursor.close();
-        }
-
-        AccountData accountData = getAccountData(mContext, mAccountName);
-
-        try {
-            String payload = cursorToJson(cursor);
-            cursor.close();
-            Log.d(Constants.TAG, "payload: " + payload);
-            String data = mNet.put(
-                    NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), payload,
-                    accountData.login, accountData.password);
-            if (null == data) {
-                syncResult.stats.numIoExceptions++;
-                return false;
-            }
-
-            return true;
-        } catch (JSONException | ClassNotFoundException | IOException e) {
+            Log.d(Constants.TAG, e.getLocalizedMessage());
             e.printStackTrace();
             return false;
+        } finally {
+            cursor.close();
         }
     }
 
