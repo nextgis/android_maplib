@@ -401,6 +401,9 @@ public class GeometryRTree implements IGeometryCache {
     public IGeometryCacheItem insert(long featureId, GeoEnvelope envelope){
         Entry e = new Entry(featureId, envelope);
         Node l = chooseLeaf(root, e);
+        if(l == null)
+            l = root;
+
         l.add(e);
         size++;
         if (l.mChildren.size() > maxEntries){
@@ -705,6 +708,9 @@ public class GeometryRTree implements IGeometryCache {
                 }
             }
         }
+        if(next == null)
+            return n;
+
         return chooseLeaf(next, e);
     }
 

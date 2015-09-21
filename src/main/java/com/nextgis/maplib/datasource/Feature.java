@@ -29,6 +29,7 @@ import android.util.Log;
 
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.util.AttachItem;
+import com.nextgis.maplib.util.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -81,8 +82,10 @@ public class Feature
     }
 
     public Feature(){
+        mId = Constants.NOT_FOUND;
         mFields = new ArrayList<>();
         mFieldValues = new ArrayList<>();
+        mAttachments = new HashMap<>();
     }
 
 
