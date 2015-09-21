@@ -87,7 +87,7 @@ public class GeometryRTree implements IGeometryCache {
      * minimum 2 entries per node
      */
     public GeometryRTree(){
-        this(8, 2, SeedPicker.LINEAR);
+        this(8, 2, SeedPicker.QUADRATIC);
     }
 
     /**
@@ -598,6 +598,8 @@ public class GeometryRTree implements IGeometryCache {
                 Math.abs((dimMinUb - dimMaxLb) / (dimUb - dimLb));
         if (sep >= bestSep)
         {
+            // FIXME
+            // nMaxLb/nMinLb is null if dimMaxLb/dimMinUb is not set
             bestPair[0] = nMaxLb;
             bestPair[1] = nMinUb;
             bestSep = sep;

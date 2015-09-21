@@ -499,6 +499,10 @@ public class GeoJSONUtil {
                     feature.getFields().add(new Field(GeoConstants.FTString, name, name));
                 }
                 int fieldIndex = feature.getFieldValueIndex(name);
+                if (fieldIndex < 0 || fieldIndex >= feature.getFields().size() || name.startsWith("@") ||
+                        NGWUtil.containsCaseInsensitive(name, Constants.VECTOR_FORBIDDEN_FIELDS)) {
+                    continue;
+                }
                 int fieldType = feature.getFields().get(fieldIndex).getType();
                 if(fieldType == GeoConstants.FTDate || fieldType == GeoConstants.FTDateTime || fieldType == GeoConstants.FTTime){
                     feature.setFieldValue(fieldIndex, parseDateTime(value, fieldType));
