@@ -29,6 +29,11 @@ import com.nextgis.maplib.display.GISDisplay;
 public interface IRenderer
 {
     /**
+     * Release of resources
+     */
+    void deInit();
+
+    /**
      * Start draw process
      * @param display The display object where to draw
      */

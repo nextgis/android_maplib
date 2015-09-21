@@ -91,13 +91,14 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 public class VectorLayer
         extends Layer
 {
+    protected static String     mAuthority;
+    protected static UriMatcher mUriMatcher;
+
+    protected Map<String, Field>    mFields;
+    protected List<VectorCacheItem> mVectorCacheItems;
+
     protected boolean               mIsInitialized;
     protected int                   mGeometryType;
-    protected List<VectorCacheItem> mVectorCacheItems;
-    protected Uri                   mContentUri;
-    protected UriMatcher            mUriMatcher;
-    protected String                mAuthority;
-    protected Map<String, Field>    mFields;
     protected VectorCacheItem       mTempCacheItem;
     protected long                  mUniqId;
     protected boolean mCacheLoaded;
@@ -142,9 +143,6 @@ public class VectorLayer
     public static final int COLUMNTYPE_LONG    = 2;
 
 
-    protected Map<String, Map<String, AttachItem>> mAttaches;
-
-
     public VectorLayer(
             Context context,
             File path)
@@ -164,16 +162,15 @@ public class VectorLayer
 
         IGISApplication application = (IGISApplication) context;
         mAuthority = application.getAuthority();
-        mContentUri = Uri.parse("content://" + mAuthority + "/" + mPath.getName());
-        mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
-        mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
-        mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
-        mUriMatcher.addURI(
-                mAuthority, mPath.getName() + "/#/attach", TYPE_ATTACH);      //get attaches for row
-        mUriMatcher.addURI(
-                mAuthority, mPath.getName() + "/#/attach/#", TYPE_ATTACH_ID); //get attach by id
+        if (null == mUriMatcher) {
+            mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
+            mUriMatcher.addURI(mAuthority, "*", TYPE_TABLE);          //get all rows
+            mUriMatcher.addURI(mAuthority, "*/#", TYPE_FEATURE); //get single row
+            mUriMatcher.addURI(mAuthority, "*/#/attach", TYPE_ATTACH);      //get attaches for row
+            mUriMatcher.addURI(mAuthority, "*/#/attach/#", TYPE_ATTACH_ID); //get attach by id
+        }
 
         CONTENT_TYPE =
                 "vnd.android.cursor.dir/vnd." + application.getAuthority() + "." + mPath.getName();
@@ -181,11 +178,16 @@ public class VectorLayer
                 "vnd.android.cursor.item/vnd." + application.getAuthority() + "." + mPath.getName();
 
         mVectorCacheItems = new ArrayList<>();
-        mAttaches = new HashMap<>();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
 
         mUniqId = Constants.NOT_FOUND;
+    }
+
+
+    protected Uri getContentUri()
+    {
+        return Uri.parse("content://" + mAuthority + "/" + mPath.getName());
     }
 
 
@@ -478,6 +480,9 @@ public class VectorLayer
 
         save();
 
+        mFields.clear();
+        mFields = null;
+
         if (null != mParent && mParent instanceof LayerGroup) { //notify the load is over
             LayerGroup layerGroup = (LayerGroup) mParent;
             layerGroup.onLayerChanged(this);
@@ -680,13 +685,15 @@ public class VectorLayer
         rootConfig.put(JSON_GEOMETRY_TYPE_KEY, mGeometryType);
         rootConfig.put(JSON_IS_INITIALIZED_KEY, mIsInitialized);
 
-        if (null != mFields) {
-            JSONArray fields = new JSONArray();
-            for (Field field : mFields.values()) {
+        Map<String, Field> fields = null != mFields ? mFields : loadFields();
+        if (null != fields) {
+            JSONArray jsonFields = new JSONArray();
+            for (Field field : fields.values()) {
                 JSONObject fieldJsonObject = field.toJSON();
-                fields.put(fieldJsonObject);
+                jsonFields.put(fieldJsonObject);
             }
-            rootConfig.put(JSON_FIELDS_KEY, fields);
+            rootConfig.put(JSON_FIELDS_KEY, jsonFields);
+            fields.clear();
         }
 
         if (null != mRenderer && mRenderer instanceof IJSONStore) {
@@ -712,6 +719,31 @@ public class VectorLayer
     }
 
 
+    protected Map<String, Field> loadFields()
+    {
+        try {
+            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
+
+            if (jsonObject.has(JSON_FIELDS_KEY)) {
+                Map<String, Field> fields = new HashMap<>();
+                JSONArray jsonFields = jsonObject.getJSONArray(JSON_FIELDS_KEY);
+                for (int i = 0; i < jsonFields.length(); i++) {
+                    Field field = new Field();
+                    field.fromJSON(jsonFields.getJSONObject(i));
+                    fields.put(field.getName(), field);
+                }
+
+                return fields;
+            }
+
+        } catch (JSONException | IOException | SQLiteException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
     @Override
     public void fromJSON(JSONObject jsonObject)
             throws JSONException, SQLiteException
@@ -719,16 +751,6 @@ public class VectorLayer
         super.fromJSON(jsonObject);
         mGeometryType = jsonObject.getInt(JSON_GEOMETRY_TYPE_KEY);
         mIsInitialized = jsonObject.getBoolean(JSON_IS_INITIALIZED_KEY);
-
-        if (jsonObject.has(JSON_FIELDS_KEY)) {
-            mFields = new HashMap<>();
-            JSONArray fields = jsonObject.getJSONArray(JSON_FIELDS_KEY);
-            for (int i = 0; i < fields.length(); i++) {
-                Field field = new Field();
-                field.fromJSON(fields.getJSONObject(i));
-                mFields.put(field.getName(), field);
-            }
-        }
 
         if (jsonObject.has(Constants.JSON_BBOX_MAXX_KEY))
             mExtents.setMaxX(jsonObject.getDouble(Constants.JSON_BBOX_MAXX_KEY));
@@ -877,7 +899,7 @@ public class VectorLayer
                 }
                 cursor = query(projection, selection, selectionArgs, sortOrder, limit);
                 if (null != cursor) {
-                    cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
+                    cursor.setNotificationUri(getContext().getContentResolver(), getContentUri());
                 }
                 return cursor;
             case TYPE_FEATURE:
@@ -890,7 +912,7 @@ public class VectorLayer
 
                 cursor = query(projection, selection, selectionArgs, sortOrder, limit);
                 if (null != cursor) {
-                    cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
+                    cursor.setNotificationUri(getContext().getContentResolver(), getContentUri());
                 }
                 return cursor;
 
@@ -1204,7 +1226,7 @@ public class VectorLayer
             case TYPE_TABLE:
                 long rowID = insert(contentValues);
                 if (rowID != NOT_FOUND) {
-                    Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
+                    Uri resultUri = ContentUris.withAppendedId(getContentUri(), rowID);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
@@ -1537,19 +1559,18 @@ public class VectorLayer
 
                     AttachItem item = getAttach(featureId, attachId);
                     if (null != item) {
-                        if (values.containsKey(ATTACH_DESCRIPTION)) {
-                            item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
-                        }
-                        if (values.containsKey(ATTACH_DISPLAY_NAME)) {
-                            item.setDisplayName(values.getAsString(ATTACH_DISPLAY_NAME));
-                        }
-                        if (values.containsKey(ATTACH_MIME_TYPE)) {
-                            item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
-                        }
                         if (values.containsKey(ATTACH_ID)) {
+                            if (values.containsKey(ATTACH_DESCRIPTION)) {
+                                item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
+                            }
+                            if (values.containsKey(ATTACH_DISPLAY_NAME)) {
+                                item.setDisplayName(values.getAsString(ATTACH_DISPLAY_NAME));
+                            }
+                            if (values.containsKey(ATTACH_MIME_TYPE)) {
+                                item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
+                            }
                             setNewAttachId(featureId, item, values.getAsString(ATTACH_ID));
                         }
-                        saveAttach(featureId);
                         String fragment = uri.getFragment();
                         boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                         if (bFromNetwork) {
@@ -1687,7 +1708,7 @@ public class VectorLayer
 
     public List<Field> getFields()
     {
-        return new ArrayList<>(mFields.values());
+        return new ArrayList<>(loadFields().values());
     }
 
 
@@ -1720,13 +1741,7 @@ public class VectorLayer
 
     protected Map<String, AttachItem> getAttachMap(String featureId)
     {
-        Map<String, AttachItem> attachMap = mAttaches.get(featureId);
-        if (null == attachMap) {
-            loadAttach(featureId);
-            return mAttaches.get(featureId);
-        } else {
-            return attachMap;
-        }
+        return loadAttach(featureId);
     }
 
 
@@ -1743,7 +1758,7 @@ public class VectorLayer
     }
 
 
-    protected void loadAttach(String featureId)
+    protected Map<String, AttachItem> loadAttach(String featureId)
     {
         File attachFolder = new File(mPath, featureId);
         File meta = new File(attachFolder, META);
@@ -1757,17 +1772,18 @@ public class VectorLayer
                 attachItem.fromJSON(jsonValue);
                 attach.put(attachItem.getAttachId(), attachItem);
             }
-            mAttaches.put(featureId, attach);
+            return attach;
+
         } catch (IOException | JSONException e) {
             // e.printStackTrace();
         }
 
+        return null;
     }
 
 
-    protected void saveAttach(String featureId)
+    protected void saveAttach(String featureId, Map<String, AttachItem> attachMap)
     {
-        Map<String, AttachItem> attachMap = mAttaches.get(featureId);
         if (null != attachMap) {
             JSONArray jsonArray = new JSONArray();
 
@@ -1793,8 +1809,7 @@ public class VectorLayer
 
     protected void deleteAttaches(String featureId)
     {
-        mAttaches.remove(featureId);
-        saveAttach(featureId);
+        // TODO: delete files and folder
     }
 
 
@@ -1805,7 +1820,7 @@ public class VectorLayer
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null != attachMap) {
             attachMap.remove(attachId);
-            saveAttach(featureId);
+            saveAttach(featureId, attachMap);
         }
     }
 
@@ -1862,11 +1877,10 @@ public class VectorLayer
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null == attachMap) {
             attachMap = new HashMap<>();
-            mAttaches.put(featureId, attachMap);
         }
 
         attachMap.put(item.getAttachId(), item);
-        saveAttach(featureId);
+        saveAttach(featureId, attachMap);
     }
 
 
@@ -1880,10 +1894,16 @@ public class VectorLayer
 
         //save changes to meta.json
         Map<String, AttachItem> attaches = getAttachMap(featureId);
-        attaches.remove(item.getAttachId());
+
+        if (null == attaches) {
+            attaches = new HashMap<>();
+        } else {
+            attaches.remove(item.getAttachId());
+        }
+
         item.setAttachId(newAttachId);
         attaches.put(item.getAttachId(), item);
-        saveAttach(featureId);
+        saveAttach(featureId, attaches);
     }
 
 

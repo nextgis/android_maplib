@@ -24,7 +24,6 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.util.FileUtil;
@@ -101,7 +100,7 @@ public class MapBase
             layer.delete();
         }
 
-        mLayers.clear();
+        deInit();
 
         return FileUtil.deleteRecursive(getFileName());
     }
@@ -121,7 +120,7 @@ public class MapBase
             return;
         }
 
-        clearLayers();
+        deInit();
 
         if (FileUtil.move(mPath, newPath)) {
             //change path

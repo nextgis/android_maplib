@@ -31,9 +31,9 @@ import com.nextgis.maplib.api.IRenderer;
 public abstract class Renderer
         implements IJSONStore, IRenderer
 {
+    protected static int mCPUTotalCount;
 
-    protected static int    mCPUTotalCount;
-    protected final  ILayer mLayer;
+    protected ILayer mLayer;
 
 
     public Renderer(ILayer layer)
@@ -44,5 +44,12 @@ public abstract class Renderer
         if (mCPUTotalCount < 1) {
             mCPUTotalCount = 1;
         }
+    }
+
+
+    @Override
+    public void deInit()
+    {
+        mLayer = null;
     }
 }

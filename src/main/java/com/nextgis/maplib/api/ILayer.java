@@ -24,7 +24,6 @@
 package com.nextgis.maplib.api;
 
 import android.content.Context;
-
 import com.nextgis.maplib.datasource.GeoEnvelope;
 
 import java.io.File;
@@ -32,6 +31,11 @@ import java.io.File;
 
 public interface ILayer
 {
+    /**
+     * Release of resources
+     */
+    void deInit();
+
     /**
      * @return Application context
      */

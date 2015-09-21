@@ -48,6 +48,8 @@ public class RuleFeatureRenderer
     protected IStyleRule mStyleRule;
     protected Map<Long, Style> mParametrizedStyles = new TreeMap<>();
 
+    protected VectorLayerNotifyReceiver mNotifyReceiver;
+
 
     public RuleFeatureRenderer(Layer layer)
     {
@@ -87,9 +89,22 @@ public class RuleFeatureRenderer
         intentFilter.addAction(VectorLayer.NOTIFY_INSERT);
         intentFilter.addAction(VectorLayer.NOTIFY_UPDATE);
         intentFilter.addAction(VectorLayer.NOTIFY_UPDATE_FIELDS);
-        mLayer.getContext().registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
+
+        mNotifyReceiver = new VectorLayerNotifyReceiver();
+        mLayer.getContext().registerReceiver(mNotifyReceiver, intentFilter);
 
         initParametrizedStyles();
+    }
+
+
+    @Override
+    public void deInit()
+    {
+        if (null != mLayer) {
+            mLayer.getContext().unregisterReceiver(mNotifyReceiver);
+        }
+
+        super.deInit();
     }
 
 

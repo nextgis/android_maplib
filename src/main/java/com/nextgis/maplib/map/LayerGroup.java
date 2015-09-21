@@ -63,11 +63,29 @@ public class LayerGroup
         super(context, path);
 
         mLayerFactory = layerFactory;
-        mLayers = new ArrayList<>();
+        initLayers();
 
         mLayerDrawIndex = 0;
 
         mLayerType = LAYERTYPE_GROUP;
+    }
+
+
+    protected void initLayers()
+    {
+        mLayers = new ArrayList<>();
+    }
+
+
+    @Override
+    public void deInit()
+    {
+        for (ILayer layer : mLayers) {
+            layer.deInit();
+        }
+        mLayers.clear();
+        super.deInit();
+        initLayers();
     }
 
 
@@ -378,25 +396,13 @@ public class LayerGroup
     }
 
 
-    public void clearLayers()
-    {
-        for (ILayer layer : mLayers) {
-            if (layer instanceof LayerGroup) {
-                ((LayerGroup) layer).clearLayers();
-            }
-        }
-
-        mLayers.clear();
-    }
-
-
     @Override
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        super.fromJSON(jsonObject);
+        deInit();
 
-        clearLayers();
+        super.fromJSON(jsonObject);
 
         final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LAYERS_KEY);
         for (int i = 0; i < jsonArray.length(); i++) {

@@ -84,20 +84,15 @@ public class NGWVectorLayer
         extends VectorLayer
         implements INGWLayer
 {
-    protected String mAccountName;
-    protected String mCacheUrl;
-    protected String mCacheLogin;
-    protected String mCachePassword;
+    protected static NetworkUtil mNet;
 
-    protected long        mRemoteId;
-    protected NetworkUtil mNet;
-    protected int         mSyncType;
-    protected int         mNGWLayerType;
+    protected String mAccountName;
+    protected long   mRemoteId;
+    protected int    mSyncType;
+    protected int    mNGWLayerType;
     protected String mServerWhere;
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/attachments
-
-    protected String mChangeTableName;
 
     protected static final String JSON_ACCOUNT_KEY   = "account";
     protected static final String JSON_SYNC_TYPE_KEY = "sync_type";
@@ -110,10 +105,10 @@ public class NGWVectorLayer
     {
         super(context, path);
 
-        mNet = new NetworkUtil(context);
+        if (null == mNet) {
+            mNet = new NetworkUtil(context);
+        }
 
-        // table name is the same as the folder name of the layer + "_changes"
-        mChangeTableName = mPath.getName() + Constants.CHANGES_NAME_POSTFIX;
         mSyncType = Constants.SYNC_NONE;
         mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
         mNGWLayerType = Connection.NGWResourceTypeNone;
@@ -153,6 +148,11 @@ public class NGWVectorLayer
 
     public void setServerWhere(String serverWhere) {
         mServerWhere = serverWhere;
+    }
+
+    public String getChangeTableName()
+    {
+        return mPath.getName() + Constants.CHANGES_NAME_POSTFIX;
     }
 
     @Override
@@ -200,14 +200,7 @@ public class NGWVectorLayer
 
     public void setAccountCacheData()
     {
-        IGISApplication app = (IGISApplication) mContext.getApplicationContext();
-        Account account = app.getAccount(mAccountName);
 
-        if (null != account) {
-            mCacheUrl = app.getAccountUrl(account);
-            mCacheLogin = app.getAccountLogin(account);
-            mCachePassword = app.getAccountPassword(account);
-        }
     }
 
 
@@ -318,6 +311,7 @@ public class NGWVectorLayer
         return NOT_FOUND;
     }
 
+
     /**
      * download and create new NGW layer from GeoJSON data
      *
@@ -325,7 +319,9 @@ public class NGWVectorLayer
      */
     public String download()
     {
-        if(null == mCacheUrl)
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
+        if (null == accountData.url)
             return getContext().getString(R.string.error_download_data);
 
         if (!mNet.isNetworkAvailable()) { //return tile from cache
@@ -335,7 +331,8 @@ public class NGWVectorLayer
         try {
             Log.d(Constants.TAG, "download layer " + getName());
             String data = mNet.get(
-                    NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
+                    NGWUtil.getResourceMetaUrl(accountData.url, mRemoteId), accountData.login,
+                    accountData.password);
             if (null == data) {
                 return getContext().getString(R.string.error_download_data);
             }
@@ -374,8 +371,9 @@ public class NGWVectorLayer
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 
                 //get layer data
-                data = mNet.get(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere),
-                            mCacheLogin, mCachePassword);
+                data = mNet.get(
+                        NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere),
+                        accountData.login, accountData.password);
                 if (null == data) {
                     return getContext().getString(R.string.error_download_data);
                 }
@@ -386,20 +384,20 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, "feature count: " + features.size());
 
                 return initialize(fields, features, geomType);
-            }
-            else{
+            } else {
                 // init empty layer
                 String initStatus = initialize(fields, new ArrayList<Feature>(), geomType);
-                if(initStatus != null)
+                if (initStatus != null)
                     return initStatus;
 
                 mIsInitialized = false;
 
                 // get features and fill them
-                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere));
+                URL url = new URL(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere));
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                final String basicAuth = NetworkUtil.getHTTPBaseAuth(mCacheLogin, mCachePassword);
-                if(null != basicAuth)
+                final String basicAuth =
+                        NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
+                if (null != basicAuth)
                     urlConnection.setRequestProperty("Authorization", basicAuth);
                 MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
                 SQLiteDatabase db = map.getDatabase(false);
@@ -412,8 +410,9 @@ public class NGWVectorLayer
             }
 
         } catch (IOException e) {
-            Log.d(Constants.TAG, "Problem downloading GeoJSON: " + mCacheUrl + " Error: " +
-                         e.getLocalizedMessage());
+            Log.d(
+                    Constants.TAG, "Problem downloading GeoJSON: " + accountData.url + " Error: " +
+                            e.getLocalizedMessage());
             return getContext().getString(R.string.error_download_data);
         } catch (JSONException | SQLiteException e) {
 //            e.printStackTrace();
@@ -421,8 +420,14 @@ public class NGWVectorLayer
         }
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected List<Feature> loadFeaturesFromNGWStream(InputStream in, List<Field> fields, int nSRS) throws IOException {
+    protected List<Feature> loadFeaturesFromNGWStream(
+            InputStream in,
+            List<Field> fields,
+            int nSRS)
+            throws IOException
+    {
         List<Feature> result = new ArrayList<>();
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         reader.beginArray();
@@ -436,8 +441,15 @@ public class NGWVectorLayer
         return result;
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void loadFeaturesFromNGWStream(InputStream in, List<Field> fields, SQLiteDatabase db, int nSRS) throws IOException {
+    protected void loadFeaturesFromNGWStream(
+            InputStream in,
+            List<Field> fields,
+            SQLiteDatabase db,
+            int nSRS)
+            throws IOException
+    {
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         reader.beginArray();
         int featureCount = 0;
@@ -456,8 +468,14 @@ public class NGWVectorLayer
         mCacheLoaded = true;
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected Feature readNGWFeature(JsonReader reader, List<Field> fields, int nSRS) throws IOException {
+    protected Feature readNGWFeature(
+            JsonReader reader,
+            List<Field> fields,
+            int nSRS)
+            throws IOException
+    {
         Feature feature = new Feature(Constants.NOT_FOUND, fields);
 
         reader.beginObject();
@@ -473,28 +491,31 @@ public class NGWVectorLayer
                     geom.project(GeoConstants.CRS_WEB_MERCATOR);
                 }
                 feature.setGeometry(geom);
-            }
-            else if(name.equals(NGWUtil.NGWKEY_FIELDS)){
+            } else if (name.equals(NGWUtil.NGWKEY_FIELDS)) {
                 readNGWFeatureFields(feature, reader, fields);
-            }
-            else if(name.equals(NGWUtil.NGWKEY_EXTENSIONS)){
+            } else if (name.equals(NGWUtil.NGWKEY_EXTENSIONS)) {
                 if (reader.peek() != JsonToken.NULL) {
                     readNGWFeatureAttachments(feature, reader);
                 }
-            }
-            else
+            } else
                 reader.skipValue();
         }
         reader.endObject();
-        return  feature;
+        return feature;
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields) throws IOException {
+    protected void readNGWFeatureFields(
+            Feature feature,
+            JsonReader reader,
+            List<Field> fields)
+            throws IOException
+    {
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            if(reader.peek() == JsonToken.NULL)
+            if (reader.peek() == JsonToken.NULL)
                 reader.skipValue();
             else {
                 boolean bAdded = false;
@@ -523,15 +544,21 @@ public class NGWVectorLayer
                         break;
                     }
                 }
-                if(!bAdded)
+                if (!bAdded)
                     reader.skipValue();
             }
         }
         reader.endObject();
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void readNGWDate(Feature feature, JsonReader reader, String fieldName) throws IOException {
+    protected void readNGWDate(
+            Feature feature,
+            JsonReader reader,
+            String fieldName)
+            throws IOException
+    {
         reader.beginObject();
         int nYear = 1900;
         int nMonth = 1;
@@ -634,7 +661,7 @@ public class NGWVectorLayer
             int geometryType)
             throws SQLiteException
     {
-        FeatureChanges.initialize(mChangeTableName);
+        FeatureChanges.initialize(getChangeTableName());
         return super.initialize(fields, features, geometryType);
     }
 
@@ -755,6 +782,7 @@ public class NGWVectorLayer
             return;
         }
 
+        String changeTableName = getChangeTableName();
         boolean canAddChanges = true;
 
         // for delete operation
@@ -762,27 +790,27 @@ public class NGWVectorLayer
 
             // if featureId == NOT_FOUND remove all changes for all features
             if (featureId == Constants.NOT_FOUND) {
-                FeatureChanges.removeAllChanges(mChangeTableName);
+                FeatureChanges.removeAllChanges(changeTableName);
 
                 // if feature has changes then remove them for the feature
-            } else if (FeatureChanges.isChanges(mChangeTableName, featureId)) {
+            } else if (FeatureChanges.isChanges(changeTableName, featureId)) {
                 // if feature was new then just remove its changes
                 canAddChanges = !FeatureChanges.isChanges(
-                        mChangeTableName, featureId, Constants.CHANGE_OPERATION_NEW);
-                FeatureChanges.removeChanges(mChangeTableName, featureId);
+                        changeTableName, featureId, Constants.CHANGE_OPERATION_NEW);
+                FeatureChanges.removeChanges(changeTableName, featureId);
             }
         }
 
         // we are trying to re-create feature - warning
         if (operation == Constants.CHANGE_OPERATION_NEW &&
-            FeatureChanges.isChanges(mChangeTableName, featureId)) {
+            FeatureChanges.isChanges(changeTableName, featureId)) {
             Log.w(Constants.TAG, "Something wrong. Should nether get here");
             canAddChanges = false;
         }
 
         // if can then add change
         if (canAddChanges) {
-            FeatureChanges.add(mChangeTableName, featureId, operation);
+            FeatureChanges.add(changeTableName, featureId, operation);
         }
     }
 
@@ -797,6 +825,7 @@ public class NGWVectorLayer
             return;
         }
 
+        String changeTableName = getChangeTableName();
         boolean canAddChanges = true;
 
         // for delete operation
@@ -804,27 +833,27 @@ public class NGWVectorLayer
 
             // if attachId == NOT_FOUND remove all attach changes for the feature
             if (attachId == Constants.NOT_FOUND) {
-                FeatureChanges.removeAllAttachChanges(mChangeTableName, featureId);
+                FeatureChanges.removeAllAttachChanges(changeTableName, featureId);
 
                 // if attachment has changes then remove them for the attachment
-            } else if (FeatureChanges.isAttachChanges(mChangeTableName, featureId, attachId)) {
+            } else if (FeatureChanges.isAttachChanges(changeTableName, featureId, attachId)) {
                 // if attachment was new then just remove its changes
                 canAddChanges = !FeatureChanges.isAttachChanges(
-                        mChangeTableName, featureId, attachId, Constants.CHANGE_OPERATION_NEW);
-                FeatureChanges.removeAttachChanges(mChangeTableName, featureId, attachId);
+                        changeTableName, featureId, attachId, Constants.CHANGE_OPERATION_NEW);
+                FeatureChanges.removeAttachChanges(changeTableName, featureId, attachId);
             }
         }
 
         // we are trying to re-create the attach - warning
         // TODO: replace to attachOperation == CHANGE_OPERATION_NEW ???
         if (0 != (attachOperation & Constants.CHANGE_OPERATION_NEW) &&
-            FeatureChanges.isAttachChanges(mChangeTableName, featureId, attachId)) {
+            FeatureChanges.isAttachChanges(changeTableName, featureId, attachId)) {
             Log.w(Constants.TAG, "Something wrong. Should nether get here");
             canAddChanges = false;
         }
 
         if (canAddChanges) {
-            FeatureChanges.add(mChangeTableName, featureId, attachId, attachOperation);
+            FeatureChanges.add(changeTableName, featureId, attachId, attachOperation);
         }
     }
 
@@ -866,7 +895,8 @@ public class NGWVectorLayer
 
     public boolean sendLocalChanges(SyncResult syncResult)
     {
-        long changesCount = FeatureChanges.getChangeCount(mChangeTableName);
+        String changeTableName = getChangeTableName();
+        long changesCount = FeatureChanges.getChangeCount(changeTableName);
         Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
 
         if (0 == changesCount) {
@@ -877,7 +907,7 @@ public class NGWVectorLayer
 
         try {
             // get column's IDs, there is at least one entry
-            Cursor changeCursor = FeatureChanges.getFirstChangeFromRecordId(mChangeTableName, 0);
+            Cursor changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName, 0);
             changeCursor.moveToFirst();
 
             int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
@@ -894,7 +924,7 @@ public class NGWVectorLayer
             while (true) {
 
                 changeCursor = FeatureChanges.getFirstChangeFromRecordId(
-                        mChangeTableName, nextChangeRecordId);
+                        changeTableName, nextChangeRecordId);
 
                 if (null == changeCursor) {
                     break;
@@ -916,13 +946,13 @@ public class NGWVectorLayer
 
                 changeCursor.close();
 
-                long lastChangeRecordId = FeatureChanges.getLastChangeRecordId(mChangeTableName);
+                long lastChangeRecordId = FeatureChanges.getLastChangeRecordId(changeTableName);
 
                 if (0 == (changeOperation & Constants.CHANGE_OPERATION_ATTACH)) {
 
                     if (0 != (changeOperation & Constants.CHANGE_OPERATION_DELETE)) {
                         if (deleteFeatureOnServer(changeFeatureId, syncResult)) {
-                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
@@ -931,9 +961,9 @@ public class NGWVectorLayer
 
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
                         if (addFeatureOnServer(changeFeatureId, syncResult)) {
-                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeChangesToLast(
-                                    mChangeTableName, changeFeatureId,
+                                    changeTableName, changeFeatureId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
@@ -943,9 +973,9 @@ public class NGWVectorLayer
 
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_CHANGED)) {
                         if (changeFeatureOnServer(changeFeatureId, syncResult)) {
-                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeChangesToLast(
-                                    mChangeTableName, changeFeatureId,
+                                    changeTableName, changeFeatureId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
@@ -960,7 +990,7 @@ public class NGWVectorLayer
 
                     if (changeAttachOperation == Constants.CHANGE_OPERATION_DELETE) {
                         if (deleteAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
-                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
@@ -969,9 +999,9 @@ public class NGWVectorLayer
 
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_NEW) {
                         if (sendAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
-                            FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeAttachChangesToLast(
-                                    mChangeTableName, changeFeatureId, changeAttachId,
+                                    changeTableName, changeFeatureId, changeAttachId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
@@ -982,7 +1012,7 @@ public class NGWVectorLayer
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_CHANGED) {
                         if (changeAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
                             FeatureChanges.removeAttachChangesToLast(
-                                    mChangeTableName, changeFeatureId, changeAttachId,
+                                    changeTableName, changeFeatureId, changeAttachId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
@@ -994,7 +1024,7 @@ public class NGWVectorLayer
             }
 
             // check records count changing
-            if (changesCount != FeatureChanges.getChangeCount(mChangeTableName)) {
+            if (changesCount != FeatureChanges.getChangeCount(changeTableName)) {
                 //notify to reload changes
                 getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
             }
@@ -1025,6 +1055,8 @@ public class NGWVectorLayer
             return true;
         }
 
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
         try {
             JSONObject putData = new JSONObject();
             //putData.put(JSON_ID_KEY, attach.getAttachId());
@@ -1033,8 +1065,8 @@ public class NGWVectorLayer
             putData.put("description", attach.getDescription());
 
             String data = mNet.put(
-                    NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId) + attachId,
-                    putData.toString(), mCacheLogin, mCachePassword);
+                    NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId,
+                    putData.toString(), accountData.login, accountData.password);
 
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
@@ -1060,11 +1092,12 @@ public class NGWVectorLayer
             return false;
         }
 
-        try {
+        AccountData accountData = getAccountData(mContext, mAccountName);
 
+        try {
             if (!mNet.delete(
-                    NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId) + attachId,
-                    mCacheLogin, mCachePassword)) {
+                    NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) +
+                            attachId, accountData.login, accountData.password)) {
 
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1099,11 +1132,13 @@ public class NGWVectorLayer
         File filePath = new File(mPath, featureId + "/" + attach.getAttachId());
         String fileMime = attach.getMimetype();
 
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
         try {
             //1. upload file
             String data = mNet.postFile(
-                    NGWUtil.getFileUploadUrl(mCacheUrl), fileName, filePath, fileMime, mCacheLogin,
-                    mCachePassword);
+                    NGWUtil.getFileUploadUrl(accountData.url), fileName, filePath, fileMime,
+                    accountData.login, accountData.password);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1131,8 +1166,8 @@ public class NGWVectorLayer
             Log.d(Constants.TAG, "postload: " + postload);
 
             data = mNet.post(
-                    NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId),
-                    postload, mCacheLogin, mCachePassword);
+                    NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId),
+                    postload, accountData.login, accountData.password);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1196,7 +1231,7 @@ public class NGWVectorLayer
             if (photoFolder.renameTo(new File(mPath, "" + newFeatureId))) {
 
                 int chRes = FeatureChanges.changeFeatureIdForAttaches(
-                        mChangeTableName, oldFeatureId, newFeatureId);
+                        getChangeTableName(), oldFeatureId, newFeatureId);
                 if (chRes <= 0) {
                     Log.d(
                             Constants.TAG,
@@ -1219,6 +1254,8 @@ public class NGWVectorLayer
             return false;
         }
 
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
         Log.d(Constants.TAG, "The network is available. Get changes from server");
         List<Feature> features;
         // read layer contents as string
@@ -1226,8 +1263,9 @@ public class NGWVectorLayer
 
             String data;
             try {
-                data = mNet.get( NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere),
-                        mCacheLogin, mCachePassword);
+                data = mNet.get(
+                        NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere),
+                        accountData.login, accountData.password);
             } catch (IOException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
@@ -1252,9 +1290,10 @@ public class NGWVectorLayer
         }
         else{
             try {
-                URL url = new URL(NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere));
+                URL url = new URL(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere));
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                final String basicAuth = NetworkUtil.getHTTPBaseAuth(mCacheLogin, mCachePassword);
+                final String basicAuth =
+                        NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
                 if(null != basicAuth)
                     urlConnection.setRequestProperty("Authorization", basicAuth);
 
@@ -1281,6 +1320,8 @@ public class NGWVectorLayer
 
             Log.d(Constants.TAG, "Get " + features.size() + " feature(s) from server");
 
+            String changeTableName = getChangeTableName();
+
             // analyse feature
             for (Feature remoteFeature : features) {
 
@@ -1291,7 +1332,7 @@ public class NGWVectorLayer
 
                     //if we have changes (delete) not create new feature
                     boolean createNewFeature =
-                            !FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId());
+                            !FeatureChanges.isChanges(changeTableName, remoteFeature.getId());
 
                     //create new feature with remoteId
                     if (createNewFeature) {
@@ -1319,15 +1360,15 @@ public class NGWVectorLayer
                         if (eqData) {
                             //remove from changes
 
-                            if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId())) {
+                            if (FeatureChanges.isChanges(changeTableName, remoteFeature.getId())) {
 
                                 if (eqAttach && !FeatureChanges.isAttachesForDelete(
-                                        mChangeTableName, remoteFeature.getId()) ||
+                                        changeTableName, remoteFeature.getId()) ||
                                         !FeatureChanges.isAttachChanges(
-                                                mChangeTableName, remoteFeature.getId())) {
+                                                changeTableName, remoteFeature.getId())) {
 
                                     FeatureChanges.removeChanges(
-                                            mChangeTableName, remoteFeature.getId());
+                                            changeTableName, remoteFeature.getId());
                                 }
                             }
 
@@ -1335,7 +1376,7 @@ public class NGWVectorLayer
 
                             // we have local changes ready for sent to server
                             boolean isChangedLocal = FeatureChanges.isChanges(
-                                    mChangeTableName, remoteFeature.getId());
+                                    changeTableName, remoteFeature.getId());
 
                             //no local changes - update local feature
                             if (!isChangedLocal) {
@@ -1358,21 +1399,21 @@ public class NGWVectorLayer
                         //process attachments
                         if (eqAttach) {
 
-                            if (FeatureChanges.isChanges(mChangeTableName, remoteFeature.getId()) &&
+                            if (FeatureChanges.isChanges(changeTableName, remoteFeature.getId()) &&
                                     (eqData || FeatureChanges.isAttachChanges(
-                                            mChangeTableName, remoteFeature.getId()))) {
+                                            changeTableName, remoteFeature.getId()))) {
 
                                 Log.d(
                                         Constants.TAG, "The feature " + remoteFeature.getId() +
                                                 " already changed on server. Remove changes for it");
 
                                 FeatureChanges.removeChanges(
-                                        mChangeTableName, remoteFeature.getId());
+                                        changeTableName, remoteFeature.getId());
                             }
 
                         } else {
                             boolean isChangedLocal = FeatureChanges.isAttachChanges(
-                                    mChangeTableName, remoteFeature.getId());
+                                    changeTableName, remoteFeature.getId());
 
                             if (!isChangedLocal) {
                                 Iterator<String> iterator =
@@ -1384,7 +1425,9 @@ public class NGWVectorLayer
                                     //delete attachment which not exist on server
                                     if (!remoteFeature.getAttachments().containsKey(attachId)) {
                                         iterator.remove();
-                                        saveAttach("" + currentFeature.getId());
+                                        saveAttach(
+                                                "" + currentFeature.getId(),
+                                                currentFeature.getAttachments());
 
                                     } else { //or change attachment properties
                                         AttachItem currentItem =
@@ -1398,7 +1441,7 @@ public class NGWVectorLayer
                                                     Long.parseLong(remoteItem.getAttachId());
                                             boolean changeOnServer =
                                                     !FeatureChanges.isAttachChanges(
-                                                            mChangeTableName, remoteFeature.getId(),
+                                                            changeTableName, remoteFeature.getId(),
                                                             attachIdL);
 
                                             if (changeOnServer) {
@@ -1407,13 +1450,14 @@ public class NGWVectorLayer
                                                 currentItem.setMimetype(remoteItem.getMimetype());
                                                 currentItem.setDisplayName(
                                                         remoteItem.getDisplayName());
+                                                saveAttach(
+                                                        "" + currentFeature.getId(),
+                                                        currentFeature.getAttachments());
                                             }
                                         }
                                     }
                                 }
                             }
-
-                            saveAttach("" + currentFeature.getId());
                         }
                     } catch (Exception e) {
                         //Log.d(TAG, e.getLocalizedMessage());
@@ -1441,7 +1485,7 @@ public class NGWVectorLayer
 
                 // if local item is in update list and state ADD_NEW skip delete
                 bDeleteFeature = bDeleteFeature && !FeatureChanges.isChanges(
-                        mChangeTableName, item.getId(), Constants.CHANGE_OPERATION_NEW);
+                        changeTableName, item.getId(), Constants.CHANGE_OPERATION_NEW);
 
                 if (bDeleteFeature) {
                     deleteItems.add(item.getId());
@@ -1455,7 +1499,7 @@ public class NGWVectorLayer
                 delete(itemId, Constants.FIELD_ID + " = " + itemId, null);
             }
 
-            Cursor changeCursor = FeatureChanges.getChanges(mChangeTableName);
+            Cursor changeCursor = FeatureChanges.getChanges(changeTableName);
 
             // remove changes already applied on server (delete already deleted id or add already added)
             if (null != changeCursor) {
@@ -1481,7 +1525,7 @@ public class NGWVectorLayer
                                     if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
                                         // if feature already exist, just change it
                                         FeatureChanges.setOperation(
-                                                mChangeTableName, changeRecordId,
+                                                changeTableName, changeRecordId,
                                                 Constants.CHANGE_OPERATION_CHANGED);
                                     }
                                     bDeleteChange = false; // in other cases just apply
@@ -1503,7 +1547,7 @@ public class NGWVectorLayer
                                                 ", changeOperation " + changeOperation +
                                                 ", attachChangeOperation " + attachChangeOperation);
                                 // TODO: analise for operation, remove all equal
-                                FeatureChanges.removeChangeRecord(mChangeTableName, changeRecordId);
+                                FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             }
 
                         } while (changeCursor.moveToNext());
@@ -1545,7 +1589,7 @@ public class NGWVectorLayer
         if (!mNet.isNetworkAvailable()) {
             return false;
         }
-        Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
+        Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null, null);
@@ -1567,13 +1611,15 @@ public class NGWVectorLayer
             cursor.close();
         }
 
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
             Log.d(Constants.TAG, "payload: " + payload);
             String data = mNet.post(
-                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere), payload, mCacheLogin,
-                    mCachePassword);
+                    NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere), payload,
+                    accountData.login, accountData.password);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1602,10 +1648,12 @@ public class NGWVectorLayer
             return false;
         }
 
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
         try {
             if (!mNet.delete(
-                    NGWUtil.getFeatureUrl(mCacheUrl, mRemoteId, featureId), mCacheLogin,
-                    mCachePassword)) {
+                    NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), accountData.login,
+                    accountData.password)) {
 
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1627,7 +1675,7 @@ public class NGWVectorLayer
         if (!mNet.isNetworkAvailable()) {
             return false;
         }
-        Uri uri = ContentUris.withAppendedId(mContentUri, featureId);
+        Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
         Cursor cursor = query(uri, null, null, null, null, null);
@@ -1649,13 +1697,15 @@ public class NGWVectorLayer
             cursor.close();
         }
 
+        AccountData accountData = getAccountData(mContext, mAccountName);
+
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
             Log.d(Constants.TAG, "payload: " + payload);
             String data = mNet.put(
-                    NGWUtil.getFeatureUrl(mCacheUrl, mRemoteId, featureId), payload, mCacheLogin,
-                    mCachePassword);
+                    NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), payload,
+                    accountData.login, accountData.password);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1681,7 +1731,7 @@ public class NGWVectorLayer
                     continue;
                 }
 
-                Field field = mFields.get(cursor.getColumnName(i));
+                Field field = loadFields().get(cursor.getColumnName(i));
                 if (null == field) {
                     continue;
                 }
@@ -1769,7 +1819,7 @@ public class NGWVectorLayer
 
     protected synchronized void applySync(int syncType){
         if(syncType == Constants.SYNC_NONE) {
-            FeatureChanges.removeAllChanges(mChangeTableName);
+            FeatureChanges.removeAllChanges(getChangeTableName());
         }
         else{
             if(mCacheLoaded)
@@ -1841,7 +1891,7 @@ public class NGWVectorLayer
     public boolean delete()
             throws SQLiteException
     {
-        FeatureChanges.delete(mChangeTableName);
+        FeatureChanges.delete(getChangeTableName());
 
         return super.delete();
     }
@@ -1862,5 +1912,28 @@ public class NGWVectorLayer
      */
     public boolean isRemoteReadOnly(){
         return !(mNGWLayerType == Connection.NGWResourceTypeVectorLayer);
+    }
+
+
+    protected class AccountData
+    {
+        String url;
+        String login;
+        String password;
+    }
+
+
+    protected AccountData getAccountData(Context context, String accountName)
+    {
+        IGISApplication app = (IGISApplication) context.getApplicationContext();
+        Account account = app.getAccount(accountName);
+
+        AccountData accountData = new AccountData();
+
+        accountData.url = app.getAccountUrl(account);
+        accountData.login = app.getAccountLogin(account);
+        accountData.password = app.getAccountPassword(account);
+
+        return accountData;
     }
 }
