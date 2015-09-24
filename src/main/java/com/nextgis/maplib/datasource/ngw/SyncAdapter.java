@@ -107,11 +107,11 @@ public class SyncAdapter
     {
         Log.d(TAG, "onPerformSync");
 
-        getContext().sendBroadcast(new Intent(SYNC_START));
-
         IGISApplication application = (IGISApplication) getContext();
         MapContentProviderHelper mapContentProviderHelper =
                 (MapContentProviderHelper) application.getMap();
+
+        getContext().sendBroadcast(new Intent(SYNC_START));
 
         if (null != mapContentProviderHelper) {
             mapContentProviderHelper.load(); // reload map for deleted/added layers
@@ -124,9 +124,12 @@ public class SyncAdapter
             return;
         }
 
+        final String accountNameHash = "_" + account.name.hashCode();
         SharedPreferences settings = getContext().getSharedPreferences(
                 Constants.PREFERENCES, Context.MODE_PRIVATE | Constants.MODE_MULTI_PROCESS);
         SharedPreferences.Editor editor = settings.edit();
+        editor.putLong(
+                SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP + accountNameHash, System.currentTimeMillis());
         editor.putLong(
                 SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
         editor.commit();
