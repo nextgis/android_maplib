@@ -203,7 +203,7 @@ public class Table implements ILayer, IJSONStore {
     }
 
     @Override
-    public void notifyUpdate(long rowId, long oldRowId) {
+    public void notifyUpdate(long rowId, long oldRowId, boolean attributesOnly) {
 
     }
 

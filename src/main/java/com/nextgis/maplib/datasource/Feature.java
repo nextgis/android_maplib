@@ -30,6 +30,7 @@ import android.util.Log;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -414,8 +415,8 @@ public class Feature
             if (null == value) {
                 if (null != valueOther) {
                     if (field.getType() == FTDateTime) {
-                        Date dt = (Date) valueOther;
-                        if (dt.getTime() != 0) {
+                        long lValue = dateObjectToLong(valueOther);
+                        if (lValue > 0) {
                             Log.d(TAG, value + "<->" + valueOther);
                             return false;
                         }
@@ -428,49 +429,92 @@ public class Feature
                 Log.d(TAG, value + "<->" + valueOther);
                 return false;
             } else {
-                if (value instanceof Integer && valueOther instanceof Long) {
-                    Integer vlong = (Integer) value;
-                    Long ovlong = (Long) valueOther;
-                    if (vlong != ovlong.intValue()) {
+                if(field.getType() == GeoConstants.FTInteger){
+                    if(!checkIntegerEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                } else if (value instanceof Long && valueOther instanceof Integer) {
-                    Long vlong = (Long) value;
-                    Integer ovlong = (Integer) valueOther;
-                    if (vlong.intValue() != ovlong) {
+                }
+                else if(field.getType() == GeoConstants.FTReal) {
+                    if(!checkRealEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                } else if (value instanceof Float && valueOther instanceof Double) {
-                    Float vlong = (Float) value;
-                    Double ovlong = (Double) valueOther;
-                    if (vlong != ovlong.floatValue()) {
+                }
+                else if(field.getType() == GeoConstants.FTDate ||
+                        field.getType() == GeoConstants.FTTime ||
+                        field.getType() == GeoConstants.FTDateTime) {
+                    if(!checkDateEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                } else if (value instanceof Double && valueOther instanceof Float) {
-                    Double vlong = (Double) value;
-                    Float ovlong = (Float) valueOther;
-                    if (vlong.floatValue() != ovlong) {
-                        Log.d(TAG, value + "<->" + valueOther);
-                        return false;
-                    }
-                } else if (!value.equals(valueOther)) {
+                }
+                else if (!value.equals(valueOther)) { // any other cases
                     Log.d(TAG, value + "<->" + valueOther);
                     return false;
                 }
             }
         }
+
         //compare geometry
         Log.d(TAG, "compare geometry");
         if (null == mGeometry) {
             return null == f.getGeometry();
         }
         return mGeometry.equals(f.getGeometry());
-
     }
 
+    private long dateObjectToLong(Object value) {
+        if(value instanceof Long) {
+            return (Long) value;
+        }
+        else if(value instanceof Date){
+            Date date = (Date) value;
+            return date.getTime();
+        }
+        else if(value instanceof Calendar){
+            Calendar cal = (Calendar) value;
+            return cal.getTimeInMillis();
+        }
+
+        return Constants.NOT_FOUND;
+    }
+
+    private boolean checkDateEqual(Object value, Object valueOther) {
+        return dateObjectToLong(value) == dateObjectToLong(valueOther);
+    }
+
+    private boolean checkRealEqual(Object value, Object valueOther) {
+        if (value instanceof Float && valueOther instanceof Double) {
+            Float vlong = (Float) value;
+            Double ovlong = (Double) valueOther;
+            return vlong == ovlong.floatValue();
+        }
+        else if (value instanceof Double && valueOther instanceof Float) {
+            Double vlong = (Double) value;
+            Float ovlong = (Float) valueOther;
+            return vlong.floatValue() == ovlong;
+        }
+        else {
+            return value.equals(valueOther);
+        }
+    }
+
+    private boolean checkIntegerEqual(Object value, Object valueOther) {
+        if (value instanceof Integer && valueOther instanceof Long) {
+            Integer vlong = (Integer) value;
+            Long ovlong = (Long) valueOther;
+            return vlong == ovlong.intValue();
+        }
+        else if (value instanceof Long && valueOther instanceof Integer) {
+            Long vlong = (Long) value;
+            Integer ovlong = (Integer) valueOther;
+            return  vlong.intValue() == ovlong;
+        }
+        else {
+            return value.equals(valueOther);
+        }
+    }
 
     public boolean equalsAttachments(Feature f)
     {

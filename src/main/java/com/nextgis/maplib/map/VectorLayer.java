@@ -1485,6 +1485,7 @@ public class VectorLayer
                     }
 
                     if (bNotify) {
+                        notify.putExtra(Constants.ATTRIBUTES_ONLY, false);
                         notify.putExtra(
                                 Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                         getContext().sendBroadcast(notify);
@@ -1493,6 +1494,7 @@ public class VectorLayer
                 } else {
                     notify = new Intent(Constants.NOTIFY_UPDATE_FIELDS);
                     notify.putExtra(Constants.FIELD_ID, rowId);
+                    notify.putExtra(Constants.ATTRIBUTES_ONLY, true);
                     getContext().sendBroadcast(notify);
                 }
             }
@@ -1871,6 +1873,9 @@ public class VectorLayer
 
     @Override
     public void notifyInsert(long rowId) {
+
+        Log.d(Constants.TAG, "notifyInsert id: " + rowId);
+
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
             cacheGeometryEnvelope(rowId, geom);
@@ -1882,7 +1887,12 @@ public class VectorLayer
     @Override
     public void notifyUpdate(
             long rowId,
-            long oldRowId) {
+            long oldRowId, boolean attributesOnly) {
+
+        if(attributesOnly)
+            return;
+
+        Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
             if (oldRowId != Constants.NOT_FOUND) {

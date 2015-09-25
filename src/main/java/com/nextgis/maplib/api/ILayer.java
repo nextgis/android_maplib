@@ -121,8 +121,9 @@ public interface ILayer
      * Triggered on layer contents changed
      * @param rowId New record id
      * @param oldRowId Old record id
+     * @param attributesOnly
      */
-    void notifyUpdate(long rowId, long oldRowId);
+    void notifyUpdate(long rowId, long oldRowId, boolean attributesOnly);
 
     /**
      * Triggered on layer added new record

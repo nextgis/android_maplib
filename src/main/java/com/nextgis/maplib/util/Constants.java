@@ -136,6 +136,8 @@ public interface Constants
     String FIELD_ATTACH_ID        = "attach_id";
     String FIELD_ATTACH_OPERATION = "attach_operation";
 
+    String ATTRIBUTES_ONLY = "attributes_only";
+
     /**
      * Layer type
      */
