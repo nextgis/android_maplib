@@ -576,7 +576,7 @@ public class GeoJSONUtil {
 
         String testString = new String(buffer);
 
-        return testString.contains("\"features\": []");
+        return testString.contains("\"" + GeoConstants.GEOJSON_TYPE_FEATURES + "\"");
     }
 
 }
