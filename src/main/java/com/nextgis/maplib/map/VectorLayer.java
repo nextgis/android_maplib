@@ -1450,6 +1450,7 @@ public class VectorLayer
 
         if (values.containsKey(Constants.FIELD_GEOM)) {
             try {
+                // remove current cache item to not intersect with itself
                 mCache.removeItem(rowId);
                 prepareGeometry(values);
             } catch (IOException | ClassNotFoundException e) {
@@ -1888,18 +1889,19 @@ public class VectorLayer
     public void notifyUpdate(
             long rowId,
             long oldRowId, boolean attributesOnly) {
+        Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
+
+        if (oldRowId != Constants.NOT_FOUND) {
+            mCache.changeId(oldRowId, rowId);
+            save();
+        }
 
         if(attributesOnly)
             return;
 
-        Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
-            if (oldRowId != Constants.NOT_FOUND) {
-                mCache.removeItem(oldRowId);
-            } else {
-                mCache.removeItem(rowId);
-            }
+            mCache.removeItem(rowId);
 
             cacheGeometryEnvelope(rowId, geom);
             save();
@@ -1995,7 +1997,7 @@ public class VectorLayer
 
     public List<Long> query(GeoEnvelope env) {
         List<IGeometryCacheItem> items;
-        if(null == env || env.contains(mExtents))
+        if(null == env || !env.isInit() || env.contains(mExtents))
             items = mCache.getAll();
         else
             items = mCache.search(env);

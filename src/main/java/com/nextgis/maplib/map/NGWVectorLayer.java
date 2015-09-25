@@ -889,7 +889,12 @@ public class NGWVectorLayer
         }
 
         //update id in cache
-        mCache.changeId(oldFeatureId, newFeatureId);
+        Intent notify = new Intent(Constants.NOTIFY_UPDATE);
+        notify.putExtra(Constants.FIELD_OLD_ID, oldFeatureId);
+        notify.putExtra(Constants.FIELD_ID, newFeatureId);
+        notify.putExtra(Constants.ATTRIBUTES_ONLY, true);
+        notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName());
+        getContext().sendBroadcast(notify);
 
         //rename photo id folder if exist
         File photoFolder = new File(mPath, "" + oldFeatureId);
