@@ -1996,8 +1996,9 @@ public class VectorLayer
     }
 
     public List<Long> query(GeoEnvelope env) {
+
         List<IGeometryCacheItem> items;
-        if(null == env || !env.isInit() || env.contains(mExtents))
+        if(null == env || !env.isInit() || !mExtents.isInit() || env.contains(mExtents))
             items = mCache.getAll();
         else
             items = mCache.search(env);
