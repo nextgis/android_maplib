@@ -25,18 +25,27 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
 
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.FileUtil;
+import com.nextgis.maplib.util.NGException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
 
@@ -214,4 +223,38 @@ public abstract class TMSLayer
             }
         };
     }
+
+
+    public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+        InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
+        if (inputStream == null) {
+            throw new NGException(mContext.getString(R.string.error_download_data));
+        }
+
+        int streamSize = inputStream.available();
+        if(null != progressor){
+            progressor.setMax(streamSize);
+        }
+
+        int increment = 0;
+        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+
+        ZipInputStream zis = new ZipInputStream(inputStream);
+        ZipEntry ze;
+        while ((ze = zis.getNextEntry()) != null) {
+            FileUtil.unzipEntry(zis, ze, buffer, mPath);
+            increment += ze.getSize();
+            zis.closeEntry();
+            if(null != progressor){
+                if(progressor.isCanceled())
+                    return;
+                progressor.setValue(increment);
+                progressor.setMessage(getContext().getString(R.string.proceed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
+
+            }
+        }
+
+        save();
+    }
+
 }

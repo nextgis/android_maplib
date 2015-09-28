@@ -33,7 +33,6 @@ import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGException;
 
@@ -43,11 +42,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
 import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXX_KEY;
@@ -169,6 +165,83 @@ public class LocalTMSLayer
     }
 
 
+    @Override
+    public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+        super.fillFromZip(uri, progressor);
+
+        int nMaxLevel = 0;
+        int nMinLevel = 512;
+        final File[] zoomLevels = mPath.listFiles();
+
+        if(null != progressor){
+            progressor.setMax(zoomLevels.length);
+            progressor.setValue(0);
+            progressor.setMessage(mContext.getString(R.string.message_opening));
+        }
+
+        int counter = 0;
+
+        for (File zoomLevel : zoomLevels) {
+            if(null != progressor) {
+                if(progressor.isCanceled())
+                    return;
+                progressor.setValue(counter++);
+                progressor.setMessage(getContext().getString(R.string.proceed) + " " + counter + " " + getContext().getString(R.string.of) + " " + zoomLevels.length);
+
+            }
+
+            if(zoomLevel.getName().equals(Constants.CONFIG)){
+                continue;
+            }
+
+            int nMaxX = 0;
+            int nMinX = 10000000;
+            int nMaxY = 0;
+            int nMinY = 10000000;
+
+            int nLevelZ = Integer.parseInt(zoomLevel.getName());
+            if (nLevelZ > nMaxLevel) {
+                nMaxLevel = nLevelZ;
+            }
+            if (nLevelZ < nMinLevel) {
+                nMinLevel = nLevelZ;
+            }
+            final File[] levelsX = zoomLevel.listFiles();
+
+            boolean bFirstTurn = true;
+            for (File inLevelX : levelsX) {
+
+                int nX = Integer.parseInt(inLevelX.getName());
+                if (nX > nMaxX) {
+                    nMaxX = nX;
+                }
+                if (nX < nMinX) {
+                    nMinX = nX;
+                }
+
+                final File[] levelsY = inLevelX.listFiles();
+
+                if (bFirstTurn) {
+                    for (File inLevelY : levelsY) {
+                        String sLevelY = inLevelY.getName();
+
+                        //Log.d(TAG, sLevelY);
+                        int nY = Integer.parseInt(
+                                sLevelY.replace(TILE_EXT, ""));
+                        if (nY > nMaxY) {
+                            nMaxY = nY;
+                        }
+                        if (nY < nMinY) {
+                            nMinY = nY;
+                        }
+                    }
+                    bFirstTurn = false;
+                }
+            }
+            addLimits(nLevelZ, nMaxX, nMaxY, nMinX, nMinY);
+        }
+    }
+
     public void addLimits(
             int nLevelZ,
             int nMaxX,
@@ -273,110 +346,6 @@ public class LocalTMSLayer
                 env.setMaxY(item.getMaxY() * mapTileSize - GeoConstants.MERCATOR_MAX);
         }
         return env;
-    }
-
-    public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException{
-        InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
-        if (inputStream == null) {
-            throw new NGException(mContext.getString(R.string.error_download_data));
-        }
-
-        int streamSize = inputStream.available();
-        if(null != progressor){
-            progressor.setMax(streamSize);
-        }
-
-        int increment = 0;
-        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
-
-        ZipInputStream zis = new ZipInputStream(inputStream);
-        ZipEntry ze;
-        while ((ze = zis.getNextEntry()) != null) {
-            FileUtil.unzipEntry(zis, ze, buffer, mPath);
-            increment += ze.getSize();
-            zis.closeEntry();
-            if(null != progressor){
-                if(progressor.isCanceled())
-                    return;
-                progressor.setValue(increment);
-                progressor.setMessage(getContext().getString(R.string.proceed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
-
-            }
-        }
-
-        int nMaxLevel = 0;
-        int nMinLevel = 512;
-        final File[] zoomLevels = mPath.listFiles();
-
-        if(null != progressor){
-            progressor.setMax(zoomLevels.length);
-            progressor.setValue(0);
-            progressor.setMessage(mContext.getString(R.string.message_opening));
-        }
-
-        int counter = 0;
-
-        for (File zoomLevel : zoomLevels) {
-            if(null != progressor) {
-                if(progressor.isCanceled())
-                    return;
-                progressor.setValue(counter++);
-                progressor.setMessage(getContext().getString(R.string.proceed) + " " + counter + " " + getContext().getString(R.string.of) + " " + zoomLevels.length);
-
-            }
-
-            if(zoomLevel.getName().equals(Constants.CONFIG)){
-                continue;
-            }
-
-            int nMaxX = 0;
-            int nMinX = 10000000;
-            int nMaxY = 0;
-            int nMinY = 10000000;
-
-            int nLevelZ = Integer.parseInt(zoomLevel.getName());
-            if (nLevelZ > nMaxLevel) {
-                nMaxLevel = nLevelZ;
-            }
-            if (nLevelZ < nMinLevel) {
-                nMinLevel = nLevelZ;
-            }
-            final File[] levelsX = zoomLevel.listFiles();
-
-            boolean bFirstTurn = true;
-            for (File inLevelX : levelsX) {
-
-                int nX = Integer.parseInt(inLevelX.getName());
-                if (nX > nMaxX) {
-                    nMaxX = nX;
-                }
-                if (nX < nMinX) {
-                    nMinX = nX;
-                }
-
-                final File[] levelsY = inLevelX.listFiles();
-
-                if (bFirstTurn) {
-                    for (File inLevelY : levelsY) {
-                        String sLevelY = inLevelY.getName();
-
-                        //Log.d(TAG, sLevelY);
-                        int nY = Integer.parseInt(
-                                sLevelY.replace(TILE_EXT, ""));
-                        if (nY > nMaxY) {
-                            nMaxY = nY;
-                        }
-                        if (nY < nMinY) {
-                            nMinY = nY;
-                        }
-                    }
-                    bFirstTurn = false;
-                }
-            }
-            addLimits(nLevelZ, nMaxX, nMaxY, nMinX, nMinY);
-        }
-
-        save();
     }
 
     @Override
