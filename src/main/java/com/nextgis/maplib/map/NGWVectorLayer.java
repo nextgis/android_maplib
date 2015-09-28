@@ -1446,9 +1446,6 @@ public class NGWVectorLayer
             FeatureChanges.removeAllChanges(mChangeTableName);
         }
         else{
-            if(mCacheLoaded)
-                reloadCache();
-
             for (Long featureId : query(null)) {
                 addChange(featureId, Constants.CHANGE_OPERATION_NEW);
                 //add attach
