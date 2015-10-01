@@ -157,7 +157,8 @@ public class NGWUtil
         if (!server.startsWith("http")) {
             server = "http://" + server;
         }
-        return server + "/resource/" + styleId + "/tms?z={z}&x={x}&y={y}";
+        // old url return server + "/resource/" + styleId + "/tms?z={z}&x={x}&y={y}";
+        return server + "/api/component/render/tile?x={x}&y={y}&z={z}&resource=" + styleId;
     }
 
 
