@@ -261,20 +261,6 @@ public class NGWUtil
         return server + "/api/resource/" + remoteId + "/feature/?" + where;
     }
 
-
-    public static boolean containsCaseInsensitive(
-            String strToCompare,
-            String[] list)
-    {
-        for (String str : list) {
-            if (str.equalsIgnoreCase(strToCompare)) {
-                return (true);
-            }
-        }
-        return (false);
-    }
-
-
     public static String getFeatureAttachmentUrl(
             String server,
             long remoteId,

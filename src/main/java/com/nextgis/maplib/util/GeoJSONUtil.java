@@ -14,6 +14,7 @@ import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.VectorLayer;
@@ -126,16 +127,18 @@ public class GeoJSONUtil {
                     //the some list - need to check it type FTIntegerList, FTRealList, FTStringList
                 }
 
+                String fieldName = LayerUtil.normalizeFieldName(key);
+
                 if (nType != Constants.NOT_FOUND) {
                     int fieldIndex = Constants.NOT_FOUND;
                     for (int j = 0; j < fields.size(); j++) {
-                        if (fields.get(j).getName().equals(key)) {
+                        if (fields.get(j).getName().equals(fieldName)) {
                             fieldIndex = j;
                             break;
                         }
                     }
                     if (fieldIndex == Constants.NOT_FOUND) { //add new field
-                        Field field = new Field(nType, key, null);
+                        Field field = new Field(nType, fieldName, fieldName);
                         fieldIndex = fields.size();
                         fields.add(field);
                     }
@@ -251,10 +254,11 @@ public class GeoJSONUtil {
             while (iter.hasNext()) {
                 String key = iter.next();
                 Object value = jsonAttributes.get(key);
+                String fieldName = LayerUtil.normalizeFieldName(key);
 
                 int fieldIndex = Constants.NOT_FOUND;
                 for (int j = 0; j < fields.size(); j++) {
-                    if (fields.get(j).getName().equals(key)) {
+                    if (fields.get(j).getName().equals(fieldName)) {
                         fieldIndex = j;
                         break;
                     }
@@ -461,7 +465,7 @@ public class GeoJSONUtil {
         while (reader.hasNext()) {
             String name = reader.nextName();
             if(name.equals(GeoConstants.GEOJSON_PROPERTIES)) {
-                readGeoJSONFeatureProperties(reader, feature);
+                readGeoJSONFeatureProperties(reader, layer, feature);
             }
             else if(name.equals(GeoConstants.GEOJSON_GEOMETRY)) {
                 GeoGeometry geometry = readGeoJSONGeometry(reader);
@@ -486,53 +490,74 @@ public class GeoJSONUtil {
         return GeoGeometryFactory.fromJsonStream(reader);
     }
 
+    private static int getOrCreateField(String name, int type, VectorLayer layer, Feature feature) {
+        boolean isFieldsFilled = layer.getFields() != null && !layer.getFields().isEmpty();
+        if (isFieldsFilled) {
+            int fieldIndex = feature.getFieldValueIndex(name);
+            if(Constants.NOT_FOUND == fieldIndex){
+                Field field = new Field(type, name, name);
+                layer.createField(field);
+                feature.getFields().add(field);
+            }
+        }
+        else {
+            Field field = new Field(GeoConstants.FTString, name, name);
+            feature.getFields().add(field);
+        }
+
+        return feature.getFieldValueIndex(name);
+    }
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private static void readGeoJSONFeatureProperties(JsonReader reader, Feature feature) throws IOException {
-        boolean isFieldsFilled = feature.getFields() != null && !feature.getFields().isEmpty();
+    private static void readGeoJSONFeatureProperties(JsonReader reader, VectorLayer layer, Feature feature) throws IOException {
         reader.beginObject();
-        while (reader.hasNext()){
-            String name = reader.nextName();
-            JsonToken jsonToken = reader.peek();
-            if(jsonToken == JsonToken.STRING){
-                String value = reader.nextString();
-                if(!isFieldsFilled){
-                    feature.getFields().add(new Field(GeoConstants.FTString, name, name));
-                }
-                int fieldIndex = feature.getFieldValueIndex(name);
-                if (fieldIndex < 0 || fieldIndex >= feature.getFields().size() || name.startsWith("@") ||
-                        NGWUtil.containsCaseInsensitive(name, Constants.VECTOR_FORBIDDEN_FIELDS)) {
-                    continue;
-                }
-                int fieldType = feature.getFields().get(fieldIndex).getType();
-                if(fieldType == GeoConstants.FTDate || fieldType == GeoConstants.FTDateTime || fieldType == GeoConstants.FTTime){
-                    feature.setFieldValue(fieldIndex, parseDateTime(value, fieldType));
-                }
-                else{
-                    feature.setFieldValue(fieldIndex, value);
-                }
-            }
-            else if(jsonToken == JsonToken.BOOLEAN){
-                boolean value = reader.nextBoolean();
-                if(!isFieldsFilled){
-                    feature.getFields().add(new Field(GeoConstants.FTInteger, name, name));
-                }
-                feature.setFieldValue(name, value ? 1 : 0);
-            }
-            else if(jsonToken == JsonToken.NUMBER){
-                String value = reader.nextString();
-                Object number = parseNumber(value);
-                if(null != number) {
-                    if (!isFieldsFilled) {
-                        if (number instanceof Double)
-                            feature.getFields().add(new Field(GeoConstants.FTReal, name, name));
-                        else
-                            feature.getFields().add(new Field(GeoConstants.FTInteger, name, name));
-                    }
-                    feature.setFieldValue(name, number);
-                }
-            }
-            else {
+        while (reader.hasNext()) {
+            String name = LayerUtil.normalizeFieldName(reader.nextName());
+            if (!LayerUtil.isFieldNameValid(name)) {
                 reader.skipValue();
+            } else {
+                JsonToken jsonToken = reader.peek();
+                if (jsonToken == JsonToken.STRING) {
+                    String value = reader.nextString();
+                    int fieldIndex = getOrCreateField(name, GeoConstants.FTString, layer, feature);
+                    if (fieldIndex < 0) {
+                        continue;
+                    }
+
+                    int fieldType = feature.getFields().get(fieldIndex).getType();
+                    if (fieldType == GeoConstants.FTDate || fieldType == GeoConstants.FTDateTime || fieldType == GeoConstants.FTTime) {
+                        feature.setFieldValue(fieldIndex, parseDateTime(value, fieldType));
+                    } else {
+                        feature.setFieldValue(fieldIndex, value);
+                    }
+                }
+                else if (jsonToken == JsonToken.BOOLEAN) {
+                    boolean value = reader.nextBoolean();
+                    int fieldIndex = getOrCreateField(name, GeoConstants.FTInteger, layer, feature);
+                    if (fieldIndex < 0) {
+                        continue;
+                    }
+
+                    feature.setFieldValue(name, value ? 1 : 0);
+                } else if (jsonToken == JsonToken.NUMBER) {
+                    String value = reader.nextString();
+                    int fieldIndex;
+                    Object number = parseNumber(value);
+                    if (null != number) {
+                        if (number instanceof Double)
+                            fieldIndex = getOrCreateField(name, GeoConstants.FTReal, layer, feature);
+                        else
+                            fieldIndex = getOrCreateField(name, GeoConstants.FTInteger, layer, feature);
+
+                        if (fieldIndex < 0) {
+                            continue;
+                        }
+
+                        feature.setFieldValue(name, number);
+                    }
+                } else {
+                    reader.skipValue();
+                }
             }
         }
         reader.endObject();

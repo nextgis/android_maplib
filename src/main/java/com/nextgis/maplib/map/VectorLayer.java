@@ -67,6 +67,7 @@ import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.GeoJSONUtil;
+import com.nextgis.maplib.util.LayerUtil;
 import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
@@ -287,16 +288,15 @@ public class VectorLayer
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
             String fieldName = field.getName();
-            if (NGWUtil.containsCaseInsensitive(fieldName, Constants.VECTOR_FORBIDDEN_FIELDS) ||
-                    fieldName.startsWith("@")) {
+            if (!LayerUtil.isFieldNameValid(fieldName)) {
                 fields.remove(i);
                 i--;
 
                 String warning = getContext().getString(R.string.warning_remove_field);
                 reportError(String.format(warning, fieldName));
                 continue;
-            } else if (fieldName.contains(":")) {
-                field.setName(fieldName.replace(":", "_"));
+            } else {
+                field.setName(LayerUtil.normalizeFieldName(fieldName));
             }
 
             mFields.put(field.getName(), field);
@@ -529,9 +529,46 @@ public class VectorLayer
         }
     }
 
+    public void createField(Field field) throws SQLiteException {
+        if(null == mFields || mFields.isEmpty()) //the db table is not yet created
+            return;
+        if(mFields.containsKey(field.getName()))
+            return;
 
-    public void createFeature(Feature feature)
-            throws SQLiteException {
+        if (!LayerUtil.isFieldNameValid(field.getName())) {
+            return;
+        } else {
+            field.setName(LayerUtil.normalizeFieldName(field.getName()));
+        }
+
+        mFields.put(field.getName(), field);
+
+        String fieldCreate = "ALTER TABLE " + mPath.getName() + " ADD COLUMN " + field.getName();
+
+        switch (field.getType()) {
+            case FTString:
+                fieldCreate += " TEXT";
+                break;
+            case FTInteger:
+                fieldCreate += " INTEGER";
+                break;
+            case FTReal:
+                fieldCreate += " REAL";
+                break;
+            case FTDateTime:
+            case FTDate:
+            case FTTime:
+                fieldCreate += " TIMESTAMP";
+                break;
+        }
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
+        db.execSQL(fieldCreate);
+    }
+
+
+    public void createFeature(Feature feature) throws SQLiteException {
         // check if geometry type is appropriate layer geometry type
         if (null == feature.getGeometry() || feature.getGeometry().getType() != mGeometryType) {
             return;
