@@ -37,10 +37,10 @@
     <string name="parse_features">Parse features</string>
     <string name="message_loading">Loading…</string>
     <string name="error_layer_create">Create layer failed</string>
-    <string name="start_fill_layer">Processing data for...</string>
+    <string name="start_fill_layer">Processing data for…</string>
     <string name="message_opening">Opening…</string>
-    <string name="proceed_features">Proceed features</string>
-    <string name="proceed">Proceed</string>
+    <string name="process_features">Process features</string>
+    <string name="processed">Processed</string>
     <string name="of">of</string>
     <string name="rebuild_cache">Rebuild cache</string>
 </resources>

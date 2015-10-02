@@ -70,7 +70,6 @@ import com.nextgis.maplib.util.GeoJSONUtil;
 import com.nextgis.maplib.util.LayerUtil;
 import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
-import com.nextgis.maplib.util.NGWUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -2102,7 +2101,7 @@ public class VectorLayer
                         if(progressor.isCanceled())
                             break;
                         progressor.setValue(counter++);
-                        progressor.setMessage(mContext.getString(R.string.proceed_features) + ": " + counter);
+                        progressor.setMessage(mContext.getString(R.string.process_features) + ": " + counter);
                     }
 
                 } while (cursor.moveToNext());

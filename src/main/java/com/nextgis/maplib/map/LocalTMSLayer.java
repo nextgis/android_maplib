@@ -186,7 +186,7 @@ public class LocalTMSLayer
                 if(progressor.isCanceled())
                     return;
                 progressor.setValue(counter++);
-                progressor.setMessage(getContext().getString(R.string.proceed) + " " + counter + " " + getContext().getString(R.string.of) + " " + zoomLevels.length);
+                progressor.setMessage(getContext().getString(R.string.processed) + " " + counter + " " + getContext().getString(R.string.of) + " " + zoomLevels.length);
 
             }
 

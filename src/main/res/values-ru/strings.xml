@@ -37,10 +37,10 @@
     <string name="parse_features">Parse features</string>
     <string name="message_loading">Загрузка…</string>
     <string name="error_layer_create">Не удалось создать слой</string>
-    <string name="start_fill_layer">Start fill layer with data</string>
+    <string name="start_fill_layer">Запуск заполнения слоя данными</string>
     <string name="message_opening">Открывается…</string>
-    <string name="proceed_features">Proceed features</string>
-    <string name="proceed">Proceed</string>
-    <string name="of">of</string>
-    <string name="rebuild_cache">Rebuild cache</string>
+    <string name="process_features">Обработка записей</string>
+    <string name="processed">Обработано</string>
+    <string name="of">из</string>
+    <string name="rebuild_cache">Перестроить кэш</string>
 </resources>

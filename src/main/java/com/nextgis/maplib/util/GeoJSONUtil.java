@@ -14,7 +14,6 @@ import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.VectorLayer;
@@ -366,7 +365,7 @@ public class GeoJSONUtil {
                                     return;
                                 }
                                 progressor.setValue(streamSize - in.available());
-                                progressor.setMessage(layer.getContext().getString(R.string.proceed_features) + ": " + counter++);
+                                progressor.setMessage(layer.getContext().getString(R.string.process_features) + ": " + counter++);
                             }
                         }
                     }
@@ -437,7 +436,7 @@ public class GeoJSONUtil {
                                     return;
                                 }
                                 progressor.setValue(streamSize - in.available());
-                                progressor.setMessage(layer.getContext().getString(R.string.proceed_features) + ": " + counter++);
+                                progressor.setMessage(layer.getContext().getString(R.string.process_features) + ": " + counter++);
                             }
                         }
                     }

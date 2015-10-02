@@ -56,12 +56,12 @@ import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
+import com.nextgis.maplib.util.ProgressBufferedInputStream;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -320,10 +320,6 @@ public class NGWVectorLayer
         JSONObject featureLayerJSONObject = geoJSONObject.getJSONObject("feature_layer");
         JSONArray fieldsJSONArray = featureLayerJSONObject.getJSONArray(NGWUtil.NGWKEY_FIELDS);
         List<Field> fields = NGWUtil.getFieldsFromJson(fieldsJSONArray);
-        long totalFeatureCount = -1;
-        if(featureLayerJSONObject.has(NGWUtil.NGWKEY_FEATURE_COUNT)){
-            totalFeatureCount = featureLayerJSONObject.getLong(NGWUtil.NGWKEY_FEATURE_COUNT);
-        }
 
         //fill SRS
         JSONObject vectorLayerJSONObject = null;
@@ -380,7 +376,7 @@ public class NGWVectorLayer
                     if(progressor.isCanceled())
                         break;
                     progressor.setValue(featureCount++);
-                    progressor.setMessage(getContext().getString(R.string.proceed) + " " + featureCount + " " + getContext().getString(R.string.of) + " " + features.size());
+                    progressor.setMessage(getContext().getString(R.string.processed) + " " + featureCount + " " + getContext().getString(R.string.of) + " " + features.size());
                 }
             }
 
@@ -396,20 +392,15 @@ public class NGWVectorLayer
             if(null != basicAuth)
                 urlConnection.setRequestProperty("Authorization", basicAuth);
 
-            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
             reader.beginArray();
 
-            int streamSize = Math.abs(in.available());
+            int streamSize = in.available();
 
             if(null != progressor){
-                if(streamSize > 0) {
-                    progressor.setIndeterminate(false);
-                    progressor.setMax(streamSize);
-                }
-                else {
-                    progressor.setIndeterminate(true);
-                }
+                progressor.setIndeterminate(false);
+                progressor.setMax(streamSize);
                 progressor.setMessage(getContext().getString(R.string.start_fill_layer) + " " + getName());
             }
 
@@ -418,15 +409,13 @@ public class NGWVectorLayer
                 final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
                 createFeature(feature);
 
-                if(null != progressor && totalFeatureCount != -1){
+                if(null != progressor){
                     if (progressor.isCanceled()) {
                         save();
                         return;
                     }
-                    if(streamSize > 0) {
-                        progressor.setValue(streamSize - Math.abs(in.available()));
-                    }
-                    progressor.setMessage(getContext().getString(R.string.proceed_features) + ": " + featureCount++);
+                    progressor.setValue(streamSize - in.available());
+                    progressor.setMessage(getContext().getString(R.string.process_features) + ": " + featureCount++);
                 }
 
             }
@@ -963,7 +952,7 @@ public class NGWVectorLayer
                 if(null != basicAuth)
                     urlConnection.setRequestProperty("Authorization", basicAuth);
 
-                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
                 JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
                 features = new LinkedList<>();
                 reader.beginArray();

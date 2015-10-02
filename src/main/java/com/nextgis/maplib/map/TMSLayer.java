@@ -249,7 +249,7 @@ public abstract class TMSLayer
                 if(progressor.isCanceled())
                     return;
                 progressor.setValue(increment);
-                progressor.setMessage(getContext().getString(R.string.proceed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
+                progressor.setMessage(getContext().getString(R.string.processed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
 
             }
         }
