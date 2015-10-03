@@ -2050,11 +2050,15 @@ public class VectorLayer
     }
 
     public void showFeature(long featureId){
+        if(mIgnoreFeatures.isEmpty())
+            return;
         mIgnoreFeatures.remove(featureId);
         notifyLayerChanged();
     }
 
     public void showAllFeatures(){
+        if(mIgnoreFeatures.isEmpty())
+            return;
         mIgnoreFeatures.clear();
         notifyLayerChanged();
     }
