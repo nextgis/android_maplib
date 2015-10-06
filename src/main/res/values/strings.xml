@@ -39,7 +39,7 @@
     <string name="error_layer_create">Create layer failed</string>
     <string name="start_fill_layer">Processing data for…</string>
     <string name="message_opening">Opening…</string>
-    <string name="process_features">Processed features: </string>
+    <string name="process_features">Processed features</string>
     <string name="processed">Processed</string>
     <string name="of">of</string>
     <string name="rebuild_cache">Rebuild cache</string>
