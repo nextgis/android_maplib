@@ -39,7 +39,7 @@
     <string name="error_layer_create">Не удалось создать слой</string>
     <string name="start_fill_layer">Запуск заполнения слоя данными</string>
     <string name="message_opening">Открывается…</string>
-    <string name="process_features">Обработано записей: </string>
+    <string name="process_features">Обработано записей</string>
     <string name="processed">Обработано</string>
     <string name="of">из</string>
     <string name="rebuild_cache">Перестроить кэш</string>
