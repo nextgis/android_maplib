@@ -1715,6 +1715,11 @@ public class VectorLayer
     }
 
 
+    public Field getFieldByName(String name) {
+        return mFields.get(name);
+    }
+
+
     public int getCount() {
         if (!mCacheLoaded)
             reloadCache();
