@@ -56,6 +56,9 @@ public class GeometryRTree implements IGeometryCache {
 
     private volatile int size;
 
+    protected File mPath;
+    protected boolean mHasEdits;
+
     /**
      * Creates a new RTree.
      *
@@ -70,6 +73,7 @@ public class GeometryRTree implements IGeometryCache {
         this.minEntries = minEntries;
         this.seedPicker = seedPicker;
         root = buildRoot(true);
+        mHasEdits = false;
     }
 
     public GeometryRTree(int maxEntries, int minEntries){
@@ -136,6 +140,7 @@ public class GeometryRTree implements IGeometryCache {
 
     @Override
     public IGeometryCacheItem addItem(long id, GeoEnvelope envelope) {
+        mHasEdits = true;
         return insert(id, envelope);
     }
 
@@ -153,6 +158,12 @@ public class GeometryRTree implements IGeometryCache {
 
     @Override
     public synchronized void save(File path) {
+
+        boolean isSameFile = null != mPath && mPath.equals(path);
+
+        if(isSameFile && !mHasEdits)
+            return;
+
         try {
             FileUtil.createDir(path.getParentFile());
             FileOutputStream fileOutputStream = new FileOutputStream(path);
@@ -167,6 +178,8 @@ public class GeometryRTree implements IGeometryCache {
             dataOutputStream.flush();
             dataOutputStream.close();
             fileOutputStream.close();
+
+            mHasEdits = false;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -179,6 +192,9 @@ public class GeometryRTree implements IGeometryCache {
         if (!path.exists()) {
             return;
         }
+
+        mPath = path;
+
         try {
             FileInputStream fileInputStream = new FileInputStream(path);
             DataInputStream dataInputStream = new DataInputStream(fileInputStream);
@@ -302,6 +318,8 @@ public class GeometryRTree implements IGeometryCache {
             return null;
         }
 
+        mHasEdits = true;
+
         condenseTree(l);
             size--;
 
@@ -386,6 +404,7 @@ public class GeometryRTree implements IGeometryCache {
      */
     public void clear(){
         root = buildRoot(true);
+        mHasEdits = false;
         // let the GC take care of the rest.
     }
 
