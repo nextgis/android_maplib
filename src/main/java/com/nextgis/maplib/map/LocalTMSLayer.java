@@ -167,7 +167,7 @@ public class LocalTMSLayer
 
     @Override
     public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
-        super.fillFromZip(uri, progressor);
+        fillFromZipInt(uri, progressor);
 
         int nMaxLevel = 0;
         int nMinLevel = 512;

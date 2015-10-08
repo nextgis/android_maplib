@@ -224,8 +224,7 @@ public abstract class TMSLayer
         };
     }
 
-
-    public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+    protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
         InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
@@ -253,7 +252,11 @@ public abstract class TMSLayer
 
             }
         }
+    }
 
+
+    public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+        fillFromZipInt(uri, progressor);
         save();
     }
 
