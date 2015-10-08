@@ -240,6 +240,8 @@ public class LocalTMSLayer
             }
             addLimits(nLevelZ, nMaxX, nMaxY, nMinX, nMinY);
         }
+
+        save();
     }
 
     public void addLimits(
