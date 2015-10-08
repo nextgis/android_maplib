@@ -28,6 +28,10 @@ public class LayerUtil {
         for(char testChar : forbiddenChars) {
             result = result.replace(testChar, '_');
         }
+
+        if(result.equals(Constants.FIELD_ID))
+            return "_fixed_id";
+
         return result;
     }
 }
