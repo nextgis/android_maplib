@@ -316,8 +316,10 @@ public class MapDrawable
     public void cancelDraw()
     {
         super.cancelDraw();
-        if (null != mDrawThreadTask) {
-            mDrawThreadTask.cancel(true);
+
+        FutureTask task = (FutureTask) mDrawThreadTask;
+        if (null != task) {
+            task.cancel(true);
         }
     }
 
