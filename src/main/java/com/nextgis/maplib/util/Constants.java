@@ -41,7 +41,7 @@ public interface Constants
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
     long MIN_LOCAL_FEATURE_ID = 10000000;
-    int MAX_TILES_COUNT = 6000;
+    int MAX_TILES_COUNT = 6001;
 
     /**
      * NGW account type
