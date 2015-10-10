@@ -41,6 +41,7 @@ public interface Constants
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
     long MIN_LOCAL_FEATURE_ID = 10000000;
+    int MAX_TILES_COUNT = 6000;
 
     /**
      * NGW account type
@@ -189,7 +190,7 @@ public interface Constants
     int CHANGE_OPERATION_ATTACH  = 1 << 4; // 16
 
     int DRAWING_SEPARATE_THREADS = 9;
-    int DRAW_NOTIFY_STEP_PERCENT = 5; // 5%
+    int DRAW_NOTIFY_STEP_PERCENT = 20; // 5%
 
     String[] VECTOR_FORBIDDEN_FIELDS = {
             "ABORT",

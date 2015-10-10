@@ -119,7 +119,7 @@ public class MapUtil {
                 TileItem item = new TileItem(realX, realY, decimalZoom, env);
                 result.add(item);
 
-                if(result.size() > 10000) // some limits for tiles array size
+                if(result.size() > Constants.MAX_TILES_COUNT) // some limits for tiles array size
                     return result;
             }
         }
