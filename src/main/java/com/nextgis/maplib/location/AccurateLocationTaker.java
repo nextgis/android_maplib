@@ -22,6 +22,7 @@
 
 package com.nextgis.maplib.location;
 
+import android.Manifest;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
@@ -32,6 +33,7 @@ import android.os.Looper;
 import android.util.Log;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.PermissionUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +57,7 @@ public class AccurateLocationTaker implements LocationListener
 
     protected ArrayList<Location> mGpsTakings;
     protected LocationManager mLocationManager;
+    protected Context mContext;
 
     // Create a Handler that uses the Main Looper to run in
     protected Handler mHandler = new Handler(Looper.getMainLooper());
@@ -88,6 +91,7 @@ public class AccurateLocationTaker implements LocationListener
             long publishProgressDelayMillis,
             String circularErrorStr)
     {
+        mContext = context;
         IGISApplication app = (IGISApplication) context.getApplicationContext();
         mLocationManager = app.getGpsEventSource().mLocationManager;
         mMaxTakeCount = maxTakeCount;
@@ -235,10 +239,6 @@ public class AccurateLocationTaker implements LocationListener
 
         Log.d(Constants.TAG, "Start the GPS taking");
 
-        if (null != mLocationManager) {
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        }
-
         mStopTakingRunner = new Runnable()
         {
             @Override
@@ -285,6 +285,14 @@ public class AccurateLocationTaker implements LocationListener
         };
 
         mProgressUpdateRunner.run();
+
+        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return;
+
+        if (null != mLocationManager) {
+            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+        }
     }
 
 
@@ -303,10 +311,6 @@ public class AccurateLocationTaker implements LocationListener
     {
         mIsStopped = true;
 
-        if (null != mLocationManager) {
-            mLocationManager.removeUpdates(this);
-        }
-
         mHandler.removeCallbacks(mStopTakingRunner);
         mHandler.removeCallbacks(mProgressUpdateRunner);
 
@@ -315,6 +319,14 @@ public class AccurateLocationTaker implements LocationListener
             mOnGetAccurateLocationListener.onGetAccurateLocation(
                     getAccurateLocation(mCircularError), (long) mGpsTakings.size(),
                     mTakeTimeMillis);
+        }
+
+        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return;
+
+        if (null != mLocationManager) {
+            mLocationManager.removeUpdates(this);
         }
     }
 

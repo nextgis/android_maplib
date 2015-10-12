@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.location;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.GpsStatus;
@@ -32,6 +33,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.GpsEventListener;
+import com.nextgis.maplib.util.PermissionUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
 import java.util.Queue;
@@ -89,6 +91,10 @@ public class GpsEventSource
 
                 requestUpdates();
 
+                if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                    || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+                    return;
+
                 mLocationManager.addGpsStatusListener(mGpsStatusListener);
             }
         }
@@ -109,6 +115,10 @@ public class GpsEventSource
         if (mListeners != null) {
             mListeners.remove(listener);
 
+            if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                    || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+                return;
+
             if (mListeners.size() == 0) {
                 mLocationManager.removeUpdates(mGpsLocationListener);
                 mLocationManager.removeGpsStatusListener(mGpsStatusListener);
@@ -119,9 +129,14 @@ public class GpsEventSource
 
     public Location getLastKnownLocation()
     {
+        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return null;
+
         if (null != mLastLocation) {
             return mLastLocation;
         }
+
         if (null != mLocationManager) {
             if (0 != (mListenProviders & GPS_PROVIDER)) {
                 mLastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -144,6 +159,10 @@ public class GpsEventSource
 
     public Location getLastKnownBestLocation()
     {
+        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return null;
+
         if (null != mCurrentBestLocation) {
             return mCurrentBestLocation;
         }
@@ -185,6 +204,10 @@ public class GpsEventSource
 
     public void updateActiveListeners()
     {
+        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return;
+
         mLocationManager.removeUpdates(mGpsLocationListener);
 
         SharedPreferences sharedPreferences =
@@ -207,6 +230,10 @@ public class GpsEventSource
 
     private void requestUpdates()
     {
+        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            return;
+
         if (0 != (mListenProviders & GPS_PROVIDER) &&
                 mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
 
