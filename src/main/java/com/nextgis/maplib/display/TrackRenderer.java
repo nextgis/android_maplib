@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.display;
 
+import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.nextgis.maplib.api.ILayer;
@@ -39,13 +40,14 @@ import java.util.List;
 public class TrackRenderer
         extends Renderer
 {
-    private Paint mPaint;
+    private Paint mPaint, mMarkerPaint;
 
 
     public TrackRenderer(ILayer layer)
     {
         super(layer);
 
+        mMarkerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -73,6 +75,7 @@ public class TrackRenderer
     {
         final TrackLayer layer = (TrackLayer) mLayer;
 
+        mMarkerPaint.setStrokeWidth((float) Math.ceil(2 / display.getScale()));
         mPaint.setColor(layer.getColor());
         mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
 
@@ -91,7 +94,6 @@ public class TrackRenderer
 
             GeoLineString trackLine = trackLines.get(i);
             List<GeoPoint> points = trackLine.getPoints();
-
             for (int k = 1; k < points.size(); k++) {
                 if (Thread.currentThread().isInterrupted()) {
                     break;
@@ -101,6 +103,21 @@ public class TrackRenderer
                         (float) points.get(k - 1).getX(), (float) points.get(k - 1).getY(),
                         (float) points.get(k).getX(), (float) points.get(k).getY(), mPaint);
             }
+
+            GeoPoint endings = points.get(0);
+            mMarkerPaint.setStyle(Paint.Style.FILL);
+            mMarkerPaint.setColor(Color.GREEN);
+            display.drawCircle((float) endings.getX(), (float) endings.getY(), 5, mMarkerPaint);
+            mMarkerPaint.setStyle(Paint.Style.STROKE);
+            mMarkerPaint.setColor(layer.getColor());
+            display.drawCircle((float) endings.getX(), (float) endings.getY(), 5, mMarkerPaint);
+            endings = points.get(points.size() - 1);
+            mMarkerPaint.setStyle(Paint.Style.FILL);
+            mMarkerPaint.setColor(Color.RED);
+            display.drawCircle((float) endings.getX(), (float) endings.getY(), 5, mMarkerPaint);
+            mMarkerPaint.setStyle(Paint.Style.STROKE);
+            mMarkerPaint.setColor(layer.getColor());
+            display.drawCircle((float) endings.getX(), (float) endings.getY(), 5, mMarkerPaint);
 
             float percent = (float) i / trackLinesSize;
             if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
