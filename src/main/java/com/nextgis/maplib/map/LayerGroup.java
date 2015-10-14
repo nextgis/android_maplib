@@ -234,6 +234,19 @@ public class LayerGroup
     }
 
 
+    public int removeLayer(ILayer layer)
+    {
+        int result = mLayers.size() - 1;
+
+        if (layer != null) {
+            result = mLayers.indexOf(layer);
+            onLayerDeleted(layer.getId());
+        }
+
+        return result;
+    }
+
+
     @Override
     public void runDraw(GISDisplay display)
     {
