@@ -381,7 +381,7 @@ public class GeoJSONUtil {
         layer.save();
     }
 
-    protected static SQLiteDatabase getDbForLayer(final VectorLayer layer){
+    public static SQLiteDatabase getDbForLayer(final VectorLayer layer){
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         // speedup writing

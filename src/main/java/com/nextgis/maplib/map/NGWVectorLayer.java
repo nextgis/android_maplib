@@ -53,6 +53,7 @@ import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
+import com.nextgis.maplib.util.GeoJSONUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -396,6 +397,8 @@ public class NGWVectorLayer
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
             reader.beginArray();
 
+            SQLiteDatabase db = GeoJSONUtil.getDbForLayer(this);
+
             int streamSize = in.available();
 
             if(null != progressor){
@@ -407,7 +410,7 @@ public class NGWVectorLayer
             int featureCount = 0;
             while (reader.hasNext()) {
                 final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
-                createFeature(feature);
+                createFeatureBatch(feature, db);
 
                 if(null != progressor){
                     if (progressor.isCanceled()) {
@@ -426,7 +429,8 @@ public class NGWVectorLayer
 
             save();
 
-            Log.d(Constants.TAG, "feature count: " + featureCount);
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "feature count: " + featureCount);
         }
     }
 

@@ -48,6 +48,14 @@ public class ProgressBufferedInputStream extends BufferedInputStream{
     }
 
     @Override
+    public int read(byte[] buffer) throws IOException {
+        int n = super.read(buffer);
+        if (n > 0)
+            mCurrentReadSize += n;
+        return n;
+    }
+
+    @Override
     public synchronized long skip(long skip)
             throws IOException
     {

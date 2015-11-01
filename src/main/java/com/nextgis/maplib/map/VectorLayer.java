@@ -358,7 +358,7 @@ public class VectorLayer
 
             int nIncrement = 0;
             BufferedReader streamReader = new BufferedReader(
-                    new InputStreamReader(inputStream, "UTF-8"));
+                    new InputStreamReader(inputStream, "UTF-8"), Constants.IO_BUFFER_SIZE);
             StringBuilder responseStrBuilder = new StringBuilder();
             String inputStr;
             while ((inputStr = streamReader.readLine()) != null) {
@@ -400,7 +400,7 @@ public class VectorLayer
 
             int nIncrement = 0;
             BufferedReader streamReader = new BufferedReader(
-                    new InputStreamReader(inputStream, "UTF-8"));
+                    new InputStreamReader(inputStream, "UTF-8"), Constants.IO_BUFFER_SIZE);
             StringBuilder responseStrBuilder = new StringBuilder();
             String inputStr;
             while ((inputStr = streamReader.readLine()) != null) {
@@ -645,7 +645,8 @@ public class VectorLayer
             }
         }
 
-        Log.d(TAG, "Inserting " + values);
+        if(Constants.DEBUG_MODE)
+            Log.d(TAG, "Inserting " + values);
         long rowId = db.insert(mPath.getName(), "", values);
         if (rowId != Constants.NOT_FOUND) {
             if (null == feature.getGeometry()) {
@@ -1916,7 +1917,8 @@ public class VectorLayer
     @Override
     public void notifyInsert(long rowId) {
 
-        Log.d(Constants.TAG, "notifyInsert id: " + rowId);
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "notifyInsert id: " + rowId);
 
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
@@ -1930,7 +1932,8 @@ public class VectorLayer
     public void notifyUpdate(
             long rowId,
             long oldRowId, boolean attributesOnly) {
-        Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
 
         if (oldRowId != Constants.NOT_FOUND) {
             mCache.changeId(oldRowId, rowId);

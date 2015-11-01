@@ -34,6 +34,7 @@ import android.graphics.RectF;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.util.Constants;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
@@ -113,7 +114,8 @@ public class GISDisplay
         mWidth = w;
         mHeight = h;
 
-        Log.d(TAG, "new size: " + w + " x " + h);
+        if(Constants.DEBUG_MODE)
+            Log.d(TAG, "new size: " + w + " x " + h);
 
         mScreenBounds = new GeoEnvelope(0, w, 0, h);
         double extraX = (w * OFFSCREEN_EXTRASIZE_RATIO - w) * .5;
@@ -172,7 +174,8 @@ public class GISDisplay
         }
 
         int nZoom = (int) Math.floor(zoom);
-        Log.d(TAG, "Zoom: " + zoom + ", Center: " + center.toString());
+        if(Constants.DEBUG_MODE)
+            Log.d(TAG, "Zoom: " + zoom + ", Center: " + center.toString());
 
         double mapTileSize = 1 << nZoom;
         mapTileSize *= 1 + zoom - nZoom;
@@ -704,7 +707,8 @@ public class GISDisplay
         mMinZoomLevel = (float) Math.ceil(getZoomLevel() + zoom);
         mCenter = mGeoLimits.getCenter();
         setZoomAndCenter(mMinZoomLevel, mCenter);
-        Log.d(TAG, "min zoom level: " + mMinZoomLevel + ", center:" + mCenter.toString());
+        if(Constants.DEBUG_MODE)
+            Log.d(TAG, "min zoom level: " + mMinZoomLevel + ", center:" + mCenter.toString());
     }
 
 
