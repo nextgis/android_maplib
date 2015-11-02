@@ -29,7 +29,6 @@ import android.net.Uri;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
-
 import com.nextgis.maplib.map.TMSLayer;
 
 import java.io.BufferedReader;
@@ -102,6 +101,16 @@ public class FileUtil
         if (!dir.mkdirs()) {
             throw new RuntimeException("Can not create dir " + dir);
         }
+    }
+
+
+    // http://stackoverflow.com/a/30574112/4727406
+    public static boolean renameAndDelete(File fileOrDirectory)
+    {
+        File newFile = new File(
+                fileOrDirectory.getParent() + File.separator + "_" + fileOrDirectory.getName() +
+                "_temp_rename");
+        return fileOrDirectory.renameTo(newFile) && deleteRecursive(newFile);
     }
 
 
