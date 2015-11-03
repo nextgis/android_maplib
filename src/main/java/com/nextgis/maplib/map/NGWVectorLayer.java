@@ -210,7 +210,7 @@ public class NGWVectorLayer
     @Override
     protected long insert(ContentValues contentValues) {
         if (!contentValues.containsKey(Constants.FIELD_GEOM)) {
-            return 0;
+            return NOT_FOUND;
         }
 
         try{
