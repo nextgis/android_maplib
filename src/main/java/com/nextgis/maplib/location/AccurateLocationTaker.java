@@ -104,18 +104,18 @@ public class AccurateLocationTaker implements LocationListener
     protected float getCircularErrorFromString(String circularErrorString)
     {
         if (null == circularErrorString) {
-            circularErrorString = "CE50";
+            circularErrorString = Constants.CE50;
         }
 
         switch (circularErrorString) {
-            case "CE50":
+            case Constants.CE50:
             default:
                 return 0.5f;
-            case "CE90":
+            case Constants.CE90:
                 return 0.9f;
-            case "CE95":
+            case Constants.CE95:
                 return 0.95f;
-            case "CE98":
+            case Constants.CE98:
                 return 0.98f;
         }
     }

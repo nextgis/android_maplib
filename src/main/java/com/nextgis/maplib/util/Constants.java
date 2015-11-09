@@ -142,6 +142,14 @@ public interface Constants
     /**
      * Layer type
      */
+    String CE50 = "CE50";
+    String CE90 = "CE90";
+    String CE95 = "CE95";
+    String CE98 = "CE98";
+
+    /**
+     * Layer type
+     */
     int LAYERTYPE_REMOTE_TMS   = 1 << 0;
     int LAYERTYPE_NGW_RASTER   = 1 << 1;
     int LAYERTYPE_NGW_VECTOR   = 1 << 2;
