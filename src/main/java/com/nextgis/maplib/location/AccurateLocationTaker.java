@@ -41,6 +41,7 @@ import java.util.Collections;
 
 public class AccurateLocationTaker implements LocationListener
 {
+    protected Float   mMaxTakenAccuracy;
     protected Integer mMaxTakeCount;
     protected Long    mMaxTakeTimeMillis;
     protected long    mPublishProgressDelayMillis;
@@ -86,6 +87,7 @@ public class AccurateLocationTaker implements LocationListener
      */
     public AccurateLocationTaker(
             Context context,
+            Float maxTakenAccuracy,
             Integer maxTakeCount,
             Long maxTakeTimeMillis,
             long publishProgressDelayMillis,
@@ -93,6 +95,7 @@ public class AccurateLocationTaker implements LocationListener
     {
         mContext = context;
         IGISApplication app = (IGISApplication) context.getApplicationContext();
+        mMaxTakenAccuracy = maxTakenAccuracy;
         mLocationManager = app.getGpsEventSource().mLocationManager;
         mMaxTakeCount = maxTakeCount;
         mMaxTakeTimeMillis = maxTakeTimeMillis;
@@ -154,16 +157,42 @@ public class AccurateLocationTaker implements LocationListener
         accurateLoc.setAltitude(mAltAverage);
         accurateLoc.setTime(time);
 
-        ArrayList<Float> GPSDist = new ArrayList<>();
-        for (final Location location : mGpsTakings) {
-            GPSDist.add(accurateLoc.distanceTo(location));
+        // Here accurateLoc.getAccuracy() == 0.0f, form getAccuracy() docs:
+        // "If this location does not have an accuracy, then 0.0 is returned."
+        // We must check for 0.
+
+        if (2 <= takeCount) {
+
+            ArrayList<PairDistLoc> GPSDist = new ArrayList<>();
+            for (Location location : mGpsTakings) {
+                float dist = accurateLoc.distanceTo(location);
+                GPSDist.add(new PairDistLoc(dist, location));
+            }
+            Collections.sort(GPSDist);
+
+
+            int ceSize = ((int) (GPSDist.size() * circularError));
+            double ceLatSum = 0, ceLonSum = 0, ceAltSum = 0;
+            for (int i = 0; i < ceSize; ++i) {
+                Location location = GPSDist.get(i).mLocation;
+                ceLatSum += location.getLatitude();
+                ceLonSum += location.getLongitude();
+                ceAltSum += location.getAltitude();
+            }
+            double ceLatAverage = ceLatSum / ceSize;
+            double ceLonAverage = ceLonSum / ceSize;
+            double ceAltAverage = ceAltSum / ceSize;
+
+
+            int accIndex = ceSize - 1;
+            float accuracy = GPSDist.get(accIndex).mDistanceToCenter;
+
+
+            accurateLoc.setLatitude(ceLatAverage);
+            accurateLoc.setLongitude(ceLonAverage);
+            accurateLoc.setAltitude(ceAltAverage);
+            accurateLoc.setAccuracy(accuracy);
         }
-
-        Collections.sort(GPSDist);
-
-        int accIndex = (int) (GPSDist.size() * circularError);
-        float accuracy = GPSDist.get(accIndex);
-        accurateLoc.setAccuracy(accuracy);
 
         return accurateLoc;
     }
@@ -172,6 +201,10 @@ public class AccurateLocationTaker implements LocationListener
     protected void takeLocation(Location location)
     {
         if (null == mGpsTakings) {
+            return;
+        }
+
+        if (null != mMaxTakenAccuracy && mMaxTakenAccuracy.compareTo(location.getAccuracy()) < 0) {
             return;
         }
 
@@ -409,5 +442,29 @@ public class AccurateLocationTaker implements LocationListener
         void onGetAccurateLocation(
                 Location accurateLocation,
                 Long... values);
+    }
+
+
+    protected class PairDistLoc
+            implements Comparable<PairDistLoc>
+    {
+        Float    mDistanceToCenter;
+        Location mLocation;
+
+
+        PairDistLoc(
+                float dist,
+                Location location)
+        {
+            mDistanceToCenter = dist;
+            mLocation = location;
+        }
+
+
+        @Override
+        public int compareTo(PairDistLoc another)
+        {
+            return mDistanceToCenter.compareTo(another.mDistanceToCenter);
+        }
     }
 }
