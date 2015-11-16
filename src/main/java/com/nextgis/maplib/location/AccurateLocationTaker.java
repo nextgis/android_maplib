@@ -38,6 +38,7 @@ import java.util.Collections;
 public class AccurateLocationTaker
         implements GpsEventListener
 {
+    protected Float   mMaxTakenAccuracy;
     protected Integer mMaxTakeCount;
     protected Long    mMaxTakeTimeMillis;
     protected long    mPublishProgressDelayMillis;
@@ -49,6 +50,7 @@ public class AccurateLocationTaker
     protected Double mLatMin, mLatMax, mLonMin, mLonMax, mAltMin, mAltMax;
     protected double mLatSum, mLonSum, mAltSum;
     protected double mLatAverage, mLonAverage, mAltAverage;
+    protected float mSysAccuracyMin, mSysAccuracyMax, mSysAccuracySum, mSysAccuracyAverage;
 
     protected Long mLastLocationTime;
 
@@ -84,6 +86,7 @@ public class AccurateLocationTaker
      */
     public AccurateLocationTaker(
             Context context,
+            Float maxTakenAccuracy,
             Integer maxTakeCount,
             Long maxTakeTimeMillis,
             long publishProgressDelayMillis,
@@ -91,6 +94,7 @@ public class AccurateLocationTaker
     {
         IGISApplication app = (IGISApplication) context.getApplicationContext();
         mGpsEventSource = app.getGpsEventSource();
+        mMaxTakenAccuracy = maxTakenAccuracy;
         mMaxTakeCount = maxTakeCount;
         mMaxTakeTimeMillis = maxTakeTimeMillis;
         mPublishProgressDelayMillis = publishProgressDelayMillis;
@@ -135,6 +139,7 @@ public class AccurateLocationTaker
         mLatAverage = mLatSum / takeCount;
         mLonAverage = mLonSum / takeCount;
         mAltAverage = mAltSum / takeCount;
+        mSysAccuracyAverage = mSysAccuracySum / takeCount;
 
         long time;
         if (null != mLastLocationTime) {
@@ -151,16 +156,42 @@ public class AccurateLocationTaker
         accurateLoc.setAltitude(mAltAverage);
         accurateLoc.setTime(time);
 
-        ArrayList<Float> GPSDist = new ArrayList<>();
-        for (final Location location : mGpsTakings) {
-            GPSDist.add(accurateLoc.distanceTo(location));
+        // Here accurateLoc.getAccuracy() == 0.0f, form getAccuracy() docs:
+        // "If this location does not have an accuracy, then 0.0 is returned."
+        // We must check for 0.
+
+        if (2 <= takeCount) {
+
+            ArrayList<PairDistLoc> GPSDist = new ArrayList<>();
+            for (Location location : mGpsTakings) {
+                float dist = accurateLoc.distanceTo(location);
+                GPSDist.add(new PairDistLoc(dist, location));
+            }
+            Collections.sort(GPSDist);
+
+
+            int ceSize = ((int) (GPSDist.size() * circularError));
+            double ceLatSum = 0, ceLonSum = 0, ceAltSum = 0;
+            for (int i = 0; i < ceSize; ++i) {
+                Location location = GPSDist.get(i).mLocation;
+                ceLatSum += location.getLatitude();
+                ceLonSum += location.getLongitude();
+                ceAltSum += location.getAltitude();
+            }
+            double ceLatAverage = ceLatSum / ceSize;
+            double ceLonAverage = ceLonSum / ceSize;
+            double ceAltAverage = ceAltSum / ceSize;
+
+
+            int accIndex = ceSize - 1;
+            float accuracy = GPSDist.get(accIndex).mDistanceToCenter;
+
+
+            accurateLoc.setLatitude(ceLatAverage);
+            accurateLoc.setLongitude(ceLonAverage);
+            accurateLoc.setAltitude(ceAltAverage);
+            accurateLoc.setAccuracy(accuracy);
         }
-
-        Collections.sort(GPSDist);
-
-        int accIndex = (int) (GPSDist.size() * circularError);
-        float accuracy = GPSDist.get(accIndex);
-        accurateLoc.setAccuracy(accuracy);
 
         return accurateLoc;
     }
@@ -172,11 +203,16 @@ public class AccurateLocationTaker
             return;
         }
 
+        if (null != mMaxTakenAccuracy && mMaxTakenAccuracy.compareTo(location.getAccuracy()) < 0) {
+            return;
+        }
+
         mGpsTakings.add(location);
 
         double lat = location.getLatitude();
         double lon = location.getLongitude();
         double alt = location.getAltitude();
+        float acc = location.getAccuracy();
 
         mLatMin = null == mLatMin ? lat : Math.min(mLatMin, lat);
         mLatMax = null == mLatMax ? lat : Math.max(mLatMax, lat);
@@ -187,9 +223,13 @@ public class AccurateLocationTaker
         mAltMin = null == mAltMin ? alt : Math.min(mAltMin, alt);
         mAltMax = null == mAltMax ? alt : Math.max(mAltMax, alt);
 
+        mSysAccuracyMin = 0 == mSysAccuracyMin ? acc : Math.min(mSysAccuracyMin, acc);
+        mSysAccuracyMax = 0 == mSysAccuracyMax ? acc : Math.max(mSysAccuracyMax, acc);
+
         mLatSum += lat;
         mLonSum += lon;
         mAltSum += alt;
+        mSysAccuracySum += acc;
 
         mLastLocationTime = location.getTime();
 
@@ -246,6 +286,7 @@ public class AccurateLocationTaker
         mLatMin = mLatMax = mLonMin = mLonMax = mAltMin = mAltMax = null;
         mLatSum = mLonSum = mAltSum = 0;
         mLatAverage = mLonAverage = mAltAverage = 0;
+        mSysAccuracyMin = mSysAccuracyMax = mSysAccuracySum = mSysAccuracyAverage = 0;
         mLastLocationTime = null;
 
         Log.d(Constants.TAG, "Start the GPS taking");
@@ -327,9 +368,19 @@ public class AccurateLocationTaker
 
         if (null != mGpsTakings && !isCancelled() && null != mOnGetAccurateLocationListener) {
             Log.d(Constants.TAG, "Get the GPS accurate location");
+
+            Location accLocation = getAccurateLocation(mCircularError);
+            long count = mGpsTakings.size();
+
+            Log.d(Constants.TAG, "calculated accuracy: " + accLocation.getAccuracy());
+            Log.d(Constants.TAG, "taken points count: " + count);
+            Log.d(Constants.TAG, "taken time millis: " + mTakeTimeMillis);
+            Log.d(Constants.TAG, "taken accuracy min: " + mSysAccuracyMin);
+            Log.d(Constants.TAG, "taken accuracy max: " + mSysAccuracyMax);
+            Log.d(Constants.TAG, "taken accuracy average: " + mSysAccuracyAverage);
+
             mOnGetAccurateLocationListener.onGetAccurateLocation(
-                    getAccurateLocation(mCircularError), (long) mGpsTakings.size(),
-                    mTakeTimeMillis);
+                    accLocation, count, mTakeTimeMillis);
         }
     }
 
@@ -412,5 +463,29 @@ public class AccurateLocationTaker
         void onGetAccurateLocation(
                 Location accurateLocation,
                 Long... values);
+    }
+
+
+    protected class PairDistLoc
+            implements Comparable<PairDistLoc>
+    {
+        Float    mDistanceToCenter;
+        Location mLocation;
+
+
+        PairDistLoc(
+                float dist,
+                Location location)
+        {
+            mDistanceToCenter = dist;
+            mLocation = location;
+        }
+
+
+        @Override
+        public int compareTo(PairDistLoc another)
+        {
+            return mDistanceToCenter.compareTo(another.mDistanceToCenter);
+        }
     }
 }
