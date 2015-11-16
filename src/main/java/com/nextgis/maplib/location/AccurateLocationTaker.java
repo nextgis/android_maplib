@@ -372,7 +372,12 @@ public class AccurateLocationTaker
             Location accLocation = getAccurateLocation(mCircularError);
             long count = mGpsTakings.size();
 
-            Log.d(Constants.TAG, "calculated accuracy: " + accLocation.getAccuracy());
+            if (null != accLocation) {
+                Log.d(Constants.TAG, "calculated accuracy: " + accLocation.getAccuracy());
+            } else {
+                Log.d(Constants.TAG, "calculated accuracy: null");
+            }
+
             Log.d(Constants.TAG, "taken points count: " + count);
             Log.d(Constants.TAG, "taken time millis: " + mTakeTimeMillis);
             Log.d(Constants.TAG, "taken accuracy min: " + mSysAccuracyMin);
