@@ -69,12 +69,16 @@ public interface GeoConstants
     /**
      * geojson see http://geojson.org/geojson-spec.html
      */
+    String GEOJSON_CRS_WGS84               = "urn:ogc:def:crs:OGC:1.3:CRS84";
+    String GEOJSON_CRS_WEB_MERCATOR        = "EPSG:3857";
+    String GEOJSON_CRS_EPSG_3857           = "urn:ogc:def:crs:EPSG::3857";
     String GEOJSON_TYPE                    = "type";
     String GEOJSON_ID                      = "id";
     String GEOJSON_FEATURE_ID              = "FEATURE_ID";
     String GEOJSON_CRS                     = "crs";
     String GEOJSON_NAME                    = "name";
     String GEOJSON_PROPERTIES              = "properties";
+    String GEOJSON_ATTACHES                = "attaches";
     String GEOJSON_BBOX                    = "bbox";
     String GEOJSON_TYPE_FEATURES           = "features";
     String GEOJSON_GEOMETRY                = "geometry";

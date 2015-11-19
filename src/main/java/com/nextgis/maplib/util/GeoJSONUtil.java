@@ -177,11 +177,11 @@ public class GeoJSONUtil {
     public static boolean checkCRSSupportAndWGS(String crsName, Context context) throws NGException {
         boolean isWGS84 = true;
         switch (crsName) {
-            case "urn:ogc:def:crs:OGC:1.3:CRS84":  // WGS84
+            case GeoConstants.GEOJSON_CRS_WGS84:  // WGS84
                 isWGS84 = true;
                 break;
-            case "urn:ogc:def:crs:EPSG::3857":
-            case "EPSG:3857":  //Web Mercator
+            case GeoConstants.GEOJSON_CRS_EPSG_3857:
+            case GeoConstants.GEOJSON_CRS_WEB_MERCATOR:  //Web Mercator
                 isWGS84 = false;
                 break;
             default:
