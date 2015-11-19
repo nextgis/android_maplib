@@ -1728,6 +1728,17 @@ public class VectorLayer
         return mCache.size();
     }
 
+
+    public Feature cursorToFeature(Cursor cursor)
+    {
+        Feature out = new Feature((long) Constants.NOT_FOUND, getFields());
+        out.fromCursor(cursor);
+        //add extensions to feature
+        out.addAttachments(getAttachMap("" + out.getId()));
+        return out;
+    }
+
+
     protected Map<String, AttachItem> getAttachMap(String featureId) {
         Map<String, AttachItem> attachMap = mAttaches.get(featureId);
         if (null == attachMap) {

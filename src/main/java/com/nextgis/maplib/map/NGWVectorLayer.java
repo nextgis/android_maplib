@@ -1214,16 +1214,6 @@ public class NGWVectorLayer
     }
 
 
-    protected Feature cursorToFeature(Cursor cursor)
-    {
-        Feature out = new Feature((long) Constants.NOT_FOUND, getFields());
-        out.fromCursor(cursor);
-        //add extensions to feature
-        out.addAttachments(getAttachMap("" + out.getId()));
-        return out;
-    }
-
-
     protected boolean addFeatureOnServer(
             long featureId,
             SyncResult syncResult)
