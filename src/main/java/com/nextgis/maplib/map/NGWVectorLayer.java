@@ -50,6 +50,7 @@ import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.DatabaseContext;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
@@ -397,7 +398,7 @@ public class NGWVectorLayer
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
             reader.beginArray();
 
-            SQLiteDatabase db = GeoJSONUtil.getDbForLayer(this);
+            SQLiteDatabase db = DatabaseContext.getDbForLayer(this);
 
             int streamSize = in.available();
 
@@ -424,6 +425,7 @@ public class NGWVectorLayer
             }
             reader.endArray();
             reader.close();
+            //db.close();
 
             urlConnection.disconnect();
 
