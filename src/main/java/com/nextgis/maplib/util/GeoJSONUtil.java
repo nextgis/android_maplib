@@ -339,7 +339,7 @@ public class GeoJSONUtil {
 
         SQLiteDatabase db = null;
         if(layer.getFields() != null && layer.getFields().isEmpty()){
-            db = getDbForLayer(layer);
+            db = DatabaseContext.getDbForLayer(layer);
         }
 
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
@@ -355,7 +355,7 @@ public class GeoJSONUtil {
                     if(null != feature) {
                         if(layer.getFields() != null && !layer.getFields().isEmpty()){
                             layer.create(feature.getGeometry().getType(), feature.getFields());
-                            db = getDbForLayer(layer);
+                            db = DatabaseContext.getDbForLayer(layer);
                         }
                         if(feature.getGeometry() != null) {
                             layer.createFeatureBatch(feature, db);
@@ -378,20 +378,11 @@ public class GeoJSONUtil {
         }
         reader.endObject();
         reader.close();
+
+        //if(null != db)
+        //    db.close(); // return pragma to init
+
         layer.save();
-    }
-
-    public static SQLiteDatabase getDbForLayer(final VectorLayer layer){
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(false);
-        // speedup writing
-        db.rawQuery("PRAGMA synchronous=OFF", null);
-        db.rawQuery("PRAGMA locking_mode=EXCLUSIVE", null);
-        db.rawQuery("PRAGMA journal_mode=OFF", null);
-        db.rawQuery("PRAGMA count_changes=OFF", null);
-        db.rawQuery("PRAGMA cache_size=15000", null);
-
-        return db;
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -405,7 +396,7 @@ public class GeoJSONUtil {
 
         SQLiteDatabase db = null;
         if(layer.getFields() != null && layer.getFields().isEmpty()){
-            db = getDbForLayer(layer);
+            db = DatabaseContext.getDbForLayer(layer);
         }
 
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
@@ -426,7 +417,7 @@ public class GeoJSONUtil {
                     if(null != feature) {
                         if(layer.getFields() == null || layer.getFields().isEmpty()){
                             layer.create(feature.getGeometry().getType(), feature.getFields());
-                            db = getDbForLayer(layer);
+                            db = DatabaseContext.getDbForLayer(layer);
                         }
                         if(feature.getGeometry() != null) {
                             layer.createFeatureBatch(feature, db);
@@ -449,6 +440,9 @@ public class GeoJSONUtil {
         }
         reader.endObject();
         reader.close();
+
+        //if(null != db)
+        //   db.close(); // return pragma to init
         layer.save();
     }
 

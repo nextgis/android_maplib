@@ -30,6 +30,10 @@ import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 
+import com.nextgis.maplib.map.MapBase;
+import com.nextgis.maplib.map.MapContentProviderHelper;
+import com.nextgis.maplib.map.VectorLayer;
+
 import java.io.File;
 
 
@@ -84,5 +88,18 @@ public class DatabaseContext
             SQLiteDatabase.CursorFactory factory)
     {
         return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name), factory);
+    }
+
+    public static SQLiteDatabase getDbForLayer(final VectorLayer layer){
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
+        // speedup writing
+        db.rawQuery("PRAGMA synchronous=OFF", null);
+        //db.rawQuery("PRAGMA locking_mode=EXCLUSIVE", null);
+        db.rawQuery("PRAGMA journal_mode=OFF", null);
+        db.rawQuery("PRAGMA count_changes=OFF", null);
+        db.rawQuery("PRAGMA cache_size=15000", null);
+
+        return db;
     }
 }
