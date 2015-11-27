@@ -43,7 +43,7 @@ import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 public class GISDisplay
 {
-    protected final Bitmap mBkBitmap;
+    protected       Bitmap mBkBitmap;
     protected final int mTileSize = DEFAULT_TILE_SIZE;
     protected final Paint       mRasterPaint;
     protected       Canvas      mMainCanvas;
@@ -745,5 +745,10 @@ public class GISDisplay
 
             mDoubleBufferCanvas.drawBitmap(mMainBitmap, matrix, mRasterPaint);
         }
+    }
+
+
+    public void setBackground(Bitmap bkBitmap) {
+        mBkBitmap = bkBitmap;
     }
 }

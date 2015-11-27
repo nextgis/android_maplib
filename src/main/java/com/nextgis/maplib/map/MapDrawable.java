@@ -350,4 +350,9 @@ public class MapDrawable
             mDisplay.clearBackground(canvas);
         }
     }
+
+
+    public void setBackground(Bitmap background) {
+        mDisplay.setBackground(background);
+    }
 }
