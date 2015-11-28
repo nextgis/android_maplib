@@ -55,7 +55,7 @@ public class NetworkUtil
     protected       Context             mContext;
 
     protected final static int TIMEOUT_CONNECTION = 7000;
-    protected final static int TIMEOUT_SOCKET = 30000;
+    protected final static int TIMEOUT_SOCKET = 180000; // 180 sec
 
 
     public NetworkUtil(Context context)
