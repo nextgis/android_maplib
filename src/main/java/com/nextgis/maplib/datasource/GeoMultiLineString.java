@@ -43,6 +43,16 @@ public class GeoMultiLineString
     protected static final long serialVersionUID = -1241179697270831766L;
 
 
+    public GeoMultiLineString() {
+        super();
+    }
+
+
+    public GeoMultiLineString(GeoMultiLineString geoMultiLineString) {
+        super(geoMultiLineString);
+    }
+
+
     @Override
     public void add(GeoGeometry geometry)
             throws ClassCastException
@@ -153,4 +163,11 @@ public class GeoMultiLineString
     protected GeoGeometryCollection getInstance() {
         return new GeoMultiLineString();
     }
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoMultiLineString(this);
+    }
+
 }
