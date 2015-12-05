@@ -189,7 +189,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 public class VectorLayer
         extends Layer {
-    protected boolean mCacheLoaded;
+    protected boolean mCacheLoaded, mIsCacheRebuilding;
     protected int mGeometryType;
     protected Uri mContentUri;
     protected UriMatcher mUriMatcher;
@@ -823,7 +823,8 @@ public class VectorLayer
             rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
         }
 
-        mCache.save(new File(mPath, RTREE));
+        if (!mIsCacheRebuilding)
+            mCache.save(new File(mPath, RTREE));
 
         return rootConfig;
     }
@@ -2105,6 +2106,7 @@ public class VectorLayer
                     progressor.setMax(cursor.getCount());
                 }
 
+                mIsCacheRebuilding = true;
                 mCache = new GeometryRTree();
                 int counter = 0;
                 do {
@@ -2129,6 +2131,7 @@ public class VectorLayer
 
                 } while (cursor.moveToNext());
 
+                mIsCacheRebuilding = false;
             }
             cursor.close();
             save();
