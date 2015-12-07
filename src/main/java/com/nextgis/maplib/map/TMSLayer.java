@@ -242,7 +242,7 @@ public abstract class TMSLayer
         ZipEntry ze;
         while ((ze = zis.getNextEntry()) != null) {
             FileUtil.unzipEntry(zis, ze, buffer, mPath);
-            increment += ze.getSize();
+            increment += ze.getCompressedSize();
             zis.closeEntry();
             if(null != progressor){
                 if(progressor.isCanceled())
