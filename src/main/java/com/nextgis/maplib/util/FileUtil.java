@@ -321,6 +321,9 @@ public class FileUtil
         entryName = entryName.replace(".jpg", TMSLayer.TILE_EXT);
         entryName = entryName.replace(".jpeg", TMSLayer.TILE_EXT);
 
+        if (entryName.toLowerCase().equals("mapnik.json"))
+            entryName = "config.json";
+
         File outputFile = new File(outputDir, entryName);
         if (!outputFile.getParentFile().exists()) {
             FileUtil.createDir(outputFile.getParentFile());

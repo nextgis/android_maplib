@@ -260,4 +260,9 @@ public abstract class TMSLayer
         save();
     }
 
+    public void fillFromNgrc(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+        fillFromZipInt(uri, progressor);
+        load();
+    }
+
 }
