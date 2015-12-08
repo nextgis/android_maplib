@@ -107,6 +107,13 @@ public class GeoPoint
         return mX == point.mX && mY == point.mY;
     }
 
+    public int compareTo(GeoPoint p) {
+        if (this.mX == p.mX) {
+            return Double.compare(this.mY, p.mY);
+        } else {
+            return Double.compare(this.mX, p.mX);
+        }
+    }
 
     @Override
     protected boolean rawProject(int toCrs)
