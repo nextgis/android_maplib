@@ -282,32 +282,12 @@ public class NGWUtil
             String alias = fieldJSONObject.getString("display_name");
             String name = fieldJSONObject.getString("keyname");
 
-            int nType = stringToType(type);
+            int nType = LayerUtil.stringToType(type);
             if (Constants.NOT_FOUND != nType) {
                 fields.add(new Field(nType, name, alias));
             }
         }
         return fields;
-    }
-
-    protected static int stringToType(String type)
-    {
-        switch (type) {
-            case "STRING":
-                return GeoConstants.FTString;
-            case "INTEGER":
-                return GeoConstants.FTInteger;
-            case "REAL":
-                return GeoConstants.FTReal;
-            case "DATETIME":
-                return GeoConstants.FTDateTime;
-            case "DATE":
-                return GeoConstants.FTDate;
-            case "TIME":
-                return GeoConstants.FTTime;
-            default:
-                return Constants.NOT_FOUND;
-        }
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)

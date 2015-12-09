@@ -308,9 +308,7 @@ public class VectorLayer
             tableCreate += Constants.FIELD_GEOM_ + i + " BLOB, ";
         }
         tableCreate += Constants.FIELD_GEOM + " BLOB";
-        for (int i = 0; i < fields.size(); ++i) {
-            Field field = fields.get(i);
-
+        for (Field field : mFields.values()) {
             tableCreate += ", " + field.getName();
             switch (field.getType()) {
                 case FTString:

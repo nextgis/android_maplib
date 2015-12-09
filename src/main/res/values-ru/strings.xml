@@ -32,6 +32,7 @@
     <string name="E">В</string>
     <string name="W">З</string>
     <string name="warning_remove_field">Поле \'%s\' запрещено, поле удалено</string>
+    <string name="warning_replace_field">Имя содержит запрещенные символы, новое имя \'%s\'</string>
     <string name="tracks">Мои треки</string>
     <string name="create_features">Create features</string>
     <string name="parse_features">Parse features</string>
@@ -43,4 +44,13 @@
     <string name="processed">Обработано</string>
     <string name="of">из</string>
     <string name="rebuild_cache">Перестроить кэш</string>
+    <string name="fields">Поля</string>
+    <string name="field_name">Имя поля</string>
+    <string name="field_type">Тип поля</string>
+    <string name="field_type_string">Строка</string>
+    <string name="field_type_int">Целочисленное</string>
+    <string name="field_type_real">Вещественное</string>
+    <string name="field_type_datetime">Дата и Время</string>
+    <string name="field_type_date">Дата</string>
+    <string name="field_type_time">Время</string>
 </resources>

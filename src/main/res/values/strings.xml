@@ -32,6 +32,7 @@
     <string name="E">E</string>
     <string name="W">W</string>
     <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
+    <string name="warning_replace_field">Name contains forbidden chars, renamed to \'%s\'</string>
     <string name="tracks">My tracks</string>
     <string name="create_features">Create features</string>
     <string name="parse_features">Parse features</string>
@@ -43,4 +44,13 @@
     <string name="processed">Processed</string>
     <string name="of">of</string>
     <string name="rebuild_cache">Rebuild cache</string>
+    <string name="fields">Fields</string>
+    <string name="field_name">Field name</string>
+    <string name="field_type">Field type</string>
+    <string name="field_type_string">String</string>
+    <string name="field_type_int">Integer</string>
+    <string name="field_type_real">Real</string>
+    <string name="field_type_datetime">Date &amp; Time</string>
+    <string name="field_type_date">Date</string>
+    <string name="field_type_time">Time</string>
 </resources>
