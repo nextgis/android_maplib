@@ -34,8 +34,6 @@ import org.json.JSONException;
 
 import java.io.IOException;
 
-import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
-
 
 public class GeoMultiLineString
         extends GeoGeometryCollection
