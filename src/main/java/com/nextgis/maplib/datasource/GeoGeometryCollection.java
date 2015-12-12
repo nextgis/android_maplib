@@ -76,6 +76,17 @@ public class GeoGeometryCollection
         mGeometries.add(geometry);
     }
 
+    public void set(int index, GeoGeometry geometry)
+            throws IllegalArgumentException
+    {
+        if (geometry == null) {
+            throw new IllegalArgumentException("GeoGeometryCollection: geometry == null.");
+        }
+        if(index >= mGeometries.size())
+            mGeometries.add(geometry);
+        else
+            mGeometries.set(index, geometry);
+    }
 
     public GeoGeometry remove(int index)
     {
