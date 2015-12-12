@@ -121,7 +121,7 @@ public class TrackLayer
         }
 
         IGISApplication app = (IGISApplication) getContext();
-        mMap = (MapContentProviderHelper) app.getMap();
+        mMap = (MapContentProviderHelper) MapBase.getInstance();
         mAuthority = app.getAuthority();
 
         if (mMap == null) {

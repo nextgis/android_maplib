@@ -28,6 +28,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.Build;
 
 import com.nextgis.maplib.map.MapBase;
@@ -87,7 +88,13 @@ public class DatabaseContext
             int mode,
             SQLiteDatabase.CursorFactory factory)
     {
-        return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name), factory);
+        SQLiteDatabase result = null;
+        try {
+            result = SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name), factory);
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     public static SQLiteDatabase getDbForLayer(final VectorLayer layer){

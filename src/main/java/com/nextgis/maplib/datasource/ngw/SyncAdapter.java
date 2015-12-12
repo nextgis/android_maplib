@@ -40,6 +40,7 @@ import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.map.LayerGroup;
+import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.SettingsConstants;
@@ -107,9 +108,8 @@ public class SyncAdapter
     {
         Log.d(TAG, "onPerformSync");
 
-        IGISApplication application = (IGISApplication) getContext();
         MapContentProviderHelper mapContentProviderHelper =
-                (MapContentProviderHelper) application.getMap();
+                (MapContentProviderHelper) MapBase.getInstance();
 
         getContext().sendBroadcast(new Intent(SYNC_START));
 

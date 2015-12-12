@@ -28,8 +28,9 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
-import com.nextgis.maplib.api.IGISApplication;
+
 import com.nextgis.maplib.map.Layer;
+import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.TrackLayer;
 import com.nextgis.maplib.map.VectorLayer;
@@ -46,12 +47,7 @@ public class LayerContentProvider
     @Override
     public boolean onCreate()
     {
-
-        if (getContext() instanceof IGISApplication) {
-            IGISApplication app = (IGISApplication) getContext();
-            mMap = (MapContentProviderHelper) app.getMap();
-            return null != mMap;
-        }
+        mMap = (MapContentProviderHelper) MapBase.getInstance();
         return false;
     }
 
