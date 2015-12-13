@@ -136,5 +136,5 @@ public interface IGISApplication
     /**
      * Show settings Activity or nothing
      */
-    void showSettings();
+    void showSettings(String setting);
 }
