@@ -36,7 +36,7 @@ public class LayerUtil {
         if(result.equals(Constants.FIELD_ID))
             return "_fixed_id";
 
-        return result;
+        return result.toLowerCase();
     }
 
     public static int stringToType(String type)

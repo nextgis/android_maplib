@@ -34,8 +34,6 @@ import org.json.JSONException;
 
 import java.io.IOException;
 
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
-
 
 public class GeoMultiPolygon
         extends GeoGeometryCollection
