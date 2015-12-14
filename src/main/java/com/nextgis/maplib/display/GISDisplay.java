@@ -400,6 +400,24 @@ public class GISDisplay
     }
 
 
+    public void drawBitmap(
+            Bitmap bitmap,
+            GeoPoint point,
+            float offsetX,
+            float offsetY)
+    {
+        if (null == mMainCanvas) {
+            return;
+        }
+
+        Matrix matrix = new Matrix();
+        matrix.postScale((float) mInvertScale, (float) -mInvertScale);
+        matrix.postTranslate((float) point.getX(), (float) point.getY());
+        matrix.postTranslate((float) (offsetX / mScale), (float) (offsetY / mScale));
+        mMainCanvas.drawBitmap(bitmap, matrix, new Paint(Paint.ANTI_ALIAS_FLAG));
+    }
+
+
     public void drawTextOnPath(
             String text,
             Path path,
