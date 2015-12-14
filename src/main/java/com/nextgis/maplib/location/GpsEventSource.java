@@ -212,8 +212,8 @@ public class GpsEventSource
 
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(mContext);
-        mListenProviders = sharedPreferences.getInt(
-                SettingsConstants.KEY_PREF_LOCATION_SOURCE, GPS_PROVIDER | NETWORK_PROVIDER);
+        mListenProviders = Integer.parseInt(sharedPreferences.getString(
+                SettingsConstants.KEY_PREF_LOCATION_SOURCE, "3"));
 
         String minTimeStr =
                 sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_TIME, "2");

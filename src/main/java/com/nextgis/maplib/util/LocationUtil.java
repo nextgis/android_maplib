@@ -29,6 +29,7 @@ import android.content.res.Resources;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.ExifInterface;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.location.GpsEventSource;
 
@@ -183,8 +184,7 @@ public class LocationUtil
 
         SharedPreferences sharedPreferences = context.getSharedPreferences(
                 context.getPackageName() + "_preferences", Constants.MODE_MULTI_PROCESS);
-        int providers = sharedPreferences.getInt(
-                preferenceKey, GpsEventSource.GPS_PROVIDER | GpsEventSource.NETWORK_PROVIDER);
+        int providers = Integer.parseInt(sharedPreferences.getString(preferenceKey, "3"));
 
         return 0 != (providers & currentProvider);
     }
