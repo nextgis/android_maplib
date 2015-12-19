@@ -27,6 +27,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.util.Log;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IProgressor;
@@ -81,17 +82,29 @@ public class LocalTMSLayer
     {
         Bitmap ret = getBitmapFromCache(tile.getHash());
         if (null != ret) {
+            if(Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap from cache for: " + tile.toString());
+            }
             return ret;
         }
 
         TileCacheLevelDescItem item = mLimits.get(tile.getZoomLevel());
-        if (item != null && item.isInside(tile.getX(), tile.getY())) {
+        boolean isInside = item != null && item.isInside(tile.getX(), tile.getY());
+        if (isInside) {
             File tilePath = new File(mPath, tile.toString() + TILE_EXT);
-            if (tilePath.exists()) {
+            boolean isExist = tilePath.exists();
+            if (isExist) {
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
                 putBitmapToCache(tile.getHash(), ret);
+                if(Constants.DEBUG_MODE) {
+                    Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap for: " + tile.toString() + ", path " + tilePath.getAbsolutePath() + " is valid - " + (ret != null));
+                }
                 return ret;
             }
+        }
+
+        if(Constants.DEBUG_MODE && isInside) {
+            Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap failed for: " + tile.toString());
         }
         return null;
     }
@@ -153,6 +166,10 @@ public class LocalTMSLayer
                 int nMinY = jsonLevel.getInt(JSON_BBOX_MINY_KEY);
 
                 mLimits.put(nLevel, new TileCacheLevelDescItem(nMaxX, nMinX, nMaxY, nMinY));
+
+                if(Constants.DEBUG_MODE) {
+                    Log.d(Constants.TAG, "Raster layer " + getName() + " limits: zoom " + nLevel + " X[" + nMinX + "," + nMaxX + "] Y[" + nMinY + "," + nMaxY + "]");
+                }
             }
         }
     }

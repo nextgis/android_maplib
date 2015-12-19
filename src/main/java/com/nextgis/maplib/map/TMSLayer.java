@@ -26,6 +26,7 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.util.Log;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IJSONStore;
@@ -151,6 +152,11 @@ public abstract class TMSLayer
 
         if (jsonObject.has(JSON_CACHE_SIZE_MULT)) {
             mCacheSizeMult = jsonObject.getInt(JSON_CACHE_SIZE_MULT);
+        }
+
+        if(Constants.DEBUG_MODE) {
+            Log.d(Constants.TAG, "Raster layer " + getName() + " mTMSType " + mTMSType);
+            Log.d(Constants.TAG, "Raster layer " + getName() + " mCacheSizeMult " + mCacheSizeMult);
         }
     }
 

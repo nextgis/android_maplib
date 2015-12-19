@@ -31,12 +31,12 @@ public interface Constants
     String PREFERENCES        = "nextgismobile";
     int    MODE_MULTI_PROCESS = 0x4;
     int    NOT_FOUND          = -1;
-    boolean DEBUG_MODE = false;
+    boolean DEBUG_MODE = true;
 
     /**
      * HTTP parameters
      */
-    String APP_USER_AGENT     = "NextGIS Mobile maplib v2.2";
+    String APP_USER_AGENT     = "NextGIS Mobile maplib v2.3";
     int    IO_BUFFER_SIZE     = 32 * 1024; // 32k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 

@@ -24,11 +24,13 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.display.GISDisplay;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
 
 import org.json.JSONException;
@@ -141,6 +143,11 @@ public class Layer extends Table
         }
 
         mIsVisible = jsonObject.getBoolean(JSON_VISIBILITY_KEY);
+
+        if(Constants.DEBUG_MODE){
+            Log.d(Constants.TAG, "Layer " + getName() + " is visible " + mIsVisible);
+            Log.d(Constants.TAG, "Layer " + getName() + " zoom limits from " + mMinZoom + " to " + mMaxZoom);
+        }
     }
 
     @Override
