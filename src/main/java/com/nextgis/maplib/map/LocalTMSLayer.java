@@ -190,6 +190,9 @@ public class LocalTMSLayer
         int nMinLevel = 512;
         final File[] zoomLevels = mPath.listFiles();
 
+        if (zoomLevels == null)
+            throw new NGException("Invalid content or zip structure");
+
         if(null != progressor){
             progressor.setMax(zoomLevels.length);
             progressor.setValue(0);
