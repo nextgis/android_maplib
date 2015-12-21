@@ -261,6 +261,9 @@ public class FileUtil
     public static long getDirectorySize(File dir)
     {
         long size = 0;
+        if (dir == null || dir.listFiles() == null)
+            return size;
+
         File[] files = dir.listFiles();
 
         for (File file : files) {
