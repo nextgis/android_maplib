@@ -40,7 +40,6 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IGeometryCache;
@@ -70,7 +69,6 @@ import com.nextgis.maplib.util.GeoJSONUtil;
 import com.nextgis.maplib.util.LayerUtil;
 import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -91,31 +89,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
-import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
-import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.GeoConstants.FTDate;
-import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
-import static com.nextgis.maplib.util.GeoConstants.FTInteger;
-import static com.nextgis.maplib.util.GeoConstants.FTReal;
-import static com.nextgis.maplib.util.GeoConstants.FTString;
-import static com.nextgis.maplib.util.GeoConstants.FTTime;
-import static com.nextgis.maplib.util.GeoConstants.GTLineString;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
-import static com.nextgis.maplib.util.GeoConstants.GTNone;
-import static com.nextgis.maplib.util.GeoConstants.GTPoint;
-import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
+import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.*;
 
 /**
  * The vector layer class. It stores geometry and attributes.
@@ -906,6 +884,66 @@ public class VectorLayer
         }
 
         SQLiteDatabase db = map.getDatabase(true);
+
+        // work for bbox selection
+        if (null != selection) {
+            String bboxRegex = "(bbox\\s*((=)|(==)|(!=)|(<>))\\s*\\[" +
+                               "\\s*\\-?\\d+(\\.\\d+)?\\s*," +
+                               "\\s*\\-?\\d+(\\.\\d+)?\\s*," +
+                               "\\s*\\-?\\d+(\\.\\d+)?\\s*," +
+                               "\\s*\\-?\\d+(\\.\\d+)?\\s*\\])";
+
+            Matcher selMatcher = Pattern.compile(bboxRegex).matcher(selection);
+
+            if (selMatcher.find()) {
+
+                String bboxStr = selMatcher.group();
+                Matcher bboxMatcher = Pattern.compile("\\-?\\d+(\\.\\d+)?").matcher(bboxStr);
+
+                Double minX = bboxMatcher.find() ? Double.parseDouble(bboxMatcher.group()) : null;
+                Double minY = bboxMatcher.find() ? Double.parseDouble(bboxMatcher.group()) : null;
+                Double maxX = bboxMatcher.find() ? Double.parseDouble(bboxMatcher.group()) : null;
+                Double maxY = bboxMatcher.find() ? Double.parseDouble(bboxMatcher.group()) : null;
+
+                GeoEnvelope envelope = new GeoEnvelope(minX, maxX, minY, maxY);
+
+                if (!envelope.isInit()) {
+                    throw new SQLiteException("bbox has bad format, " + bboxStr);
+                }
+
+                Matcher eqMatcher = Pattern.compile("((=)|(==)|(!=)|(<>))").matcher(bboxStr);
+                boolean isNotIn = false;
+                if (eqMatcher.find() && eqMatcher.group().matches("((!=)|(<>))")) {
+                    isNotIn = true;
+                }
+
+                List<Long> ids = query(envelope);
+                StringBuilder sb = new StringBuilder(1024);
+
+                for (Long fid : ids) {
+                    if (sb.length() == 0) {
+                        sb.append(FIELD_ID);
+                        if (isNotIn) {
+                            sb.append(" NOT IN (");
+                        } else {
+                            sb.append(" IN (");
+                        }
+
+                    } else {
+                        sb.append(",");
+                    }
+                    sb.append(fid);
+                }
+
+                if (sb.length() > 0) {
+                    sb.append(")");
+                    selection = selMatcher.replaceAll(sb.toString());
+                } else {
+                    selection = selMatcher.replaceAll(FIELD_ID + " == -98765"); // always is false
+                }
+            }
+        }
+
 
         try {
             return db.query(
