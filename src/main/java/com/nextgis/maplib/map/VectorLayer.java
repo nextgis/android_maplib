@@ -870,6 +870,17 @@ public class VectorLayer
         return mExtents.isInit();
     }
 
+
+    /**
+     * In a selection are allowed bbox question:
+     * <pre>{@code
+     * selection = "_id = 3 AND bbox=[123, 233, 3432, 23444] OR _id = 5";}</pre>
+     * Are allowed:
+     * <pre>{@code
+     * "bbox=[-1,-2.3,34.2,56]" or "bbox =  [  -1 , -2.3, 34.2 ,56 ]"
+     * in bbox --  "bbox=[..]", "bbox==[..]"
+     * out bbox -- "bbox!=[..]", "bbox<>[..]"}</pre>
+     */
     public Cursor query(
             String[] projection,
             String selection,
@@ -928,7 +939,6 @@ public class VectorLayer
                         } else {
                             sb.append(" IN (");
                         }
-
                     } else {
                         sb.append(",");
                     }
