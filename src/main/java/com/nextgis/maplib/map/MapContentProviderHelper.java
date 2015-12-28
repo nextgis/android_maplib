@@ -186,10 +186,11 @@ public class MapContentProviderHelper
                     break;
 
                 case Constants.NOTIFY_UPDATE:
+                case Constants.NOTIFY_UPDATE_FIELDS:
                     layer.notifyUpdate(
-                                intent.getLongExtra(FIELD_ID, NOT_FOUND),
-                                intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND),
-                                intent.getBooleanExtra(Constants.ATTRIBUTES_ONLY, true));
+                            intent.getLongExtra(FIELD_ID, NOT_FOUND),
+                            intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND),
+                            intent.getBooleanExtra(Constants.ATTRIBUTES_ONLY, true));
                     break;
 
                 case Constants.NOTIFY_UPDATE_ALL:

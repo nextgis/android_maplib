@@ -1535,7 +1535,7 @@ public class VectorLayer
         if (values.containsKey(Constants.FIELD_GEOM)) {
             try {
                 // remove current cache item to not intersect with itself
-                mCache.removeItem(rowId);
+//                mCache.removeItem(rowId);
                 prepareGeometry(values);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -1552,37 +1552,37 @@ public class VectorLayer
                     notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                     getContext().sendBroadcast(notify);
                 }
-            } else {
-                if (values.containsKey(Constants.FIELD_GEOM) || values.containsKey(Constants.FIELD_ID)) {
-                    notify = new Intent(Constants.NOTIFY_UPDATE);
-                    boolean bNotify = false;
-                    if (values.containsKey(Constants.FIELD_GEOM)) {
-                        notify.putExtra(Constants.FIELD_ID, rowId);
-                        bNotify = true;
-                    }
-
-                    if (values.containsKey(Constants.FIELD_ID)) {
-                        updateUniqId(values.getAsLong(Constants.FIELD_ID));
-
-                        notify.putExtra(Constants.FIELD_OLD_ID, rowId);
-                        notify.putExtra(Constants.FIELD_ID, values.getAsLong(Constants.FIELD_ID));
-                        bNotify = true;
-                    }
-
-                    if (bNotify) {
-                        notify.putExtra(Constants.ATTRIBUTES_ONLY, false);
-                        notify.putExtra(
-                                Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
-                        getContext().sendBroadcast(notify);
-                    }
-
-                } else {
-                    notify = new Intent(Constants.NOTIFY_UPDATE_FIELDS);
+            } else if (values.containsKey(Constants.FIELD_GEOM) || values.containsKey(Constants.FIELD_ID)) {
+                notify = new Intent(Constants.NOTIFY_UPDATE);
+                boolean bNotify = false;
+                if (values.containsKey(Constants.FIELD_GEOM)) {
                     notify.putExtra(Constants.FIELD_ID, rowId);
-                    notify.putExtra(Constants.ATTRIBUTES_ONLY, true);
+                    bNotify = true;
+                }
+
+                if (values.containsKey(Constants.FIELD_ID)) {
+                    updateUniqId(values.getAsLong(Constants.FIELD_ID));
+
+                    notify.putExtra(Constants.FIELD_OLD_ID, rowId);
+                    notify.putExtra(Constants.FIELD_ID, values.getAsLong(Constants.FIELD_ID));
+                    bNotify = true;
+                }
+
+                if (bNotify) {
+                    notify.putExtra(Constants.ATTRIBUTES_ONLY, false);
+                    notify.putExtra(
+                            Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
                     getContext().sendBroadcast(notify);
                 }
+
+            } else {
+                notify = new Intent(Constants.NOTIFY_UPDATE_FIELDS);
+                notify.putExtra(Constants.FIELD_ID, rowId);
+                notify.putExtra(Constants.ATTRIBUTES_ONLY, true);
+                notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                getContext().sendBroadcast(notify);
             }
+
         }
         return result;
     }
@@ -1993,22 +1993,23 @@ public class VectorLayer
         if(Constants.DEBUG_MODE)
             Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
 
+        boolean needSave = false;
         if (oldRowId != Constants.NOT_FOUND) {
             mCache.changeId(oldRowId, rowId);
-            save();
+            needSave = true;
         }
-
-        if(attributesOnly)
-            return;
 
         GeoGeometry geom = getGeometryForId(rowId);
-        if (null != geom) {
+        if (null != geom && !attributesOnly) {
             mCache.removeItem(rowId);
-
             cacheGeometryEnvelope(rowId, geom);
-            save();
-            notifyLayerChanged();
+            needSave = true;
         }
+
+        if (needSave)
+            save();
+
+        notifyLayerChanged();
     }
 
     @Override
@@ -2106,7 +2107,8 @@ public class VectorLayer
             items = mCache.search(env);
         List<Long> result = new ArrayList<>(items.size());
         for(IGeometryCacheItem item : items)
-            result.add(item.getFeatureId());
+            if (!result.contains(item.getFeatureId()))
+                result.add(item.getFeatureId());
         return result;
     }
 
