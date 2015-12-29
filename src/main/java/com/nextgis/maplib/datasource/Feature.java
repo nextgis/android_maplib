@@ -26,12 +26,10 @@ package com.nextgis.maplib.datasource;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.util.Log;
-
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -45,21 +43,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.GeoConstants.FTDate;
-import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
-import static com.nextgis.maplib.util.GeoConstants.FTInteger;
-import static com.nextgis.maplib.util.GeoConstants.FTReal;
-import static com.nextgis.maplib.util.GeoConstants.FTString;
-import static com.nextgis.maplib.util.GeoConstants.FTTime;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_FEATURE_ID;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_GEOMETRY;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_PROPERTIES;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE;
-import static com.nextgis.maplib.util.GeoConstants.GEOJSON_TYPE_Feature;
+import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.*;
 
 
 public class Feature
@@ -571,5 +556,10 @@ public class Feature
     public Map<String, AttachItem> getAttachments()
     {
         return mAttachments;
+    }
+
+    public void clearAttachments()
+    {
+        mAttachments.clear();
     }
 }
