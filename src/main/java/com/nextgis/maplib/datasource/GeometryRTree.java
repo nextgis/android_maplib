@@ -337,7 +337,7 @@ public class GeometryRTree implements IGeometryCache {
             for (Node c : n.mChildren){
                 if (((Entry) c).mFeatureId == featureId)
                 {
-                    return n;
+                    return c;
                 }
             }
         }
