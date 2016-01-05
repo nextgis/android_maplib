@@ -28,7 +28,6 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
-
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.Layer;
 import com.nextgis.maplib.map.MapContentProviderHelper;
@@ -36,6 +35,8 @@ import com.nextgis.maplib.map.TrackLayer;
 import com.nextgis.maplib.map.VectorLayer;
 
 import java.io.FileNotFoundException;
+
+import static com.nextgis.maplib.util.Constants.URI_PARAMETER_LIMIT;
 
 
 public class LayerContentProvider
@@ -64,6 +65,15 @@ public class LayerContentProvider
     }
 
 
+    /**
+     * Query may be with LIMIT. See http://stackoverflow.com/a/24055457/4727406
+     * <p/>
+     * Example:
+     * <pre>{@code
+     * Uri uri = Uri.parse(...);
+     * uri = uri.buildUpon().appendQueryParameter(URI_PARAMETER_LIMIT, "2").build();
+     * context.getContentResolver().query(uri, ...);}</pre>
+     */
     @Override
     public Cursor query(
             Uri uri,
@@ -77,14 +87,17 @@ public class LayerContentProvider
             return null;
         }
 
+        // http://stackoverflow.com/a/24055457/4727406
+        String limit = uri.getQueryParameter(URI_PARAMETER_LIMIT);
+
         if (layer instanceof VectorLayer) {
             return ((VectorLayer) layer).query(
-                    uri, projection, selection, selectionArgs, sortOrder, null);
+                    uri, projection, selection, selectionArgs, sortOrder, limit);
         }
 
         if (layer instanceof TrackLayer) {
-            return ((TrackLayer) layer).query(uri, projection, selection, selectionArgs, sortOrder,
-                    null);
+            return ((TrackLayer) layer).query(
+                    uri, projection, selection, selectionArgs, sortOrder, limit);
         }
 
         return null;
