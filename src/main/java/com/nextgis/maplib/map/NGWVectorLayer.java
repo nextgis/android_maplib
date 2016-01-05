@@ -35,9 +35,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -54,12 +54,10 @@ import com.nextgis.maplib.util.DatabaseContext;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
-import com.nextgis.maplib.util.GeoJSONUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.ProgressBufferedInputStream;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -79,9 +77,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.*;
 
 public class NGWVectorLayer
         extends VectorLayer
@@ -107,6 +103,12 @@ public class NGWVectorLayer
     protected static final String JSON_NGWLAYER_TYPE_KEY = "ngw_layer_type";
     protected static final String JSON_SERVERWHERE_KEY   = "server_where";
 
+    protected static final int TYPE_CHANGES_TABLE     = 125;
+    protected static final int TYPE_CHANGES_FEATURE   = 126;
+    protected static final int TYPE_CHANGES_ATTACH    = 127;
+    protected static final int TYPE_CHANGES_ATTACH_ID = 128;
+
+
     public NGWVectorLayer(
             Context context,
             File path)
@@ -120,6 +122,23 @@ public class NGWVectorLayer
         mSyncType = Constants.SYNC_NONE;
         mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
         mNGWLayerType = Connection.NGWResourceTypeNone;
+
+        // get changes for all rows
+        mUriMatcher.addURI(mAuthority, mPath.getName() + "/" + URI_CHANGES, TYPE_CHANGES_TABLE);
+
+        // get changes for single row
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/" + URI_CHANGES + "/#", TYPE_CHANGES_FEATURE);
+
+        //get changes for all attaches of row
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/" + URI_CHANGES + "/#/" + URI_ATTACH,
+                TYPE_CHANGES_ATTACH);
+
+        //get changes for single attach by id
+        mUriMatcher.addURI(
+                mAuthority, mPath.getName() + "/" + URI_CHANGES + "/#/" + URI_ATTACH + "/#",
+                TYPE_CHANGES_ATTACH_ID);
     }
 
 
@@ -454,6 +473,15 @@ public class NGWVectorLayer
             return;
         }
 
+        switch (operation) {
+            case Constants.CHANGE_OPERATION_TEMP:
+                FeatureChanges.addFeatureTempFlag(mChangeTableName, featureId);
+                return;
+            case Constants.CHANGE_OPERATION_NOT_SYNC:
+                FeatureChanges.addFeatureNotSyncFlag(mChangeTableName, featureId);
+                return;
+        }
+
         boolean canAddChanges = true;
 
         // for delete operation
@@ -494,6 +522,15 @@ public class NGWVectorLayer
     {
         if (0 == (mSyncType & Constants.SYNC_ATTACH)) {
             return;
+        }
+
+        switch (attachOperation) {
+            case Constants.CHANGE_OPERATION_TEMP:
+                FeatureChanges.addAttachTempFlag(mChangeTableName, featureId, attachId);
+                return;
+            case Constants.CHANGE_OPERATION_NOT_SYNC:
+                FeatureChanges.addAttachNotSyncFlag(mChangeTableName, featureId, attachId);
+                return;
         }
 
         boolean canAddChanges = true;
@@ -1241,8 +1278,8 @@ public class NGWVectorLayer
             cursor.close();
             Log.d(Constants.TAG, "payload: " + payload);
             String data = NetworkUtil.post(
-                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere), payload, mCacheLogin,
-                    mCachePassword);
+                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere), payload,
+                    mCacheLogin, mCachePassword);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -1517,5 +1554,81 @@ public class NGWVectorLayer
      */
     public boolean isRemoteReadOnly(){
         return !(mNGWLayerType == Connection.NGWResourceTypeVectorLayer);
+    }
+
+
+    @Override
+    protected Cursor queryInternal(
+            Uri uri,
+            int uriType,
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder,
+            String limit)
+    {
+        String featureId;
+        String attachId;
+        List<String> pathSegments;
+
+        switch (uriType) {
+            case TYPE_CHANGES_TABLE: {
+                return FeatureChanges.query(
+                        mChangeTableName, projection, selection, selectionArgs, sortOrder, limit);
+            }
+
+            case TYPE_CHANGES_FEATURE: {
+                featureId = uri.getLastPathSegment();
+                if (TextUtils.isEmpty(selection)) {
+                    selection = FIELD_FEATURE_ID + " = " + featureId;
+                } else {
+                    selection += " AND " + FIELD_FEATURE_ID + " = " + featureId;
+                }
+                return FeatureChanges.query(
+                        mChangeTableName, projection, selection, selectionArgs, sortOrder, limit);
+            }
+
+            case TYPE_CHANGES_ATTACH: {
+                pathSegments = uri.getPathSegments();
+                featureId = pathSegments.get(pathSegments.size() - 2);
+
+                if (TextUtils.isEmpty(selection)) {
+                    selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                            + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                } else {
+                    selection +=
+                            " AND " + FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                                    + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                }
+
+                return FeatureChanges.query(
+                        mChangeTableName, projection, selection, selectionArgs, sortOrder, limit);
+            }
+
+            case TYPE_CHANGES_ATTACH_ID: {
+                pathSegments = uri.getPathSegments();
+                featureId = pathSegments.get(pathSegments.size() - 3);
+                attachId = uri.getLastPathSegment();
+
+                if (TextUtils.isEmpty(selection)) {
+                    selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                            + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND "
+                            + FIELD_ATTACH_ID + " = " + attachId;
+                } else {
+                    selection +=
+                            " AND " + FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                                    + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH
+                                    + " ) ) AND " + FIELD_ATTACH_ID + " = " + attachId;
+                }
+
+                return FeatureChanges.query(
+                        mChangeTableName, projection, selection, selectionArgs, sortOrder, limit);
+            }
+
+            default: {
+                return super.queryInternal(
+                        uri, uriType, projection, selection, selectionArgs, sortOrder, limit);
+            }
+        }
     }
 }

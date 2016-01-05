@@ -168,53 +168,55 @@ import static com.nextgis.maplib.util.GeoConstants.*;
 public class VectorLayer
         extends Layer {
     protected boolean mCacheLoaded, mIsCacheRebuilding;
-    protected int mGeometryType;
-    protected Uri mContentUri;
-    protected UriMatcher mUriMatcher;
-    protected String mAuthority;
+    protected int                mGeometryType;
+    protected Uri                mContentUri;
+    protected UriMatcher         mUriMatcher;
+    protected String             mAuthority;
     protected Map<String, Field> mFields;
-    protected long mUniqId;
+    protected long               mUniqId;
 
     protected static String CONTENT_TYPE;
     protected static String CONTENT_ITEM_TYPE;
 
     protected static final String JSON_GEOMETRY_TYPE_KEY = "geometry_type";
-    protected static final String JSON_FIELDS_KEY = "fields";
+    protected static final String JSON_FIELDS_KEY        = "fields";
 
     protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
-    protected static final String NO_SYNC = "no_sync";
+    protected static final String NO_SYNC             = "no_sync";
 
-    protected static final int TYPE_TABLE = 1;
-    protected static final int TYPE_FEATURE = 2;
-    protected static final int TYPE_ATTACH = 3;
-    protected static final int TYPE_ATTACH_ID = 4;
+    protected static final int TYPE_TABLE             = 1;
+    protected static final int TYPE_FEATURE           = 2;
+    protected static final int TYPE_ATTACH            = 3;
+    protected static final int TYPE_ATTACH_ID         = 4;
 
-    protected static final String META = "meta.json";
+    protected static final String META  = "meta.json";
     protected static final String RTREE = "rtree";
 
     public static final String ATTACH_DISPLAY_NAME = MediaStore.MediaColumns.DISPLAY_NAME;
-    public static final String ATTACH_SIZE = MediaStore.MediaColumns.SIZE;
-    public static final String ATTACH_ID = MediaStore.MediaColumns._ID;
-    public static final String ATTACH_MIME_TYPE = MediaStore.MediaColumns.MIME_TYPE;
-    public static final String ATTACH_DATA = MediaStore.MediaColumns.DATA;
-    public static final String ATTACH_DATE_ADDED = MediaStore.MediaColumns.DATE_ADDED;
-    public static final String ATTACH_DESCRIPTION = MediaStore.Images.ImageColumns.DESCRIPTION;
+    public static final String ATTACH_SIZE         = MediaStore.MediaColumns.SIZE;
+    public static final String ATTACH_ID           = MediaStore.MediaColumns._ID;
+    public static final String ATTACH_MIME_TYPE    = MediaStore.MediaColumns.MIME_TYPE;
+    public static final String ATTACH_DATA         = MediaStore.MediaColumns.DATA;
+    public static final String ATTACH_DATE_ADDED   = MediaStore.MediaColumns.DATE_ADDED;
+    public static final String ATTACH_DESCRIPTION  = MediaStore.Images.ImageColumns.DESCRIPTION;
 
     public static final int COLUMN_TYPE_UNKNOWN = 0;
-    public static final int COLUMN_TYPE_STRING = 1;
-    public static final int COLUMN_TYPE_LONG = 2;
+    public static final int COLUMN_TYPE_STRING  = 1;
+    public static final int COLUMN_TYPE_LONG    = 2;
 
     /**
      * The geometry cache for fast querying and drawing
      */
 
-    protected IGeometryCache mCache;
+    protected IGeometryCache                       mCache;
     protected Map<String, Map<String, AttachItem>> mAttaches;
-    protected List<Long> mIgnoreFeatures;
+    protected List<Long>                           mIgnoreFeatures;
+
 
     public VectorLayer(
             Context context,
-            File path) {
+            File path)
+    {
         super(context, path);
 
         if (!(context instanceof IGISApplication)) {
@@ -233,9 +235,9 @@ public class VectorLayer
         mUriMatcher.addURI(mAuthority, mPath.getName(), TYPE_TABLE);          //get all rows
         mUriMatcher.addURI(mAuthority, mPath.getName() + "/#", TYPE_FEATURE); //get single row
         mUriMatcher.addURI(
-                mAuthority, mPath.getName() + "/#/attach", TYPE_ATTACH);      //get attaches for row
+                mAuthority, mPath.getName() + "/#/" + URI_ATTACH, TYPE_ATTACH);      //get attaches for row
         mUriMatcher.addURI(
-                mAuthority, mPath.getName() + "/#/attach/#", TYPE_ATTACH_ID); //get attach by id
+                mAuthority, mPath.getName() + "/#/" + URI_ATTACH + "/#", TYPE_ATTACH_ID); //get attach by id
 
 
         CONTENT_TYPE =
@@ -252,14 +254,17 @@ public class VectorLayer
         mUniqId = Constants.NOT_FOUND;
     }
 
-    public void create(int geometryType, final List<Field> fields) throws SQLiteException {
+
+    public void create(
+            int geometryType,
+            final List<Field> fields)
+            throws SQLiteException
+    {
         mGeometryType = geometryType;
         Log.d(TAG, "init layer " + getName());
 
-        if(null == mFields)
-            mFields = new HashMap<>(fields.size());
-        else
-            mFields.clear();
+        if (null == mFields) mFields = new HashMap<>(fields.size());
+        else mFields.clear();
 
         //filter out forbidden fields
         for (int i = 0; i < fields.size(); i++) {
@@ -282,7 +287,7 @@ public class VectorLayer
         String tableCreate = "CREATE TABLE IF NOT EXISTS " + mPath.getName() + " ( " +
                 //table name is the same as the folder of the layer
                 Constants.FIELD_ID + " INTEGER PRIMARY KEY, ";
-        for(int i = 2; i <= GeoConstants.DEFAULT_CACHE_MAX_ZOOM; i+= 2){
+        for (int i = 2; i <= GeoConstants.DEFAULT_CACHE_MAX_ZOOM; i += 2) {
             tableCreate += Constants.FIELD_GEOM_ + i + " BLOB, ";
         }
         tableCreate += Constants.FIELD_GEOM + " BLOB";
@@ -318,7 +323,12 @@ public class VectorLayer
         save();
     }
 
-    public void createFromGeoJson(Uri uri, IProgressor progressor) throws IOException, JSONException, NGException, SQLiteException {
+
+    public void createFromGeoJson(
+            Uri uri,
+            IProgressor progressor)
+            throws IOException, JSONException, NGException, SQLiteException
+    {
         InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
@@ -340,8 +350,7 @@ public class VectorLayer
             while ((inputStr = streamReader.readLine()) != null) {
                 nIncrement += inputStr.length();
                 if (null != progressor) {
-                    if (progressor.isCanceled())
-                        break;
+                    if (progressor.isCanceled()) break;
                     progressor.setValue(nIncrement);
                 }
                 responseStrBuilder.append(inputStr);
@@ -360,7 +369,12 @@ public class VectorLayer
     }
 
 
-    public void fillFromGeoJson(Uri uri, int srs, IProgressor progressor) throws IOException, JSONException, NGException, SQLiteException {
+    public void fillFromGeoJson(
+            Uri uri,
+            int srs,
+            IProgressor progressor)
+            throws IOException, JSONException, NGException, SQLiteException
+    {
         InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
@@ -965,20 +979,34 @@ public class VectorLayer
     }
 
 
-    public Cursor query(
+    final public Cursor query(
             Uri uri,
             String[] projection,
             String selection,
             String[] selectionArgs,
             String sortOrder,
-            String limit) {
+            String limit)
+    {
+        int uriType = mUriMatcher.match(uri);
+        return queryInternal(uri, uriType, projection, selection, selectionArgs, sortOrder, limit);
+    }
+
+
+    protected Cursor queryInternal(
+            Uri uri,
+            int uriType,
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder,
+            String limit)
+    {
         Cursor cursor;
         MatrixCursor matrixCursor;
         String featureId;
         String attachId;
         List<String> pathSegments;
 
-        int uriType = mUriMatcher.match(uri);
         switch (uriType) {
             case TYPE_TABLE:
                 if (TextUtils.isEmpty(sortOrder)) {
@@ -1298,9 +1326,27 @@ public class VectorLayer
 
     public Uri insert(
             Uri uri,
-            ContentValues contentValues) {
+            ContentValues contentValues)
+    {
+        // http://stackoverflow.com/a/24055457/4727406
+        String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
+        String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
+
+        Boolean tempFlag = false;
+        if (null != tempParam && tempParam.equals(URI_VALUE_TRUE)) {
+            tempFlag = true;
+        }
+
+        Boolean notSyncFlag = false;
+        if (null != notSyncParam && notSyncParam.equals(URI_VALUE_TRUE)) {
+            notSyncFlag = true;
+        }
+
+
         int uriType = mUriMatcher.match(uri);
+
         switch (uriType) {
+
             case TYPE_TABLE:
                 long rowID = insert(contentValues);
                 if (rowID != Constants.NOT_FOUND) {
@@ -1310,12 +1356,17 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(resultUri, null, false);
                     } else {
-                        addChange(rowID, CHANGE_OPERATION_NEW);
+                        if (notSyncFlag) {
+                            addChange(rowID, CHANGE_OPERATION_NOT_SYNC);
+                        } else {
+                            addChange(rowID, CHANGE_OPERATION_NEW);
+                        }
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
                     }
                     return resultUri;
                 }
                 return null;
+
             case TYPE_ATTACH:
                 List<String> pathSegments = uri.getPathSegments();
                 String featureId = pathSegments.get(pathSegments.size() - 2);
@@ -1329,13 +1380,17 @@ public class VectorLayer
                                 .notifyChange(resultUri, null, false);
                     } else {
                         long featureIdL = Long.parseLong(featureId);
-                        addChange(featureIdL, attachID, CHANGE_OPERATION_NEW);
-                        getContext().getContentResolver()
-                                .notifyChange(resultUri, null, true);
+                        if (notSyncFlag) {
+                            addChange(featureIdL, attachID, CHANGE_OPERATION_NOT_SYNC);
+                        } else {
+                            addChange(featureIdL, attachID, CHANGE_OPERATION_NEW);
+                        }
+                        getContext().getContentResolver().notifyChange(resultUri, null, true);
                     }
                     return resultUri;
                 }
                 return null;
+
             case TYPE_FEATURE:
             case TYPE_ATTACH_ID:
             default:

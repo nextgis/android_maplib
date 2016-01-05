@@ -27,11 +27,11 @@ import java.util.concurrent.TimeUnit;
 
 public interface Constants
 {
-    String TAG                = "nextgismobile";
-    String PREFERENCES        = "nextgismobile";
-    int    MODE_MULTI_PROCESS = 0x4;
-    int    NOT_FOUND          = -1;
-    boolean DEBUG_MODE = true;
+    String  TAG                = "nextgismobile";
+    String  PREFERENCES        = "nextgismobile";
+    int     MODE_MULTI_PROCESS = 0x4;
+    int     NOT_FOUND          = -1;
+    boolean DEBUG_MODE         = true;
 
     /**
      * HTTP parameters
@@ -41,7 +41,7 @@ public interface Constants
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
     long MIN_LOCAL_FEATURE_ID = 10000000;
-    int MAX_TILES_COUNT = 6001;
+    int  MAX_TILES_COUNT      = 6001;
 
     /**
      * NGW account type
@@ -58,28 +58,27 @@ public interface Constants
     int   MAP_LIMITS_XY   = 4; // limit to scroll map by x & y axis
 
     /**
-     * The additional size to off screen drawing
-     * from 1 and higher
-     * As more than more memory needed
+     * The additional size to off screen drawing from 1 and higher As more than more memory needed
      */
 
-    float OFFSCREEN_EXTRASIZE_RATIO    = 1.5f;
-    int DEFAULT_TILE_SIZE = 256;
+    float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
+    int   DEFAULT_TILE_SIZE         = 256;
 
     /**
      * thread priorities and delays
      */
-    int   DEFAULT_DRAW_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT + 11;
-    int   DEFAULT_DOWNLOAD_THREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_BACKGROUND + 3;
-    int   DEFAULT_LOAD_LAYER_THREAD_PRIORITY = Thread.MIN_PRIORITY;
-    int   DEFAULT_EXECUTION_DELAY = 450;
+    int DEFAULT_DRAW_THREAD_PRIORITY       = android.os.Process.THREAD_PRIORITY_DEFAULT + 11;
+    int DEFAULT_DOWNLOAD_THREAD_PRIORITY   = android.os.Process.THREAD_PRIORITY_BACKGROUND + 3;
+    int DEFAULT_LOAD_LAYER_THREAD_PRIORITY = Thread.MIN_PRIORITY;
+    int DEFAULT_EXECUTION_DELAY            = 450;
 
     /**
      * tune line string and linear ring simplifier
      */
-    double   SIMPLIFY_TOENV_AREA_MULTIPLY = 1.5; // area multiplier to skip if greater than quad tolerance
-    double   SIMPLIFY_SKIP_AREA_MULTIPLY = 5;
-    int SAMPLE_DISTANCE_PX = 5;
+    double SIMPLIFY_TOENV_AREA_MULTIPLY = 1.5;
+    // area multiplier to skip if greater than quad tolerance
+    double SIMPLIFY_SKIP_AREA_MULTIPLY  = 5;
+    int    SAMPLE_DISTANCE_PX           = 5;
 
 
     String CONFIG       = "config.json";
@@ -89,12 +88,12 @@ public interface Constants
     /**
      * notifications
      */
-    String NOTIFY_DELETE = "com.nextgis.maplib.notify_delete";
-    String NOTIFY_DELETE_ALL = "com.nextgis.maplib.notify_delete_all";
-    String NOTIFY_INSERT = "com.nextgis.maplib.notify_insert";
-    String NOTIFY_UPDATE = "com.nextgis.maplib.notify_update";
-    String NOTIFY_UPDATE_ALL = "com.nextgis.maplib.notify_update_all";
-    String NOTIFY_UPDATE_FIELDS = "com.nextgis.maplib.notify_update_fields";
+    String NOTIFY_DELETE            = "com.nextgis.maplib.notify_delete";
+    String NOTIFY_DELETE_ALL        = "com.nextgis.maplib.notify_delete_all";
+    String NOTIFY_INSERT            = "com.nextgis.maplib.notify_insert";
+    String NOTIFY_UPDATE            = "com.nextgis.maplib.notify_update";
+    String NOTIFY_UPDATE_ALL        = "com.nextgis.maplib.notify_update_all";
+    String NOTIFY_UPDATE_FIELDS     = "com.nextgis.maplib.notify_update_fields";
     String NOTIFY_FEATURE_ID_CHANGE = "com.nextgis.maplib.notify_change_id";
 
     String NOTIFY_LAYER_NAME = "layer_name";
@@ -159,7 +158,7 @@ public interface Constants
     int LAYERTYPE_TRACKS       = 1 << 6;
     int LAYERTYPE_LOOKUPTABLE  = 1 << 7;
 
-    int LAYERTYPE_SYSMAX       = 8; // should be the max + 1 of system layer type
+    int LAYERTYPE_SYSMAX = 8; // should be the max + 1 of system layer type
 
     /**
      * File type
@@ -172,30 +171,43 @@ public interface Constants
     /**
      * time constants
      */
-    long     ONE_SECOND                      = 1000;
-    long     ONE_MINUTE                      = ONE_SECOND * 60;
-    long     ONE_HOUR                        = ONE_MINUTE * 60;
-    long     ONE_DAY                         = ONE_HOUR * 24;
-    long     ONE_WEEK                        = ONE_DAY * 7;
-    long DEFAULT_TILE_MAX_AGE = ONE_WEEK;
-    long     ONE_YEAR                        = ONE_DAY * 365;
-    int      KEEP_ALIVE_TIME                 = 35;
-    int      TERMINATE_TIME                  = 350;
-    TimeUnit KEEP_ALIVE_TIME_UNIT            = TimeUnit.MILLISECONDS;
+    long     ONE_SECOND           = 1000;
+    long     ONE_MINUTE           = ONE_SECOND * 60;
+    long     ONE_HOUR             = ONE_MINUTE * 60;
+    long     ONE_DAY              = ONE_HOUR * 24;
+    long     ONE_WEEK             = ONE_DAY * 7;
+    long     DEFAULT_TILE_MAX_AGE = ONE_WEEK;
+    long     ONE_YEAR             = ONE_DAY * 365;
+    int      KEEP_ALIVE_TIME      = 35;
+    int      TERMINATE_TIME       = 350;
+    TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.MILLISECONDS;
 
-    int SYNC_NONE       = 1 << 0;
-    int SYNC_GEOMETRY   = 1 << 1;
-    int SYNC_ATTRIBUTES = 1 << 2;
-    int SYNC_DATA       = SYNC_GEOMETRY | SYNC_ATTRIBUTES;
-    int SYNC_ATTACH     = 1 << 3;
-    int SYNC_ALL        = SYNC_DATA | SYNC_ATTACH;
+    int  SYNC_NONE           = 1 << 0;
+    int  SYNC_GEOMETRY       = 1 << 1;
+    int  SYNC_ATTRIBUTES     = 1 << 2;
+    int  SYNC_DATA           = SYNC_GEOMETRY | SYNC_ATTRIBUTES;
+    int  SYNC_ATTACH         = 1 << 3;
+    int  SYNC_ALL            = SYNC_DATA | SYNC_ATTACH;
     long DEFAULT_SYNC_PERIOD = 3600; //1 hour
 
-    String CHANGES_NAME_POSTFIX = "_changes";
-    int CHANGE_OPERATION_NEW     = 1 << 1; // 2
-    int CHANGE_OPERATION_CHANGED = 1 << 2; // 4
-    int CHANGE_OPERATION_DELETE  = 1 << 3; // 8
-    int CHANGE_OPERATION_ATTACH  = 1 << 4; // 16
+    String URI_ATTACH  = "attach";
+    String URI_CHANGES = "changes";
+
+    // http://stackoverflow.com/a/24055457/4727406
+    String URI_PARAMETER_LIMIT    = "limit";
+    String URI_PARAMETER_TEMP     = "temp";
+    String URI_PARAMETER_NOT_SYNC = "not_sync";
+
+    String URI_VALUE_TRUE  = "true";
+    String URI_VALUE_FALSE = "false";
+
+    String CHANGES_NAME_POSTFIX      = "_changes";
+    int    CHANGE_OPERATION_TEMP     = 1;
+    int    CHANGE_OPERATION_NEW      = 1 << 1; // 2
+    int    CHANGE_OPERATION_CHANGED  = 1 << 2; // 4
+    int    CHANGE_OPERATION_DELETE   = 1 << 3; // 8
+    int    CHANGE_OPERATION_ATTACH   = 1 << 4; // 16
+    int    CHANGE_OPERATION_NOT_SYNC = 1 << 5; // 32
 
     int DRAWING_SEPARATE_THREADS = 9;
     int DRAW_NOTIFY_STEP_PERCENT = 20; // 5%

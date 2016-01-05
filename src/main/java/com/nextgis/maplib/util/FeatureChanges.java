@@ -24,10 +24,13 @@
 package com.nextgis.maplib.util;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
@@ -58,224 +61,25 @@ public class FeatureChanges
     }
 
 
-    public static long getChangeCount(String tableName)
+    public static Cursor query(
+            String tableName,
+            String[] projection,
+            String selection,
+            String[] selectionArgs,
+            String sortOrder,
+            String limit)
+
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
 
         try {
-            return DatabaseUtils.queryNumEntries(db, tableName);
+            return db.query(
+                    tableName, projection, selection, selectionArgs, null, null, sortOrder, limit);
         } catch (SQLiteException e) {
-            e.printStackTrace();
             Log.d(TAG, e.getLocalizedMessage());
-            return 0;
+            return null;
         }
-    }
-
-
-    public static Cursor getFirstChangeFromRecordId(
-            String tableName,
-            long recordId)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-        String selection = FIELD_ID + " >= " + recordId;
-
-        return query(tableName, selection, sortOrder, "1");
-    }
-
-
-    public static long getLastChangeRecordId(String tableName)
-    {
-        String sortOrder = FIELD_ID + " DESC";
-        Cursor cursor = query(tableName, null, sortOrder, "1");
-        long ret = NOT_FOUND;
-
-        if (null == cursor) {
-            return ret;
-        }
-
-        if (cursor.moveToFirst()) {
-            ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
-        }
-
-        cursor.close();
-        return ret;
-    }
-
-
-    public static Cursor getChanges(String tableName)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-
-        return query(tableName, null, sortOrder, null);
-    }
-
-
-    public static boolean isChanges(String tableName)
-    {
-        return isRecords(tableName, null);
-    }
-
-
-    public static Cursor getChanges(
-            String tableName,
-            long featureId)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-        String selection = FIELD_FEATURE_ID + " = " + featureId;
-
-        return query(tableName, selection, sortOrder, null);
-    }
-
-
-    public static boolean isChanges(
-            String tableName,
-            long featureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId;
-        return isRecords(tableName, selection);
-    }
-
-
-    public static Cursor getChanges(
-            String tableName,
-            long featureId,
-            int operation)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
-
-        return query(tableName, selection, sortOrder, null);
-    }
-
-
-    public static boolean isChanges(
-            String tableName,
-            long featureId,
-            int operation)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
-
-        return isRecords(tableName, selection);
-    }
-
-
-    public static Cursor getAttachChanges(
-            String tableName,
-            long featureId)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
-
-        return query(tableName, selection, sortOrder, null);
-    }
-
-
-    public static boolean isAttachChanges(
-            String tableName,
-            long featureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
-
-        return isRecords(tableName, selection);
-    }
-
-
-    public static Cursor getAttachChanges(
-            String tableName,
-            long featureId,
-            long attachId)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId;
-
-        return query(tableName, selection, sortOrder, null);
-    }
-
-
-    public static boolean isAttachChanges(
-            String tableName,
-            long featureId,
-            long attachId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId;
-
-        return isRecords(tableName, selection);
-    }
-
-
-    public static Cursor getAttachChanges(
-            String tableName,
-            long featureId,
-            long attachId,
-            int attachOperation)
-    {
-        String sortOrder = FIELD_ID + " ASC";
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
-
-        return query(tableName, selection, sortOrder, null);
-    }
-
-
-    public static boolean isAttachChanges(
-            String tableName,
-            long featureId,
-            long attachId,
-            int attachOperation)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
-
-        return isRecords(tableName, selection);
-    }
-
-
-    public static boolean isAttachesForDelete(
-            String tableName,
-            long featureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_DELETE +
-                           " ) )";
-
-        return isRecords(tableName, selection);
-    }
-
-
-    public static boolean isRecords(
-            String tableName,
-            String selection)
-    {
-        Cursor cursor = query(tableName, selection, null, "1");
-        boolean ret = false;
-
-        if (null != cursor) {
-            if (cursor.getCount() > 0) {
-                ret = true;
-            }
-            cursor.close();
-        }
-
-        return ret;
     }
 
 
@@ -285,279 +89,29 @@ public class FeatureChanges
             String sortOrder,
             String limit)
     {
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-
-        try {
-            return db.query(tableName, null, selection, null, null, null, sortOrder, limit);
-        } catch (SQLiteException e) {
-            Log.d(TAG, e.getLocalizedMessage());
-            return null;
-        }
+        return query(tableName, null, selection, null, sortOrder, limit);
     }
 
 
-    public static long add(
+    public static long insert(
             String tableName,
-            long featureId,
-            int operation)
+            ContentValues values)
     {
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, featureId);
-        values.put(FIELD_OPERATION, operation);
-        values.put(FIELD_ATTACH_ID, NOT_FOUND);
-        values.put(FIELD_ATTACH_OPERATION, 0);
-
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
+        SQLiteDatabase db = map.getDatabase(false);
         return db.insert(tableName, null, values);
     }
 
 
-    public static long add(
+    public static int update(
             String tableName,
-            long featureId,
-            long attachId,
-            int attachOperation)
+            ContentValues values,
+            String selection,
+            String[] selectionArgs)
     {
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, featureId);
-        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
-        values.put(FIELD_ATTACH_ID, attachId);
-        values.put(FIELD_ATTACH_OPERATION, attachOperation);
-
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
-        return db.insert(tableName, null, values);
-    }
-
-
-    public static int setOperation(
-            String tableName,
-            long recordId,
-            int operation)
-    {
-        String selection = FIELD_ID + " = " + recordId;
-
-        ContentValues values = new ContentValues();
-        values.put(FIELD_OPERATION, operation);
-
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-        return db.update(tableName, values, selection, null);
-    }
-
-
-    public static int setOperation(
-            String tableName,
-            long recordId,
-            long featureId,
-            long attachId,
-            int attachOperation)
-    {
-        String selection = FIELD_ID + " = " + recordId + " AND " +
-                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           FIELD_ATTACH_ID + " = " + attachId;
-
-        ContentValues values = new ContentValues();
-        values.put(FIELD_ATTACH_OPERATION, attachOperation);
-
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-        return db.update(tableName, values, selection, null);
-    }
-
-
-    public static int changeFeatureId(
-            String tableName,
-            long oldFeatureId,
-            long newFeatureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + oldFeatureId;
-
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, newFeatureId);
-
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-        return db.update(tableName, values, selection, null);
-    }
-
-
-    public static int changeFeatureIdForAttaches(
-            String tableName,
-            long oldFeatureId,
-            long newFeatureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + oldFeatureId + " AND " +
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                " ) )";
-
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, newFeatureId);
-
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-        return db.update(tableName, values, selection, null);
-    }
-
-
-    public static int removeAllChanges(String tableName)
-    {
-        return delete(tableName, null);
-    }
-
-
-    public static int removeAllChangesToLast(
-            String tableName,
-            long lastRecordId)
-    {
-        String selection = FIELD_ID + " <= " + lastRecordId;
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeChanges(
-            String tableName,
-            long featureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId;
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeChangesToLast(
-            String tableName,
-            long featureId,
-            long lastRecordId)
-    {
-        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                           FIELD_FEATURE_ID + " = " + featureId;
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeChanges(
-            String tableName,
-            long featureId,
-            int operation)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeChangesToLast(
-            String tableName,
-            long featureId,
-            int operation,
-            long lastRecordId)
-    {
-        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )";
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeAllAttachChanges(
-            String tableName,
-            long featureId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeAllAttachChangesToLast(
-            String tableName,
-            long featureId,
-            long lastRecordId)
-    {
-        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeAttachChanges(
-            String tableName,
-            long featureId,
-            long attachId)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId;
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeAttachChangesToLast(
-            String tableName,
-            long featureId,
-            long attachId,
-            long lastRecordId)
-    {
-        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId;
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeAttachChanges(
-            String tableName,
-            long featureId,
-            long attachId,
-            int attachOperation)
-    {
-        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeAttachChangesToLast(
-            String tableName,
-            long featureId,
-            long attachId,
-            int attachOperation,
-            long lastRecordId)
-    {
-        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
-                           FIELD_FEATURE_ID + " = " + featureId + " AND " +
-                           "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                           " ) ) AND " +
-                           FIELD_ATTACH_ID + " = " + attachId + " AND " +
-                           "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )";
-
-        return delete(tableName, selection);
-    }
-
-
-    public static int removeChangeRecord(
-            String tableName,
-            long recordId)
-    {
-        String selection = FIELD_ID + " = " + recordId;
-        return delete(tableName, selection);
+        return db.update(tableName, values, selection, selectionArgs);
     }
 
 
@@ -584,5 +138,776 @@ public class FeatureChanges
         SQLiteDatabase db = map.getDatabase(true);
         String tableDrop = "DROP TABLE IF EXISTS " + tableName;
         db.execSQL(tableDrop);
+    }
+
+
+    public static boolean isRecords(
+            String tableName,
+            String selection)
+    {
+        Cursor cursor = query(tableName, selection, null, "1");
+        boolean ret = false;
+
+        if (null != cursor) {
+            if (cursor.getCount() > 0) {
+                ret = true;
+            }
+            cursor.close();
+        }
+
+        return ret;
+    }
+
+
+    public static long getEntriesCount(String tableName)
+    {
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+
+        try {
+            return DatabaseUtils.queryNumEntries(db, tableName);
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
+            return 0;
+        }
+    }
+
+
+    protected static String getSelectionForSync()
+    {
+        return "( ( 0 == ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP +
+                " ) ) AND " +
+                "( 0 == ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
+                " ) ) OR " +
+
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                "( 0 == ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP +
+                " ) ) AND " +
+                "( 0 == ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) ) )";
+    }
+
+
+    public static long getChangeCount(String tableName)
+    {
+        String selection = getSelectionForSync();
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(true);
+
+        try {
+            // From sources of DatabaseUtils.queryNumEntries()
+            String s = (!TextUtils.isEmpty(selection)) ? " where " + selection : "";
+            return DatabaseUtils.longForQuery(db, "select count(*) from " + tableName + s, null);
+        } catch (SQLiteException e) {
+            e.printStackTrace();
+            Log.d(TAG, e.getLocalizedMessage());
+            return 0;
+        }
+    }
+
+
+    public static Cursor getFirstChangeFromRecordId(
+            String tableName,
+            long recordId)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = FIELD_ID + " >= " + recordId + " AND " + getSelectionForSync();
+        return query(tableName, selection, sortOrder, "1");
+    }
+
+
+    public static long getLastChangeRecordId(String tableName)
+    {
+        String sortOrder = FIELD_ID + " DESC";
+        String selection = getSelectionForSync();
+        Cursor cursor = query(tableName, selection, sortOrder, "1");
+        long ret = NOT_FOUND;
+
+        if (null == cursor) {
+            return ret;
+        }
+
+        if (cursor.moveToFirst()) {
+            ret = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
+        }
+
+        cursor.close();
+        return ret;
+    }
+
+
+    public static Cursor getChanges(String tableName)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = getSelectionForSync();
+        return query(tableName, selection, sortOrder, null);
+    }
+
+
+    public static boolean isChanges(String tableName)
+    {
+        String selection = getSelectionForSync();
+        return isRecords(tableName, selection);
+    }
+
+
+    public static Cursor getChanges(
+            String tableName,
+            long featureId)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + getSelectionForSync();
+        return query(tableName, selection, sortOrder, null);
+    }
+
+
+    public static boolean isChanges(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + getSelectionForSync();
+        return isRecords(tableName, selection);
+    }
+
+
+    public static Cursor getChanges(
+            String tableName,
+            long featureId,
+            int operation)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return query(tableName, selection, sortOrder, null);
+    }
+
+
+    public static boolean isChanges(
+            String tableName,
+            long featureId,
+            int operation)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return isRecords(tableName, selection);
+    }
+
+
+    public static Cursor getAttachChanges(
+            String tableName,
+            long featureId)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return query(tableName, selection, sortOrder, null);
+    }
+
+
+    public static boolean isAttachChanges(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return isRecords(tableName, selection);
+    }
+
+
+    public static Cursor getAttachChanges(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                getSelectionForSync();
+
+        return query(tableName, selection, sortOrder, null);
+    }
+
+
+    public static boolean isAttachChanges(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                getSelectionForSync();
+
+        return isRecords(tableName, selection);
+    }
+
+
+    public static Cursor getAttachChanges(
+            String tableName,
+            long featureId,
+            long attachId,
+            int attachOperation)
+    {
+        String sortOrder = FIELD_ID + " ASC";
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return query(tableName, selection, sortOrder, null);
+    }
+
+
+    public static boolean isAttachChanges(
+            String tableName,
+            long featureId,
+            long attachId,
+            int attachOperation)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )" + " AND " +
+                getSelectionForSync();
+
+        return isRecords(tableName, selection);
+    }
+
+
+    public static boolean isAttachesForDelete(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_DELETE +
+                " ) )" + " AND " +
+                getSelectionForSync();
+
+        return isRecords(tableName, selection);
+    }
+
+
+    public static long add(
+            String tableName,
+            long featureId,
+            int operation)
+    {
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, operation);
+        values.put(FIELD_ATTACH_ID, NOT_FOUND);
+        values.put(FIELD_ATTACH_OPERATION, 0);
+
+        return insert(tableName, values);
+    }
+
+
+    public static long add(
+            String tableName,
+            long featureId,
+            long attachId,
+            int attachOperation)
+    {
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
+        values.put(FIELD_ATTACH_ID, attachId);
+        values.put(FIELD_ATTACH_OPERATION, attachOperation);
+
+        return insert(tableName, values);
+    }
+
+
+    public static int setOperation(
+            String tableName,
+            long recordId,
+            int operation)
+    {
+        String selection = FIELD_ID + " = " + recordId;
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_OPERATION, operation);
+
+        return update(tableName, values, selection, null);
+    }
+
+
+    public static int setOperation(
+            String tableName,
+            long recordId,
+            long featureId,
+            long attachId,
+            int attachOperation)
+    {
+        String selection = FIELD_ID + " = " + recordId + " AND " +
+                FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                FIELD_ATTACH_ID + " = " + attachId;
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_ATTACH_OPERATION, attachOperation);
+
+        return update(tableName, values, selection, null);
+    }
+
+
+    public static int changeFeatureId(
+            String tableName,
+            long oldFeatureId,
+            long newFeatureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + oldFeatureId;
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, newFeatureId);
+
+        return update(tableName, values, selection, null);
+    }
+
+
+    public static int changeFeatureIdForAttaches(
+            String tableName,
+            long oldFeatureId,
+            long newFeatureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + oldFeatureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) )";
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, newFeatureId);
+
+        return update(tableName, values, selection, null);
+    }
+
+
+    public static int removeAllChanges(String tableName)
+    {
+        String selection = getSelectionForSync();
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAllChangesToLast(
+            String tableName,
+            long lastRecordId)
+    {
+        String selection = FIELD_ID + " <= " + lastRecordId + " AND " + getSelectionForSync();
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeChanges(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + getSelectionForSync();
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeChangesToLast(
+            String tableName,
+            long featureId,
+            long lastRecordId)
+    {
+        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
+                FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeChanges(
+            String tableName,
+            long featureId,
+            int operation)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )" + " AND " +
+                getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeChangesToLast(
+            String tableName,
+            long featureId,
+            int operation,
+            long lastRecordId)
+    {
+        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
+                FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + operation + " ) )" + " AND " +
+                getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAllAttachChanges(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAllAttachChangesToLast(
+            String tableName,
+            long featureId,
+            long lastRecordId)
+    {
+        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
+                FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAttachChanges(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAttachChangesToLast(
+            String tableName,
+            long featureId,
+            long attachId,
+            long lastRecordId)
+    {
+        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
+                FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAttachChanges(
+            String tableName,
+            long featureId,
+            long attachId,
+            int attachOperation)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )" + " AND "
+                + getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeAttachChangesToLast(
+            String tableName,
+            long featureId,
+            long attachId,
+            int attachOperation,
+            long lastRecordId)
+    {
+        String selection = FIELD_ID + " <= " + lastRecordId + " AND " +
+                FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + attachOperation + " ) )" + " AND " +
+                getSelectionForSync();
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int removeChangeRecord(
+            String tableName,
+            long recordId)
+    {
+        String selection = FIELD_ID + " = " + recordId + " AND " + getSelectionForSync();
+        return delete(tableName, selection);
+    }
+
+
+    public static long addFeatureTempFlag(
+            String tableName,
+            long featureId)
+    {
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_TEMP);
+        values.put(FIELD_ATTACH_ID, NOT_FOUND);
+        values.put(FIELD_ATTACH_OPERATION, 0);
+
+        return insert(tableName, values);
+    }
+
+
+    public static long addFeatureNotSyncFlag(
+            String tableName,
+            long featureId)
+    {
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_NOT_SYNC);
+        values.put(FIELD_ATTACH_ID, NOT_FOUND);
+        values.put(FIELD_ATTACH_OPERATION, 0);
+
+        return insert(tableName, values);
+    }
+
+
+    public static long addAttachTempFlag(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
+        values.put(FIELD_ATTACH_ID, attachId);
+        values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_TEMP);
+
+        return insert(tableName, values);
+    }
+
+
+    public static long addAttachNotSyncFlag(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
+        values.put(FIELD_ATTACH_ID, attachId);
+        values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_NOT_SYNC);
+
+        return insert(tableName, values);
+    }
+
+
+    public static boolean hasFeatureTempFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
+                        + featureId);
+
+        String selection = "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP + " )";
+
+        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+
+        boolean res = false;
+        if (null != changesCursor) {
+            res = changesCursor.getCount() > 0;
+            changesCursor.close();
+        }
+
+        return res;
+    }
+
+
+    public static boolean hasFeatureNotSyncFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
+                        + featureId);
+
+        String selection =
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) )";
+
+        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+
+        boolean res = false;
+        if (null != changesCursor) {
+            res = changesCursor.getCount() > 0;
+            changesCursor.close();
+        }
+
+        return res;
+    }
+
+
+    public static boolean hasAttachTempFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId,
+            long attachId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
+                        + "/" + URI_ATTACH + "/" + attachId);
+
+        String selection =
+                "( ( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) ) )";
+
+        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+
+        boolean res = false;
+        if (null != changesCursor) {
+            res = changesCursor.getCount() > 0;
+            changesCursor.close();
+        }
+
+        return res;
+    }
+
+
+    public static boolean hasAttachNotSyncFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId,
+            long attachId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
+                        + "/" + URI_ATTACH + "/" + attachId);
+
+        String selection =
+                "( ( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                        " ) ) AND " +
+                        "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
+                        " ) ) )";
+
+        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+
+        boolean res = false;
+        if (null != changesCursor) {
+            res = changesCursor.getCount() > 0;
+            changesCursor.close();
+        }
+
+        return res;
+    }
+
+
+    public static boolean addFeatureTempFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
+                        + featureId);
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_TEMP);
+        values.put(FIELD_ATTACH_ID, NOT_FOUND);
+        values.put(FIELD_ATTACH_OPERATION, 0);
+
+        return null != context.getContentResolver().insert(uri, values);
+    }
+
+
+    public static boolean addFeatureNotSyncFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
+                        + featureId);
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_NOT_SYNC);
+        values.put(FIELD_ATTACH_ID, NOT_FOUND);
+        values.put(FIELD_ATTACH_OPERATION, 0);
+
+        return null != context.getContentResolver().insert(uri, values);
+    }
+
+
+    public static boolean addAttachTempFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId,
+            long attachId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
+                        + "/" + URI_ATTACH + "/" + attachId);
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
+        values.put(FIELD_ATTACH_ID, attachId);
+        values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_TEMP);
+
+        return null != context.getContentResolver().insert(uri, values);
+    }
+
+
+    public static boolean addAttachNotSyncFlag(
+            Context context,
+            String authority,
+            String layerPathName,
+            long featureId,
+            long attachId)
+    {
+        Uri uri = Uri.parse(
+                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
+                        + "/" + URI_ATTACH + "/" + attachId);
+
+        ContentValues values = new ContentValues();
+        values.put(FIELD_FEATURE_ID, featureId);
+        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
+        values.put(FIELD_ATTACH_ID, attachId);
+        values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_NOT_SYNC);
+
+        return null != context.getContentResolver().insert(uri, values);
     }
 }
