@@ -1126,7 +1126,7 @@ public class NGWVectorLayer
                 }
 
                 // if local item is in update list and state ADD_NEW skip delete
-                bDeleteFeature &= !FeatureChanges.isChanges(
+                bDeleteFeature = bDeleteFeature && !FeatureChanges.isChanges(
                         mChangeTableName, featureId, Constants.CHANGE_OPERATION_NEW)
                         && !FeatureChanges.hasFeatureFlags(mChangeTableName, featureId);
 

@@ -2530,17 +2530,6 @@ public class VectorLayer
         attachItem.setAttachId(attachId);
         feature.addAttachment(attachItem);
 
-        long featureId = feature.getId();
-        long attachIdL = Long.parseLong(attachId);
-
-        if (!hasFeatureTempFlag(featureId)) {
-            setAttachTempFlag(featureId, attachIdL, false);
-        }
-
-        if (hasFeatureNotSyncFlag(featureId)) {
-            setAttachNotSyncFlag(featureId, attachIdL, true);
-        }
-
         return attachItem;
     }
 
@@ -2610,8 +2599,8 @@ public class VectorLayer
 
     public int updateFeatureWithFlags(Feature feature)
     {
-        boolean tempFlag = hasFeatureTempFlag(feature);
-        boolean notSyncFlag = hasFeatureNotSyncFlag(feature);
+        boolean tempFlag = hasFeatureTempFlag(feature.getId());
+        boolean notSyncFlag = hasFeatureNotSyncFlag(feature.getId());
 
         if (!tempFlag && !notSyncFlag) {
             return 0;
@@ -2799,22 +2788,10 @@ public class VectorLayer
     }
 
 
-    public boolean hasFeatureTempFlag(Feature feature)
-    {
-        return hasFeatureTempFlag(feature.getId());
-    }
-
-
     public boolean hasFeatureTempFlag(long featureId)
     {
         // TODO: move work with temp features into VectorLayer
         return false;
-    }
-
-
-    public boolean hasFeatureNotSyncFlag(Feature feature)
-    {
-        return hasFeatureNotSyncFlag(feature.getId());
     }
 
 
@@ -2838,84 +2815,6 @@ public class VectorLayer
             long attachId)
     {
         return false;
-    }
-
-
-    public boolean hasAttachesTempFlag(long featureId)
-    {
-        Map<String, AttachItem> attachMap = getAttachMap("" + featureId);
-        if (null == attachMap) {
-            return false;
-        }
-
-        Set<String> attachIds = attachMap.keySet();
-
-        for (String attachId : attachIds) {
-            if (!hasAttachTempFlag(featureId, Long.parseLong(attachId))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    public boolean hasAttachesNotSyncFlag(long featureId)
-    {
-        Map<String, AttachItem> attachMap = getAttachMap("" + featureId);
-        if (null == attachMap) {
-            return false;
-        }
-
-        Set<String> attachIds = attachMap.keySet();
-
-        for (String attachId : attachIds) {
-            if (!hasAttachNotSyncFlag(featureId, Long.parseLong(attachId))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    public boolean hasFeatureWithAttachesTempFlag(Feature feature)
-    {
-        return hasFeatureWithAttachesTempFlag(feature.getId());
-    }
-
-
-    public boolean hasFeatureWithAttachesTempFlag(long featureId)
-    {
-        if (!hasFeatureTempFlag(featureId)) {
-            return false;
-        }
-
-        if (!hasFeatureAttaches(featureId)) {
-            return true;
-        }
-
-        return hasAttachesTempFlag(featureId);
-    }
-
-
-    public boolean hasFeatureWithAttachesNotSyncFlag(Feature feature)
-    {
-        return hasFeatureWithAttachesNotSyncFlag(feature.getId());
-    }
-
-
-    public boolean hasFeatureWithAttachesNotSyncFlag(long featureId)
-    {
-        if (!hasFeatureNotSyncFlag(featureId)) {
-            return false;
-        }
-
-        if (!hasFeatureAttaches(featureId)) {
-            return true;
-        }
-
-        return hasAttachesNotSyncFlag(featureId);
     }
 
 
