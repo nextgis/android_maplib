@@ -855,10 +855,6 @@ public class VectorLayer
 
 
     protected synchronized void reloadCache() throws SQLiteException {
-        if (null == mFields || mFields.isEmpty()) {
-            return;
-        }
-
         //load vector cache
         mCacheLoaded = false;
 
