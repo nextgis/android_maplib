@@ -23,7 +23,9 @@
 
 package com.nextgis.maplib.util;
 
+import android.content.ContentValues;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.map.VectorLayer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -162,5 +164,20 @@ public class AttachItem
     public int hashCode()
     {
         return mAttachId.hashCode();
+    }
+
+
+    public ContentValues getContentValues(boolean withAttachId)
+    {
+        ContentValues returnValues = new ContentValues();
+        returnValues.put(VectorLayer.ATTACH_DISPLAY_NAME, mDisplayName);
+        returnValues.put(VectorLayer.ATTACH_MIME_TYPE, mMimetype);
+        returnValues.put(VectorLayer.ATTACH_DESCRIPTION, mDescription);
+
+        if (withAttachId) {
+            returnValues.put(VectorLayer.ATTACH_ID, mAttachId);
+        }
+
+        return returnValues;
     }
 }
