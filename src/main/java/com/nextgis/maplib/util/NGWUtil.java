@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -50,6 +50,11 @@ import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.nextgis.maplib.util.Constants.JSON_DESCRIPTION;
+import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
+import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_KEYNAME;
+import static com.nextgis.maplib.util.Constants.JSON_PASSWORD;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 public class NGWUtil
@@ -555,6 +560,30 @@ public class NGWUtil
             features.add(feature);
         }
         return features;
+    }
+
+
+    public static boolean signUp(String server, String login, String password, String displayName, String description) {
+        server += server.endsWith("/") ? "" : "/";
+        server += "api/component/auth/register";
+        if (!server.startsWith("http"))
+            server = "http://" + server;
+
+        JSONObject payload = new JSONObject();
+        try {
+            payload.put(JSON_KEYNAME, login);
+            payload.put(JSON_PASSWORD, password);
+            payload.put(JSON_DISPLAY_NAME, displayName == null ? login : displayName);
+            payload.put(JSON_DESCRIPTION, description);
+
+            String result = NetworkUtil.post(server, payload.toString(), null, null);
+            payload = new JSONObject(result);
+            return result != null && payload.has(JSON_ID_KEY);
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
 }

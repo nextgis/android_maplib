@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -123,6 +123,10 @@ public interface Constants
     String JSON_CHANGES_KEY       = "changes";
     String JSON_VALUE_KEY         = "value";
     String JSON_SIZE_KEY          = "size";
+    String JSON_KEYNAME           = "keyname";
+    String JSON_DISPLAY_NAME      = "display_name";
+    String JSON_PASSWORD          = "password";
+    String JSON_DESCRIPTION       = "description";
 
     /**
      * database fields
