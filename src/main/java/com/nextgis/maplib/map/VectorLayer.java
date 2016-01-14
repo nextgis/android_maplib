@@ -1580,14 +1580,18 @@ public class VectorLayer
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
                 result = 0;
+
                 //get attach path
                 File attachFolder =
                         new File(mPath, featureId); //the attach store in id folder in layer folder
-                for (File attachFile : attachFolder.listFiles()) {
-                    if (attachFile.delete()) {
-                        result++;
+                if (attachFolder.exists()) {
+                    for (File attachFile : attachFolder.listFiles()) {
+                        if (attachFile.delete()) {
+                            result++;
+                        }
                     }
                 }
+
                 if (result > 0) {
 
                     deleteAttaches(featureId);
@@ -1807,10 +1811,11 @@ public class VectorLayer
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
                 featureIdL = Long.parseLong(featureId);
+                String changeSel = FIELD_ID + " = " + featureId;
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_ID + " = " + featureId;
+                    selection = changeSel;
                 } else {
-                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
+                    selection = selection + " AND " + changeSel;
                 }
 
                 result = update(featureIdL, values, selection, selectionArgs);
@@ -2093,9 +2098,11 @@ public class VectorLayer
     }
 
 
-    protected void deleteAttaches(String featureId) {
+    protected void deleteAttaches(String featureId)
+    {
+        File attachFolder = new File(mPath, featureId);
+        FileUtil.renameAndDelete(attachFolder);
         mAttaches.remove(featureId);
-        saveAttach(featureId);
     }
 
 
@@ -2519,15 +2526,16 @@ public class VectorLayer
 
     public AttachItem getNewTempAttach(Feature feature)
     {
+        long featureId = feature.getId();
         AttachItem attachItem = new AttachItem("" + NOT_FOUND, "", "", "");
-        Uri uri = insertTempAttach(feature.getId(), attachItem);
+        Uri uri = insertTempAttach(featureId, attachItem);
 
         if (uri == null) {
             return null;
         }
 
         String attachId = uri.getLastPathSegment();
-        attachItem.setAttachId(attachId);
+        attachItem = getAttach("" + featureId, attachId);
         feature.addAttachment(attachItem);
 
         return attachItem;
@@ -2623,7 +2631,7 @@ public class VectorLayer
                     .build();
         }
 
-        return update(uri, feature.getContentValues(true), null, null);
+        return update(uri, feature.getContentValues(false), null, null);
     }
 
 
@@ -2658,7 +2666,7 @@ public class VectorLayer
                     .build();
         }
 
-        return update(uri, attachItem.getContentValues(true), null, null);
+        return update(uri, attachItem.getContentValues(false), null, null);
     }
 
 
@@ -2719,17 +2727,23 @@ public class VectorLayer
                 break;
             }
 
+            // delete all feature's attaches
             Uri uri = Uri.parse(
-                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId);
-
+                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId + "/"
+                            + URI_ATTACH);
             uri = uri.buildUpon()
                     .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
                     .build();
+            delete(uri, null, null);
 
+            // delete feature
+            uri = Uri.parse(
+                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId);
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
+                    .build();
             delete(uri, null, null);
         }
-
-        deleteAllTempFeaturesFlags();
     }
 
 
@@ -2755,22 +2769,21 @@ public class VectorLayer
             Uri uri = Uri.parse(
                     "content://" + mAuthority + "/" + layerPathName + "/" + featureId + "/"
                             + Constants.URI_ATTACH + "/" + attachId);
-
             uri = uri.buildUpon()
                     .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
                     .build();
-
             delete(uri, null, null);
         }
-
-        deleteAllTempAttachesFlags();
     }
 
 
     public void deleteAllTemps()
     {
-        deleteAllTempFeatures();
         deleteAllTempAttaches();
+        deleteAllTempFeatures();
+
+        deleteAllTempAttachesFlags();
+        deleteAllTempFeaturesFlags();
     }
 
 
