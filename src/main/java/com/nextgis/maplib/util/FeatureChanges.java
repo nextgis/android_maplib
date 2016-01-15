@@ -213,16 +213,23 @@ public class FeatureChanges
 
     protected static String getSelectionForSync()
     {
-        return "( ( 0 == ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP +
-                " ) ) AND " +
-                "( 0 == ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
-                " ) ) OR " +
+        return "( " +
 
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                " ) ) AND " +
-                "( 0 == ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP +
-                " ) ) AND " +
-                "( 0 == ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) ) )";
+                "0 == " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " AND " +
+                "0 == " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP +
+                " AND " +
+                "0 == " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
+
+                " OR " +
+
+                "0 != " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " AND " +
+                "0 == " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP +
+                " AND " +
+                "0 == " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
+
+                " )";
     }
 
 

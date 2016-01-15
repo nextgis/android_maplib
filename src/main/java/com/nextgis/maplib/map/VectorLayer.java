@@ -2112,7 +2112,12 @@ public class VectorLayer
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null != attachMap) {
             attachMap.remove(attachId);
-            saveAttach(featureId);
+
+            if (attachMap.size() > 0) {
+                saveAttach(featureId);
+            } else {
+                deleteAttaches(featureId);
+            }
         }
     }
 
@@ -2687,25 +2692,32 @@ public class VectorLayer
     }
 
 
-    public int deleteTempAttach(long featureId, long attachId)
+    public int deleteAttachWithFlags(
+            long featureId,
+            long attachId)
     {
-        if (!hasAttachTempFlag(featureId, attachId)) {
+        boolean tempFlag = hasAttachTempFlag(featureId, attachId);
+        boolean notSyncFlag = hasAttachNotSyncFlag(featureId, attachId);
+
+        if (!tempFlag && !notSyncFlag) {
             return 0;
         }
 
-        return deleteTempAttachInternal(featureId, attachId);
-    }
-
-
-    protected int deleteTempAttachInternal(long featureId, long attachId)
-    {
         Uri uri = Uri.parse(
                 "content://" + mAuthority + "/" + mPath.getName() + "/" + featureId + "/"
                         + Constants.URI_ATTACH + "/" + attachId);
 
-        uri = uri.buildUpon()
-                .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
-                .build();
+        if (tempFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
+                    .build();
+        }
+
+        if (notSyncFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_NOT_SYNC, Boolean.FALSE.toString())
+                    .build();
+        }
 
         return delete(uri, null, null);
     }
