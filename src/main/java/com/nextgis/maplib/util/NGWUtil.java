@@ -577,8 +577,7 @@ public class NGWUtil
             payload.put(JSON_DESCRIPTION, description);
 
             String result = NetworkUtil.post(server, payload.toString(), null, null);
-            payload = new JSONObject(result);
-            return result != null && payload.has(JSON_ID_KEY);
+            return result != null && new JSONObject(result).has(JSON_ID_KEY);
         } catch (JSONException | IOException e) {
             e.printStackTrace();
         }
