@@ -57,6 +57,14 @@ public class Feature
     protected Map<String, AttachItem> mAttachments;
 
 
+    public Feature(){
+        mId = Constants.NOT_FOUND;
+        mFields = new ArrayList<>();
+        mFieldValues = new ArrayList<>();
+        mAttachments = new HashMap<>();
+    }
+
+
     public Feature(
             long id,
             List<Field> fields)
@@ -67,11 +75,14 @@ public class Feature
         mAttachments = new HashMap<>();
     }
 
-    public Feature(){
-        mId = Constants.NOT_FOUND;
-        mFields = new ArrayList<>();
-        mFieldValues = new ArrayList<>();
-        mAttachments = new HashMap<>();
+
+    public Feature(Feature other)
+    {
+        mId = other.getId();
+        mGeometry = other.getGeometry();
+        mFields = other.getFields();
+        mFieldValues = other.getFieldValues();
+        mAttachments = other.getAttachments();
     }
 
 
@@ -267,6 +278,12 @@ public class Feature
     public List<Field> getFields()
     {
         return mFields;
+    }
+
+
+    public List<Object> getFieldValues()
+    {
+        return mFieldValues;
     }
 
 
@@ -558,8 +575,26 @@ public class Feature
         return mAttachments;
     }
 
+
     public void clearAttachments()
     {
         mAttachments.clear();
+    }
+
+
+    public long getMaxAttachId()
+    {
+        long maxAttachId = 0;
+
+        if (null == mAttachments) {
+            return maxAttachId;
+        }
+
+        for (String key : mAttachments.keySet()) {
+            long keyL = Long.parseLong(key);
+            maxAttachId = Math.max(maxAttachId, keyL);
+        }
+
+        return maxAttachId;
     }
 }

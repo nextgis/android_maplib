@@ -30,7 +30,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
@@ -39,9 +38,7 @@ import com.nextgis.maplib.util.Constants;
 import java.io.File;
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 
@@ -104,27 +101,31 @@ public class MapContentProviderHelper
     }
 
 
+    /**
+     * @param pathName
+     *         The exact name of the folder which contains a layer. Must be without slashes.
+     */
     public static Layer getVectorLayerByPath(
             LayerGroup layerGroup,
-            String path)
+            String pathName)
     {
         for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
                 LayerGroup inLayerGroup = (LayerGroup) layer;
-                Layer out = getVectorLayerByPath(inLayerGroup, path);
+                Layer out = getVectorLayerByPath(inLayerGroup, pathName);
                 if (null != out) {
                     return out;
                 }
             } else if (layer instanceof VectorLayer) {
                 VectorLayer vectorLayer = (VectorLayer) layer;
-                if (path.contains(vectorLayer.getPath().getName())) {
+                if (pathName.equals(vectorLayer.getPath().getName())) {
                     return vectorLayer;
                 }
             } else if (layer instanceof TrackLayer) {
                 TrackLayer trackLayer = (TrackLayer) layer;
-                if (path.contains(TrackLayer.TABLE_TRACKS) ||
-                    path.contains(TrackLayer.TABLE_TRACKPOINTS)) {
+                if (pathName.contains(TrackLayer.TABLE_TRACKS) ||
+                    pathName.contains(TrackLayer.TABLE_TRACKPOINTS)) {
                     return trackLayer;
                 }
             }

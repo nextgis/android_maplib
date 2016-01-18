@@ -52,6 +52,9 @@ public class NGWSyncService
     @Override
     public void onCreate()
     {
+        // For service debug
+//        android.os.Debug.waitForDebugger();
+
         /*
          * Create the sync adapter as a singleton.
          * Set the sync adapter as syncable

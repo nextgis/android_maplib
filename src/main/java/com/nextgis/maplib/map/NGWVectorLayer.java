@@ -227,26 +227,10 @@ public class NGWVectorLayer
         }
     }
 
-    @Override
-    protected long insert(ContentValues contentValues) {
-        if (!contentValues.containsKey(Constants.FIELD_GEOM)) {
-            return NOT_FOUND;
-        }
 
-        try{
-            prepareGeometry(contentValues);
-        }
-        catch (IOException | ClassNotFoundException e){
-            e.printStackTrace();
-        }
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        if (null == map) {
-            throw new IllegalArgumentException(
-                    "The map should extends MapContentProviderHelper or inherited");
-        }
-
+    protected long insertInternal(ContentValues contentValues)
+    {
         if (!contentValues.containsKey(Constants.FIELD_ID)) {
-
             long id = getUniqId();
             if (MIN_LOCAL_FEATURE_ID > id) {
                 id = MIN_LOCAL_FEATURE_ID;
@@ -254,22 +238,9 @@ public class NGWVectorLayer
             contentValues.put(FIELD_ID, id);
         }
 
-        SQLiteDatabase db = map.getDatabase(false);
-        long rowId = db.insert(mPath.getName(), null, contentValues);
-
-        if (rowId != NOT_FOUND) {
-
-
-            Intent notify = new Intent(Constants.NOTIFY_INSERT);
-            notify.putExtra(FIELD_ID, rowId);
-            notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
-            getContext().sendBroadcast(notify);
-        }
-
-        updateUniqId(rowId);
-
-        return rowId;
+        return super.insertInternal(contentValues);
     }
+
 
     @Override
     protected long insertAttach(String featureId, ContentValues contentValues) {
@@ -465,21 +436,12 @@ public class NGWVectorLayer
     }
 
     @Override
-    protected void addChange(
+    public void addChange(
             long featureId,
             int operation)
     {
         if (0 == (mSyncType & Constants.SYNC_DATA)) {
             return;
-        }
-
-        switch (operation) {
-            case Constants.CHANGE_OPERATION_TEMP:
-                FeatureChanges.addFeatureTempFlag(mChangeTableName, featureId);
-                return;
-            case Constants.CHANGE_OPERATION_NOT_SYNC:
-                FeatureChanges.addFeatureNotSyncFlag(mChangeTableName, featureId);
-                return;
         }
 
         boolean canAddChanges = true;
@@ -515,22 +477,13 @@ public class NGWVectorLayer
 
 
     @Override
-    protected void addChange(
+    public void addChange(
             long featureId,
             long attachId,
             int attachOperation)
     {
         if (0 == (mSyncType & Constants.SYNC_ATTACH)) {
             return;
-        }
-
-        switch (attachOperation) {
-            case Constants.CHANGE_OPERATION_TEMP:
-                FeatureChanges.addAttachTempFlag(mChangeTableName, featureId, attachId);
-                return;
-            case Constants.CHANGE_OPERATION_NOT_SYNC:
-                FeatureChanges.addAttachNotSyncFlag(mChangeTableName, featureId, attachId);
-                return;
         }
 
         boolean canAddChanges = true;
@@ -1174,7 +1127,8 @@ public class NGWVectorLayer
 
                 // if local item is in update list and state ADD_NEW skip delete
                 bDeleteFeature = bDeleteFeature && !FeatureChanges.isChanges(
-                        mChangeTableName, featureId, Constants.CHANGE_OPERATION_NEW);
+                        mChangeTableName, featureId, Constants.CHANGE_OPERATION_NEW)
+                        && !FeatureChanges.hasFeatureFlags(mChangeTableName, featureId);
 
                 if (bDeleteFeature) {
                     deleteItems.add(featureId);
@@ -1579,11 +1533,15 @@ public class NGWVectorLayer
 
             case TYPE_CHANGES_FEATURE: {
                 featureId = uri.getLastPathSegment();
+
+                String changeSel = FIELD_FEATURE_ID + " = " + featureId;
+
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_FEATURE_ID + " = " + featureId;
+                    selection = changeSel;
                 } else {
-                    selection += " AND " + FIELD_FEATURE_ID + " = " + featureId;
+                    selection += " AND " + changeSel;
                 }
+
                 return FeatureChanges.query(
                         mChangeTableName, projection, selection, selectionArgs, sortOrder, limit);
             }
@@ -1592,13 +1550,13 @@ public class NGWVectorLayer
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
 
+                String changeSel = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                        + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
-                            + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                    selection = changeSel;
                 } else {
-                    selection +=
-                            " AND " + FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
-                                    + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+                    selection += " AND " + changeSel;
                 }
 
                 return FeatureChanges.query(
@@ -1610,15 +1568,14 @@ public class NGWVectorLayer
                 featureId = pathSegments.get(pathSegments.size() - 3);
                 attachId = uri.getLastPathSegment();
 
+                String changeSel = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                        + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND "
+                        + FIELD_ATTACH_ID + " = " + attachId;
+
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
-                            + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND "
-                            + FIELD_ATTACH_ID + " = " + attachId;
+                    selection = changeSel;
                 } else {
-                    selection +=
-                            " AND " + FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
-                                    + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH
-                                    + " ) ) AND " + FIELD_ATTACH_ID + " = " + attachId;
+                    selection += " AND " + changeSel;
                 }
 
                 return FeatureChanges.query(
@@ -1630,5 +1587,239 @@ public class NGWVectorLayer
                         uri, uriType, projection, selection, selectionArgs, sortOrder, limit);
             }
         }
+    }
+
+
+    @Override
+    protected int deleteInternal(
+            Uri uri,
+            int uriType,
+            String selection,
+            String[] selectionArgs)
+    {
+        String featureId;
+        String attachId;
+        List<String> pathSegments;
+
+        switch (uriType) {
+
+            case TYPE_CHANGES_TABLE: {
+                return FeatureChanges.delete(mChangeTableName, selection, selectionArgs);
+            }
+
+            case TYPE_CHANGES_FEATURE: {
+                featureId = uri.getLastPathSegment();
+
+                String changeSel = FIELD_FEATURE_ID + " = " + featureId;
+
+                if (TextUtils.isEmpty(selection)) {
+                    selection = changeSel;
+                } else {
+                    selection += " AND " + changeSel;
+                }
+
+                return FeatureChanges.delete(mChangeTableName, selection, selectionArgs);
+            }
+
+            case TYPE_CHANGES_ATTACH: {
+                pathSegments = uri.getPathSegments();
+                featureId = pathSegments.get(pathSegments.size() - 2);
+
+                String changeSel = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                        + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) )";
+
+                if (TextUtils.isEmpty(selection)) {
+                    selection = changeSel;
+                } else {
+                    selection += " AND " + changeSel;
+                }
+
+                return FeatureChanges.delete(mChangeTableName, selection, selectionArgs);
+            }
+
+            case TYPE_CHANGES_ATTACH_ID: {
+                pathSegments = uri.getPathSegments();
+                featureId = pathSegments.get(pathSegments.size() - 3);
+                attachId = uri.getLastPathSegment();
+
+                String changeSel = FIELD_FEATURE_ID + " = " + featureId + " AND " + "( 0 != ( "
+                        + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH + " ) ) AND "
+                        + FIELD_ATTACH_ID + " = " + attachId;
+
+                if (TextUtils.isEmpty(selection)) {
+                    selection = changeSel;
+                } else {
+                    selection += " AND " + changeSel;
+                }
+
+                return FeatureChanges.delete(mChangeTableName, selection, selectionArgs);
+            }
+
+            default: {
+                return super.deleteInternal(uri, uriType, selection, selectionArgs);
+            }
+        }
+    }
+
+
+    public boolean isChanges()
+    {
+        return FeatureChanges.isChanges(mChangeTableName);
+    }
+
+
+    protected boolean hasFeatureChanges(long featureId)
+    {
+        return FeatureChanges.isChanges(mChangeTableName, featureId);
+    }
+
+
+    protected boolean hasAttachChanges(long featureId, long attachId)
+    {
+        return FeatureChanges.isAttachChanges(mChangeTableName, featureId, attachId);
+    }
+
+
+    public Cursor queryFirstTempFeatureFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        String selection = "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
+
+        Cursor cursor = FeatureChanges.query(mChangeTableName, selection, FIELD_ID + " ASC", "1");
+
+        if (null != cursor) {
+
+            if (cursor.moveToFirst()) {
+                return cursor;
+            }
+
+            cursor.close();
+        }
+
+        return null;
+    }
+
+
+    public Cursor queryFirstTempAttachFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        String selection = "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
+
+        Cursor cursor = FeatureChanges.query(mChangeTableName, selection, FIELD_ID + " ASC", "1");
+
+        if (null != cursor) {
+
+            if (cursor.moveToFirst()) {
+                return cursor;
+            }
+
+            cursor.close();
+        }
+
+        return null;
+    }
+
+
+    public boolean hasFeatureTempFlag(long featureId)
+    {
+        // TODO: move work with temp features into VectorLayer
+        return FeatureChanges.hasFeatureTempFlag(mChangeTableName, featureId);
+    }
+
+
+    public boolean hasFeatureNotSyncFlag(long featureId)
+    {
+        return FeatureChanges.hasFeatureNotSyncFlag(mChangeTableName, featureId);
+    }
+
+
+    public boolean hasAttachTempFlag(
+            long featureId,
+            long attachId)
+    {
+        // TODO: move work with temp features into VectorLayer
+        return FeatureChanges.hasAttachTempFlag(mChangeTableName, featureId, attachId);
+    }
+
+
+    public boolean hasAttachNotSyncFlag(
+            long featureId,
+            long attachId)
+    {
+        return FeatureChanges.hasAttachNotSyncFlag(mChangeTableName, featureId, attachId);
+    }
+
+
+    public long setFeatureTempFlag(
+            long featureId,
+            boolean flag)
+    {
+        // TODO: move work with temp features into VectorLayer
+        if (flag) {
+            return FeatureChanges.setFeatureTempFlag(mChangeTableName, featureId);
+        } else {
+            return FeatureChanges.deleteFeatureTempFlag(mChangeTableName, featureId);
+        }
+    }
+
+
+    public long setFeatureNotSyncFlag(
+            long featureId,
+            boolean flag)
+    {
+        if (flag) {
+            return FeatureChanges.setFeatureNotSyncFlag(mChangeTableName, featureId);
+        } else {
+            return FeatureChanges.deleteFeatureNotSyncFlag(mChangeTableName, featureId);
+        }
+    }
+
+
+    public long setAttachTempFlag(
+            long featureId,
+            long attachId,
+            boolean flag)
+    {
+        // TODO: move work with temp features into VectorLayer
+        if (flag) {
+            return FeatureChanges.setAttachTempFlag(mChangeTableName, featureId, attachId);
+        } else {
+            return FeatureChanges.deleteAttachTempFlag(mChangeTableName, featureId, attachId);
+        }
+    }
+
+
+    public long setAttachNotSyncFlag(
+            long featureId,
+            long attachId,
+            boolean flag)
+    {
+        if (flag) {
+            return FeatureChanges.setAttachNotSyncFlag(mChangeTableName, featureId, attachId);
+        } else {
+            return FeatureChanges.deleteAttachNotSyncFlag(mChangeTableName, featureId, attachId);
+        }
+    }
+
+
+    public int deleteAllTempFeaturesFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        String selection = "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
+
+        return FeatureChanges.delete(mChangeTableName, selection);
+    }
+
+
+    public int deleteAllTempAttachesFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        String selection = "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
+
+        return FeatureChanges.delete(mChangeTableName, selection);
     }
 }

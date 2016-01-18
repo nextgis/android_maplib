@@ -202,9 +202,6 @@ public interface Constants
     String URI_PARAMETER_TEMP     = "temp";
     String URI_PARAMETER_NOT_SYNC = "not_sync";
 
-    String URI_VALUE_TRUE  = "true";
-    String URI_VALUE_FALSE = "false";
-
     String CHANGES_NAME_POSTFIX      = "_changes";
     int    CHANGE_OPERATION_TEMP     = 1;
     int    CHANGE_OPERATION_NEW      = 1 << 1; // 2

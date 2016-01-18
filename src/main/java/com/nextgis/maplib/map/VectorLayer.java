@@ -80,6 +80,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -89,6 +90,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1004,6 +1006,7 @@ public class VectorLayer
         List<String> pathSegments;
 
         switch (uriType) {
+
             case TYPE_TABLE:
                 if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = FIELD_ID + " ASC";
@@ -1013,12 +1016,16 @@ public class VectorLayer
                     cursor.setNotificationUri(getContext().getContentResolver(), mContentUri);
                 }
                 return cursor;
+
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
+
+                String changeSel = FIELD_ID + " = " + featureId;
+
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_ID + " = " + featureId;
+                    selection = changeSel;
                 } else {
-                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
+                    selection += " AND " + changeSel;
                 }
 
                 cursor = query(projection, selection, selectionArgs, sortOrder, limit);
@@ -1032,7 +1039,7 @@ public class VectorLayer
                 featureId = pathSegments.get(pathSegments.size() - 2);
 
                 if (projection == null) {
-                    projection = new String[]{
+                    projection = new String[] {
                             ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
 
@@ -1108,11 +1115,13 @@ public class VectorLayer
                             final int sortIndexF = sortIndex;
 
                             Collections.sort(
-                                    rowArray, new Comparator<Object[]>() {
+                                    rowArray, new Comparator<Object[]>()
+                                    {
                                         @Override
                                         public int compare(
                                                 Object[] lhs,
-                                                Object[] rhs) {
+                                                Object[] rhs)
+                                        {
                                             switch (columnTypeF) {
                                                 case COLUMN_TYPE_STRING:
                                                     return ((String) lhs[sortIndexF]).compareTo(
@@ -1145,7 +1154,7 @@ public class VectorLayer
                 featureId = pathSegments.get(pathSegments.size() - 3);
                 attachId = uri.getLastPathSegment();
                 if (projection == null) {
-                    projection = new String[]{
+                    projection = new String[] {
                             ATTACH_DISPLAY_NAME, ATTACH_SIZE, ATTACH_ID, ATTACH_MIME_TYPE};
                 }
                 matrixCursor = new MatrixCursor(projection);
@@ -1176,6 +1185,7 @@ public class VectorLayer
                     matrixCursor.addRow(row);
                 }
                 return matrixCursor;
+
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
@@ -1243,15 +1253,25 @@ public class VectorLayer
     }
 
 
-    protected long insert(ContentValues contentValues) {
-        if (!contentValues.containsKey(FIELD_GEOM)) {
+    protected long insert(ContentValues contentValues)
+    {
+        if (!contentValues.containsKey(Constants.FIELD_GEOM)) {
             return NOT_FOUND;
         }
 
-        try {
-            prepareGeometry(contentValues);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        return insertInternal(contentValues);
+    }
+
+
+    protected long insertInternal(ContentValues contentValues)
+    {
+        if (contentValues.containsKey(Constants.FIELD_GEOM)) {
+            try{
+                prepareGeometry(contentValues);
+            }
+            catch (IOException | ClassNotFoundException e){
+                e.printStackTrace();
+            }
         }
 
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
@@ -1262,6 +1282,7 @@ public class VectorLayer
 
         SQLiteDatabase db = map.getDatabase(false);
         long rowId = db.insert(mPath.getName(), null, contentValues);
+
         if (rowId != Constants.NOT_FOUND) {
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
@@ -1328,35 +1349,38 @@ public class VectorLayer
         String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
         String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
 
-        Boolean tempFlag = false;
-        if (null != tempParam && tempParam.equals(URI_VALUE_TRUE)) {
-            tempFlag = true;
-        }
-
-        Boolean notSyncFlag = false;
-        if (null != notSyncParam && notSyncParam.equals(URI_VALUE_TRUE)) {
-            notSyncFlag = true;
-        }
-
+        Boolean tempFlag = null == tempParam ? null : Boolean.parseBoolean(tempParam);
+        Boolean notSyncFlag = null == notSyncParam ? null : Boolean.parseBoolean(notSyncParam);
+        boolean hasNotFlags =
+                (null == tempFlag || !tempFlag) && (null == notSyncFlag || !notSyncFlag);
 
         int uriType = mUriMatcher.match(uri);
 
         switch (uriType) {
 
             case TYPE_TABLE:
-                long rowID = insert(contentValues);
+                long rowID = hasNotFlags ? insert(contentValues) : insertInternal(contentValues);
+
                 if (rowID != Constants.NOT_FOUND) {
                     Uri resultUri = ContentUris.withAppendedId(mContentUri, rowID);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(resultUri, null, false);
+
                     } else {
-                        if (notSyncFlag) {
-                            addChange(rowID, CHANGE_OPERATION_NOT_SYNC);
-                        } else {
+                        if (null != tempFlag) {
+                            setFeatureTempFlag(rowID, tempFlag);
+                        }
+
+                        if (null != notSyncFlag) {
+                            setFeatureNotSyncFlag(rowID, notSyncFlag);
+                        }
+
+                        if (hasNotFlags) {
                             addChange(rowID, CHANGE_OPERATION_NEW);
                         }
+
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
                     }
                     return resultUri;
@@ -1366,21 +1390,30 @@ public class VectorLayer
             case TYPE_ATTACH:
                 List<String> pathSegments = uri.getPathSegments();
                 String featureId = pathSegments.get(pathSegments.size() - 2);
-                long attachID = insertAttach(featureId, contentValues);
-                if (attachID != NOT_FOUND) {
-                    Uri resultUri = ContentUris.withAppendedId(uri, attachID);
+                long attachIdL = insertAttach(featureId, contentValues);
+                if (attachIdL != NOT_FOUND) {
+                    Uri resultUri = ContentUris.withAppendedId(uri, attachIdL);
                     String fragment = uri.getFragment();
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
                         getContext().getContentResolver()
                                 .notifyChange(resultUri, null, false);
+
                     } else {
                         long featureIdL = Long.parseLong(featureId);
-                        if (notSyncFlag) {
-                            addChange(featureIdL, attachID, CHANGE_OPERATION_NOT_SYNC);
-                        } else {
-                            addChange(featureIdL, attachID, CHANGE_OPERATION_NEW);
+
+                        if (null != tempFlag) {
+                            setAttachTempFlag(featureIdL, attachIdL, tempFlag);
                         }
+
+                        if (null != notSyncFlag) {
+                            setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_NEW);
+                        }
+
                         getContext().getContentResolver().notifyChange(resultUri, null, true);
                     }
                     return resultUri;
@@ -1449,17 +1482,36 @@ public class VectorLayer
     }
 
 
-    public int delete(
+    final public int delete(
             Uri uri,
             String selection,
-            String[] selectionArgs) {
+            String[] selectionArgs)
+    {
+        int uriType = mUriMatcher.match(uri);
+        return deleteInternal(uri, uriType, selection, selectionArgs);
+    }
+
+
+    protected int deleteInternal(
+            Uri uri,
+            int uriType,
+            String selection,
+            String[] selectionArgs)
+    {
         String featureId;
         long featureIdL;
         String attachId;
         List<String> pathSegments;
         int result;
 
-        int uriType = mUriMatcher.match(uri);
+        // http://stackoverflow.com/a/24055457/4727406
+        String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
+        String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
+
+        Boolean tempFlag = null == tempParam ? null : Boolean.parseBoolean(tempParam);
+        Boolean notSyncFlag = null == notSyncParam ? null : Boolean.parseBoolean(notSyncParam);
+        boolean hasNotFlags = null == tempFlag && null == notSyncFlag;
+
         switch (uriType) {
             case TYPE_TABLE:
                 result = delete(NOT_FOUND, selection, selectionArgs);
@@ -1469,7 +1521,17 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(NOT_FOUND, CHANGE_OPERATION_DELETE);
+                        if (null != tempFlag) {
+                            // setFeatureTempFlag(featureIdL, false); // TODO for table
+                        }
+
+                        if (null != notSyncFlag) {
+                            // setFeatureNotSyncFlag(featureIdL, false); // TODO for table
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(NOT_FOUND, CHANGE_OPERATION_DELETE);
+                        }
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
                 }
@@ -1477,11 +1539,15 @@ public class VectorLayer
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
                 featureIdL = Long.parseLong(featureId);
+
+                String changeSel = FIELD_ID + " = " + featureId;
+
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_ID + " = " + featureId;
+                    selection = changeSel;
                 } else {
-                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
+                    selection += " AND " + changeSel;
                 }
+
                 result = delete(featureIdL, selection, selectionArgs);
 
                 if (result > 0) {
@@ -1490,7 +1556,18 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureIdL, CHANGE_OPERATION_DELETE);
+                        if (null != tempFlag) {
+                            setFeatureTempFlag(featureIdL, false);
+                        }
+
+                        if (null != notSyncFlag) {
+                            setFeatureNotSyncFlag(featureIdL, false);
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(featureIdL, CHANGE_OPERATION_DELETE);
+                        }
+
                         getContext().getContentResolver().notifyChange(uri, null, true);
                     }
                 }
@@ -1499,14 +1576,18 @@ public class VectorLayer
                 pathSegments = uri.getPathSegments();
                 featureId = pathSegments.get(pathSegments.size() - 2);
                 result = 0;
+
                 //get attach path
                 File attachFolder =
                         new File(mPath, featureId); //the attach store in id folder in layer folder
-                for (File attachFile : attachFolder.listFiles()) {
-                    if (attachFile.delete()) {
-                        result++;
+                if (attachFolder.exists()) {
+                    for (File attachFile : attachFolder.listFiles()) {
+                        if (attachFile.delete()) {
+                            result++;
+                        }
                     }
                 }
+
                 if (result > 0) {
 
                     deleteAttaches(featureId);
@@ -1517,7 +1598,18 @@ public class VectorLayer
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
                         featureIdL = Long.parseLong(featureId);
-                        addChange(featureIdL, NOT_FOUND, CHANGE_OPERATION_DELETE);
+                        if (null != tempFlag) {
+                            setAttachesTempFlag(featureIdL, false);
+                        }
+
+                        if (null != notSyncFlag) {
+                            setAttachesNotSyncFlag(featureIdL, false);
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(featureIdL, NOT_FOUND, CHANGE_OPERATION_DELETE);
+                        }
+
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
@@ -1540,7 +1632,18 @@ public class VectorLayer
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
                     } else {
-                        addChange(featureIdL, attachIdL, CHANGE_OPERATION_DELETE);
+
+                        if (null != tempFlag) {
+                            setAttachTempFlag(featureIdL, attachIdL, false);
+                        }
+
+                        if (null != notSyncFlag) {
+                            setAttachNotSyncFlag(featureIdL, attachIdL, false);
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_DELETE);
+                        }
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                     return 1;
@@ -1652,8 +1755,22 @@ public class VectorLayer
 
         int result;
 
+        // http://stackoverflow.com/a/24055457/4727406
+        String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
+        String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
+
+        Boolean tempFlag = null == tempParam ? null : Boolean.parseBoolean(tempParam);
+        Boolean notSyncFlag = null == notSyncParam ? null : Boolean.parseBoolean(notSyncParam);
+        boolean hasNotFlags = null == tempFlag && null == notSyncFlag;
+
+        boolean resetFlags = null != tempFlag && !tempFlag && null != notSyncFlag && !notSyncFlag
+                || null != tempFlag && !tempFlag && null == notSyncFlag
+                || null == tempFlag && null != notSyncFlag && !notSyncFlag;
+
         int uriType = mUriMatcher.match(uri);
+
         switch (uriType) {
+
             case TYPE_TABLE:
                 result = update(Constants.NOT_FOUND, values, selection, selectionArgs);
 
@@ -1662,20 +1779,39 @@ public class VectorLayer
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
+
                     } else {
-                        addChange(Constants.NOT_FOUND, CHANGE_OPERATION_CHANGED);
+
+                        // if (null != tempFlag) {
+                            // setFeatureTempFlag(featureIdL, tempFlag); // TODO for table
+                        // }
+
+                        // if (null != notSyncFlag) {
+                            // setFeatureNotSyncFlag(featureIdL, notSyncFlag); // TODO for table
+                        // }
+
+                        // if (resetFlags && !hasFeatureChanges(featureIdL)) {
+                            // addChange(featureIdL, CHANGE_OPERATION_NEW); // TODO for table
+                        // }
+
+                        if (hasNotFlags) {
+                            addChange(Constants.NOT_FOUND, CHANGE_OPERATION_CHANGED);
+                        }
+
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
 
                 return result;
+
             case TYPE_FEATURE:
                 featureId = uri.getLastPathSegment();
                 featureIdL = Long.parseLong(featureId);
+                String changeSel = FIELD_ID + " = " + featureId;
                 if (TextUtils.isEmpty(selection)) {
-                    selection = FIELD_ID + " = " + featureId;
+                    selection = changeSel;
                 } else {
-                    selection = selection + " AND " + FIELD_ID + " = " + featureId;
+                    selection = selection + " AND " + changeSel;
                 }
 
                 result = update(featureIdL, values, selection, selectionArgs);
@@ -1685,12 +1821,29 @@ public class VectorLayer
                     boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
                     if (bFromNetwork) {
                         getContext().getContentResolver().notifyChange(uri, null, false);
+
                     } else {
-                        addChange(featureIdL, CHANGE_OPERATION_CHANGED);
+                        if (null != tempFlag) {
+                            setFeatureTempFlag(featureIdL, tempFlag);
+                        }
+
+                        if (null != notSyncFlag) {
+                            setFeatureNotSyncFlag(featureIdL, notSyncFlag);
+                        }
+
+                        if (resetFlags && !hasFeatureChanges(featureIdL)) {
+                            addChange(featureIdL, CHANGE_OPERATION_NEW);
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(featureIdL, CHANGE_OPERATION_CHANGED);
+                        }
+
                         getContext().getContentResolver().notifyChange(uri, null);
                     }
                 }
                 return result;
+
             case TYPE_ATTACH:
                 if (values.containsKey(ATTACH_DESCRIPTION)) {
                     //set the same description to all items
@@ -1703,13 +1856,29 @@ public class VectorLayer
                         for (AttachItem item : attaches.values()) {
                             item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
                             attachIdL = Long.parseLong(item.getAttachId());
-                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_CHANGED);
-                            changed++;
+
+                            if (null != tempFlag) {
+                                setAttachTempFlag(featureIdL, attachIdL, tempFlag);
+                            }
+
+                            if (null != notSyncFlag) {
+                                setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
+                            }
+
+                            if (resetFlags && !hasAttachChanges(featureIdL, attachIdL)) {
+                                addChange(featureIdL, CHANGE_OPERATION_NEW);
+                            }
+
+                            if (hasNotFlags) {
+                                addChange(featureIdL, attachIdL, CHANGE_OPERATION_CHANGED);
+                            }
+
+                            ++changed;
                         }
-                        return changed;
                     }
-                    return 0;
+                    return changed;
                 }
+
             case TYPE_ATTACH_ID:
                 if (values.containsKey(ATTACH_ID) || values.containsKey(ATTACH_DESCRIPTION) ||
                         values.containsKey(ATTACH_DISPLAY_NAME) ||
@@ -1740,13 +1909,30 @@ public class VectorLayer
                         if (bFromNetwork) {
                             getContext().getContentResolver().notifyChange(uri, null, false);
                         } else {
-                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_CHANGED);
+
+                            if (null != tempFlag) {
+                                setAttachTempFlag(featureIdL, attachIdL, tempFlag);
+                            }
+
+                            if (null != notSyncFlag) {
+                                setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
+                            }
+
+                            if (resetFlags && !hasAttachChanges(featureIdL, attachIdL)) {
+                                addChange(featureIdL, CHANGE_OPERATION_NEW);
+                            }
+
+                            if (hasNotFlags) {
+                                addChange(featureIdL, attachIdL, CHANGE_OPERATION_CHANGED);
+                            }
+
                             getContext().getContentResolver().notifyChange(uri, null);
                         }
                         return 1;
                     }
                     return 0;
                 }
+
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
@@ -1787,14 +1973,16 @@ public class VectorLayer
         }
     }
 
-    protected void addChange(
+
+    public void addChange(
             long featureId,
-            int operation) {
+            int operation)
+    {
         //nothing to do
     }
 
 
-    protected void addChange(
+    public void addChange(
             long featureId,
             long attachId,
             int attachOperation) {
@@ -1837,7 +2025,7 @@ public class VectorLayer
     }
 
 
-    protected Map<String, AttachItem> getAttachMap(String featureId) {
+    public Map<String, AttachItem> getAttachMap(String featureId) {
         Map<String, AttachItem> attachMap = mAttaches.get(featureId);
         if (null == attachMap) {
             loadAttach(featureId);
@@ -1906,9 +2094,11 @@ public class VectorLayer
     }
 
 
-    protected void deleteAttaches(String featureId) {
+    protected void deleteAttaches(String featureId)
+    {
+        File attachFolder = new File(mPath, featureId);
+        FileUtil.renameAndDelete(attachFolder);
         mAttaches.remove(featureId);
-        saveAttach(featureId);
     }
 
 
@@ -1918,7 +2108,12 @@ public class VectorLayer
         Map<String, AttachItem> attachMap = getAttachMap(featureId);
         if (null != attachMap) {
             attachMap.remove(attachId);
-            saveAttach(featureId);
+
+            if (attachMap.size() > 0) {
+                saveAttach(featureId);
+            } else {
+                deleteAttaches(featureId);
+            }
         }
     }
 
@@ -2235,5 +2430,519 @@ public class VectorLayer
             cursor.close();
             save();
         }
+    }
+
+
+    public boolean isChanges()
+    {
+        return false;
+    }
+
+
+    protected boolean hasFeatureChanges(long featureId)
+    {
+        return false;
+    }
+
+
+    protected boolean hasAttachChanges(long featureId, long attachId)
+    {
+        return false;
+    }
+
+
+    public boolean hasFeatureAttaches(long featureId)
+    {
+        Map<String, AttachItem> attachMap = getAttachMap("" + featureId);
+        if (null == attachMap) {
+            return false;
+        }
+
+        Set<String> attachIds = attachMap.keySet();
+
+        return attachIds.size() > 0;
+    }
+
+
+    public Feature getFeature(long featureId)
+    {
+        Cursor cursor = query(null, FIELD_ID + " = " + featureId, null, null, null);
+        if (null == cursor) {
+            return null;
+        }
+
+        Feature feature = null;
+        if (cursor.moveToFirst()) {
+            feature = new Feature(featureId, getFields());
+            feature.fromCursor(cursor);
+        }
+
+        cursor.close();
+
+        return feature;
+    }
+
+
+    public Feature getFeatureWithAttaches(long featureId)
+    {
+        Feature feature = getFeature(featureId);
+
+        if (null != feature) {
+            feature.addAttachments(getAttachMap("" + feature.getId()));
+        }
+
+        return feature;
+    }
+
+
+    public Cursor queryFirstTempFeatureFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        return null;
+    }
+
+
+    public Cursor queryFirstTempAttachFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        return null;
+    }
+
+
+    public Feature getNewTempFeature()
+    {
+        Feature feature = new Feature(NOT_FOUND, getFields());
+        Uri uri = insertTempFeature(feature);
+
+        if (uri == null) {
+            return null;
+        }
+
+        long featureId = Long.parseLong(uri.getLastPathSegment());
+        feature.setId(featureId);
+
+        return feature;
+    }
+
+
+    public AttachItem getNewTempAttach(Feature feature)
+    {
+        long featureId = feature.getId();
+        AttachItem attachItem = new AttachItem("" + NOT_FOUND, "", "", "");
+        Uri uri = insertTempAttach(featureId, attachItem);
+
+        if (uri == null) {
+            return null;
+        }
+
+        String attachId = uri.getLastPathSegment();
+        attachItem = getAttach("" + featureId, attachId);
+        feature.addAttachment(attachItem);
+
+        return attachItem;
+    }
+
+
+    public boolean insertAttachFile(long featureId, long attachId, File attachFile)
+    {
+        Uri uri = Uri.parse(
+                "content://" + mAuthority + "/" + mPath.getName() +
+                        "/" + featureId + "/" + Constants.URI_ATTACH + "/" + attachId);
+        try {
+            OutputStream attachOutStream =
+                    mContext.getContentResolver().openOutputStream(uri);
+            if (attachOutStream != null) {
+                FileUtil.copy(new FileInputStream(attachFile), attachOutStream);
+                attachOutStream.close();
+            }
+
+        } catch (IOException e) {
+            Log.d(TAG, "create attach file failed, " + e.getLocalizedMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+
+    protected Uri insertTempFeature(Feature feature)
+    {
+        Uri uri = Uri.parse(
+                "content://" + mAuthority + "/" + mPath.getName());
+
+        uri = uri.buildUpon()
+                .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.TRUE.toString())
+                .build();
+
+        Uri result = insert(uri, feature.getContentValues(false));
+
+        if (result == null) {
+            Log.d(TAG, "insert feature failed");
+            return null;
+        }
+
+        return result;
+    }
+
+
+    protected Uri insertTempAttach(long featureId, AttachItem attachItem)
+    {
+        Uri uri = Uri.parse(
+                "content://" + mAuthority + "/" + mPath.getName() +
+                        "/" + featureId + "/" + Constants.URI_ATTACH);
+
+        uri = uri.buildUpon()
+                .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.TRUE.toString())
+                .build();
+
+        Uri result = insert(uri, attachItem.getContentValues(false));
+
+        if (result == null) {
+            Log.d(TAG, "insert attach failed");
+            return null;
+        }
+
+        return result;
+    }
+
+
+    public int updateFeatureWithFlags(Feature feature)
+    {
+        boolean tempFlag = hasFeatureTempFlag(feature.getId());
+        boolean notSyncFlag = hasFeatureNotSyncFlag(feature.getId());
+
+        if (!tempFlag && !notSyncFlag) {
+            return 0;
+        }
+
+        String layerPathName = mPath.getName();
+
+        Uri uri =
+                Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + feature.getId());
+
+        if (tempFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.TRUE.toString())
+                    .build();
+        }
+
+        if (notSyncFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_NOT_SYNC, Boolean.TRUE.toString())
+                    .build();
+        }
+
+        return update(uri, feature.getContentValues(false), null, null);
+    }
+
+
+    public int updateAttachWithFlags(
+            Feature feature,
+            AttachItem attachItem)
+    {
+        String layerPathName = mPath.getName();
+        long featureIdL = feature.getId();
+        long attachIdL = Long.parseLong(attachItem.getAttachId());
+
+        boolean tempFlag = hasAttachTempFlag(featureIdL, attachIdL);
+        boolean notSyncFlag = hasAttachNotSyncFlag(featureIdL, attachIdL);
+
+        if (!tempFlag && !notSyncFlag) {
+            return 0;
+        }
+
+        Uri uri = Uri.parse(
+                "content://" + mAuthority + "/" + layerPathName + "/" + featureIdL + "/"
+                        + Constants.URI_ATTACH + "/" + attachIdL);
+
+        if (tempFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.TRUE.toString())
+                    .build();
+        }
+
+        if (notSyncFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_NOT_SYNC, Boolean.TRUE.toString())
+                    .build();
+        }
+
+        return update(uri, attachItem.getContentValues(false), null, null);
+    }
+
+
+    public int updateFeatureWithAttachesWithFlags(Feature feature)
+    {
+        int res = updateFeatureWithFlags(feature);
+
+        long featureIdL = feature.getId();
+
+        Map<String, AttachItem> attaches = getAttachMap("" + featureIdL);
+        if (null != attaches) {
+            for (AttachItem attachItem : attaches.values()) {
+                res += updateAttachWithFlags(feature, attachItem);
+            }
+        }
+
+        return res;
+    }
+
+
+    public int deleteAttachWithFlags(
+            long featureId,
+            long attachId)
+    {
+        boolean tempFlag = hasAttachTempFlag(featureId, attachId);
+        boolean notSyncFlag = hasAttachNotSyncFlag(featureId, attachId);
+
+        if (!tempFlag && !notSyncFlag) {
+            return 0;
+        }
+
+        Uri uri = Uri.parse(
+                "content://" + mAuthority + "/" + mPath.getName() + "/" + featureId + "/"
+                        + Constants.URI_ATTACH + "/" + attachId);
+
+        if (tempFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
+                    .build();
+        }
+
+        if (notSyncFlag) {
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_NOT_SYNC, Boolean.FALSE.toString())
+                    .build();
+        }
+
+        return delete(uri, null, null);
+    }
+
+
+    public void deleteAllTempFeatures()
+    {
+        String layerPathName = mPath.getName();
+
+        while (true) {
+            Cursor cursor = queryFirstTempFeatureFlags();
+            Long featureId = null;
+
+            if (null != cursor) {
+                int featureIdColumn = cursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
+                featureId = cursor.getLong(featureIdColumn);
+                cursor.close();
+            } else {
+                break;
+            }
+
+            // delete all feature's attaches
+            Uri uri = Uri.parse(
+                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId + "/"
+                            + URI_ATTACH);
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
+                    .build();
+            delete(uri, null, null);
+
+            // delete feature
+            uri = Uri.parse(
+                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId);
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
+                    .build();
+            delete(uri, null, null);
+        }
+    }
+
+
+    public void deleteAllTempAttaches()
+    {
+        String layerPathName = mPath.getName();
+
+        while (true) {
+            Cursor cursor = queryFirstTempAttachFlags();
+            Long featureId = null;
+            Long attachId = null;
+
+            if (null != cursor) {
+                int featureIdColumn = cursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
+                int attachIdColumn = cursor.getColumnIndex(Constants.FIELD_ATTACH_ID);
+                featureId = cursor.getLong(featureIdColumn);
+                attachId = cursor.getLong(attachIdColumn);
+                cursor.close();
+            } else {
+                break;
+            }
+
+            Uri uri = Uri.parse(
+                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId + "/"
+                            + Constants.URI_ATTACH + "/" + attachId);
+            uri = uri.buildUpon()
+                    .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
+                    .build();
+            delete(uri, null, null);
+        }
+    }
+
+
+    public void deleteAllTemps()
+    {
+        deleteAllTempAttaches();
+        deleteAllTempFeatures();
+
+        deleteAllTempAttachesFlags();
+        deleteAllTempFeaturesFlags();
+    }
+
+
+    public int deleteAllTempFeaturesFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        return 0;
+    }
+
+
+    public int deleteAllTempAttachesFlags()
+    {
+        // TODO: move work with temp features into VectorLayer
+        return 0;
+    }
+
+
+    public boolean hasFeatureTempFlag(long featureId)
+    {
+        // TODO: move work with temp features into VectorLayer
+        return false;
+    }
+
+
+    public boolean hasFeatureNotSyncFlag(long featureId)
+    {
+        return false;
+    }
+
+
+    public boolean hasAttachTempFlag(
+            long featureId,
+            long attachId)
+    {
+        // TODO: move work with temp features into VectorLayer
+        return false;
+    }
+
+
+    public boolean hasAttachNotSyncFlag(
+            long featureId,
+            long attachId)
+    {
+        return false;
+    }
+
+
+    public long setFeatureTempFlag(
+            long featureId,
+            boolean flag)
+    {
+        // TODO: move work with temp features into VectorLayer
+        return 0;
+    }
+
+
+    public long setFeatureNotSyncFlag(
+            long featureId,
+            boolean flag)
+    {
+        return 0;
+    }
+
+
+    public long setAttachTempFlag(
+            long featureId,
+            long attachId,
+            boolean flag)
+    {
+        // TODO: move work with temp features into VectorLayer
+        return 0;
+    }
+
+
+    public long setAttachNotSyncFlag(
+            long featureId,
+            long attachId,
+            boolean flag)
+    {
+        return 0;
+    }
+
+
+    public long setAttachesTempFlag(
+            long featureId,
+            boolean flag)
+    {
+        Map<String, AttachItem> attachMap = getAttachMap("" + featureId);
+        if (null == attachMap) {
+            return 0;
+        }
+
+        Set<String> attachIds = attachMap.keySet();
+        long res = 0;
+
+        for (String attachId : attachIds) {
+            res += setAttachTempFlag(featureId, Long.parseLong(attachId), flag);
+        }
+
+        return res;
+    }
+
+
+    public long setAttachesNotSyncFlag(
+            long featureId,
+            boolean flag)
+    {
+        Map<String, AttachItem> attachMap = getAttachMap("" + featureId);
+        if (null == attachMap) {
+            return 0;
+        }
+
+        Set<String> attachIds = attachMap.keySet();
+        long res = 0;
+
+        for (String attachId : attachIds) {
+            res += setAttachNotSyncFlag(featureId, Long.parseLong(attachId), flag);
+        }
+
+        return res;
+    }
+
+
+    public long setFeatureWithAttachesTempFlag(
+            Feature feature,
+            boolean flag)
+    {
+        return setFeatureWithAttachesTempFlag(feature.getId(), flag);
+    }
+
+
+    public long setFeatureWithAttachesTempFlag(
+            long featureId,
+            boolean flag)
+    {
+        return setFeatureTempFlag(featureId, flag) + setAttachesTempFlag(featureId, flag);
+    }
+
+
+    public long setFeatureWithAttachesNotSyncFlag(
+            Feature feature,
+            boolean flag)
+    {
+        return setFeatureWithAttachesNotSyncFlag(feature.getId(), flag);
+    }
+
+
+    public long setFeatureWithAttachesNotSyncFlag(
+            long featureId,
+            boolean flag)
+    {
+        return setFeatureNotSyncFlag(featureId, flag) + setAttachesNotSyncFlag(featureId, flag);
     }
 }

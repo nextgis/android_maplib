@@ -24,12 +24,10 @@
 package com.nextgis.maplib.util;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 import com.nextgis.maplib.map.MapBase;
@@ -103,6 +101,36 @@ public class FeatureChanges
     }
 
 
+    public static long replace(
+            String tableName,
+            ContentValues values)
+    {
+        long featureId = values.getAsLong(FIELD_FEATURE_ID);
+        int featureOperation = values.getAsInteger(FIELD_OPERATION);
+        long attachId = values.getAsLong(FIELD_ATTACH_ID);
+        int attachOperation = values.getAsInteger(FIELD_ATTACH_OPERATION);
+
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                FIELD_OPERATION + " = " + featureOperation + " AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                FIELD_ATTACH_OPERATION + " = " + attachOperation;
+
+        Cursor cursor = query(tableName, selection, null, "1");
+        long res = 0;
+
+        if (null != cursor) {
+            res = cursor.getCount();
+            cursor.close();
+        }
+
+        if (res > 0) {
+            return res;
+        }
+
+        return insert(tableName, values);
+    }
+
+
     public static int update(
             String tableName,
             ContentValues values,
@@ -117,18 +145,27 @@ public class FeatureChanges
 
     public static int delete(
             String tableName,
-            String selection)
+            String selection,
+            String[] selectionArgs)
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(true);
         int retResult = 0;
         try {
-            retResult = db.delete(tableName, selection, null);
+            retResult = db.delete(tableName, selection, selectionArgs);
         } catch (SQLiteException e) {
             e.printStackTrace();
             Log.d(TAG, e.getLocalizedMessage());
         }
         return retResult;
+    }
+
+
+    public static int delete(
+            String tableName,
+            String selection)
+    {
+        return delete(tableName, selection, null);
     }
 
 
@@ -176,16 +213,23 @@ public class FeatureChanges
 
     protected static String getSelectionForSync()
     {
-        return "( ( 0 == ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP +
-                " ) ) AND " +
-                "( 0 == ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
-                " ) ) OR " +
+        return "( " +
 
-                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                " ) ) AND " +
-                "( 0 == ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP +
-                " ) ) AND " +
-                "( 0 == ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) ) )";
+                "0 == " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " AND " +
+                "0 == " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP +
+                " AND " +
+                "0 == " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
+
+                " OR " +
+
+                "0 != " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " AND " +
+                "0 == " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP +
+                " AND " +
+                "0 == " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
+
+                " )";
     }
 
 
@@ -666,77 +710,33 @@ public class FeatureChanges
     }
 
 
-    public static long addFeatureTempFlag(
+    public static boolean hasFeatureFlags(
             String tableName,
             long featureId)
     {
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, featureId);
-        values.put(FIELD_OPERATION, CHANGE_OPERATION_TEMP);
-        values.put(FIELD_ATTACH_ID, NOT_FOUND);
-        values.put(FIELD_ATTACH_OPERATION, 0);
-
-        return insert(tableName, values);
+        return hasFeatureTempFlag(tableName, featureId)
+                || hasFeatureNotSyncFlag(tableName, featureId);
     }
 
 
-    public static long addFeatureNotSyncFlag(
-            String tableName,
-            long featureId)
-    {
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, featureId);
-        values.put(FIELD_OPERATION, CHANGE_OPERATION_NOT_SYNC);
-        values.put(FIELD_ATTACH_ID, NOT_FOUND);
-        values.put(FIELD_ATTACH_OPERATION, 0);
-
-        return insert(tableName, values);
-    }
-
-
-    public static long addAttachTempFlag(
+    public static boolean hasAttachFlags(
             String tableName,
             long featureId,
             long attachId)
     {
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, featureId);
-        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
-        values.put(FIELD_ATTACH_ID, attachId);
-        values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_TEMP);
-
-        return insert(tableName, values);
-    }
-
-
-    public static long addAttachNotSyncFlag(
-            String tableName,
-            long featureId,
-            long attachId)
-    {
-        ContentValues values = new ContentValues();
-        values.put(FIELD_FEATURE_ID, featureId);
-        values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
-        values.put(FIELD_ATTACH_ID, attachId);
-        values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_NOT_SYNC);
-
-        return insert(tableName, values);
+        return hasAttachTempFlag(tableName, featureId, attachId)
+                || hasAttachNotSyncFlag(tableName, featureId, attachId);
     }
 
 
     public static boolean hasFeatureTempFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+            String tableName,
             long featureId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
-                        + featureId);
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
 
-        String selection = "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP + " )";
-
-        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+        Cursor changesCursor = query(tableName, selection, null, "1");
 
         boolean res = false;
         if (null != changesCursor) {
@@ -749,19 +749,13 @@ public class FeatureChanges
 
 
     public static boolean hasFeatureNotSyncFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+            String tableName,
             long featureId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
-                        + featureId);
-
-        String selection =
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
                 "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) )";
 
-        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+        Cursor changesCursor = query(tableName, selection, null, "1");
 
         boolean res = false;
         if (null != changesCursor) {
@@ -774,22 +768,17 @@ public class FeatureChanges
 
 
     public static boolean hasAttachTempFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+            String tableName,
             long featureId,
             long attachId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
-                        + "/" + URI_ATTACH + "/" + attachId);
-
-        String selection =
-                "( ( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
                 " ) ) AND " +
-                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) ) )";
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
 
-        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+        Cursor changesCursor = query(tableName, selection, null, "1");
 
         boolean res = false;
         if (null != changesCursor) {
@@ -802,23 +791,17 @@ public class FeatureChanges
 
 
     public static boolean hasAttachNotSyncFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+            String tableName,
             long featureId,
             long attachId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
-                        + "/" + URI_ATTACH + "/" + attachId);
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) )";
 
-        String selection =
-                "( ( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
-                        " ) ) AND " +
-                        "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC +
-                        " ) ) )";
-
-        Cursor changesCursor = context.getContentResolver().query(uri, null, selection, null, null);
+        Cursor changesCursor = query(tableName, selection, null, "1");
 
         boolean res = false;
         if (null != changesCursor) {
@@ -830,84 +813,112 @@ public class FeatureChanges
     }
 
 
-    public static boolean addFeatureTempFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+    public static long setFeatureTempFlag(
+            String tableName,
             long featureId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
-                        + featureId);
-
         ContentValues values = new ContentValues();
         values.put(FIELD_FEATURE_ID, featureId);
         values.put(FIELD_OPERATION, CHANGE_OPERATION_TEMP);
         values.put(FIELD_ATTACH_ID, NOT_FOUND);
         values.put(FIELD_ATTACH_OPERATION, 0);
 
-        return null != context.getContentResolver().insert(uri, values);
+        return replace(tableName, values);
     }
 
 
-    public static boolean addFeatureNotSyncFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+    public static long setFeatureNotSyncFlag(
+            String tableName,
             long featureId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/"
-                        + featureId);
-
         ContentValues values = new ContentValues();
         values.put(FIELD_FEATURE_ID, featureId);
         values.put(FIELD_OPERATION, CHANGE_OPERATION_NOT_SYNC);
         values.put(FIELD_ATTACH_ID, NOT_FOUND);
         values.put(FIELD_ATTACH_OPERATION, 0);
 
-        return null != context.getContentResolver().insert(uri, values);
+        return replace(tableName, values);
     }
 
 
-    public static boolean addAttachTempFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+    public static long setAttachTempFlag(
+            String tableName,
             long featureId,
             long attachId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
-                        + "/" + URI_ATTACH + "/" + attachId);
-
         ContentValues values = new ContentValues();
         values.put(FIELD_FEATURE_ID, featureId);
         values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
         values.put(FIELD_ATTACH_ID, attachId);
         values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_TEMP);
 
-        return null != context.getContentResolver().insert(uri, values);
+        return replace(tableName, values);
     }
 
 
-    public static boolean addAttachNotSyncFlag(
-            Context context,
-            String authority,
-            String layerPathName,
+    public static long setAttachNotSyncFlag(
+            String tableName,
             long featureId,
             long attachId)
     {
-        Uri uri = Uri.parse(
-                "content://" + authority + "/" + layerPathName + "/" + URI_CHANGES + "/" + featureId
-                        + "/" + URI_ATTACH + "/" + attachId);
-
         ContentValues values = new ContentValues();
         values.put(FIELD_FEATURE_ID, featureId);
         values.put(FIELD_OPERATION, CHANGE_OPERATION_ATTACH);
         values.put(FIELD_ATTACH_ID, attachId);
         values.put(FIELD_ATTACH_OPERATION, CHANGE_OPERATION_NOT_SYNC);
 
-        return null != context.getContentResolver().insert(uri, values);
+        return replace(tableName, values);
+    }
+
+
+    public static int deleteFeatureTempFlag(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int deleteFeatureNotSyncFlag(
+            String tableName,
+            long featureId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) )";
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int deleteAttachTempFlag(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
+
+        return delete(tableName, selection);
+    }
+
+
+    public static int deleteAttachNotSyncFlag(
+            String tableName,
+            long featureId,
+            long attachId)
+    {
+        String selection = FIELD_FEATURE_ID + " = " + featureId + " AND " +
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_ATTACH +
+                " ) ) AND " +
+                FIELD_ATTACH_ID + " = " + attachId + " AND " +
+                "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) )";
+
+        return delete(tableName, selection);
     }
 }
