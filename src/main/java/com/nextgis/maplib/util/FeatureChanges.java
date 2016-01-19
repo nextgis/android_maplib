@@ -748,6 +748,23 @@ public class FeatureChanges
     }
 
 
+    public static boolean haveFeaturesNotSyncFlag(String tableName)
+    {
+        String selection =
+                "( 0 != ( " + FIELD_OPERATION + " & " + CHANGE_OPERATION_NOT_SYNC + " ) )";
+
+        Cursor changesCursor = query(tableName, selection, null, "1");
+
+        boolean res = false;
+        if (null != changesCursor) {
+            res = changesCursor.getCount() > 0;
+            changesCursor.close();
+        }
+
+        return res;
+    }
+
+
     public static boolean hasFeatureNotSyncFlag(
             String tableName,
             long featureId)

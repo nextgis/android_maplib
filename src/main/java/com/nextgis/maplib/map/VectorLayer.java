@@ -2445,6 +2445,12 @@ public class VectorLayer
     }
 
 
+    protected boolean haveFeaturesNotSyncFlag()
+    {
+        return false;
+    }
+
+
     protected boolean hasAttachChanges(long featureId, long attachId)
     {
         return false;

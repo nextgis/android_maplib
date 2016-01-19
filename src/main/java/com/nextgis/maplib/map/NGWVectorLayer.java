@@ -215,6 +215,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public void setAccountCacheData()
     {
         IGISApplication app = (IGISApplication) mContext.getApplicationContext();
@@ -228,6 +229,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     protected long insertInternal(ContentValues contentValues)
     {
         if (!contentValues.containsKey(Constants.FIELD_ID)) {
@@ -525,6 +527,7 @@ public class NGWVectorLayer
      * @param syncResult
      *         - report some errors via this parameter
      */
+    @Override
     public void sync(
             String authority,
             SyncResult syncResult)
@@ -1412,6 +1415,7 @@ public class NGWVectorLayer
      * SYNC_DATA - synchronize only data SYNC_ATTACH - synchronize only attachments SYNC_ALL -
      * synchronize everything
      */
+    @Override
     public int getSyncType()
     {
         return mSyncType;
@@ -1442,6 +1446,7 @@ public class NGWVectorLayer
         }
     }
 
+    @Override
     public void setSyncType(int syncType)
     {
         if( !isSyncable() ) {
@@ -1662,24 +1667,35 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public boolean isChanges()
     {
         return FeatureChanges.isChanges(mChangeTableName);
     }
 
 
+    @Override
+    protected boolean haveFeaturesNotSyncFlag()
+    {
+        return FeatureChanges.haveFeaturesNotSyncFlag(mChangeTableName);
+    }
+
+
+    @Override
     protected boolean hasFeatureChanges(long featureId)
     {
         return FeatureChanges.isChanges(mChangeTableName, featureId);
     }
 
 
+    @Override
     protected boolean hasAttachChanges(long featureId, long attachId)
     {
         return FeatureChanges.isAttachChanges(mChangeTableName, featureId, attachId);
     }
 
 
+    @Override
     public Cursor queryFirstTempFeatureFlags()
     {
         // TODO: move work with temp features into VectorLayer
@@ -1700,6 +1716,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public Cursor queryFirstTempAttachFlags()
     {
         // TODO: move work with temp features into VectorLayer
@@ -1722,6 +1739,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public boolean hasFeatureTempFlag(long featureId)
     {
         // TODO: move work with temp features into VectorLayer
@@ -1729,12 +1747,14 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public boolean hasFeatureNotSyncFlag(long featureId)
     {
         return FeatureChanges.hasFeatureNotSyncFlag(mChangeTableName, featureId);
     }
 
 
+    @Override
     public boolean hasAttachTempFlag(
             long featureId,
             long attachId)
@@ -1744,6 +1764,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public boolean hasAttachNotSyncFlag(
             long featureId,
             long attachId)
@@ -1752,6 +1773,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public long setFeatureTempFlag(
             long featureId,
             boolean flag)
@@ -1765,6 +1787,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public long setFeatureNotSyncFlag(
             long featureId,
             boolean flag)
@@ -1777,6 +1800,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public long setAttachTempFlag(
             long featureId,
             long attachId,
@@ -1791,6 +1815,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public long setAttachNotSyncFlag(
             long featureId,
             long attachId,
@@ -1804,6 +1829,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public int deleteAllTempFeaturesFlags()
     {
         // TODO: move work with temp features into VectorLayer
@@ -1813,6 +1839,7 @@ public class NGWVectorLayer
     }
 
 
+    @Override
     public int deleteAllTempAttachesFlags()
     {
         // TODO: move work with temp features into VectorLayer
