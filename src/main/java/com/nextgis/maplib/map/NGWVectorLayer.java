@@ -1235,7 +1235,7 @@ public class NGWVectorLayer
             cursor.close();
             Log.d(Constants.TAG, "payload: " + payload);
             String data = NetworkUtil.post(
-                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere), payload,
+                    NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId), payload,
                     mCacheLogin, mCachePassword);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
