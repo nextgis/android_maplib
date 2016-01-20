@@ -2,7 +2,6 @@ package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
 import android.graphics.Path;
-
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoMultiLineString;
@@ -10,7 +9,6 @@ import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -18,12 +16,7 @@ import java.util.List;
 
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
-import static com.nextgis.maplib.util.GeoConstants.GTLineString;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
-import static com.nextgis.maplib.util.GeoConstants.GTPoint;
-import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
+import static com.nextgis.maplib.util.GeoConstants.*;
 
 /**
  * Style to draw tiled polygons
@@ -64,6 +57,19 @@ public class SimpleTiledPolygonStyle extends Style {
     public void setFill(boolean fill) {
         mFill = fill;
     }
+
+
+    public float getWidth()
+    {
+        return mWidth;
+    }
+
+
+    public void setWidth(float width)
+    {
+        mWidth = width;
+    }
+
 
     @Override
     public void onDraw(
