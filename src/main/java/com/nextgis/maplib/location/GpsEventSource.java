@@ -364,10 +364,13 @@ public class GpsEventSource
     protected final class GpsStatusListener
             implements GpsStatus.Listener
     {
-
+        private int mPrevEvent;
         @Override
         public void onGpsStatusChanged(int event)
         {
+            if(mPrevEvent == event)
+                return;
+            mPrevEvent = event;
             for (GpsEventListener listener : mListeners) {
                 listener.onGpsStatusChanged(event);
             }

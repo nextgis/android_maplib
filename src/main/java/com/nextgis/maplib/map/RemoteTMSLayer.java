@@ -96,7 +96,9 @@ public class RemoteTMSLayer
         if (diff > 0) {
             mAvailable.release(diff);
         }
-        Log.d(
+
+        if(Constants.DEBUG_MODE)
+            Log.d(
                 TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
                         getMaxThreadCount());
     }
@@ -161,7 +163,8 @@ public class RemoteTMSLayer
             if (ret != null) {
                 putBitmapToCache(tile.getHash(), ret);
                 if(System.currentTimeMillis() - tilePath.lastModified() > mTileMaxAge) {
-                    Log.d(Constants.TAG, "Update old tile " + tile.toString());
+                    if(Constants.DEBUG_MODE)
+                        Log.d(Constants.TAG, "Update old tile " + tile.toString());
                     // update tile
                     new Thread(new Runnable() {
                         public void run() {
@@ -179,7 +182,8 @@ public class RemoteTMSLayer
 
         // try to get tile from remote
         String url = tile.toString(getURLSubdomain());
-        Log.d(TAG, "url: " + url);
+        if(Constants.DEBUG_MODE)
+            Log.d(TAG, "url: " + url);
         try {
 
             if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
@@ -191,7 +195,9 @@ public class RemoteTMSLayer
                 putBitmapToCache(tile.getHash(), ret);
                 return ret;
             }
-            Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
+
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
 
             FileUtil.createDir(tilePath.getParentFile());
             OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
