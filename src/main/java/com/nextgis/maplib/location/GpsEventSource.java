@@ -48,6 +48,7 @@ public class GpsEventSource
     protected LocationManager     mLocationManager;
     protected GpsLocationListener mGpsLocationListener;
     protected GpsStatusListener   mGpsStatusListener;
+    protected boolean             mHasGPSFix;
     protected int                 mListenProviders;
     protected Location            mLastLocation;
     protected Location            mCurrentBestLocation;
@@ -68,6 +69,8 @@ public class GpsEventSource
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         mGpsLocationListener = new GpsLocationListener();
         mGpsStatusListener = new GpsStatusListener();
+
+        mHasGPSFix = false;
 
         updateActiveListeners();
     }
@@ -326,6 +329,9 @@ public class GpsEventSource
 
         public void onLocationChanged(Location location)
         {
+            if(mHasGPSFix && !location.getProvider().equals(LocationManager.GPS_PROVIDER))
+                return;
+
             mLastLocation = location;
 
             if (isBetterLocation(mLastLocation, mCurrentBestLocation)) {
@@ -351,12 +357,13 @@ public class GpsEventSource
         {
         }
 
-
+        // http://stackoverflow.com/a/20812298/2901140
         public void onStatusChanged(
                 String provider,
                 int status,
                 Bundle extras)
         {
+
         }
     }
 
@@ -364,13 +371,22 @@ public class GpsEventSource
     protected final class GpsStatusListener
             implements GpsStatus.Listener
     {
-        private int mPrevEvent;
         @Override
         public void onGpsStatusChanged(int event)
         {
-            if(mPrevEvent == event)
-                return;
-            mPrevEvent = event;
+            switch(event)
+            {
+                case GpsStatus.GPS_EVENT_STARTED:
+                case GpsStatus.GPS_EVENT_STOPPED:
+                    mHasGPSFix = false;
+                    break;
+                case GpsStatus.GPS_EVENT_FIRST_FIX:
+                    mHasGPSFix = true;
+                    break;
+                case GpsStatus.GPS_EVENT_SATELLITE_STATUS:
+                    break;
+            }
+
             for (GpsEventListener listener : mListeners) {
                 listener.onGpsStatusChanged(event);
             }
