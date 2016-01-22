@@ -26,6 +26,9 @@ package com.nextgis.maplib.util;
 import android.content.Context;
 import com.nextgis.maplib.R;
 
+import java.util.List;
+
+
 /**
  * Raster and vector utilities
  */
@@ -98,5 +101,31 @@ public class LayerUtil {
             default:
                 return "n/a";
         }
+    }
+
+
+    public static String getSelectionForIds(List<Long> ids)
+    {
+        if (null == ids) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder(1024);
+
+        for (Long id : ids) {
+            if (sb.length() == 0) {
+                sb.append(com.nextgis.maplib.util.Constants.FIELD_ID);
+                sb.append(" IN (");
+            } else {
+                sb.append(",");
+            }
+            sb.append(id);
+        }
+
+        if (sb.length() > 0) {
+            sb.append(")");
+        }
+
+        return sb.toString();
     }
 }
