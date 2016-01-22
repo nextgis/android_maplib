@@ -32,7 +32,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
+
 import com.nextgis.maplib.api.GpsEventListener;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.PermissionUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
@@ -243,6 +246,9 @@ public class GpsEventSource
             mLocationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
+
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.GPS_PROVIDER);
         }
 
         if (0 != (mListenProviders & NETWORK_PROVIDER) &&
@@ -251,6 +257,9 @@ public class GpsEventSource
             mLocationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
+
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.NETWORK_PROVIDER);
         }
     }
 
