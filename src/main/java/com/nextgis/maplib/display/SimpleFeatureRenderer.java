@@ -25,7 +25,6 @@ package com.nextgis.maplib.display;
 
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
@@ -33,7 +32,6 @@ import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.VectorLayer;
 import com.nextgis.maplib.util.Constants;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -46,12 +44,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class SimpleFeatureRenderer
@@ -290,6 +283,9 @@ public class SimpleFeatureRenderer
                 break;
             case "SimpleTiledPolygonStyle":
                 mStyle = new SimpleTiledPolygonStyle();
+                break;
+            case "SimpleTextPolygonStyle":
+                mStyle = new SimpleTextPolygonStyle();
                 break;
             default:
                 throw new JSONException("Unknown style type: " + styleName);

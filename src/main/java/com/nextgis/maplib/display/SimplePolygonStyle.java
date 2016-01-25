@@ -43,10 +43,10 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 public class SimplePolygonStyle
         extends Style
 {
-    protected float mWidth;
+    protected float   mWidth;
     protected boolean mFill;
 
-    protected String JSON_FILL_KEY = "fill";
+    protected static final String JSON_FILL_KEY = "fill";
 
 
     public SimplePolygonStyle()
@@ -74,13 +74,62 @@ public class SimplePolygonStyle
     }
 
 
+    public boolean isFill()
+    {
+        return mFill;
+    }
+
+
+    public void setFill(boolean fill)
+    {
+        mFill = fill;
+    }
+
+
+    public float getWidth()
+    {
+        return mWidth;
+    }
+
+
+    public void setWidth(float width)
+    {
+        mWidth = width;
+    }
+
+
+    @Override
     public void onDraw(
+            GeoGeometry geoGeometry,
+            GISDisplay display)
+    {
+        switch (geoGeometry.getType()) {
+            case GTPolygon:
+                drawPolygon((GeoPolygon) geoGeometry, display);
+                break;
+            case GTMultiPolygon:
+                GeoMultiPolygon multiPolygon = (GeoMultiPolygon) geoGeometry;
+
+                for (int i = 0; i < multiPolygon.size(); i++) {
+                    drawPolygon(multiPolygon.get(i), display);
+                }
+                break;
+
+            //throw new IllegalArgumentException(
+            //        "The input geometry type is not support by this style");
+        }
+    }
+
+
+    public void drawPolygon(
             GeoPolygon polygon,
             GISDisplay display)
     {
+        float scaledWidth = (float) (mWidth / display.getScale());
+
         Paint lnPaint = new Paint();
         lnPaint.setColor(mColor);
-        lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        lnPaint.setStrokeWidth(scaledWidth);
         lnPaint.setStrokeCap(Paint.Cap.ROUND);
         lnPaint.setAntiAlias(true);
 
@@ -90,40 +139,10 @@ public class SimplePolygonStyle
         lnPaint.setAlpha(128);
         display.drawPath(polygonPath, lnPaint);
 
-        if(mFill) {
+        if (mFill) {
             lnPaint.setStyle(Paint.Style.FILL);
             lnPaint.setAlpha(64);
             display.drawPath(polygonPath, lnPaint);
-        }
-    }
-
-    public boolean isFill() {
-        return mFill;
-    }
-
-    public void setFill(boolean fill) {
-        mFill = fill;
-    }
-
-    @Override
-    public void onDraw(
-            GeoGeometry geoGeometry,
-            GISDisplay display)
-    {
-        switch (geoGeometry.getType()) {
-            case GTPolygon:
-                onDraw((GeoPolygon) geoGeometry, display);
-                break;
-            case GTMultiPolygon:
-                GeoMultiPolygon multiPolygon = (GeoMultiPolygon) geoGeometry;
-
-                for (int i = 0; i < multiPolygon.size(); i++) {
-                    onDraw(multiPolygon.get(i), display);
-                }
-                break;
-
-            //throw new IllegalArgumentException(
-            //        "The input geometry type is not support by this style");
         }
     }
 
@@ -145,10 +164,10 @@ public class SimplePolygonStyle
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        if(jsonObject.has(JSON_WIDTH_KEY))
+        if (jsonObject.has(JSON_WIDTH_KEY)) {
             mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
-        if(jsonObject.has(JSON_FILL_KEY))
-            mFill = jsonObject.getBoolean(JSON_FILL_KEY);
+        }
+        if (jsonObject.has(JSON_FILL_KEY)) { mFill = jsonObject.getBoolean(JSON_FILL_KEY); }
     }
 
 

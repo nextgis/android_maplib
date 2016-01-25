@@ -18,14 +18,18 @@ import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
+
 /**
  * Style to draw tiled polygons
  */
-public class SimpleTiledPolygonStyle extends Style {
-    protected float mWidth;
+public class SimpleTiledPolygonStyle
+        extends Style
+{
+    protected float   mWidth;
     protected boolean mFill;
 
     protected String JSON_FILL_KEY = "fill";
+
 
     public SimpleTiledPolygonStyle()
     {
@@ -40,6 +44,7 @@ public class SimpleTiledPolygonStyle extends Style {
         mFill = true;
     }
 
+
     @Override
     public SimpleTiledPolygonStyle clone()
             throws CloneNotSupportedException
@@ -50,11 +55,15 @@ public class SimpleTiledPolygonStyle extends Style {
         return obj;
     }
 
-    public boolean isFill() {
+
+    public boolean isFill()
+    {
         return mFill;
     }
 
-    public void setFill(boolean fill) {
+
+    public void setFill(boolean fill)
+    {
         mFill = fill;
     }
 
@@ -78,53 +87,54 @@ public class SimpleTiledPolygonStyle extends Style {
     {
         switch (geoGeometry.getType()) {
             case GTPolygon:
-                onDraw((GeoPolygon) geoGeometry, display);
+                drawPolygon((GeoPolygon) geoGeometry, display);
                 break;
             case GTMultiPolygon:
                 GeoMultiPolygon multiPolygon = (GeoMultiPolygon) geoGeometry;
 
                 for (int i = 0; i < multiPolygon.size(); i++) {
-                    onDraw(multiPolygon.get(i), display);
+                    drawPolygon(multiPolygon.get(i), display);
                 }
                 break;
             case GTPoint:
-                onDraw((GeoPoint) geoGeometry, display);
+                drawPoint((GeoPoint) geoGeometry, display);
                 break;
             case GTMultiPoint:
                 GeoMultiPoint multiPoint = (GeoMultiPoint) geoGeometry;
                 for (int i = 0; i < multiPoint.size(); i++) {
-                    onDraw(multiPoint.get(i), display);
+                    drawPoint(multiPoint.get(i), display);
                 }
                 break;
             case GTLineString:
-                onDraw((GeoLineString) geoGeometry, display);
+                drawLineString((GeoLineString) geoGeometry, display);
                 break;
             case GTMultiLineString:
                 GeoMultiLineString multiLineString = (GeoMultiLineString) geoGeometry;
                 for (int i = 0; i < multiLineString.size(); i++) {
-                    onDraw(multiLineString.get(i), display);
+                    drawLineString(multiLineString.get(i), display);
                 }
                 break;
         }
     }
 
-    public void onDraw(
+
+    public void drawPolygon(
             GeoPolygon polygon,
             GISDisplay display)
     {
-        final Paint lnPaint = new Paint();
+        Paint lnPaint = new Paint();
         lnPaint.setColor(mColor);
         lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
         lnPaint.setStrokeCap(Paint.Cap.ROUND);
         lnPaint.setAntiAlias(true);
 
-        final Path polygonPath = getPath(polygon);
+        Path polygonPath = getPath(polygon);
 
         lnPaint.setStyle(Paint.Style.STROKE);
         lnPaint.setAlpha(128);
         display.drawPath(polygonPath, lnPaint);
 
-        if(mFill) {
+        if (mFill) {
             lnPaint.setStyle(Paint.Style.FILL);
             lnPaint.setAlpha(64);
             lnPaint.setStrokeWidth(0);
@@ -132,7 +142,8 @@ public class SimpleTiledPolygonStyle extends Style {
         }
     }
 
-    protected void onDraw(
+
+    protected void drawPoint(
             GeoPoint pt,
             GISDisplay display)
     {
@@ -145,7 +156,8 @@ public class SimpleTiledPolygonStyle extends Style {
         display.drawCircle((float) pt.getX(), (float) pt.getY(), radius, fillPaint);
     }
 
-    protected void onDraw(
+
+    protected void drawLineString(
             GeoLineString line,
             GISDisplay display)
     {
@@ -161,6 +173,7 @@ public class SimpleTiledPolygonStyle extends Style {
         lnPaint.setAlpha(128);
         display.drawPath(linePath, lnPaint);
     }
+
 
     @Override
     public JSONObject toJSON()
@@ -179,13 +192,17 @@ public class SimpleTiledPolygonStyle extends Style {
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        if(jsonObject.has(JSON_WIDTH_KEY))
+        if (jsonObject.has(JSON_WIDTH_KEY)) {
             mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
-        if(jsonObject.has(JSON_FILL_KEY))
+        }
+        if (jsonObject.has(JSON_FILL_KEY)) {
             mFill = jsonObject.getBoolean(JSON_FILL_KEY);
+        }
     }
 
-    protected Path getPath(GeoLineString lineString){
+
+    protected Path getPath(GeoLineString lineString)
+    {
         List<GeoPoint> points = lineString.getPoints();
         Path path = new Path();
         float x0, y0;
@@ -205,6 +222,7 @@ public class SimpleTiledPolygonStyle extends Style {
 
         return path;
     }
+
 
     protected Path getPath(GeoPolygon polygon)
     {
