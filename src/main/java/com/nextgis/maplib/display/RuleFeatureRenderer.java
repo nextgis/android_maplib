@@ -23,42 +23,24 @@
 
 package com.nextgis.maplib.display;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.util.Log;
-
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.map.Layer;
-import com.nextgis.maplib.map.VectorLayer;
-import com.nextgis.maplib.util.Constants;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Map;
-import java.util.TreeMap;
-
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_OLD_ID;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class RuleFeatureRenderer
         extends SimpleFeatureRenderer
 {
     protected IStyleRule mStyleRule;
-    protected Map<Long, Style> mParametrizedStyles = new TreeMap<>();
 
 
     public RuleFeatureRenderer(Layer layer)
     {
         super(layer);
         mStyleRule = null;
-        init();
     }
 
 
@@ -68,7 +50,6 @@ public class RuleFeatureRenderer
     {
         super(layer);
         mStyleRule = styleRule;
-        init();
     }
 
 
@@ -79,68 +60,25 @@ public class RuleFeatureRenderer
     {
         super(layer, style);
         mStyleRule = styleRule;
-        init();
-    }
-
-
-    protected void init()
-    {
-        // register events from layers modify in services or other applications
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Constants.NOTIFY_DELETE);
-        intentFilter.addAction(Constants.NOTIFY_DELETE_ALL);
-        intentFilter.addAction(Constants.NOTIFY_INSERT);
-        intentFilter.addAction(Constants.NOTIFY_UPDATE);
-        intentFilter.addAction(Constants.NOTIFY_UPDATE_FIELDS);
-        mLayer.getContext().registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
-
-        initParametrizedStyles();
-    }
-
-
-    protected void initParametrizedStyles()
-    {
-        mParametrizedStyles.clear();
-
-        if (null == mStyleRule) {
-            return;
-        }
-
-        final VectorLayer vectorLayer = (VectorLayer) mLayer;
-        try {
-
-            for (Long featureId : vectorLayer.query(null)) {
-                putParametrizedStyle(featureId);
-            }
-
-        } catch (CloneNotSupportedException e) {
-            Log.d(
-                    TAG,
-                    "Warning, mParametrizedStyles is not initialised: " + e.getLocalizedMessage());
-            mParametrizedStyles.clear();
-        }
-    }
-
-
-    protected void putParametrizedStyle(long featureId)
-            throws CloneNotSupportedException
-    {
-        Style styleClone = mStyle.clone();
-        mStyleRule.setStyleParams(styleClone, featureId);
-        mParametrizedStyles.put(featureId, styleClone);
     }
 
 
     @Override
     protected Style getStyle(long featureId)
     {
-        if (null == mStyleRule || mParametrizedStyles.size() == 0) {
+        if (null == mStyleRule) {
             return mStyle;
         }
 
-        Style style = mParametrizedStyles.get(featureId);
+        try {
+            Style styleClone = mStyle.clone();
+            mStyleRule.setStyleParams(styleClone, featureId);
+            return styleClone;
 
-        return null == style ? mStyle : style;
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+            return mStyle;
+        }
     }
 
 
@@ -153,7 +91,6 @@ public class RuleFeatureRenderer
     public void setStyleRule(IStyleRule styleRule)
     {
         mStyleRule = styleRule;
-        initParametrizedStyles();
     }
 
 
@@ -164,74 +101,5 @@ public class RuleFeatureRenderer
         JSONObject rootJsonObject = super.toJSON();
         rootJsonObject.put(JSON_NAME_KEY, "RuleFeatureRenderer");
         return rootJsonObject;
-    }
-
-
-    @Override
-    public void fromJSON(JSONObject jsonObject)
-            throws JSONException
-    {
-        super.fromJSON(jsonObject);
-    }
-
-
-    protected class VectorLayerNotifyReceiver
-            extends BroadcastReceiver
-    {
-        @Override
-        public void onReceive(
-                Context context,
-                Intent intent)
-        {
-            if (null == mStyleRule) {
-                return;
-            }
-
-            // extreme logging commented
-            //Log.d(TAG, "Receive notify: " + intent.getAction());
-
-            try {
-                long featureId;
-
-                switch (intent.getAction()) {
-
-                    case Constants.NOTIFY_DELETE:
-                        featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
-                        mParametrizedStyles.remove(featureId);
-                        break;
-
-                    case Constants.NOTIFY_DELETE_ALL:
-                        mParametrizedStyles.clear();
-                        break;
-
-                    case Constants.NOTIFY_UPDATE:
-                    case Constants.NOTIFY_UPDATE_FIELDS:
-                        featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
-                        putParametrizedStyle(featureId);
-
-                        if (intent.hasExtra(FIELD_OLD_ID)) {
-                            long oldFeatureId = intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND);
-                            mParametrizedStyles.remove(oldFeatureId);
-                        }
-
-                        break;
-
-                    case Constants.NOTIFY_UPDATE_ALL:
-                        initParametrizedStyles();
-                        break;
-
-                    case Constants.NOTIFY_INSERT:
-                        featureId = intent.getLongExtra(FIELD_ID, NOT_FOUND);
-                        putParametrizedStyle(featureId);
-                        break;
-                }
-
-            } catch (CloneNotSupportedException e) {
-                Log.d(
-                        TAG, "Warning, mParametrizedStyles is not initialised: " +
-                             e.getLocalizedMessage());
-                mParametrizedStyles.clear();
-            }
-        }
     }
 }
