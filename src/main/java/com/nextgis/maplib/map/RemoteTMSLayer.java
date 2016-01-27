@@ -69,6 +69,7 @@ public class RemoteTMSLayer
     protected       int          mCurrentSubdomain;
     protected       String       mLogin;
     protected       String       mPassword;
+    protected       String       mStartDate, mEndDate;
     protected       Semaphore    mAvailable;
     protected long mTileMaxAge;
 
@@ -289,8 +290,15 @@ public class RemoteTMSLayer
 
     protected synchronized String getURLSubdomain()
     {
+        String result = mURL;
+
+        if (mURL.contains("{s}") && mStartDate != null)
+            result = result.replace("{s}", mStartDate);
+        if (mURL.contains("{e}") && mEndDate != null)
+            result = result.replace("{e}", mEndDate);
+
         if (mSubdomains.size() == 0 || mSubDomainsMask.length() == 0) {
-            return mURL;
+            return result;
         }
 
         if (mCurrentSubdomain >= mSubdomains.size()) {
@@ -298,7 +306,7 @@ public class RemoteTMSLayer
         }
 
         String subdomain = mSubdomains.get(mCurrentSubdomain++);
-        return mURL.replace(mSubDomainsMask, subdomain);
+        return result.replace(mSubDomainsMask, subdomain);
     }
 
 
@@ -311,7 +319,7 @@ public class RemoteTMSLayer
         int endSubDomains = NOT_FOUND;
         for (int i = 0; i < url.length(); ++i) {
             if (begin_block) {
-                if (url.charAt(i) == 'x' || url.charAt(i) == 'y' || url.charAt(i) == 'z') {
+                if (url.charAt(i) == 'x' || url.charAt(i) == 'y' || url.charAt(i) == 'z' || url.charAt(i) == 's' || url.charAt(i) == 'e') {
                     begin_block = false;
                 } else if (url.charAt(i) == ',') {
                     subdomain = subdomain.trim();
@@ -397,5 +405,13 @@ public class RemoteTMSLayer
 
     public void setTileMaxAge(long tileMaxAge) {
         mTileMaxAge = tileMaxAge;
+    }
+
+    public void setStartDate(String startDate) {
+        mStartDate = startDate;
+    }
+
+    public void setEndDate(String endDate) {
+        mEndDate = endDate;
     }
 }
