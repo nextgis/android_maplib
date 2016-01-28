@@ -48,7 +48,7 @@ public abstract class Renderer
 
 
     @Override
-    public void deInit()
+    public void deInitRenderer()
     {
         mLayer = null;
     }

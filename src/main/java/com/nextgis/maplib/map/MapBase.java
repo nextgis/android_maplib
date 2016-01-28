@@ -120,8 +120,6 @@ public class MapBase
             return;
         }
 
-        deInit();
-
         if (FileUtil.move(mPath, newPath)) {
             //change path
             mPath = newPath;

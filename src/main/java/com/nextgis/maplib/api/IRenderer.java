@@ -31,7 +31,7 @@ public interface IRenderer
     /**
      * Release of resources
      */
-    void deInit();
+    void deInitRenderer();
 
     /**
      * Start draw process

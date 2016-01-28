@@ -164,8 +164,15 @@ public class Layer extends Table
     public void deInit()
     {
         if (null != mRenderer) {
-            mRenderer.deInit();
+            mRenderer.deInitRenderer();
         }
+    }
+
+
+    @Override
+    public void deInitRenderer()
+    {
+        deInit();
     }
 
 

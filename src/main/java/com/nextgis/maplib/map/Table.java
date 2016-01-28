@@ -133,7 +133,6 @@ public class Table implements ILayer, IJSONStore {
     @Override
     public boolean load()
     {
-        deInit();
         try {
             JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
             fromJSON(jsonObject);

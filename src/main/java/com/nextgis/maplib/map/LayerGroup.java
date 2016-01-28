@@ -400,7 +400,7 @@ public class LayerGroup
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        deInit();
+        deInit(); // TODO: restore mRenderer if it is used in a LayerGroup
 
         super.fromJSON(jsonObject);
 
