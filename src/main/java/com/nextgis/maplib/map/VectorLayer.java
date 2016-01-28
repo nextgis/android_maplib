@@ -1809,7 +1809,8 @@ public class VectorLayer
 
     protected void deleteAttaches(String featureId)
     {
-        // TODO: delete files and folder
+        File attachFolder = new File(mPath, featureId);
+        FileUtil.renameAndDelete(attachFolder);
     }
 
 

@@ -100,6 +100,16 @@ public class FileUtil
     }
 
 
+    // http://stackoverflow.com/a/30574112/4727406
+    public static boolean renameAndDelete(File fileOrDirectory)
+    {
+        File newFile = new File(
+                fileOrDirectory.getParent() + File.separator + "_" + fileOrDirectory.getName() +
+                        "_temp_rename");
+        return fileOrDirectory.renameTo(newFile) && deleteRecursive(newFile);
+    }
+
+
     public static boolean deleteRecursive(File fileOrDirectory)
     {
         boolean isOK = true;
