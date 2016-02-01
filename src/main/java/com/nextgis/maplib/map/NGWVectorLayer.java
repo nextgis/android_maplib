@@ -533,7 +533,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         syncResult.clear();
-        if (0 != (mSyncType & Constants.SYNC_NONE) || mFields.isEmpty()) {
+        if (0 != (mSyncType & Constants.SYNC_NONE) || mFields == null || mFields.isEmpty()) {
             Log.d(Constants.TAG, "Layer " + getName() + " is not checked to sync or not inited");
             return;
         }
