@@ -336,6 +336,8 @@ public class NGWVectorLayer
             throw new NGException( getContext().getString(R.string.error_crs_unsupported) );
         }
 
+        create(geomType, fields);
+
         String sURL = NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere);
         Log.d(Constants.TAG, "download features from: " + sURL);
 
@@ -354,8 +356,6 @@ public class NGWVectorLayer
             List<Feature> features = NGWUtil.jsonToFeatures(featuresJSONArray, fields, nSRS, progressor);
 
             Log.d(Constants.TAG, "feature count: " + features.size());
-
-            create(geomType, fields);
 
             if(null != progressor){
                 progressor.setMessage(getContext().getString(R.string.create_features));
@@ -377,8 +377,6 @@ public class NGWVectorLayer
             notifyLayerChanged();
         }
         else{
-            create(geomType, fields);
-
             // get features and fill them
             URL url = new URL(sURL);
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
