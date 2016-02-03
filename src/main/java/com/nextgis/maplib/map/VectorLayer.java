@@ -2239,9 +2239,12 @@ public class VectorLayer
         if(Constants.DEBUG_MODE)
             Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
 
+        mAttaches.remove(rowId); // for reload attachMap for feature
+
         boolean needSave = false;
         if (oldRowId != Constants.NOT_FOUND) {
             mCache.changeId(oldRowId, rowId);
+            mAttaches.remove(oldRowId); // for reload attachMap for feature
             needSave = true;
         }
 
