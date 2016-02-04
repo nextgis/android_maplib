@@ -51,7 +51,7 @@ public class LayerUtil {
 
     public static String normalizeFieldName(String fieldName) {
 
-        char [] forbiddenChars = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')'};
+        char [] forbiddenChars = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')', '+', '-', '?', '=', '/', '\\', '"', '\'', '[', ']', ','};
 
         String result = fieldName;
         for(char testChar : forbiddenChars) {
