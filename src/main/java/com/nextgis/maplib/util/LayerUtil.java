@@ -50,13 +50,14 @@ public class LayerUtil {
     }
 
     public static String normalizeFieldName(String fieldName) {
-
         char [] forbiddenChars = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')', '+', '-', '?', '=', '/', '\\', '"', '\'', '[', ']', ','};
-
         String result = fieldName;
-        for(char testChar : forbiddenChars) {
+
+        if (Character.isDigit(result.charAt(0)))
+            result = "_" + result;
+
+        for(char testChar : forbiddenChars)
             result = result.replace(testChar, '_');
-        }
 
         if(result.equals(Constants.FIELD_ID))
             return "_fixed_id";
