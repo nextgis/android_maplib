@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -39,6 +39,19 @@ public class GeoMultiPolygon
         extends GeoGeometryCollection
 {
     protected static final long serialVersionUID = -1241179697270831767L;
+
+
+    public GeoMultiPolygon() {
+        super();
+    }
+
+
+    public GeoMultiPolygon(GeoMultiPolygon multiPolygon) {
+        this();
+
+        for (int i = 0; i < multiPolygon.size(); i++)
+            add(multiPolygon.get(i).copy());
+    }
 
 
     @Override
@@ -145,6 +158,12 @@ public class GeoMultiPolygon
     public void add(GeoPolygon polygon)
     {
         super.add(polygon);
+    }
+
+    @Override
+    public GeoGeometry copy()
+    {
+        return new GeoMultiPolygon(this);
     }
 
     @Override
