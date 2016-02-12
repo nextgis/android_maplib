@@ -168,4 +168,15 @@ public class GeoMultiLineString
         return new GeoMultiLineString(this);
     }
 
+    public double getLength() {
+        double length = 0;
+
+        if (mGeometries.size() < 1)
+            return length;
+
+        for (int i = 0; i < size(); i++)
+            length += get(i).getLength();
+
+        return length;
+    }
 }
