@@ -170,4 +170,24 @@ public class GeoMultiPolygon
     protected GeoGeometryCollection getInstance() {
         return new GeoMultiPolygon();
     }
+
+    public double getPerimeter() {
+        double length = 0;
+
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                length += ((GeoPolygon) polygon).getPerimeter();
+
+        return length;
+    }
+
+    public double getArea() {
+        double area = 0;
+
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                area += ((GeoPolygon) polygon).getArea();
+
+        return area;
+    }
 }

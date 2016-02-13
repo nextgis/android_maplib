@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -39,8 +39,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
-
+import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WGS84;
 
 public class GeoPolygon
         extends GeoGeometry
@@ -405,5 +405,77 @@ public class GeoPolygon
             GeoLinearRing ring = mInnerRings.get(i);
             ring.write(stream);
         }
+    }
+
+    public double getPerimeter() {
+        if (mOuterRing != null)
+            return mOuterRing.getLength();
+        else
+            return 0;
+    }
+
+    public double getArea() {
+        return getArea(this);
+    }
+
+    private static double getArea(GeoPolygon polygon) {
+        double area = getArea(polygon.getOuterRing());
+
+        for (GeoLinearRing ring : polygon.mInnerRings)
+            area -= getArea(ring);
+
+        return area;
+    }
+
+    // based on https://github.com/googlemaps/android-maps-utils/blob/master/library/src/com/google/maps/android/SphericalUtil.java
+    /**
+     * Returns the signed area of a closed path on a sphere of given radius.
+     * The computed area uses the same units as the radius squared.
+     * Used by SphericalUtilTest.
+     */
+    private static double getArea(GeoLinearRing ring) {
+        if (ring == null)
+            return 0;
+
+        List<GeoPoint> coordinates = ring.getPoints();
+        int size = coordinates.size();
+        if (size < 3)
+            return 0;
+
+        double total = 0;
+        GeoPoint p = (GeoPoint) coordinates.get(size - 1).copy();
+        p.setCRS(CRS_WEB_MERCATOR);
+        p.project(CRS_WGS84);
+
+        double prevTanLat = Math.tan((Math.PI / 2 - Math.toRadians(p.getY())) / 2);
+        double prevLng = Math.toRadians(p.getX());
+        // For each edge, accumulate the signed area of the triangle formed by the North Pole
+        // and that edge ("polar triangle").
+        for (GeoPoint point : coordinates) {
+            p = (GeoPoint) point.copy();
+            p.setCRS(CRS_WEB_MERCATOR);
+            p.project(CRS_WGS84);
+
+            double tanLat = Math.tan((Math.PI / 2 - Math.toRadians(p.getY())) / 2);
+            double lng = Math.toRadians(p.getX());
+            total += polarTriangleArea(tanLat, lng, prevTanLat, prevLng);
+            prevTanLat = tanLat;
+            prevLng = lng;
+        }
+
+        return Math.abs(total) * (6378137f * 6378137f);
+    }
+
+    /**
+     * Returns the signed area of a triangle which has North Pole as a vertex.
+     * Formula derived from "Area of a spherical triangle given two edges and the included angle"
+     * as per "Spherical Trigonometry" by Todhunter, page 71, section 103, point 2.
+     * See http://books.google.com/books?id=3uBHAAAAIAAJ&pg=PA71
+     * The arguments named "tan" are tan((pi/2 - latitude)/2).
+     */
+    private static double polarTriangleArea(double tan1, double lng1, double tan2, double lng2) {
+        double deltaLng = lng1 - lng2;
+        double t = tan1 * tan2;
+        return 2 * Math.atan2(t * Math.sin(deltaLng), 1 + t * Math.cos(deltaLng));
     }
 }

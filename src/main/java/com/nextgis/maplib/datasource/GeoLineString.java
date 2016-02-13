@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * The simplify algorithm adopted from simplify-java project under the MIT license
  * Copyright (c) 2013 Heinrich Göbl
@@ -662,7 +662,7 @@ public class GeoLineString
         if (mPoints.size() < 2)
             return length;
 
-        Location location1 = new Location(LocationManager.GPS_PROVIDER), location2 = new Location(LocationManager.GPS_PROVIDER);
+        Location location1 = new Location(LocationManager.GPS_PROVIDER);
         GeoPoint point = (GeoPoint) mPoints.get(0).copy();
         point.setCRS(CRS_WEB_MERCATOR);
         point.project(CRS_WGS84);
@@ -670,6 +670,7 @@ public class GeoLineString
         location1.setLatitude(point.getY());
 
         for (int i = 1; i < mPoints.size(); i++) {
+            Location location2 = new Location(LocationManager.GPS_PROVIDER);
             point = (GeoPoint) mPoints.get(i).copy();
             point.setCRS(CRS_WEB_MERCATOR);
             point.project(CRS_WGS84);
