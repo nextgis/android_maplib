@@ -86,7 +86,7 @@ public class LocationUtil
         char endChar = DEGREE_CHAR;
         String appendix = "";
         for (int i = 0; i < fraction; i++)
-            appendix += "#";
+            appendix += "0";
 
         DecimalFormat df = new DecimalFormat("###." + appendix);
         if (outputType == Location.FORMAT_MINUTES || outputType == Location.FORMAT_SECONDS) {
