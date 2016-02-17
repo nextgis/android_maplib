@@ -114,6 +114,12 @@ public interface IGISApplication
      */
     String getAccountUrl(Account account);
 
+    /**
+     * Return some account data
+     * @param account account object
+     * @param key key to return
+     * @return value in user key - value map
+     */
     String getAccountUserData(Account account, String key);
 
     /**

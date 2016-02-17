@@ -26,7 +26,10 @@ package com.nextgis.maplib.api;
 
 import com.nextgis.maplib.datasource.GeoPoint;
 
-
+/**
+ * The object which need map events, should implement this interface.
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface MapEventListener
 {
     /**

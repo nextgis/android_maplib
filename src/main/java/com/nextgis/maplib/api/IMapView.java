@@ -27,7 +27,10 @@ import android.graphics.Canvas;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 
-
+/**
+ * Interface that should implement each map view.
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface IMapView
         extends IRenderer
 {

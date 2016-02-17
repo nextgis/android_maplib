@@ -30,7 +30,10 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 
 import java.io.File;
 
-
+/**
+ * Interface for layer. Each layer should implement it.
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface ILayer
 {
     /**

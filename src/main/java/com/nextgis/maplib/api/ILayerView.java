@@ -23,6 +23,10 @@
 
 package com.nextgis.maplib.api;
 
+/**
+ * Interface to manage layer visibility sates and etc.
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface ILayerView
 {
     /**

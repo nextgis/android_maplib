@@ -25,7 +25,10 @@ package com.nextgis.maplib.api;
 
 import com.nextgis.maplib.display.GISDisplay;
 
-
+/**
+ * Interface for render something on fis display.
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface IRenderer
 {
     /**

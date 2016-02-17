@@ -25,7 +25,10 @@ package com.nextgis.maplib.api;
 
 import android.location.Location;
 
-
+/**
+ * Interface for listen location events
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface GpsEventListener
 {
     /**
