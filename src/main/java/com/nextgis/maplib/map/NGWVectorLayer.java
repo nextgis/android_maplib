@@ -307,7 +307,8 @@ public class NGWVectorLayer
             throw new NGException(getContext().getString(R.string.error_network_unavailable));
         }
 
-        Log.d(Constants.TAG, "download layer " + getName());
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "download layer " + getName());
         String data = NetworkUtil.get(
                 NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
         if (null == data) {
@@ -344,7 +345,8 @@ public class NGWVectorLayer
         create(geomType, fields);
 
         String sURL = NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId, mServerWhere);
-        Log.d(Constants.TAG, "download features from: " + sURL);
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "download features from: " + sURL);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 
@@ -360,7 +362,8 @@ public class NGWVectorLayer
             }
             List<Feature> features = NGWUtil.jsonToFeatures(featuresJSONArray, fields, nSRS, progressor);
 
-            Log.d(Constants.TAG, "feature count: " + features.size());
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "feature count: " + features.size());
 
             if(null != progressor){
                 progressor.setMessage(getContext().getString(R.string.create_features));
@@ -433,7 +436,7 @@ public class NGWVectorLayer
 
     @Override
     public void create(int geometryType, List<Field> fields) throws SQLiteException {
-        if(geometryType < 4) // to multi
+        if(geometryType < 4 && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) // to multi
             geometryType += 3;
 
         super.create(geometryType, fields);
@@ -537,13 +540,15 @@ public class NGWVectorLayer
     {
         syncResult.clear();
         if (0 != (mSyncType & Constants.SYNC_NONE) || mFields == null || mFields.isEmpty()) {
-            Log.d(Constants.TAG, "Layer " + getName() + " is not checked to sync or not inited");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "Layer " + getName() + " is not checked to sync or not inited");
             return;
         }
 
         // 1. get remote changes
         if (!getChangesFromServer(authority, syncResult)) {
-            Log.d(Constants.TAG, "Get remote changes failed");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "Get remote changes failed");
             return;
         }
 
@@ -553,7 +558,8 @@ public class NGWVectorLayer
 
         // 2. send current changes
         if (!sendLocalChanges(syncResult)) {
-            Log.d(Constants.TAG, "Set local changes failed");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "Set local changes failed");
             //return;
         }
     }
@@ -562,7 +568,8 @@ public class NGWVectorLayer
     public boolean sendLocalChanges(SyncResult syncResult)
     {
         long changesCount = FeatureChanges.getChangeCount(mChangeTableName);
-        Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
 
         if (0 == changesCount) {
             return true;
@@ -621,7 +628,8 @@ public class NGWVectorLayer
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
-                            Log.d(Constants.TAG, "proceed deleteFeatureOnServer() failed");
+                            if(Constants.DEBUG_MODE)
+                                Log.d(Constants.TAG, "proceed deleteFeatureOnServer() failed");
                         }
 
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
@@ -633,7 +641,8 @@ public class NGWVectorLayer
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
-                            Log.d(Constants.TAG, "proceed addFeatureOnServer() failed");
+                            if(Constants.DEBUG_MODE)
+                                Log.d(Constants.TAG, "proceed addFeatureOnServer() failed");
                         }
 
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_CHANGED)) {
@@ -645,7 +654,8 @@ public class NGWVectorLayer
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
-                            Log.d(Constants.TAG, "proceed changeFeatureOnServer() failed");
+                            if(Constants.DEBUG_MODE)
+                                Log.d(Constants.TAG, "proceed changeFeatureOnServer() failed");
                         }
                     }
                 }
@@ -659,7 +669,8 @@ public class NGWVectorLayer
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
-                            Log.d(Constants.TAG, "proceed deleteAttachOnServer() failed");
+                            if(Constants.DEBUG_MODE)
+                                Log.d(Constants.TAG, "proceed deleteAttachOnServer() failed");
                         }
 
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_NEW) {
@@ -671,7 +682,8 @@ public class NGWVectorLayer
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
-                            Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
+                            if(Constants.DEBUG_MODE)
+                                Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
                         }
 
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_CHANGED) {
@@ -682,7 +694,8 @@ public class NGWVectorLayer
                         } else {
                             isError = true;
                             syncResult.stats.numIoExceptions++;
-                            Log.d(Constants.TAG, "proceed changeAttachOnServer() failed");
+                            if(Constants.DEBUG_MODE)
+                                Log.d(Constants.TAG, "proceed changeAttachOnServer() failed");
                         }
                     }
                 }
@@ -698,7 +711,8 @@ public class NGWVectorLayer
         } catch (SQLiteException e) {
             isError = true;
             syncResult.stats.numConflictDetectedExceptions++;
-            Log.d(Constants.TAG, "proceed sendLocalChanges() failed");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "proceed sendLocalChanges() failed");
             e.printStackTrace();
         }
 
@@ -740,7 +754,8 @@ public class NGWVectorLayer
             return true;
         } catch (JSONException | IOException e) {
             e.printStackTrace();
-            Log.d(Constants.TAG, e.getLocalizedMessage());
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, e.getLocalizedMessage());
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -769,7 +784,8 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             e.printStackTrace();
-            Log.d(Constants.TAG, e.getLocalizedMessage());
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, e.getLocalizedMessage());
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -806,7 +822,8 @@ public class NGWVectorLayer
             }
             JSONObject result = new JSONObject(data);
             if (!result.has("upload_meta")) {
-                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " +
+                if(Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " +
                         result.toString());
                 syncResult.stats.numIoExceptions++;
                 return false;
@@ -814,7 +831,8 @@ public class NGWVectorLayer
 
             JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
             if (uploadMetaArray.length() == 0) {
-                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
+                if(Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -824,7 +842,8 @@ public class NGWVectorLayer
             postJsonData.put("description", attach.getDescription());
 
             String postload = postJsonData.toString();
-            Log.d(Constants.TAG, "postload: " + postload);
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "postload: " + postload);
 
             data = NetworkUtil.post(
                     NGWUtil.getFeatureAttachmentUrl(mCacheUrl, mRemoteId, featureId),
@@ -836,7 +855,8 @@ public class NGWVectorLayer
 
             result = new JSONObject(data);
             if (!result.has(Constants.JSON_ID_KEY)) {
-                Log.d(Constants.TAG,
+                if(Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG,
                         "Problem sendAttachOnServer(), result has not ID key, result: " +
                         result.toString());
                 syncResult.stats.numIoExceptions++;
@@ -850,7 +870,8 @@ public class NGWVectorLayer
 
         } catch (JSONException | IOException e) {
             e.printStackTrace();
-            Log.d(Constants.TAG, e.getLocalizedMessage());
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, e.getLocalizedMessage());
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -871,12 +892,13 @@ public class NGWVectorLayer
                     "The map should extends MapContentProviderHelper or inherited");
         }
         //update id in DB
-        Log.d(Constants.TAG, "old id: " + oldFeatureId + " new id: " + newFeatureId);
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "old id: " + oldFeatureId + " new id: " + newFeatureId);
         SQLiteDatabase db = map.getDatabase(false);
         ContentValues values = new ContentValues();
         values.put(Constants.FIELD_ID, newFeatureId);
         if (db.update(mPath.getName(), values, Constants.FIELD_ID + " = " + oldFeatureId, null) != 1) {
-            Log.d(Constants.TAG, "failed to set new id");
+            Log.w(Constants.TAG, "failed to set new id");
         }
 
         //update id in cache
@@ -895,14 +917,16 @@ public class NGWVectorLayer
                 int chRes = FeatureChanges.changeFeatureIdForAttaches(
                         mChangeTableName, oldFeatureId, newFeatureId);
                 if (chRes <= 0) {
-                    Log.d(
+                    if(Constants.DEBUG_MODE)
+                        Log.d(
                             Constants.TAG,
                             "Feature ID for attaches not changed, oldFeatureId: " + oldFeatureId +
                                     ", newFeatureId: " + newFeatureId);
                 }
 
             } else {
-                Log.d(Constants.TAG, "rename photo folder " + oldFeatureId + "failed");
+                if(Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG, "rename photo folder " + oldFeatureId + "failed");
             }
         }
     }
@@ -916,7 +940,8 @@ public class NGWVectorLayer
             return false;
         }
 
-        Log.d(Constants.TAG, "The network is available. Get changes from server");
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "The network is available. Get changes from server");
         List<Feature> features;
         // read layer contents as string
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
@@ -984,7 +1009,8 @@ public class NGWVectorLayer
                 reloadCache();
             }
 
-            Log.d(Constants.TAG, "Get " + features.size() + " feature(s) from server");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "Get " + features.size() + " feature(s) from server");
 
             // analyse feature
             for (Feature remoteFeature : features) {
@@ -1005,7 +1031,8 @@ public class NGWVectorLayer
                         //prevent add changes and events
                         uri = uri.buildUpon().fragment(NO_SYNC).build();
                         Uri newFeatureUri = insert(uri, values);
-                        Log.d(
+                        if(Constants.DEBUG_MODE)
+                            Log.d(
                                 Constants.TAG,
                                 "Add new feature from server - " + newFeatureUri.toString());
                     }
@@ -1051,7 +1078,8 @@ public class NGWVectorLayer
                             updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
                             //prevent add changes
                             int count = update(updateUri, values, null, null);
-                            Log.d(
+                            if(Constants.DEBUG_MODE)
+                                Log.d(
                                     Constants.TAG, "Update feature (" + count + ") from server - " +
                                             remoteFeature.getId());
                         }
@@ -1064,7 +1092,8 @@ public class NGWVectorLayer
                                 (eqData || FeatureChanges.isAttachChanges(
                                         mChangeTableName, remoteFeature.getId()))) {
 
-                            Log.d(
+                            if(Constants.DEBUG_MODE)
+                                Log.d(
                                     Constants.TAG, "The feature " + remoteFeature.getId() +
                                             " already changed on server. Remove changes for it");
 
@@ -1142,7 +1171,8 @@ public class NGWVectorLayer
             }
 
             for(long itemId : deleteItems){
-                Log.d(
+                if(Constants.DEBUG_MODE)
+                    Log.d(
                         Constants.TAG,
                         "Delete feature #" + itemId + " not exist on server");
                 delete(itemId, Constants.FIELD_ID + " = " + itemId, null);
@@ -1188,7 +1218,8 @@ public class NGWVectorLayer
                         }
 
                         if (bDeleteChange) {
-                            Log.d(
+                            if(Constants.DEBUG_MODE)
+                                Log.d(
                                     Constants.TAG, "Delete change for feature #" + changeFeatureId +
                                             ", changeOperation " + changeOperation +
                                             ", attachChangeOperation " + attachChangeOperation);
@@ -1204,7 +1235,8 @@ public class NGWVectorLayer
 
         } catch (SQLiteException | ConcurrentModificationException e) {
             syncResult.stats.numConflictDetectedExceptions++;
-            Log.d(Constants.TAG, "proceed getChangesFromServer() failed");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "proceed getChangesFromServer() failed");
             e.printStackTrace();
             return false;
         }
@@ -1226,7 +1258,8 @@ public class NGWVectorLayer
 
         Cursor cursor = query(uri, null, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
-            Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
             if (null != cursor) {
                 cursor.close();
             }
@@ -1236,7 +1269,8 @@ public class NGWVectorLayer
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
-            Log.d(Constants.TAG, "payload: " + payload);
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "payload: " + payload);
             String data = NetworkUtil.post(
                     NGWUtil.getFeaturesUrl(mCacheUrl, mRemoteId), payload,
                     mCacheLogin, mCachePassword);
@@ -1254,7 +1288,8 @@ public class NGWVectorLayer
             return true;
         } catch (SQLiteConstraintException | ClassNotFoundException | JSONException | IOException e) {
             e.printStackTrace();
-            Log.d(Constants.TAG, e.getLocalizedMessage());
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, e.getLocalizedMessage());
             return false;
         }
     }
@@ -1298,7 +1333,8 @@ public class NGWVectorLayer
 
         Cursor cursor = query(uri, null, null, null, null, null);
         if (null == cursor || !cursor.moveToFirst()) {
-            Log.d(Constants.TAG, "empty cursor for uri: " + uri);
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "empty cursor for uri: " + uri);
             if (null != cursor) {
                 cursor.close();
             }
@@ -1308,7 +1344,8 @@ public class NGWVectorLayer
         try {
             String payload = cursorToJson(cursor);
             cursor.close();
-            Log.d(Constants.TAG, "payload: " + payload);
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "payload: " + payload);
             String data = NetworkUtil.put(
                     NGWUtil.getFeatureUrl(mCacheUrl, mRemoteId, featureId), payload, mCacheLogin,
                     mCachePassword);
