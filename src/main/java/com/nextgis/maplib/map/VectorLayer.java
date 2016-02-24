@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -928,7 +928,13 @@ public class VectorLayer
                 Double maxX = bboxMatcher.find() ? Double.parseDouble(bboxMatcher.group()) : null;
                 Double maxY = bboxMatcher.find() ? Double.parseDouble(bboxMatcher.group()) : null;
 
-                GeoEnvelope envelope = new GeoEnvelope(minX, maxX, minY, maxY);
+                GeoEnvelope envelope = new GeoEnvelope();
+
+                if (minX != null && minY != null)
+                    envelope.setMin(minX, minY);
+
+                if (maxX != null && maxY != null)
+                    envelope.setMax(maxX, maxY);
 
                 if (!envelope.isInit()) {
                     throw new SQLiteException("bbox has bad format, " + bboxStr);
@@ -2239,12 +2245,12 @@ public class VectorLayer
         if(Constants.DEBUG_MODE)
             Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
 
-        mAttaches.remove(rowId); // for reload attachMap for feature
+        mAttaches.remove(rowId + ""); // for reload attachMap for feature
 
         boolean needSave = false;
         if (oldRowId != Constants.NOT_FOUND) {
             mCache.changeId(oldRowId, rowId);
-            mAttaches.remove(oldRowId); // for reload attachMap for feature
+            mAttaches.remove(oldRowId + ""); // for reload attachMap for feature
             needSave = true;
         }
 
@@ -2277,8 +2283,7 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(true);
         String[] columns = new String[]{Constants.FIELD_GEOM};
         String selection = Constants.FIELD_ID + " = " + rowId;
-        GeoGeometry geometry = getGeometryFromQuery(columns, selection, db);
-        return geometry;
+        return getGeometryFromQuery(columns, selection, db);
     }
 
     public GeoGeometry getGeometryForId(long rowId, SQLiteDatabase db) {
@@ -2333,8 +2338,7 @@ public class VectorLayer
         String[] columns = new String[]{Constants.FIELD_GEOM_ + zoom};
         String selection = Constants.FIELD_ID + " = " + rowId;
 
-        GeoGeometry geometry = getGeometryFromQuery(columns, selection, db);
-        return geometry;
+        return getGeometryFromQuery(columns, selection, db);
     }
 
     public GeoGeometry getGeometryForId(long rowId, int zoom, SQLiteDatabase db) {
@@ -2362,13 +2366,16 @@ public class VectorLayer
     }
 
     public void hideFeature(long featureId){
-        mIgnoreFeatures.add(featureId);
-        notifyLayerChanged();
+        if (featureId != NOT_FOUND) {
+            mIgnoreFeatures.add(featureId);
+            notifyLayerChanged();
+        }
     }
 
     public void showFeature(long featureId){
-        if(mIgnoreFeatures.isEmpty())
+        if(mIgnoreFeatures.isEmpty() || featureId == NOT_FOUND)
             return;
+
         mIgnoreFeatures.remove(featureId);
         notifyLayerChanged();
     }
@@ -2734,7 +2741,7 @@ public class VectorLayer
 
         while (true) {
             Cursor cursor = queryFirstTempFeatureFlags();
-            Long featureId = null;
+            Long featureId;
 
             if (null != cursor) {
                 int featureIdColumn = cursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
@@ -2770,8 +2777,7 @@ public class VectorLayer
 
         while (true) {
             Cursor cursor = queryFirstTempAttachFlags();
-            Long featureId = null;
-            Long attachId = null;
+            Long featureId, attachId;
 
             if (null != cursor) {
                 int featureIdColumn = cursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
