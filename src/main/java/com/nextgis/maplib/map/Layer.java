@@ -25,22 +25,18 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.util.Log;
-
 import com.nextgis.maplib.api.ILayerView;
 import com.nextgis.maplib.api.IRenderer;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 
-import static com.nextgis.maplib.util.Constants.JSON_MAXLEVEL_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_MINLEVEL_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_VISIBILITY_KEY;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class Layer extends Table
@@ -94,7 +90,7 @@ public class Layer extends Table
     @Override
     public float getMaxZoom()
     {
-        return mMaxZoom == mMinZoom ? GeoConstants.DEFAULT_MAX_ZOOM : mMaxZoom;
+        return Float.compare(mMaxZoom, mMinZoom) == 0 ? GeoConstants.DEFAULT_MAX_ZOOM : mMaxZoom;
     }
 
     @Override
@@ -132,12 +128,12 @@ public class Layer extends Table
     {
         super.fromJSON(jsonObject);
         if (jsonObject.has(JSON_MAXLEVEL_KEY)) {
-            mMaxZoom = jsonObject.getInt(JSON_MAXLEVEL_KEY);
+            mMaxZoom = (float) jsonObject.getDouble(JSON_MAXLEVEL_KEY);
         } else {
             mMaxZoom = GeoConstants.DEFAULT_MAX_ZOOM;
         }
         if (jsonObject.has(JSON_MINLEVEL_KEY)) {
-            mMinZoom = jsonObject.getInt(JSON_MINLEVEL_KEY);
+            mMinZoom = (float) jsonObject.getDouble(JSON_MINLEVEL_KEY);
         } else {
             mMinZoom = GeoConstants.DEFAULT_MIN_ZOOM;
         }
