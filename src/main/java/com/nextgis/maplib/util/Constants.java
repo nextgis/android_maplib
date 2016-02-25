@@ -197,7 +197,7 @@ public interface Constants
     String URI_ATTACH  = "attach";
     String URI_CHANGES = "changes";
 
-    // http://stackoverflow.com/a/24055457/4727406
+    // http://stackoverflow.com/a/24055457
     String URI_PARAMETER_LIMIT    = "limit";
     String URI_PARAMETER_TEMP     = "temp";
     String URI_PARAMETER_NOT_SYNC = "not_sync";

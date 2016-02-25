@@ -104,7 +104,7 @@ public class FileUtil
     }
 
 
-    // http://stackoverflow.com/a/30574112/4727406
+    // http://stackoverflow.com/a/30574112
     public static boolean renameAndDelete(File fileOrDirectory)
     {
         File newFile = new File(

@@ -33,7 +33,6 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
-
 import com.nextgis.maplib.api.GpsEventListener;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.PermissionUtil;
@@ -366,7 +365,7 @@ public class GpsEventSource
         {
         }
 
-        // http://stackoverflow.com/a/20812298/2901140
+        // http://stackoverflow.com/a/20812298
         public void onStatusChanged(
                 String provider,
                 int status,

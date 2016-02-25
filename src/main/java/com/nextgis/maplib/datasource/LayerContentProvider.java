@@ -87,7 +87,7 @@ public class LayerContentProvider
             return null;
         }
 
-        // http://stackoverflow.com/a/24055457/4727406
+        // http://stackoverflow.com/a/24055457
         String limit = uri.getQueryParameter(URI_PARAMETER_LIMIT);
 
         if (layer instanceof VectorLayer) {

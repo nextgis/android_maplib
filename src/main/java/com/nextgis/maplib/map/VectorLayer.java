@@ -1345,7 +1345,7 @@ public class VectorLayer
             Uri uri,
             ContentValues contentValues)
     {
-        // http://stackoverflow.com/a/24055457/4727406
+        // http://stackoverflow.com/a/24055457
         String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
         String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
 
@@ -1504,7 +1504,7 @@ public class VectorLayer
         List<String> pathSegments;
         int result;
 
-        // http://stackoverflow.com/a/24055457/4727406
+        // http://stackoverflow.com/a/24055457
         String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
         String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
 
@@ -1755,7 +1755,7 @@ public class VectorLayer
 
         int result;
 
-        // http://stackoverflow.com/a/24055457/4727406
+        // http://stackoverflow.com/a/24055457
         String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
         String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
 
