@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * The simplify algorithm adopted from simplify-java project under the MIT license
  * Copyright (c) 2013 Heinrich Göbl
@@ -27,6 +27,8 @@
 package com.nextgis.maplib.datasource;
 
 import android.annotation.TargetApi;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.util.JsonReader;
 
@@ -43,7 +45,8 @@ import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WGS84;
 
 
 public class GeoLineString
@@ -651,5 +654,32 @@ public class GeoLineString
     public double distance(GeoGeometry geometry) {
         // TODO: 04.09.15 release this
         return 0;
+    }
+
+    public double getLength() {
+        double length = 0;
+
+        if (mPoints.size() < 2)
+            return length;
+
+        Location location1 = new Location(LocationManager.GPS_PROVIDER);
+        GeoPoint point = (GeoPoint) mPoints.get(0).copy();
+        point.setCRS(CRS_WEB_MERCATOR);
+        point.project(CRS_WGS84);
+        location1.setLongitude(point.getX());
+        location1.setLatitude(point.getY());
+
+        for (int i = 1; i < mPoints.size(); i++) {
+            Location location2 = new Location(LocationManager.GPS_PROVIDER);
+            point = (GeoPoint) mPoints.get(i).copy();
+            point.setCRS(CRS_WEB_MERCATOR);
+            point.project(CRS_WGS84);
+            location2.setLongitude(point.getX());
+            location2.setLatitude(point.getY());
+            length += location1.distanceTo(location2);
+            location1 = location2;
+        }
+
+        return length;
     }
 }

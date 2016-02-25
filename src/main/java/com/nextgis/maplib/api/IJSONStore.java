@@ -26,6 +26,10 @@ package com.nextgis.maplib.api;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * The interface for store and restore state to/from JSON files
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface IJSONStore
 {
     /**

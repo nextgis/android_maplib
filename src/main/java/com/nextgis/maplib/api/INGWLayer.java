@@ -25,6 +25,10 @@ package com.nextgis.maplib.api;
 
 import android.content.SyncResult;
 
+/**
+ * Each NGW layer must implement this interface.
+ * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ */
 public interface INGWLayer
 {
     /**

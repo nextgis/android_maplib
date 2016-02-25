@@ -93,11 +93,9 @@ public class LayerGroup
             return this;
         }
 
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer.getId() == id) {
-                    return layer;
-                }
+        for (ILayer layer : mLayers) {
+            if (layer.getId() == id) {
+                return layer;
             }
         }
         return null;
@@ -115,11 +113,9 @@ public class LayerGroup
             return this;
         }
 
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer.getName().equals(name)) {
-                    return layer;
-                }
+        for (ILayer layer : mLayers) {
+            if (layer.getName().equals(name)) {
+                return layer;
             }
         }
         return null;
@@ -135,11 +131,9 @@ public class LayerGroup
             return this;
         }
 
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer.getPath().getName().equals(name)) {
-                    return layer;
-                }
+        for (ILayer layer : mLayers) {
+            if (layer.getPath().getName().equals(name)) {
+                return layer;
             }
         }
         return null;
@@ -186,7 +180,7 @@ public class LayerGroup
             if (layer instanceof VectorLayer) {
                 VectorLayer vectorLayer = (VectorLayer) layer;
                 if (0 != (types & 1 << vectorLayer.getGeometryType())) {
-                    layerList.add(layer);
+                    layerList.add(0, layer);
                 }
             }
 
@@ -206,10 +200,7 @@ public class LayerGroup
     public void addLayer(ILayer layer)
     {
         if (layer != null) {
-
-            synchronized (mLayers) {
-                mLayers.add(layer);
-            }
+            mLayers.add(layer);
             layer.setParent(this);
             onLayerAdded(layer);
         }
@@ -222,9 +213,7 @@ public class LayerGroup
     {
         if (layer != null) {
 
-            synchronized (mLayers) {
-                mLayers.add(index, layer);
-            }
+            mLayers.add(index, layer);
             layer.setParent(this);
             onLayerAdded(layer);
         }
@@ -237,7 +226,7 @@ public class LayerGroup
     {
         if (layer != null) {
 
-            synchronized (mLayers) {
+            synchronized (this) {
                 mLayers.remove(layer);
                 mLayers.add(newPosition, layer);
             }
@@ -248,7 +237,7 @@ public class LayerGroup
 
     public int removeLayer(ILayer layer)
     {
-        synchronized (mLayers) {
+        synchronized (this) {
             int result = mLayers.size() - 1;
 
             if (layer != null) {
@@ -267,11 +256,11 @@ public class LayerGroup
             mDisplay = display;
         }
 
-        synchronized (mLayers) {
-            if (mLayers.size() == 0) {
-                return;
-            }
+        if (mLayers.size() == 0) {
+            return;
+        }
 
+        //synchronized (this) {
             for (ILayer layer : mLayers) {
                 if (Thread.currentThread().isInterrupted()) {
                     break;
@@ -298,19 +287,17 @@ public class LayerGroup
                     }
                 }
             }
-        }
+        //}
     }
 
 
     @Override
     public void cancelDraw()
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof IRenderer) {
-                    IRenderer renderer = (IRenderer) layer;
-                    renderer.cancelDraw();
-                }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof IRenderer) {
+                IRenderer renderer = (IRenderer) layer;
+                renderer.cancelDraw();
             }
         }
     }
@@ -319,13 +306,11 @@ public class LayerGroup
     @Override
     public boolean isVisible()
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof ILayerView) {
-                    ILayerView layerView = (ILayerView) layer;
-                    if (layerView.isVisible()) {
-                        return true;
-                    }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof ILayerView) {
+                ILayerView layerView = (ILayerView) layer;
+                if (layerView.isVisible()) {
+                    return true;
                 }
             }
         }
@@ -336,12 +321,10 @@ public class LayerGroup
     @Override
     public void setVisible(boolean visible)
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof ILayerView) {
-                    ILayerView layerView = (ILayerView) layer;
-                    layerView.setVisible(visible);
-                }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof ILayerView) {
+                ILayerView layerView = (ILayerView) layer;
+                layerView.setVisible(visible);
             }
         }
     }
@@ -349,22 +332,20 @@ public class LayerGroup
 
     public int getVisibleTopLayerId()
     {
-        synchronized (mLayers) {
-            for (int i = mLayers.size() - 1; i >= 0; i--) {
-                ILayer layer = mLayers.get(i);
-                if (layer instanceof LayerGroup) {
-                    LayerGroup layerGroup = (LayerGroup) layer;
-                    int visibleTopLayerId = layerGroup.getVisibleTopLayerId();
-                    if (Constants.NOT_FOUND != visibleTopLayerId) {
-                        return visibleTopLayerId;
-                    }
+       for (int i = mLayers.size() - 1; i >= 0; i--) {
+            ILayer layer = mLayers.get(i);
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                int visibleTopLayerId = layerGroup.getVisibleTopLayerId();
+                if (Constants.NOT_FOUND != visibleTopLayerId) {
+                    return visibleTopLayerId;
+                }
 
-                } else {
-                    if (layer.isValid() && layer instanceof ILayerView) {
-                        ILayerView layerView = (ILayerView) layer;
-                        if (layerView.isVisible()) {
-                            return layer.getId();
-                        }
+            } else {
+                if (layer.isValid() && layer instanceof ILayerView) {
+                    ILayerView layerView = (ILayerView) layer;
+                    if (layerView.isVisible()) {
+                        return layer.getId();
                     }
                 }
             }
@@ -378,19 +359,17 @@ public class LayerGroup
     {
         int visibleLayerCount = 0;
 
-        synchronized (mLayers) {
-            for (int i = mLayers.size() - 1; i >= 0; i--) {
-                ILayer layer = mLayers.get(i);
-                if (layer instanceof LayerGroup) {
-                    LayerGroup layerGroup = (LayerGroup) layer;
-                    visibleLayerCount += layerGroup.getVisibleLayerCount();
+        for (int i = mLayers.size() - 1; i >= 0; i--) {
+            ILayer layer = mLayers.get(i);
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                visibleLayerCount += layerGroup.getVisibleLayerCount();
 
-                } else {
-                    if (layer.isValid() && layer instanceof ILayerView) {
-                        ILayerView layerView = (ILayerView) layer;
-                        if (layerView.isVisible()) {
-                            ++visibleLayerCount;
-                        }
+            } else {
+                if (layer.isValid() && layer instanceof ILayerView) {
+                    ILayerView layerView = (ILayerView) layer;
+                    if (layerView.isVisible()) {
+                        ++visibleLayerCount;
                     }
                 }
             }
@@ -403,11 +382,9 @@ public class LayerGroup
     @Override
     public boolean delete()
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                layer.setParent(null);
-                layer.delete();
-            }
+        for (ILayer layer : mLayers) {
+            layer.setParent(null);
+            layer.delete();
         }
         return super.delete();
     }
@@ -421,12 +398,10 @@ public class LayerGroup
 
         JSONArray jsonArray = new JSONArray();
         rootConfig.put(JSON_LAYERS_KEY, jsonArray);
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                JSONObject layerObject = new JSONObject();
-                layerObject.put(JSON_PATH_KEY, layer.getPath().getName());
-                jsonArray.put(layerObject);
-            }
+        for (ILayer layer : mLayers) {
+            JSONObject layerObject = new JSONObject();
+            layerObject.put(JSON_PATH_KEY, layer.getPath().getName());
+            jsonArray.put(layerObject);
         }
         return rootConfig;
     }
@@ -434,15 +409,13 @@ public class LayerGroup
 
     public void clearLayers()
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof LayerGroup) {
-                    ((LayerGroup) layer).clearLayers();
-                }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof LayerGroup) {
+                ((LayerGroup) layer).clearLayers();
             }
-
-            mLayers.clear();
         }
+
+        mLayers.clear();
     }
 
 
@@ -484,11 +457,9 @@ public class LayerGroup
         setOnAllLayersAddedListener(new OnAllLayersAddedListener() {
             @Override
             public void onAllLayersAdded(List<ILayer> layers) {
-                synchronized (mLayers) {
-                    for (ILayer layer : mLayers) {
+                for (ILayer layer : mLayers) {
                         layer.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
                         setOnAllLayersAddedListener(null);
-                    }
                 }
             }
         });
@@ -520,12 +491,10 @@ public class LayerGroup
 
     protected void onLayerDeleted(int id)
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer.getId() == id) {
-                    mLayers.remove(layer);
-                    break;
-                }
+        for (ILayer layer : mLayers) {
+            if (layer.getId() == id) {
+                mLayers.remove(layer);
+                break;
             }
         }
 
@@ -577,7 +546,7 @@ public class LayerGroup
     @Override
     public boolean save()
     {
-        synchronized (mLayers) {
+        synchronized (this) {
             for (ILayer layer : mLayers) {
                 layer.save();
             }
@@ -620,12 +589,10 @@ public class LayerGroup
     {
         super.setViewSize(w, h);
 
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof ILayerView) {
-                    ILayerView lv = (ILayerView) layer;
-                    lv.setViewSize(w, h);
-                }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof ILayerView) {
+                ILayerView lv = (ILayerView) layer;
+                lv.setViewSize(w, h);
             }
         }
     }
@@ -633,18 +600,16 @@ public class LayerGroup
 
     public boolean isChanges()
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof LayerGroup) {
-                    LayerGroup layerGroup = (LayerGroup) layer;
-                    if (layerGroup.isChanges()) {
-                        return true;
-                    }
-                } else if (layer instanceof VectorLayer) {
-                    VectorLayer vectorLayer = (VectorLayer) layer;
-                    if (vectorLayer.isChanges()) {
-                        return true;
-                    }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                if (layerGroup.isChanges()) {
+                    return true;
+                }
+            } else if (layer instanceof VectorLayer) {
+                VectorLayer vectorLayer = (VectorLayer) layer;
+                if (vectorLayer.isChanges()) {
+                    return true;
                 }
             }
         }
@@ -654,18 +619,16 @@ public class LayerGroup
 
     public boolean haveFeaturesNotSyncFlag()
     {
-        synchronized (mLayers) {
-            for (ILayer layer : mLayers) {
-                if (layer instanceof LayerGroup) {
-                    LayerGroup layerGroup = (LayerGroup) layer;
-                    if (layerGroup.haveFeaturesNotSyncFlag()) {
-                        return true;
-                    }
-                } else if (layer instanceof VectorLayer) {
-                    VectorLayer vectorLayer = (VectorLayer) layer;
-                    if (vectorLayer.haveFeaturesNotSyncFlag()) {
-                        return true;
-                    }
+        for (ILayer layer : mLayers) {
+            if (layer instanceof LayerGroup) {
+                LayerGroup layerGroup = (LayerGroup) layer;
+                if (layerGroup.haveFeaturesNotSyncFlag()) {
+                    return true;
+                }
+            } else if (layer instanceof VectorLayer) {
+                VectorLayer vectorLayer = (VectorLayer) layer;
+                if (vectorLayer.haveFeaturesNotSyncFlag()) {
+                    return true;
                 }
             }
         }

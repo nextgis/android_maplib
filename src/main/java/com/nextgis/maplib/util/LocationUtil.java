@@ -46,6 +46,7 @@ public class LocationUtil
     public static String formatLatitude(
             double latitude,
             int outputType,
+            int fraction,
             Resources res)
     {
         String direction = (String) res.getText(R.string.N);
@@ -55,13 +56,14 @@ public class LocationUtil
             latitude = -latitude;
         }
 
-        return formatCoordinate(latitude, outputType) + " " + direction;
+        return formatCoordinate(latitude, outputType, fraction) + " " + direction;
     }
 
 
     public static String formatLongitude(
             double longitude,
             int outputType,
+            int fraction,
             Resources res)
     {
         String direction = (String) res.getText(R.string.E);
@@ -71,21 +73,24 @@ public class LocationUtil
             longitude = -longitude;
         }
 
-        return formatCoordinate(longitude, outputType) + " " + direction;
+        return formatCoordinate(longitude, outputType, fraction) + " " + direction;
     }
 
 
     public static String formatCoordinate(
             double coordinate,
-            int outputType)
+            int outputType,
+            int fraction)
     {
         StringBuilder sb = new StringBuilder();
         char endChar = DEGREE_CHAR;
+        String appendix = "";
+        for (int i = 0; i < fraction; i++)
+            appendix += "0";
 
-        DecimalFormat df = new DecimalFormat("###.######");
+        DecimalFormat df = new DecimalFormat("###." + appendix);
         if (outputType == Location.FORMAT_MINUTES || outputType == Location.FORMAT_SECONDS) {
-
-            df = new DecimalFormat("##.###");
+            df = new DecimalFormat("##." + appendix);
 
             int degrees = (int) Math.floor(coordinate);
             sb.append(degrees);
@@ -95,8 +100,7 @@ public class LocationUtil
             coordinate *= 60.0;
 
             if (outputType == Location.FORMAT_SECONDS) {
-
-                df = new DecimalFormat("##.##");
+                df = new DecimalFormat("##." + appendix);
 
                 int minutes = (int) Math.floor(coordinate);
                 sb.append(minutes);
