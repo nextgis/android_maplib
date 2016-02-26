@@ -165,7 +165,7 @@ public class RemoteTMSLayer
                 putBitmapToCache(tile.getHash(), ret);
                 if(System.currentTimeMillis() - tilePath.lastModified() > mTileMaxAge) {
                     if(Constants.DEBUG_MODE)
-                        Log.d(Constants.TAG, "Update old tile " + tile.toString());
+                        Log.d(Constants.TAG, "Update old tile " + tile.toString() + " tile date:" + tilePath.lastModified() + " current date:" + System.currentTimeMillis());
                     // update tile
                     new Thread(new Runnable() {
                         public void run() {
@@ -288,7 +288,7 @@ public class RemoteTMSLayer
     }
 
 
-    protected synchronized String getURLSubdomain()
+    protected String getURLSubdomain()
     {
         String result = mURL;
 
