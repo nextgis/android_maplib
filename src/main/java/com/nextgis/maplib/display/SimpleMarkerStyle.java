@@ -23,6 +23,8 @@
 package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
+import android.graphics.Path;
+
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -50,11 +52,14 @@ public class SimpleMarkerStyle
     protected float mSize;
     protected float mWidth;
     protected int   mOutColor;
+    protected Paint mOutPaint;
+    protected Paint mFillPaint;
 
 
     public SimpleMarkerStyle()
     {
         super();
+        initPaints();
     }
 
 
@@ -65,10 +70,30 @@ public class SimpleMarkerStyle
             int type)
     {
         super(fillColor);
+
         mType = type;
         mSize = size;
         mOutColor = outColor;
         mWidth = 1;
+
+        initPaints();
+        setPaintsColors();
+    }
+
+
+    private void initPaints() {
+        mFillPaint = new Paint();
+        mFillPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        mOutPaint = new Paint();
+        mOutPaint.setStyle(Paint.Style.STROKE);
+        mOutPaint.setAntiAlias(true);
+    }
+
+
+    private void setPaintsColors() {
+        mFillPaint.setColor(mColor);
+        mOutPaint.setColor(mOutColor);
     }
 
 
@@ -93,30 +118,34 @@ public class SimpleMarkerStyle
             return;
         }
 
+        float scaledSize = (float) (mSize / display.getScale());
         switch (mType) {
             case MarkerStylePoint:
                 drawPointMarker(pt, display);
                 break;
 
             case MarkerStyleCircle:
-                drawCircleMarker(pt, display);
+                drawCircleMarker(scaledSize, pt, display);
                 break;
 
             case MarkerStyleDiamond:
+                drawDiamondMarker(scaledSize, pt, display);
                 break;
 
             case MarkerStyleCross:
+                // TODO
                 break;
 
             case MarkerStyleTriangle:
+                drawTriangleMarker(scaledSize, pt, display);
                 break;
 
             case MarkerStyleBox:
-                drawBoxMarker(pt, display);
+                drawBoxMarker(scaledSize, pt, display);
                 break;
 
             case MarkerStyleCrossedBox:
-                drawCrossedBoxMarker(pt, display);
+                drawCrossedBoxMarker(scaledSize, pt, display);
                 break;
         }
     }
@@ -149,84 +178,87 @@ public class SimpleMarkerStyle
             GeoPoint pt,
             GISDisplay display)
     {
-        Paint paint = new Paint();
-        paint.setColor(mColor);
-        paint.setStrokeWidth((float) (mSize / display.getScale()));
-        paint.setStrokeCap(Paint.Cap.ROUND);
-        paint.setAntiAlias(true);
-
-        display.drawPoint((float) pt.getX(), (float) pt.getY(), paint);
+        mOutPaint.setColor(mColor);
+        mOutPaint.setStrokeWidth((float) (mSize / display.getScale()));
+        display.drawPoint((float) pt.getX(), (float) pt.getY(), mOutPaint);
+        mOutPaint.setColor(mOutColor);
     }
 
 
     protected void drawCircleMarker(
-            GeoPoint pt,
+            float scaledSize, GeoPoint pt,
             GISDisplay display)
     {
-        float scaledSize = (float) (mSize / display.getScale());
-
-        Paint fillPaint = new Paint();
-        fillPaint.setColor(mColor);
-        fillPaint.setStrokeCap(Paint.Cap.ROUND);
-
         if (scaledSize < 2) {
-            fillPaint.setStrokeWidth(scaledSize);
-            display.drawCircle((float) pt.getX(), (float) pt.getY(), fillPaint);
+            mOutPaint.setColor(mColor);
+            mOutPaint.setStrokeWidth(scaledSize);
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), mOutPaint);
         } else
-            display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, mFillPaint);
 
-        Paint outPaint = new Paint();
-        outPaint.setColor(mOutColor);
-        outPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-        outPaint.setStyle(Paint.Style.STROKE);
-        outPaint.setAntiAlias(true);
+        mOutPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        if (scaledSize >= 2) {
+            mOutPaint.setColor(mOutColor);
+            display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
+        }
+    }
 
-        if (scaledSize >= 2)
-            display.drawCircle((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
+
+    protected void drawDiamondMarker(
+            float scaledSize, GeoPoint pt,
+            GISDisplay display)
+    {
+        Path path = new Path();
+        path.moveTo((float) pt.getX() + scaledSize, (float) pt.getY());
+        path.lineTo((float) pt.getX(), (float) pt.getY() + scaledSize);
+        path.lineTo((float) pt.getX() - scaledSize, (float) pt.getY());
+        path.lineTo((float) pt.getX(), (float) pt.getY() - scaledSize);
+        path.close();
+
+        drawPath(path, display);
+    }
+
+
+    protected void drawTriangleMarker(
+            float scaledSize, GeoPoint pt,
+            GISDisplay display)
+    {
+        Path path = new Path();
+        path.moveTo((float) pt.getX() + scaledSize, (float) pt.getY() - scaledSize);
+        path.lineTo((float) pt.getX(), (float) pt.getY() + scaledSize);
+        path.lineTo((float) pt.getX() - scaledSize, (float) pt.getY() - scaledSize);
+        path.close();
+
+        drawPath(path, display);
+    }
+
+
+    protected void drawPath(Path path, GISDisplay display) {
+        display.drawPath(path, mFillPaint);
+        mOutPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        display.drawPath(path, mOutPaint);
     }
 
 
     protected void drawBoxMarker(
-            GeoPoint pt,
+            float scaledSize, GeoPoint pt,
             GISDisplay display)
     {
-        float scaledSize = (float) (mSize / display.getScale());
+        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mFillPaint);
 
-        Paint fillPaint = new Paint();
-        fillPaint.setColor(mColor);
-        fillPaint.setStrokeCap(Paint.Cap.ROUND);
-
-        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
-
-        Paint outPaint = new Paint();
-        outPaint.setColor(mOutColor);
-        outPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-        outPaint.setStyle(Paint.Style.STROKE);
-        outPaint.setAntiAlias(true);
-
-        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
+        mOutPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
     }
 
 
     protected void drawCrossedBoxMarker(
-            GeoPoint pt,
+            float scaledSize, GeoPoint pt,
             GISDisplay display)
     {
-        float scaledSize = (float) (mSize / display.getScale());
+        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mFillPaint);
 
-        Paint fillPaint = new Paint();
-        fillPaint.setColor(mColor);
-        fillPaint.setStrokeCap(Paint.Cap.ROUND);
-
-        display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, fillPaint);
-
-        Paint outPaint = new Paint();
-        outPaint.setColor(mOutColor);
-        outPaint.setStrokeWidth((float) (mWidth / display.getScale()));
-        outPaint.setStyle(Paint.Style.STROKE);
-        outPaint.setAntiAlias(true);
-
-        display.drawCrossedBox((float) pt.getX(), (float) pt.getY(), scaledSize, outPaint);
+        mOutPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        display.drawCrossedBox((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
     }
 
 
@@ -301,5 +333,6 @@ public class SimpleMarkerStyle
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
         mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
+        setPaintsColors();
     }
 }
