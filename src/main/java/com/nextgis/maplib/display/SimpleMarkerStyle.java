@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -81,7 +81,7 @@ public class SimpleMarkerStyle
     }
 
 
-    private void initPaints() {
+    protected void initPaints() {
         mFillPaint = new Paint();
         mFillPaint.setStrokeCap(Paint.Cap.ROUND);
 
@@ -91,7 +91,7 @@ public class SimpleMarkerStyle
     }
 
 
-    private void setPaintsColors() {
+    protected void setPaintsColors() {
         mFillPaint.setColor(mColor);
         mOutPaint.setColor(mOutColor);
     }
@@ -304,9 +304,16 @@ public class SimpleMarkerStyle
     }
 
 
-    public void setOutlineColor(int outColor)
-    {
+    public void setOutlineColor(int outColor) {
         mOutColor = outColor;
+        setPaintsColors();
+    }
+
+
+    @Override
+    public void setColor(int color) {
+        super.setColor(color);
+        setPaintsColors();
     }
 
 
