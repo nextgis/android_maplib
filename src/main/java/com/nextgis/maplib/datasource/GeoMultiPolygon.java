@@ -171,6 +171,21 @@ public class GeoMultiPolygon
         return new GeoMultiPolygon();
     }
 
+    public void closeRings() {
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                ((GeoPolygon) polygon).closeRings();
+    }
+
+    public boolean isSelfIntersects() {
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                if (((GeoPolygon) polygon).isSelfIntersects())
+                    return true;
+
+        return false;
+    }
+
     public double getPerimeter() {
         double length = 0;
 

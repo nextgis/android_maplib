@@ -53,7 +53,9 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.GeoMultiPoint;
+import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
+import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.GeometryRTree;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
@@ -706,6 +708,11 @@ public class VectorLayer
             }
         }
         else {
+            if (geometry.getType() == GeoConstants.GTPolygon)
+                ((GeoPolygon) geometry).closeRings();
+            else if (geometry.getType() == GeoConstants.GTMultiPolygon)
+                ((GeoMultiPolygon) geometry).closeRings();
+
             for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM; zoom > GeoConstants.DEFAULT_MIN_ZOOM; zoom -= 2) {
                 GeoGeometry newGeometry = geometry.simplify(MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX); // 4 pixels;
                 if(null == newGeometry)
