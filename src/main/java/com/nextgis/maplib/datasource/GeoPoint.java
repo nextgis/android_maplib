@@ -34,6 +34,7 @@ import org.json.JSONException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Locale;
 
 import static com.nextgis.maplib.util.GeoConstants.*;
 
@@ -209,10 +210,11 @@ public class GeoPoint
     public String toWKT(boolean full)
     {
         if (full) {
-            return "POINT ( " + mX + " " + mY + " )";
+            return String.format(Locale.US, "POINT (%.8f %.8f)", mX, mY);//"POINT ( " + mX + " " + mY + " )";
         } else {
-            return mX + " " + mY;
+            return String.format(Locale.US, "%.8f %.8f", mX, mY);//mX + " " + mY;
         }
+
     }
 
 

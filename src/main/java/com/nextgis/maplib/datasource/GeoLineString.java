@@ -210,12 +210,11 @@ public class GeoLineString
         } else {
             buf.append("(");
             for (int i = 0; i < mPoints.size(); i++) {
-                if (i > 0) {
-                    buf.append(", ");
-                }
                 GeoPoint pt = mPoints.get(i);
                 buf.append(pt.toWKT(false));
+                buf.append(", ");
             }
+            buf.append(mPoints.get(0).toWKT(false));
             buf.append(")");
         }
         return buf.toString();
