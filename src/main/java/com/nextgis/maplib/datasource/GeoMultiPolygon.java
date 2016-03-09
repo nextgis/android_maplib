@@ -186,6 +186,15 @@ public class GeoMultiPolygon
         return false;
     }
 
+    public boolean isHolesInside() {
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                if (!((GeoPolygon) polygon).isHolesInside())
+                    return false;
+
+        return true;
+    }
+
     public double getPerimeter() {
         double length = 0;
 

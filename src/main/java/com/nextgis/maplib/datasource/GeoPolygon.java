@@ -475,6 +475,44 @@ public class GeoPolygon
         return false;
     }
 
+    public boolean isHolesInside() {
+        closeRing(mOuterRing);
+
+        for (GeoLinearRing ring: mInnerRings) {
+            closeRing(ring);
+
+            if (!mOuterRing.getEnvelope().contains(ring.getEnvelope()))
+                return false;
+
+            for (int i = 0; i < ring.getPointCount(); i++)
+                if (!contains(ring.getPoint(i)))
+                    return false;
+        }
+
+        return true;
+    }
+
+    // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+    // http://stackoverflow.com/a/2922778/2088273
+    public boolean contains(GeoPoint point) {
+        int i, j;
+        double vertiy, vertix, vertjy, vertjx;
+        boolean c = false;
+
+        for (i = 0, j = mOuterRing.getPointCount() - 1; i < mOuterRing.getPointCount(); j = i++) {
+            vertix = mOuterRing.getPoints().get(i).getX();
+            vertiy = mOuterRing.getPoints().get(i).getY();
+            vertjx = mOuterRing.getPoints().get(j).getX();
+            vertjy = mOuterRing.getPoints().get(j).getY();
+
+            if (((vertiy > point.getY()) != (vertjy > point.getY())) &&
+                    (point.getX() < (vertjx - vertix) * (point.getY() - vertiy) / (vertjy - vertiy) + vertix))
+                c = !c;
+        }
+
+        return c;
+    }
+
     public double getPerimeter() {
         if (mOuterRing != null)
             return mOuterRing.getLength();
