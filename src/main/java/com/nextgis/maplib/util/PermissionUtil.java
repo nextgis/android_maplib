@@ -23,14 +23,22 @@ package com.nextgis.maplib.util;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.util.Log;
 
 public final class PermissionUtil {
 
     public static boolean hasPermission(Context context, String permission) {
+
         PackageManager pm = context.getPackageManager();
-        if(pm == null)
+        if(pm == null) {
+            if(Constants.DEBUG_MODE)
+                Log.d(Constants.TAG, "Permission " + permission + " is not granted");
             return false;
+        }
         int hasPerm = pm.checkPermission(permission, context.getPackageName());
+        if(Constants.DEBUG_MODE)
+            Log.d(Constants.TAG, "Permission " + permission + " is " +
+                    (hasPerm == PackageManager.PERMISSION_GRANTED ? "granted" : "not granted"));
         return hasPerm == PackageManager.PERMISSION_GRANTED;
     }
 
