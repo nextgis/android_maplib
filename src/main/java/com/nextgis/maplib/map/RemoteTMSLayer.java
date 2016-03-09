@@ -73,7 +73,7 @@ public class RemoteTMSLayer
     protected       Semaphore    mAvailable;
     protected long mTileMaxAge;
 
-    public final static long DELAY = 2150;
+    public final static long DELAY = NetworkUtil.TIMEOUT_SOCKET + NetworkUtil.TIMEOUT_CONNECTION;
 
 
     public RemoteTMSLayer(

@@ -436,8 +436,8 @@ public class NGWVectorLayer
 
     @Override
     public void create(int geometryType, List<Field> fields) throws SQLiteException {
-        if(geometryType < 4 && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) // to multi
-            geometryType += 3;
+//        if(geometryType < 4 && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) // to multi
+//            geometryType += 3;
 
         super.create(geometryType, fields);
         FeatureChanges.initialize(mChangeTableName);

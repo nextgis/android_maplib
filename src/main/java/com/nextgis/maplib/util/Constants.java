@@ -36,7 +36,7 @@ public interface Constants
     /**
      * HTTP parameters
      */
-    String APP_USER_AGENT     = "NextGIS Mobile maplib v2.3.1";
+    String APP_USER_AGENT     = "NextGIS Mobile maplib v2.4";
     int    IO_BUFFER_SIZE     = 32 * 1024; // 32k
     int    MAX_CONTENT_LENGTH = 5 * 1024 * 1024; //5Mb
 
