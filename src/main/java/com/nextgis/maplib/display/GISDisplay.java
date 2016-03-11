@@ -148,8 +148,8 @@ public class GISDisplay
         mDoubleBufferBitmap = Bitmap.createBitmap(
                 (int) (w * OFFSCREEN_EXTRASIZE_RATIO), (int) (h * OFFSCREEN_EXTRASIZE_RATIO),
                 Bitmap.Config.ARGB_8888);
-
-        mDoubleBufferCanvas = new Canvas(mDoubleBufferBitmap);
+        if(null != mDoubleBufferBitmap)
+            mDoubleBufferCanvas = new Canvas(mDoubleBufferBitmap);
 
         //default zoom and center
         setZoomAndCenter(mZoomLevel, mCenter);
