@@ -1,9 +1,10 @@
 /*
- * Project: Forest violations
- * Purpose: Mobile application for registering facts of the forest violations.
- * Author:  Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Project:  NextGIS Mobile
+ * Purpose:  Mobile GIS for Android.
+ * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,17 +22,46 @@
 
 package com.nextgis.maplib.util;
 
+import android.content.Context;
+import android.net.Uri;
+
 import com.nextgis.maplib.datasource.GeoEnvelope;
-import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.TileItem;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
-/**
- * Created by bishop on 20.08.15.
- */
 public class MapUtil {
+    private static final long MAX_INTERNAL_CACHE_SIZE = 1048576; // 1MB
+    private static final long MAX_EXTERNAL_CACHE_SIZE = 5242880; // 5MB
+
+    public static File prepareTempDir(Context context, String path) {
+        boolean clearCached;
+        File temp = context.getExternalCacheDir();
+
+        if (temp == null) {
+            temp = context.getCacheDir();
+            clearCached = FileUtil.getDirectorySize(temp) > MAX_INTERNAL_CACHE_SIZE;
+        } else {
+            clearCached = FileUtil.getDirectorySize(temp) > MAX_EXTERNAL_CACHE_SIZE;
+        }
+
+        if (clearCached)
+            FileUtil.deleteRecursive(temp);
+
+        if (path != null)
+            temp = new File(temp, path);
+
+        FileUtil.createDir(temp);
+        return temp;
+    }
+
     public static double lg(double x)
     {
         return Math.log(x) / Math.log(2.0);
@@ -125,6 +155,33 @@ public class MapUtil {
         }
 
         return result;
+    }
+
+    public static boolean isZippedGeoJSON(Context context, AtomicReference<Uri> uri) {
+        try {
+            InputStream inputStream = context.getContentResolver().openInputStream(uri.get());
+            if (inputStream == null)
+                return false;
+
+            byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+            ZipInputStream zis = new ZipInputStream(inputStream);
+            ZipEntry ze;
+
+            while ((ze = zis.getNextEntry()) != null) {
+                if (ze.getName().toLowerCase().endsWith(".geojson")) {
+                    File temp = prepareTempDir(context, null);
+                    FileUtil.unzipEntry(zis, ze, buffer, temp);
+                    temp = new File(temp, ze.getName());
+                    uri.set(Uri.fromFile(temp));
+                    zis.closeEntry();
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
 }
