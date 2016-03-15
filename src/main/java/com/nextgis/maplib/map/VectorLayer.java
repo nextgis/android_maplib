@@ -27,6 +27,7 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
@@ -2966,5 +2967,9 @@ public class VectorLayer
             boolean flag)
     {
         return setFeatureNotSyncFlag(featureId, flag) + setAttachesNotSyncFlag(featureId, flag);
+    }
+
+    public SharedPreferences getPreferences() {
+        return mContext.getSharedPreferences(getPath().getName(), Context.MODE_PRIVATE);
     }
 }
