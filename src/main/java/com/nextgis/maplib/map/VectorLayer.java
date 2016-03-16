@@ -2323,10 +2323,15 @@ public class VectorLayer
             String sortOrder = FIELD_ID + " DESC";
             Cursor cursor = query(columns, null, null, sortOrder, "1");
             if(null != cursor) {
-                if (cursor.moveToFirst()) {
-                    mUniqId = cursor.getLong(0) + 1;
+                try {
+                    if (cursor.moveToFirst()) {
+                        mUniqId = cursor.getLong(0) + 1;
+                    }
+                } catch (Exception e) {
+                    //Log.d(TAG, e.getLocalizedMessage());
+                } finally {
+                    cursor.close();
                 }
-                cursor.close();
             }
         }
 
