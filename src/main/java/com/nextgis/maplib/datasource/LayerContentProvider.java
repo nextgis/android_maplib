@@ -66,7 +66,7 @@ public class LayerContentProvider
 
 
     /**
-     * Query may be with LIMIT. See http://stackoverflow.com/a/24055457/4727406
+     * Query may be with LIMIT. See http://stackoverflow.com/a/24055457
      * <p/>
      * Example:
      * <pre>{@code

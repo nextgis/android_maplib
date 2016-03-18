@@ -25,10 +25,8 @@ package com.nextgis.maplib.datasource;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.util.JsonReader;
-
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -493,7 +491,7 @@ public class GeoPolygon
     }
 
     // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-    // http://stackoverflow.com/a/2922778/2088273
+    // http://stackoverflow.com/a/2922778
     public boolean contains(GeoPoint point) {
         int i, j;
         double vertiy, vertix, vertjy, vertjx;
