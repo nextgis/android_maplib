@@ -89,7 +89,8 @@ public class SimpleFeatureRenderer
         final double zoom = display.getZoomLevel();
 
         GeoEnvelope env = display.getBounds();
-        final VectorLayer vectorLayer = (VectorLayer) mLayer;
+
+        final VectorLayer vectorLayer = (VectorLayer) getLayer();
 
         //GeoEnvelope layerEnv = vectorLayer.getExtents();
         //if (null == layerEnv || !env.intersects(layerEnv)) {
@@ -126,7 +127,7 @@ public class SimpleFeatureRenderer
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
 
-            Log.d(TAG, "Vector layer " + mLayer.getName() + " prepare time: " + elapsedTime);
+            Log.d(TAG, "Vector layer " + vectorLayer.getName() + " prepare time: " + elapsedTime);
         }
 
         // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
@@ -189,7 +190,7 @@ public class SimpleFeatureRenderer
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
 
-            Log.d(TAG, "Vector layer " + mLayer.getName() + " exec time: " + elapsedTime);
+            Log.d(TAG, "Vector layer " + vectorLayer.getName() + " exec time: " + elapsedTime);
         }
     }
 

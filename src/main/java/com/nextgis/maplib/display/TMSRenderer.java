@@ -29,14 +29,12 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.util.Log;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.map.RemoteTMSLayer;
 import com.nextgis.maplib.map.TMSLayer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.MapUtil;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -49,11 +47,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME;
-import static com.nextgis.maplib.util.Constants.KEEP_ALIVE_TIME_UNIT;
-import static com.nextgis.maplib.util.Constants.TAG;
-import static com.nextgis.maplib.util.Constants.TERMINATE_TIME;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class TMSRenderer
@@ -223,7 +217,7 @@ public class TMSRenderer
 
 
         //get tiled for zoom and bounds
-        final TMSLayer tmsLayer = (TMSLayer) mLayer;
+        final TMSLayer tmsLayer = (TMSLayer) getLayer();
 
         if (tmsLayer instanceof RemoteTMSLayer) {
             RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer) tmsLayer;
@@ -319,7 +313,7 @@ public class TMSRenderer
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
 
-            Log.d(TAG, "Raster layer " + mLayer.getName() + " exec time: " + elapsedTime);
+            Log.d(TAG, "Raster layer " + tmsLayer.getName() + " exec time: " + elapsedTime);
         }
     }
 

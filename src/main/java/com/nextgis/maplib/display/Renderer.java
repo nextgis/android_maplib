@@ -27,22 +27,36 @@ import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IRenderer;
 
+import java.lang.ref.WeakReference;
+
 
 public abstract class Renderer
-        implements IJSONStore, IRenderer
+        implements IJSONStore,
+                   IRenderer
 {
+    protected static int mCPUTotalCount;
 
-    protected static int    mCPUTotalCount;
-    protected final  ILayer mLayer;
+    // for avoid circular references and memory leak
+    protected final WeakReference<ILayer> mLayerRef;
 
 
     public Renderer(ILayer layer)
     {
-        mLayer = layer;
+        mLayerRef = new WeakReference<>(layer);
 
         mCPUTotalCount = Runtime.getRuntime().availableProcessors() * 8;
         if (mCPUTotalCount < 1) {
             mCPUTotalCount = 1;
         }
+    }
+
+
+    ILayer getLayer()
+    {
+        ILayer layer = mLayerRef.get();
+        if (null == layer) {
+            throw new IllegalStateException("getLayer() == null, illegal state of struct");
+        }
+        return layer;
     }
 }

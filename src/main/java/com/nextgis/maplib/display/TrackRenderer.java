@@ -31,12 +31,10 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.map.TrackLayer;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -74,15 +72,18 @@ public class TrackRenderer
 
     }
 
-    public void setEndingMarker(int drawableResId) {
-        mEndingMarker = BitmapFactory.decodeResource(mLayer.getContext().getResources(), drawableResId);
+
+    public void setEndingMarker(int drawableResId)
+    {
+        mEndingMarker =
+                BitmapFactory.decodeResource(getLayer().getContext().getResources(), drawableResId);
     }
 
 
     @Override
     public void runDraw(GISDisplay display)
     {
-        final TrackLayer layer = (TrackLayer) mLayer;
+        final TrackLayer layer = (TrackLayer) getLayer();
 
         mPaint.setColor(layer.getColor());
         mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
