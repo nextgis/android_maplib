@@ -31,7 +31,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.text.TextUtils;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.datasource.GeoLineString;
@@ -137,10 +136,16 @@ public class TrackLayer
         mUriMatcher.addURI(mAuthority, TABLE_TRACKS + "/#", TYPE_SINGLE_TRACK);
         mUriMatcher.addURI(mAuthority, TABLE_TRACKPOINTS, TYPE_TRACKPOINTS);
 
-        CONTENT_TYPE = "vnd.android.cursor.dir/vnd." + mAuthority + "." + TABLE_TRACKS;
-        CONTENT_TYPE_TRACKPOINTS =
-                "vnd.android.cursor.dir/vnd." + mAuthority + "." + TABLE_TRACKPOINTS;
-        CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd." + mAuthority + "." + TABLE_TRACKS;
+        if (null == CONTENT_TYPE) {
+            CONTENT_TYPE = "vnd.android.cursor.dir/vnd." + mAuthority + "." + TABLE_TRACKS;
+        }
+        if (null == CONTENT_TYPE_TRACKPOINTS) {
+            CONTENT_TYPE_TRACKPOINTS =
+                    "vnd.android.cursor.dir/vnd." + mAuthority + "." + TABLE_TRACKPOINTS;
+        }
+        if (null == CONTENT_ITEM_TYPE) {
+            CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd." + mAuthority + "." + TABLE_TRACKS;
+        }
 
         initDB();
 
