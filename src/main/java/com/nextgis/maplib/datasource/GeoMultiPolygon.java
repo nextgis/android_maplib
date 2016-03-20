@@ -195,6 +195,15 @@ public class GeoMultiPolygon
         return true;
     }
 
+    public boolean isHolesIntersect() {
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                if (((GeoPolygon) polygon).isHolesIntersect())
+                    return true;
+
+        return false;
+    }
+
     public double getPerimeter() {
         double length = 0;
 

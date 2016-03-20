@@ -294,6 +294,58 @@ public class GeoLineString
         return false;
     }
 
+    // https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/
+    /**
+     * Detects line ab and cd intersection
+     * @param   a   Start first line point point
+     * @param   b   End first line point
+     * @param   c   Start second line point
+     * @param   d   End second line point
+     * @return      Do lines intersect
+     */
+    public boolean intersects(GeoPoint a, GeoPoint b, GeoPoint c, GeoPoint d) {
+        double A1 = b.getY() - a.getY();
+        double B1 = a.getX() - b.getX();
+        double C1 = A1 * a.getX() + B1 * a.getY();
+
+        return intersects(a, b, c, d, A1, B1, C1);
+    }
+
+    /**
+     * Detects line ab and cd intersection
+     * @param   a   Start first line point point
+     * @param   b   End first line point
+     * @param   c   Start second line point
+     * @param   d   End second line point
+     * @param   A1  For speed, see method above
+     * @param   B1  For speed, see method above
+     * @param   C1  For speed, see method above
+     * @return      Do lines intersect
+     */
+    public boolean intersects(GeoPoint a, GeoPoint b, GeoPoint c, GeoPoint d, double A1, double B1, double C1) {
+        double A2 = d.getY() - c.getY();
+        double B2 = c.getX() - d.getX();
+        double C2 = A2 * c.getX() + B2 * c.getY();
+
+        double det = A1 * B2 - A2 * B1;
+        if (det != 0) {
+            double x = (B2 * C1 - B1 * C2) / det;
+            double y = (A1 * C2 - A2 * C1) / det;
+
+            boolean xOnAB = Math.min(a.getX(), b.getX()) <= x && x <= Math.max(a.getX(), b.getX());
+            boolean yOnAB = Math.min(a.getY(), b.getY()) <= y && y <= Math.max(a.getY(), b.getY());
+
+            if (xOnAB && yOnAB) {
+                boolean xOnCD = Math.min(c.getX(), d.getX()) <= x && x <= Math.max(c.getX(), d.getX());
+                boolean yOnCD = Math.min(c.getY(), d.getY()) <= y && y <= Math.max(c.getY(), d.getY());
+
+                if (xOnCD && yOnCD)
+                    return true;
+            }
+        }
+
+        return false;
+    }
 
     protected boolean linesIntersect(
             double x1,

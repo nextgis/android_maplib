@@ -442,6 +442,15 @@ public class GeoPolygon
         return true;
     }
 
+    public boolean isHolesIntersect() {
+        for (int i = 0; i < mInnerRings.size() - 1; i++)
+            for (int j = i + 1; j < mInnerRings.size(); j++)
+                if (mInnerRings.get(i).intersects(mInnerRings.get(j)))
+                    return true;
+
+        return false;
+    }
+
     // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
     // http://stackoverflow.com/a/2922778/2088273
     public boolean contains(GeoPoint point) {
