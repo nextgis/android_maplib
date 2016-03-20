@@ -408,78 +408,28 @@ public class GeoPolygon
     }
 
     public void closeRings() {
-        closeRing(mOuterRing);
+        mOuterRing.closeRing();
 
         for (int i = 0; i < getInnerRingCount(); i++)
-            closeRing(getInnerRing(i));
+            getInnerRing(i).closeRing();
     }
 
-    public static void closeRing(GeoLinearRing ring) {
-        if (!ring.isClosed())
-            ring.add((GeoPoint) ring.getPoint(0).copy());
-    }
-
-    public boolean isSelfIntersects() {
-        if (isRingIntersects(mOuterRing))
+    public boolean intersects() {
+        if (mOuterRing.intersects())
             return true;
 
         for (GeoLinearRing ring : mInnerRings)
-            if (isRingIntersects(ring))
+            if (ring.intersects())
                 return true;
 
         return false;
     }
 
-    // https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/
-    public static boolean isRingIntersects(GeoLinearRing ring) {
-        closeRing(ring);
-
-        for (int i = 0; i < ring.getPointCount() - 1; i++) {
-            GeoPoint a = ring.getPoint(i);
-            GeoPoint b = ring.getPoint(i + 1);
-
-            double A1 = b.getY() - a.getY();
-            double B1 = a.getX() - b.getX();
-            double C1 = A1 * a.getX() + B1 * a.getY();
-
-            for (int j = i + 2; j < ring.getPointCount() - 1; j++) {
-                GeoPoint c = ring.getPoint(j);
-                GeoPoint d = ring.getPoint(j + 1);
-
-                if (a.equals(c) || a.equals(d) || b.equals(c) || b.equals(d))
-                    continue;
-
-                double A2 = d.getY() - c.getY();
-                double B2 = c.getX() - d.getX();
-                double C2 = A2 * c.getX() + B2 * c.getY();
-
-                double det = A1 * B2 - A2 * B1;
-                if (det != 0) {
-                    double x = (B2 * C1 - B1 * C2) / det;
-                    double y = (A1 * C2 - A2 * C1) / det;
-
-                    boolean xOnAB = Math.min(a.getX(), b.getX()) <= x && x <= Math.max(a.getX(), b.getX());
-                    boolean yOnAB = Math.min(a.getY(), b.getY()) <= y && y <= Math.max(a.getY(), b.getY());
-
-                    if (xOnAB && yOnAB) {
-                        boolean xOnCD = Math.min(c.getX(), d.getX()) <= x && x <= Math.max(c.getX(), d.getX());
-                        boolean yOnCD = Math.min(c.getY(), d.getY()) <= y && y <= Math.max(c.getY(), d.getY());
-
-                        if (xOnCD && yOnCD)
-                            return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
     public boolean isHolesInside() {
-        closeRing(mOuterRing);
+        mOuterRing.closeRing();
 
         for (GeoLinearRing ring: mInnerRings) {
-            closeRing(ring);
+            ring.closeRing();
 
             if (!mOuterRing.getEnvelope().contains(ring.getEnvelope()))
                 return false;

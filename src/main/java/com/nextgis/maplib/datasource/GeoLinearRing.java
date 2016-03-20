@@ -110,41 +110,55 @@ public class GeoLinearRing
         return result;
     }
 
-/*
-    @Override
-    public boolean intersects(GeoEnvelope envelope)
-    {
-        return super.intersects(envelope);
-
-        if (super.intersects(envelope)) {
-            return true;
-        }
-        int intersection = 0;
-
-        //create the ray
-        GeoPoint center = envelope.getCenter();
-        double x1 = center.getX();
-        double y1 = center.getY();
-        double x2 = getEnvelope().getMaxX() * 2;
-        double y2 = center.getY();
-        //count intersects
-        for (int i = 0; i < mPoints.size() - 1; i++) {
-            GeoPoint pt1 = mPoints.get(i);
-            GeoPoint pt2 = mPoints.get(i + 1);
-
-            if (pt1.getX() < x1 && pt2.getX() < x2) {
-                continue;
-            }
-
-            if (linesIntersect(x1, y1, x2, y2, pt1.getX(), pt1.getY(), pt2.getX(), pt2.getY())) {
-                intersection++;
-            }
-        }
-
-        return intersection % 2 == 1;
+    public void closeRing() {
+        if (!isClosed())
+            add((GeoPoint) getPoint(0).copy());
     }
-    */
 
+    // https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/
+    public boolean intersects() {
+        closeRing();
+
+        for (int i = 0; i < getPointCount() - 1; i++) {
+            GeoPoint a = getPoint(i);
+            GeoPoint b = getPoint(i + 1);
+
+            double A1 = b.getY() - a.getY();
+            double B1 = a.getX() - b.getX();
+            double C1 = A1 * a.getX() + B1 * a.getY();
+
+            for (int j = i + 2; j < getPointCount() - 1; j++) {
+                GeoPoint c = getPoint(j);
+                GeoPoint d = getPoint(j + 1);
+
+                if (a.equals(c) || a.equals(d) || b.equals(c) || b.equals(d))
+                    continue;
+
+                double A2 = d.getY() - c.getY();
+                double B2 = c.getX() - d.getX();
+                double C2 = A2 * c.getX() + B2 * c.getY();
+
+                double det = A1 * B2 - A2 * B1;
+                if (det != 0) {
+                    double x = (B2 * C1 - B1 * C2) / det;
+                    double y = (A1 * C2 - A2 * C1) / det;
+
+                    boolean xOnAB = Math.min(a.getX(), b.getX()) <= x && x <= Math.max(a.getX(), b.getX());
+                    boolean yOnAB = Math.min(a.getY(), b.getY()) <= y && y <= Math.max(a.getY(), b.getY());
+
+                    if (xOnAB && yOnAB) {
+                        boolean xOnCD = Math.min(c.getX(), d.getX()) <= x && x <= Math.max(c.getX(), d.getX());
+                        boolean yOnCD = Math.min(c.getY(), d.getY()) <= y && y <= Math.max(c.getY(), d.getY());
+
+                        if (xOnCD && yOnCD)
+                            return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
 
     @Override
     public GeoGeometry copy()

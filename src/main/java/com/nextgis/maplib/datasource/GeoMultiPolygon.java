@@ -180,7 +180,7 @@ public class GeoMultiPolygon
     public boolean isSelfIntersects() {
         for (GeoGeometry polygon : mGeometries)
             if (polygon instanceof GeoPolygon)
-                if (((GeoPolygon) polygon).isSelfIntersects())
+                if (((GeoPolygon) polygon).intersects())
                     return true;
 
         return false;
