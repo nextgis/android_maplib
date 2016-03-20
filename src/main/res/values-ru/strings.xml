@@ -5,7 +5,7 @@
   ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+  ~ Copyright (c) 2012-2016 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -53,4 +53,10 @@
     <string name="field_type_datetime">Дата и Время</string>
     <string name="field_type_date">Дата</string>
     <string name="field_type_time">Время</string>
+    <string name="synchronization">Синхронизация</string>
+    <string name="sync_started">Синхронизация начата</string>
+    <string name="sync_progress">Синхронизация выполняется</string>
+    <string name="sync_canceled">Синхронизация отменена</string>
+    <string name="sync_error">Ошибка синхронизации</string>
+    <string name="sync_finished">Синхронизация завершена</string>
 </resources>
