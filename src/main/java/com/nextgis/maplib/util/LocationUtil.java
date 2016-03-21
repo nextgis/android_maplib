@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -115,6 +115,28 @@ public class LocationUtil
         sb.append(endChar);
 
         return sb.toString();
+    }
+
+
+    public static String formatLength(Context context, double length) {
+        int div = 1, unit = R.string.unit_meter;
+        if (length >= 1000) {
+            div *= 1000;
+            unit = R.string.unit_kilometer;
+        }
+
+        return String.format("%.3f %s", length / div, context.getString(unit));
+    }
+
+
+    public static String formatArea(Context context, double length) {
+        int div = 1, unit = R.string.unit_square_meter;
+        if (length >= 1000000) {
+            div *= 1000000;
+            unit = R.string.unit_square_kilometer;
+        }
+
+        return String.format("%.3f %s", length / div, context.getString(unit));
     }
 
 

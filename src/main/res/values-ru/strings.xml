@@ -31,6 +31,12 @@
     <string name="S">Ю</string>
     <string name="E">В</string>
     <string name="W">З</string>
+    <string name="unit_meter">м</string>
+    <string name="unit_square_meter">м²</string>
+    <string name="unit_kilometer">км</string>
+    <string name="unit_square_kilometer">км²</string>
+    <string name="unit_second">с</string>
+    <string name="unit_hour">ч</string>
     <string name="warning_remove_field">Поле \'%s\' запрещено, поле удалено</string>
     <string name="warning_replace_field">Имя содержит запрещенные символы, новое имя \'%s\'</string>
     <string name="tracks">Мои треки</string>

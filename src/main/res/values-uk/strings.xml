@@ -2,8 +2,9 @@
   ~ Project:  NextGIS Mobile
   ~ Purpose:  Mobile GIS for Android.
   ~ Author:   Maxim Dubinin, maxim.dubinin@nextgis.com
+  ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+  ~ Copyright (c) 2016 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -29,6 +30,12 @@
     <string name="S">Пд</string>
     <string name="E">Сх</string>
     <string name="W">Зх</string>
+    <string name="unit_meter">m</string>
+    <string name="unit_square_meter">m²</string>
+    <string name="unit_kilometer">km</string>
+    <string name="unit_square_kilometer">km²</string>
+    <string name="unit_second">s</string>
+    <string name="unit_hour">h</string>
     <string name="warning_remove_field">Поле \'%s\' заборонено, поле видалено</string>
     <string name="warning_replace_field">Ім’я містить заборонені символи, нове ім’я \'%s\'</string>
     <string name="tracks">Мої треки</string>

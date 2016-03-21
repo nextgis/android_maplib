@@ -31,6 +31,12 @@
     <string name="S">S</string>
     <string name="E">E</string>
     <string name="W">W</string>
+    <string name="unit_meter">m</string>
+    <string name="unit_square_meter">m²</string>
+    <string name="unit_kilometer">km</string>
+    <string name="unit_square_kilometer">km²</string>
+    <string name="unit_second">s</string>
+    <string name="unit_hour">h</string>
     <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
     <string name="warning_replace_field">Name contains forbidden chars, renamed to \'%s\'</string>
     <string name="tracks">My tracks</string>
