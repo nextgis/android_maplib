@@ -21,19 +21,19 @@
 
 <resources>
     <string name="app_name">Бібліотека мап</string>
-    <string name="error_crs_unsupported">Сістема координат не підтримується</string>
-    <string name="error_empty_dataset">Набір даних пустий</string>
+    <string name="error_crs_unsupported">Система координат не підтримується</string>
+    <string name="error_empty_dataset">Набір даних порожній</string>
     <string name="error_network_unavailable">Відсутнє з’єднання з мережею</string>
     <string name="error_download_data">Помилка завантаження</string>
-    <string name="N">Півн</string>
-    <string name="S">Півд</string>
-    <string name="E">Схід</string>
-    <string name="W">Захід</string>
+    <string name="N">Пн</string>
+    <string name="S">Пд</string>
+    <string name="E">Сх</string>
+    <string name="W">Зх</string>
     <string name="warning_remove_field">Поле \'%s\' заборонено, поле видалено</string>
     <string name="warning_replace_field">Ім’я містить заборонені символи, нове ім’я \'%s\'</string>
     <string name="tracks">Мої треки</string>
-    <string name="create_features">Create features</string>
-    <string name="parse_features">Parse features</string>
+    <string name="create_features">Створити властивості</string>
+    <string name="parse_features">Зчитати властивості</string>
     <string name="message_loading">Завантаження…</string>
     <string name="error_layer_create">Помилка створення шару</string>
     <string name="start_fill_layer">Розпочати заповнення шару даними…</string>
@@ -47,14 +47,14 @@
     <string name="field_type">Тип поля</string>
     <string name="field_type_string">Рядок</string>
     <string name="field_type_int">Ціле число</string>
-    <string name="field_type_real">Речове поле</string>
-    <string name="field_type_datetime">Дата &amp; Час</string>
+    <string name="field_type_real">Дійсне число</string>
+    <string name="field_type_datetime">Дата і час</string>
     <string name="field_type_date">Дата</string>
     <string name="field_type_time">Час</string>
     <string name="synchronization">Синхронізація</string>
-    <string name="sync_started">Розпочата синхронізація</string>
+    <string name="sync_started">Розпочато синхронізацію</string>
     <string name="sync_progress">Виконується синхронізація</string>
-    <string name="sync_canceled">Синхронізація відмвнена</string>
+    <string name="sync_canceled">Синхронізація скасована</string>
     <string name="sync_error">Помилка синхронізації</string>
     <string name="sync_finished">Синхронізація заверешена</string>
 </resources>
