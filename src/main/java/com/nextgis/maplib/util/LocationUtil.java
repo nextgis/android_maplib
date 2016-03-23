@@ -118,14 +118,15 @@ public class LocationUtil
     }
 
 
-    public static String formatLength(Context context, double length) {
+    public static String formatLength(Context context, double length, int precision) {
         int div = 1, unit = R.string.unit_meter;
         if (length >= 1000) {
             div *= 1000;
             unit = R.string.unit_kilometer;
         }
 
-        return String.format("%.3f %s", length / div, context.getString(unit));
+        String format = precision > 0 ? "%." + precision + "f" : "%.0f";
+        return String.format(format + " %s", length / div, context.getString(unit));
     }
 
 
