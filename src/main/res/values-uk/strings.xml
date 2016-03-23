@@ -1,0 +1,67 @@
+<!--
+  ~ Project:  NextGIS Mobile
+  ~ Purpose:  Mobile GIS for Android.
+  ~ Author:   Maxim Dubinin, maxim.dubinin@nextgis.com
+  ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
+  ~ ******************************************************************************
+  ~ Copyright (c) 2016 NextGIS, info@nextgis.com
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Lesser Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Lesser Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Lesser Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">Бібліотека мап</string>
+    <string name="error_crs_unsupported">Система координат не підтримується</string>
+    <string name="error_empty_dataset">Набір даних порожній</string>
+    <string name="error_network_unavailable">Відсутнє з’єднання з мережею</string>
+    <string name="error_download_data">Помилка завантаження</string>
+    <string name="N">Пн</string>
+    <string name="S">Пд</string>
+    <string name="E">Сх</string>
+    <string name="W">Зх</string>
+    <string name="unit_meter">m</string>
+    <string name="unit_square_meter">m²</string>
+    <string name="unit_kilometer">km</string>
+    <string name="unit_square_kilometer">km²</string>
+    <string name="unit_second">s</string>
+    <string name="unit_hour">h</string>
+    <string name="warning_remove_field">Поле \'%s\' заборонено, поле видалено</string>
+    <string name="warning_replace_field">Ім’я містить заборонені символи, нове ім’я \'%s\'</string>
+    <string name="tracks">Мої треки</string>
+    <string name="create_features">Створити властивості</string>
+    <string name="parse_features">Зчитати властивості</string>
+    <string name="message_loading">Завантаження…</string>
+    <string name="error_layer_create">Помилка створення шару</string>
+    <string name="start_fill_layer">Розпочати заповнення шару даними…</string>
+    <string name="message_opening">Відкриття…</string>
+    <string name="process_features">Обробка записів</string>
+    <string name="processed">Оброблено</string>
+    <string name="of">з</string>
+    <string name="rebuild_cache">Перебудувати кеш</string>
+    <string name="fields">Поля</string>
+    <string name="field_name">Назва поля</string>
+    <string name="field_type">Тип поля</string>
+    <string name="field_type_string">Рядок</string>
+    <string name="field_type_int">Ціле число</string>
+    <string name="field_type_real">Дійсне число</string>
+    <string name="field_type_datetime">Дата і час</string>
+    <string name="field_type_date">Дата</string>
+    <string name="field_type_time">Час</string>
+    <string name="synchronization">Синхронізація</string>
+    <string name="sync_started">Розпочато синхронізацію</string>
+    <string name="sync_progress">Виконується синхронізація</string>
+    <string name="sync_canceled">Синхронізація скасована</string>
+    <string name="sync_error">Помилка синхронізації</string>
+    <string name="sync_finished">Синхронізація заверешена</string>
+</resources>

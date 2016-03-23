@@ -180,7 +180,7 @@ public class GeoMultiPolygon
     public boolean isSelfIntersects() {
         for (GeoGeometry polygon : mGeometries)
             if (polygon instanceof GeoPolygon)
-                if (((GeoPolygon) polygon).isSelfIntersects())
+                if (((GeoPolygon) polygon).intersects())
                     return true;
 
         return false;
@@ -193,6 +193,15 @@ public class GeoMultiPolygon
                     return false;
 
         return true;
+    }
+
+    public boolean isHolesIntersect() {
+        for (GeoGeometry polygon : mGeometries)
+            if (polygon instanceof GeoPolygon)
+                if (((GeoPolygon) polygon).isHolesIntersect())
+                    return true;
+
+        return false;
     }
 
     public double getPerimeter() {
