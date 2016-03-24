@@ -445,9 +445,10 @@ public class NGWVectorLayer
                     progressor.setValue(streamSize - in.available());
                     progressor.setMessage(
                             getContext().getString(R.string.process_features) + ": " +
-                                    featureCount++);
+                                    featureCount);
                 }
 
+                ++featureCount;
             }
             reader.endArray();
             reader.close();
