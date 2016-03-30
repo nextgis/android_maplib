@@ -55,7 +55,7 @@ public class Field
     {
         mType = type;
         mName = name;
-        if (TextUtils.isEmpty(mAlias)) {
+        if (TextUtils.isEmpty(alias)) {
             mAlias = mName;
         } else {
             mAlias = alias;
