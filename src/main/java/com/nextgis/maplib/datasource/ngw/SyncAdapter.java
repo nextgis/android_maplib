@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -36,6 +36,7 @@ import android.content.SyncResult;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
@@ -45,7 +46,6 @@ import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.SettingsConstants;
 
-import static com.nextgis.maplib.util.Constants.NGW_ACCOUNT_TYPE;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 /* useful links
@@ -162,10 +162,12 @@ public class SyncAdapter
             Bundle extras,
             long pollFrequency)
     {
-        final AccountManager accountManager = AccountManager.get((Context) application);
+        Context context = ((Context) application).getApplicationContext();
+        final AccountManager accountManager = AccountManager.get(context);
+        Log.d(TAG, "SyncAdapter: AccountManager.get(" + context + ")");
+
         for (Account account : accountManager.getAccountsByType(Constants.NGW_ACCOUNT_TYPE)) {
-            ContentResolver.addPeriodicSync(
-                    account, application.getAuthority(), extras, pollFrequency);
+            ContentResolver.addPeriodicSync(account, application.getAuthority(), extras, pollFrequency);
         }
     }
 
