@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -78,7 +78,6 @@ public class TrackLayer
             FIELD_VISIBLE + " INTEGER NOT NULL);";
     static final String DB_CREATE_TRACKPOINTS =
             "CREATE TABLE IF NOT EXISTS " + TABLE_TRACKPOINTS + " (" +
-//            FIELD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
             FIELD_LON + " REAL NOT NULL, " +
             FIELD_LAT + " REAL NOT NULL, " +
             FIELD_ELE + " REAL, " +
@@ -248,7 +247,7 @@ public class TrackLayer
                 y0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LAT));
 
         GeoLineString trackLine = new GeoLineString();
-        trackLine.setCRS(GeoConstants.CRS_WGS84);
+        trackLine.setCRS(GeoConstants.CRS_WEB_MERCATOR);
         trackLine.add(new GeoPoint(x0, y0));
 
         while (track.moveToNext()) {
@@ -257,7 +256,6 @@ public class TrackLayer
             trackLine.add(new GeoPoint(x0, y0));
         }
 
-        trackLine.project(GeoConstants.CRS_WEB_MERCATOR);
         mTracks.put(trackId, trackLine);
     }
 
