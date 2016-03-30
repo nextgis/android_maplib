@@ -99,6 +99,8 @@ public class MapContentProviderHelper
         super.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
 
         if (oldVersion <= 2) {
+            sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKS + " add column " + TrackLayer.FIELD_COLOR + " integer;");
+
             GeoPoint point = new GeoPoint();
             ContentValues cv = new ContentValues();
             Cursor data = sqLiteDatabase.query(TrackLayer.TABLE_TRACKPOINTS,

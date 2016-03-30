@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.net.Uri;
 import android.text.TextUtils;
 import com.nextgis.maplib.R;
@@ -59,6 +60,7 @@ public class TrackLayer
     public static final String FIELD_NAME    = "name";
     public static final String FIELD_START   = "start";
     public static final String FIELD_END     = "end";
+    public static final String FIELD_COLOR   = "color";
     public static final String FIELD_VISIBLE = "visible";
 
     public static final String FIELD_LON       = "lon";
@@ -75,6 +77,7 @@ public class TrackLayer
             FIELD_NAME + " TEXT NOT NULL, " +
             FIELD_START + " INTEGER NOT NULL, " +
             FIELD_END + " INTEGER, " +
+            FIELD_COLOR + " TEXT, " +
             FIELD_VISIBLE + " INTEGER NOT NULL);";
     static final String DB_CREATE_TRACKPOINTS =
             "CREATE TABLE IF NOT EXISTS " + TABLE_TRACKPOINTS + " (" +
@@ -97,7 +100,7 @@ public class TrackLayer
 
     private static String CONTENT_TYPE, CONTENT_TYPE_TRACKPOINTS, CONTENT_ITEM_TYPE;
 
-    protected int    mColor;
+    protected int    mColor = Color.LTGRAY;
     protected Cursor mCursor;
     String         mAuthority;
     SQLiteDatabase mSQLiteDatabase;
@@ -161,13 +164,13 @@ public class TrackLayer
     }
 
 
-    public List<GeoLineString> getTracks()
+    public Map<Integer, GeoLineString> getTracks()
     {
         if (mTracks.size() == 0) {
             reloadTracks(INSERT);
         }
 
-        return new ArrayList<>(mTracks.values());
+        return mTracks;
     }
 
 
@@ -273,9 +276,24 @@ public class TrackLayer
     }
 
 
-    public int getColor()
+    public int getColor(long id)
     {
-        return mColor;
+        String selection = FIELD_ID + " = ?";
+        Cursor cursor = mContext.getContentResolver().query(mContentUriTracks, new String[] {FIELD_COLOR}, selection, new String[]{id + ""}, null);
+
+        if (null == cursor) {
+            return mColor;
+        }
+
+        int color = mColor;
+        if (cursor.moveToFirst()) {
+            if (!cursor.isNull(0))
+                color = cursor.getInt(0);
+
+            cursor.close();
+        }
+
+        return color;
     }
 
 
