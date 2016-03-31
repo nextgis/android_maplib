@@ -39,6 +39,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Map;
 
 
 public class TrackRenderer
@@ -85,24 +86,27 @@ public class TrackRenderer
     {
         final TrackLayer layer = (TrackLayer) getLayer();
 
-        mPaint.setColor(layer.getColor());
         mPaint.setStrokeWidth((float) Math.ceil(4 / display.getScale()));
 
-        List<GeoLineString> trackLines = layer.getTracks();
-        if (trackLines.size() < 1) {
+        Map<Integer, GeoLineString> trackLines = layer.getTracks();
+        int trackLinesSize = trackLines.size();
+        if (trackLinesSize < 1) {
             return;
         }
 
-        int nStep = trackLines.size() / 10;
+        int i = 0;
+        int nStep = trackLinesSize / 10;
         if(nStep == 0)
             nStep = 1;
-        for (int i = 0, trackLinesSize = trackLines.size(); i < trackLinesSize; i++) {
+
+        for (Map.Entry<Integer, GeoLineString> entry : trackLines.entrySet()) {
+            i++;
             if (Thread.currentThread().isInterrupted()) {
                 break;
             }
 
-            GeoLineString trackLine = trackLines.get(i);
-            List<GeoPoint> points = trackLine.getPoints();
+            mPaint.setColor(layer.getColor(entry.getKey()));
+            List<GeoPoint> points = entry.getValue().getPoints();
             for (int k = 1; k < points.size(); k++) {
                 if (Thread.currentThread().isInterrupted()) {
                     break;

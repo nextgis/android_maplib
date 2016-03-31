@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -24,16 +24,20 @@
 package com.nextgis.maplib.map;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
+import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.GeoConstants;
 
 import java.io.File;
 import java.util.List;
@@ -49,7 +53,7 @@ public class MapContentProviderHelper
     protected DatabaseHelper mDatabaseHelper;
 
     protected static final String DBNAME           = "layers";
-    protected static final int    DATABASE_VERSION = 2;
+    protected static final int    DATABASE_VERSION = 3;
 
 
     public MapContentProviderHelper(
@@ -90,6 +94,35 @@ public class MapContentProviderHelper
         context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
     }
 
+    @Override
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
+        super.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
+
+        if (oldVersion <= 2) {
+            sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKS + " add column " + TrackLayer.FIELD_COLOR + " integer;");
+
+            GeoPoint point = new GeoPoint();
+            ContentValues cv = new ContentValues();
+            Cursor data = sqLiteDatabase.query(TrackLayer.TABLE_TRACKPOINTS,
+                    new String[]{TrackLayer.FIELD_TIMESTAMP, TrackLayer.FIELD_LON, TrackLayer.FIELD_LAT}, null, null, null, null, null);
+
+            if (data != null) {
+                if (data.moveToFirst()) {
+                    do {
+                        point.setCoordinates(data.getDouble(1), data.getDouble(2));
+                        point.setCRS(GeoConstants.CRS_WGS84);
+                        point.project(GeoConstants.CRS_WEB_MERCATOR);
+                        cv.clear();
+                        cv.put(TrackLayer.FIELD_LON, point.getX());
+                        cv.put(TrackLayer.FIELD_LAT, point.getY());
+                        sqLiteDatabase.update(TrackLayer.TABLE_TRACKPOINTS, cv, TrackLayer.FIELD_TIMESTAMP + " = ?", new String[]{data.getLong(0) + ""});
+                    } while (data.moveToNext());
+                }
+
+                data.close();
+            }
+        }
+    }
 
     public SQLiteDatabase getDatabase(boolean readOnly)
     {

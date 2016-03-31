@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.net.Uri;
 import android.text.TextUtils;
 import com.nextgis.maplib.R;
@@ -59,6 +60,7 @@ public class TrackLayer
     public static final String FIELD_NAME    = "name";
     public static final String FIELD_START   = "start";
     public static final String FIELD_END     = "end";
+    public static final String FIELD_COLOR   = "color";
     public static final String FIELD_VISIBLE = "visible";
 
     public static final String FIELD_LON       = "lon";
@@ -75,10 +77,10 @@ public class TrackLayer
             FIELD_NAME + " TEXT NOT NULL, " +
             FIELD_START + " INTEGER NOT NULL, " +
             FIELD_END + " INTEGER, " +
+            FIELD_COLOR + " TEXT, " +
             FIELD_VISIBLE + " INTEGER NOT NULL);";
     static final String DB_CREATE_TRACKPOINTS =
             "CREATE TABLE IF NOT EXISTS " + TABLE_TRACKPOINTS + " (" +
-//            FIELD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
             FIELD_LON + " REAL NOT NULL, " +
             FIELD_LAT + " REAL NOT NULL, " +
             FIELD_ELE + " REAL, " +
@@ -98,7 +100,7 @@ public class TrackLayer
 
     private static String CONTENT_TYPE, CONTENT_TYPE_TRACKPOINTS, CONTENT_ITEM_TYPE;
 
-    protected int    mColor;
+    protected int    mColor = Color.LTGRAY;
     protected Cursor mCursor;
     String         mAuthority;
     SQLiteDatabase mSQLiteDatabase;
@@ -162,13 +164,13 @@ public class TrackLayer
     }
 
 
-    public List<GeoLineString> getTracks()
+    public Map<Integer, GeoLineString> getTracks()
     {
         if (mTracks.size() == 0) {
             reloadTracks(INSERT);
         }
 
-        return new ArrayList<>(mTracks.values());
+        return mTracks;
     }
 
 
@@ -248,7 +250,7 @@ public class TrackLayer
                 y0 = track.getFloat(track.getColumnIndex(TrackLayer.FIELD_LAT));
 
         GeoLineString trackLine = new GeoLineString();
-        trackLine.setCRS(GeoConstants.CRS_WGS84);
+        trackLine.setCRS(GeoConstants.CRS_WEB_MERCATOR);
         trackLine.add(new GeoPoint(x0, y0));
 
         while (track.moveToNext()) {
@@ -257,7 +259,6 @@ public class TrackLayer
             trackLine.add(new GeoPoint(x0, y0));
         }
 
-        trackLine.project(GeoConstants.CRS_WEB_MERCATOR);
         mTracks.put(trackId, trackLine);
     }
 
@@ -275,9 +276,24 @@ public class TrackLayer
     }
 
 
-    public int getColor()
+    public int getColor(long id)
     {
-        return mColor;
+        String selection = FIELD_ID + " = ?";
+        Cursor cursor = mContext.getContentResolver().query(mContentUriTracks, new String[] {FIELD_COLOR}, selection, new String[]{id + ""}, null);
+
+        if (null == cursor) {
+            return mColor;
+        }
+
+        int color = mColor;
+        if (cursor.moveToFirst()) {
+            if (!cursor.isNull(0))
+                color = cursor.getInt(0);
+
+            cursor.close();
+        }
+
+        return color;
     }
 
 
