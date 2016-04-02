@@ -541,4 +541,12 @@ public class GeoPolygon
         double t = tan1 * tan2;
         return 2 * Math.atan2(t * Math.sin(deltaLng), 1 + t * Math.cos(deltaLng));
     }
+
+    public void setInnerRing(int location, GeoLinearRing ring) {
+        mInnerRings.set(location, ring);
+    }
+
+    public void setOuterRing(GeoLinearRing ring) {
+        mOuterRing = ring;
+    }
 }
