@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -45,10 +45,33 @@ public class GeoLinearRing
         super(geoLinearRing);
     }
 
+    @Override
+    public String toWKT(boolean full)
+    {
+        StringBuilder buf = new StringBuilder();
+        if (full) {
+            buf.append("LINEARRING ");
+        }
+        if (mPoints.size() == 0) {
+            buf.append(" EMPTY");
+        } else {
+            buf.append("(");
+            for (int i = 0; i < mPoints.size(); i++) {
+                GeoPoint pt = mPoints.get(i);
+                buf.append(pt.toWKT(false));
+                buf.append(", ");
+            }
+            buf.append(mPoints.get(0).toWKT(false));
+            buf.append(")");
+        }
+        return buf.toString();
+    }
 
     public boolean isClosed()
     {
         List<GeoPoint> points = getPoints();
+        if (points.size() < 3)
+            return false;
         GeoPoint first = points.get(0);
         GeoPoint last = points.get(points.size() - 1);
         return first.equals(last);

@@ -98,12 +98,21 @@ public class MapContentProviderHelper
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
         super.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
 
-        if (oldVersion <= 2) {
+        Cursor data;
+        boolean tableExists = false;
+
+        try {
+            data = sqLiteDatabase.query(TrackLayer.TABLE_TRACKS, null, null, null, null, null, null);
+            tableExists = true;
+            data.close();
+        } catch (Exception ignored) { }
+
+        if (oldVersion <= 2 && tableExists) {
             sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKS + " add column " + TrackLayer.FIELD_COLOR + " integer;");
 
             GeoPoint point = new GeoPoint();
             ContentValues cv = new ContentValues();
-            Cursor data = sqLiteDatabase.query(TrackLayer.TABLE_TRACKPOINTS,
+            data = sqLiteDatabase.query(TrackLayer.TABLE_TRACKPOINTS,
                     new String[]{TrackLayer.FIELD_TIMESTAMP, TrackLayer.FIELD_LON, TrackLayer.FIELD_LAT}, null, null, null, null, null);
 
             if (data != null) {
