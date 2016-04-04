@@ -348,7 +348,8 @@ public class AccurateLocationTaker
     {
         mTakeTimeMillis = System.currentTimeMillis() - mStartTakeTimeMillis;
         boolean isAllIgnored = null == mMaxTakeTimeMillis && null == mMaxTakeCount;
-        boolean hasTakeCount = null == mMaxTakeCount || mGpsTakings.size() < mMaxTakeCount;
+        boolean hasTakeCount =
+                null == mMaxTakeCount || null != mGpsTakings && mGpsTakings.size() < mMaxTakeCount;
         boolean hasTakeTime = null == mMaxTakeTimeMillis || mTakeTimeMillis < mMaxTakeTimeMillis;
 
         return !mIsStopped && !mIsCancelled && !isAllIgnored && hasTakeCount && hasTakeTime;
