@@ -28,6 +28,7 @@ import android.graphics.Bitmap;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
+import android.os.Build;
 import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.datasource.TileItem;
@@ -232,9 +233,16 @@ public class TMSRenderer
         cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
+        int coreCount = Runtime.getRuntime().availableProcessors();
+
+        // FIXME more than 1 pool size causing strange behaviour on 6.0 -> tiles do not render from some threads, exception appears:
+        // Fatal signal 11 (SIGSEGV), code 1, fault addr 0xX in tid X (pool-X-thread-X)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            coreCount = 1;
+
         //synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
-                    threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                    coreCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
                     new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
             {
                 @Override
