@@ -590,7 +590,10 @@ public class NGWVectorLayer
             }
         }
 
-        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
+        TimeZone timeZone = TimeZone.getDefault();
+        timeZone.setRawOffset(0); // set to UTC
+        Calendar calendar = new GregorianCalendar(timeZone);
+        calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
         feature.setFieldValue(fieldName, calendar.getTimeInMillis());
 
         reader.endObject();
@@ -695,7 +698,11 @@ public class NGWVectorLayer
                         int nYear = dateJson.getInt("year");
                         int nMonth = dateJson.getInt("month");
                         int nDay = dateJson.getInt("day");
-                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay);
+
+                        TimeZone timeZone = TimeZone.getDefault();
+                        timeZone.setRawOffset(0); // set to UTC
+                        Calendar calendar = new GregorianCalendar(timeZone);
+                        calendar.set(nYear, nMonth - 1, nDay);
                         feature.setFieldValue(field.getName(), calendar.getTime());
                     }
                 } else {
