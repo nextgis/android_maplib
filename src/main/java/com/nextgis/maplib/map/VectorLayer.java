@@ -1992,47 +1992,65 @@ public class VectorLayer
                     attachId = uri.getLastPathSegment();
                     attachIdL = Long.parseLong(attachId);
 
-                    AttachItem item = getAttach(featureId, attachId);
-                    if (null != item) {
-                        if (values.containsKey(ATTACH_ID)) {
-                            if (values.containsKey(ATTACH_DESCRIPTION)) {
-                                item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
-                            }
-                            if (values.containsKey(ATTACH_DISPLAY_NAME)) {
-                                item.setDisplayName(values.getAsString(ATTACH_DISPLAY_NAME));
-                            }
-                            if (values.containsKey(ATTACH_MIME_TYPE)) {
-                                item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
-                            }
-                            setNewAttachId(featureId, item, values.getAsString(ATTACH_ID));
-                        }
-                        String fragment = uri.getFragment();
-                        boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                        if (bFromNetwork) {
-                            getContext().getContentResolver().notifyChange(uri, null, false);
-                        } else {
 
-                            if (null != tempFlag) {
-                                setAttachTempFlag(featureIdL, attachIdL, tempFlag);
-                            }
-
-                            if (null != notSyncFlag) {
-                                setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
-                            }
-
-                            if (resetFlags && !hasAttachChanges(featureIdL, attachIdL)) {
-                                addChange(featureIdL, CHANGE_OPERATION_NEW);
-                            }
-
-                            if (hasNotFlags) {
-                                addChange(featureIdL, attachIdL, CHANGE_OPERATION_CHANGED);
-                            }
-
-                            getContext().getContentResolver().notifyChange(uri, null);
-                        }
-                        return 1;
+                    Map<String, AttachItem> attaches = getAttachMap(featureId);
+                    if (null == attaches) {
+                        return 0;
                     }
-                    return 0;
+                    AttachItem item = attaches.get(attachId);
+                    if (null == item) {
+                        return 0;
+                    }
+
+                    boolean isItemChanged = false;
+                    if (values.containsKey(ATTACH_DESCRIPTION)) {
+                        item.setDescription(values.getAsString(ATTACH_DESCRIPTION));
+                        isItemChanged = true;
+                    }
+                    if (values.containsKey(ATTACH_DISPLAY_NAME)) {
+                        item.setDisplayName(values.getAsString(ATTACH_DISPLAY_NAME));
+                        isItemChanged = true;
+                    }
+                    if (values.containsKey(ATTACH_MIME_TYPE)) {
+                        item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
+                        isItemChanged = true;
+                    }
+                    if (isItemChanged) {
+                        // saveAttach() MUST be before setNewAttachId()
+                        saveAttach(featureId, attaches);
+                    }
+
+
+                    if (values.containsKey(ATTACH_ID)) {
+                        setNewAttachId(featureId, item, values.getAsString(ATTACH_ID));
+                    }
+
+
+                    String fragment = uri.getFragment();
+                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
+                    if (bFromNetwork) {
+                        getContext().getContentResolver().notifyChange(uri, null, false);
+                    } else {
+
+                        if (null != tempFlag) {
+                            setAttachTempFlag(featureIdL, attachIdL, tempFlag);
+                        }
+
+                        if (null != notSyncFlag) {
+                            setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
+                        }
+
+                        if (resetFlags && !hasAttachChanges(featureIdL, attachIdL)) {
+                            addChange(featureIdL, CHANGE_OPERATION_NEW);
+                        }
+
+                        if (hasNotFlags) {
+                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_CHANGED);
+                        }
+
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
+                    return 1;
                 }
 
             default:

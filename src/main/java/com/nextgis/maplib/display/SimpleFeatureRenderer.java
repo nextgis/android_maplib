@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -24,6 +24,7 @@
 package com.nextgis.maplib.display;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.util.Log;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
@@ -106,8 +107,14 @@ public class SimpleFeatureRenderer
         cancelDraw();
 
         int threadCount = DRAWING_SEPARATE_THREADS;
+        int coreCount = Runtime.getRuntime().availableProcessors();
+
+        // FIXME more than 1 pool size causing strange behaviour on 6.0
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            coreCount = 1;
+
         mDrawThreadPool = new ThreadPoolExecutor(
-                threadCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                coreCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
                 new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
         {
             @Override
