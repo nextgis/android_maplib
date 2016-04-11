@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
@@ -386,7 +387,9 @@ public class Feature
                         case FTDate:
                         case FTTime:
                         case FTDateTime:
-                            Calendar calendar = Calendar.getInstance();
+                            TimeZone timeZone = TimeZone.getDefault();
+                            timeZone.setRawOffset(0); // set to UTC
+                            Calendar calendar = Calendar.getInstance(timeZone);
                             calendar.setTimeInMillis(cursor.getLong(index));
                             setFieldValue(i, calendar.getTime());
                             break;

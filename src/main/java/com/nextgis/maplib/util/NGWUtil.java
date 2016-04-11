@@ -29,13 +29,11 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
-
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,13 +47,9 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.JSON_DESCRIPTION;
-import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
-import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_KEYNAME;
-import static com.nextgis.maplib.util.Constants.JSON_PASSWORD;
-import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.*;
 
 public class NGWUtil
 {
@@ -405,7 +399,10 @@ public class NGWUtil
             }
         }
 
-        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
+        TimeZone timeZone = TimeZone.getDefault();
+        timeZone.setRawOffset(0); // set to UTC
+        Calendar calendar = new GregorianCalendar(timeZone);
+        calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
         feature.setFieldValue(fieldName, calendar.getTimeInMillis());
 
         reader.endObject();
@@ -528,7 +525,10 @@ public class NGWUtil
                         if(dateJson.has(NGWKEY_SECOND))
                             nSec = dateJson.getInt(NGWKEY_SECOND);
 
-                        Calendar calendar = new GregorianCalendar(nYear, nMonth - 1, nDay, nHour, nMinute, nSec);
+                        TimeZone timeZone = TimeZone.getDefault();
+                        timeZone.setRawOffset(0); // set to UTC
+                        Calendar calendar = new GregorianCalendar(timeZone);
+                        calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSec);
                         feature.setFieldValue(field.getName(), calendar.getTime());
                     }
                 } else {
