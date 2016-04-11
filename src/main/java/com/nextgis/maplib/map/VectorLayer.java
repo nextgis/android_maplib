@@ -175,6 +175,7 @@ public class VectorLayer
     protected boolean mCacheLoaded, mIsCacheRebuilding;
     protected int  mGeometryType;
     protected long mUniqId;
+    protected boolean mIsLocked;
 
     /**
      * The geometry cache for fast querying and drawing
@@ -3173,5 +3174,13 @@ public class VectorLayer
     public SharedPreferences getPreferences()
     {
         return mContext.getSharedPreferences(getPath().getName(), Context.MODE_PRIVATE);
+    }
+
+    public void setLocked(boolean state) {
+        mIsLocked = state;
+    }
+
+    public boolean isLocked() {
+        return mIsLocked;
     }
 }
