@@ -60,6 +60,8 @@ public class LayerContentProvider
 
     protected Layer getLayerByUri(Uri uri)
     {
+        if(null == mMap)
+            return null;
         String path = uri.getPathSegments().get(0);
         return MapContentProviderHelper.getVectorLayerByPath(mMap, path);
     }
