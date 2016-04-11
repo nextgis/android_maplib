@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -176,8 +176,7 @@ public class NetworkUtil
             String targetURL,
             String username,
             String password)
-            throws IOException
-    {
+            throws IOException, NGException {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
         if(null == conn){
             Log.d(TAG, "Error get connection object");
@@ -188,7 +187,7 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK) {
             Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " +
                     responseCode);
-            return null;
+            throw new NGException(responseCode + "");
         }
 
         return responseToString(conn);

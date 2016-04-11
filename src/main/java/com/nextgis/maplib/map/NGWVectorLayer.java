@@ -1032,6 +1032,10 @@ public class NGWVectorLayer
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
                 return false;
+            } catch (NGException e) {
+                e.printStackTrace();
+                syncResult.stats.numIoExceptions++;
+                return false;
             }
 
             if (null == data) {

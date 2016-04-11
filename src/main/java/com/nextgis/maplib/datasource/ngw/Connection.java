@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -26,6 +26,7 @@ package com.nextgis.maplib.datasource.ngw;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -161,7 +162,7 @@ public class Connection
                     }
                 }
             }
-        } catch (IOException | JSONException e) {
+        } catch (IOException | NGException | JSONException e) {
             e.printStackTrace();
         }
     }
