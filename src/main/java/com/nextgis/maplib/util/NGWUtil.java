@@ -51,33 +51,40 @@ import java.util.TimeZone;
 
 import static com.nextgis.maplib.util.Constants.*;
 
+
 public class NGWUtil
 {
-    public static String NGWKEY_ID = "id";
-    public static String NGWKEY_GEOM = "geom";
-    public static String NGWKEY_FIELDS = "fields";
-    public static String NGWKEY_SRS = "srs";
-    public static String NGWKEY_EXTENSIONS = "extensions";
-    public static String NGWKEY_NAME = "name";
-    public static String NGWKEY_MIME = "mime_type";
-    public static String NGWKEY_DESCRIPTION = "description";
-    public static String NGWKEY_YEAR = "year";
-    public static String NGWKEY_MONTH = "month";
-    public static String NGWKEY_DAY = "day";
-    public static String NGWKEY_HOUR = "hour";
-    public static String NGWKEY_MINUTE = "minute";
-    public static String NGWKEY_SECOND = "second";
+    public static String NGWKEY_ID            = "id";
+    public static String NGWKEY_GEOM          = "geom";
+    public static String NGWKEY_FIELDS        = "fields";
+    public static String NGWKEY_SRS           = "srs";
+    public static String NGWKEY_EXTENSIONS    = "extensions";
+    public static String NGWKEY_NAME          = "name";
+    public static String NGWKEY_MIME          = "mime_type";
+    public static String NGWKEY_DESCRIPTION   = "description";
+    public static String NGWKEY_YEAR          = "year";
+    public static String NGWKEY_MONTH         = "month";
+    public static String NGWKEY_DAY           = "day";
+    public static String NGWKEY_HOUR          = "hour";
+    public static String NGWKEY_MINUTE        = "minute";
+    public static String NGWKEY_SECOND        = "second";
     public static String NGWKEY_FEATURE_COUNT = "total_count";
 
-     /**
-      * NGW API Functions
-      */
 
-    public static String getConnectionCookie(String sUrl, String login, String password) throws IOException {
+    /**
+     * NGW API Functions
+     */
+
+    public static String getConnectionCookie(
+            String sUrl,
+            String login,
+            String password)
+            throws IOException
+    {
         sUrl += "/login";
         String sPayload = "login=" + login + "&password=" + password;
         final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
-        if(null == conn){
+        if (null == conn) {
             Log.d(TAG, "Error get connection object");
             return null;
         }
@@ -95,8 +102,8 @@ public class NGWUtil
         os.close();
 
         int responseCode = conn.getResponseCode();
-        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
+        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP
+                || responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
             Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " +
                     responseCode);
             return null;
@@ -125,8 +132,11 @@ public class NGWUtil
     /**
      * GeoJSON URL. Get data as GeoJSON
      *
-     * @param server URL to NextGIS Web server
-     * @param remoteId Vector layer resource id
+     * @param server
+     *         URL to NextGIS Web server
+     * @param remoteId
+     *         Vector layer resource id
+     *
      * @return URL
      */
     public static String getGeoJSONUrl(
@@ -138,6 +148,7 @@ public class NGWUtil
         }
         return server + "/resource/" + remoteId + "/geojson/";
     }
+
 
     /**
      * TMS URL for raster layer
@@ -247,18 +258,22 @@ public class NGWUtil
         return server + "/api/resource/" + remoteId + "/feature/";
     }
 
+
     public static String getFeaturesUrl(
             String server,
             long remoteId,
-            String where){
+            String where)
+    {
         if (!server.startsWith("http")) {
             server = "http://" + server;
         }
-        if(TextUtils.isEmpty(where))
+        if (TextUtils.isEmpty(where)) {
             return server + "/api/resource/" + remoteId + "/feature/";
+        }
 
         return server + "/api/resource/" + remoteId + "/feature/?" + where;
     }
+
 
     public static String getFeatureAttachmentUrl(
             String server,
@@ -270,6 +285,7 @@ public class NGWUtil
         }
         return server + "/api/resource/" + remoteId + "/feature/" + featureId + "/attachment/";
     }
+
 
     public static List<Field> getFieldsFromJson(JSONArray fieldsJSONArray)
             throws JSONException
@@ -289,8 +305,14 @@ public class NGWUtil
         return fields;
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static Feature readNGWFeature(JsonReader reader, List<Field> fields, int nSRS) throws IOException {
+    public static Feature readNGWFeature(
+            JsonReader reader,
+            List<Field> fields,
+            int nSRS)
+            throws IOException
+    {
         final Feature feature = new Feature(Constants.NOT_FOUND, fields);
 
         reader.beginObject();
@@ -306,30 +328,34 @@ public class NGWUtil
                     geom.project(GeoConstants.CRS_WEB_MERCATOR);
                 }
                 feature.setGeometry(geom);
-            }
-            else if(name.equals(NGWUtil.NGWKEY_FIELDS)){
+            } else if (name.equals(NGWUtil.NGWKEY_FIELDS)) {
                 readNGWFeatureFields(feature, reader, fields);
-            }
-            else if(name.equals(NGWUtil.NGWKEY_EXTENSIONS)){
+            } else if (name.equals(NGWUtil.NGWKEY_EXTENSIONS)) {
                 if (reader.peek() != JsonToken.NULL) {
                     readNGWFeatureAttachments(feature, reader);
                 }
-            }
-            else
+            } else {
                 reader.skipValue();
+            }
         }
         reader.endObject();
         return feature;
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields) throws IOException {
+    protected static void readNGWFeatureFields(
+            Feature feature,
+            JsonReader reader,
+            List<Field> fields)
+            throws IOException
+    {
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            if(reader.peek() == JsonToken.NULL)
+            if (reader.peek() == JsonToken.NULL) {
                 reader.skipValue();
-            else {
+            } else {
                 boolean bAdded = false;
                 for (Field field : fields) {
                     if (field.getName().equals(name)) {
@@ -358,15 +384,22 @@ public class NGWUtil
                         break;
                     }
                 }
-                if(!bAdded)
+                if (!bAdded) {
                     reader.skipValue();
+                }
             }
         }
         reader.endObject();
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWDate(Feature feature, JsonReader reader, String fieldName) throws IOException {
+    protected static void readNGWDate(
+            Feature feature,
+            JsonReader reader,
+            String fieldName)
+            throws IOException
+    {
         reader.beginObject();
         int nYear = 1900;
         int nMonth = 1;
@@ -374,27 +407,21 @@ public class NGWUtil
         int nHour = 0;
         int nMinute = 0;
         int nSecond = 0;
-        while (reader.hasNext()){
+        while (reader.hasNext()) {
             String name = reader.nextName();
-            if(name.equals(NGWUtil.NGWKEY_YEAR)){
+            if (name.equals(NGWUtil.NGWKEY_YEAR)) {
                 nYear = reader.nextInt();
-            }
-            else if(name.equals(NGWUtil.NGWKEY_MONTH)){
+            } else if (name.equals(NGWUtil.NGWKEY_MONTH)) {
                 nMonth = reader.nextInt();
-            }
-            else if(name.equals(NGWUtil.NGWKEY_DAY)){
+            } else if (name.equals(NGWUtil.NGWKEY_DAY)) {
                 nDay = reader.nextInt();
-            }
-            else if(name.equals(NGWUtil.NGWKEY_HOUR)){
+            } else if (name.equals(NGWUtil.NGWKEY_HOUR)) {
                 nHour = reader.nextInt();
-            }
-            else if(name.equals(NGWUtil.NGWKEY_MINUTE)){
+            } else if (name.equals(NGWUtil.NGWKEY_MINUTE)) {
                 nMinute = reader.nextInt();
-            }
-            else if(name.equals(NGWUtil.NGWKEY_SECOND)){
+            } else if (name.equals(NGWUtil.NGWKEY_SECOND)) {
                 nSecond = reader.nextInt();
-            }
-            else {
+            } else {
                 reader.skipValue();
             }
         }
@@ -408,20 +435,24 @@ public class NGWUtil
         reader.endObject();
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWFeatureAttachments(Feature feature, JsonReader reader) throws IOException {
+    protected static void readNGWFeatureAttachments(
+            Feature feature,
+            JsonReader reader)
+            throws IOException
+    {
         //add extensions
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            if(name.equals("attachment") && reader.peek() != JsonToken.NULL){
+            if (name.equals("attachment") && reader.peek() != JsonToken.NULL) {
                 reader.beginArray();
                 while (reader.hasNext()) {
                     readNGWFeatureAttachment(feature, reader);
                 }
                 reader.endArray();
-            }
-            else {
+            } else {
                 reader.skipValue();
             }
         }
@@ -429,8 +460,13 @@ public class NGWUtil
         reader.endObject();
     }
 
+
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWFeatureAttachment(Feature feature, JsonReader reader) throws IOException {
+    protected static void readNGWFeatureAttachment(
+            Feature feature,
+            JsonReader reader)
+            throws IOException
+    {
         reader.beginObject();
         String attachId = "";
         String name = "";
@@ -438,24 +474,20 @@ public class NGWUtil
         String descriptionText = "";
         while (reader.hasNext()) {
             String keyName = reader.nextName();
-            if(reader.peek() == JsonToken.NULL){
+            if (reader.peek() == JsonToken.NULL) {
                 reader.skipValue();
                 continue;
             }
 
-            if(keyName.equals(NGWUtil.NGWKEY_ID)){
+            if (keyName.equals(NGWUtil.NGWKEY_ID)) {
                 attachId += reader.nextLong();
-            }
-            else if(keyName.equals(NGWUtil.NGWKEY_NAME)){
+            } else if (keyName.equals(NGWUtil.NGWKEY_NAME)) {
                 name += reader.nextString();
-            }
-            else if(keyName.equals(NGWUtil.NGWKEY_MIME)){
+            } else if (keyName.equals(NGWUtil.NGWKEY_MIME)) {
                 mime += reader.nextString();
-            }
-            else if(keyName.equals(NGWUtil.NGWKEY_DESCRIPTION)){
+            } else if (keyName.equals(NGWUtil.NGWKEY_DESCRIPTION)) {
                 descriptionText += reader.nextString();
-            }
-            else{
+            } else {
                 reader.skipValue();
             }
         }
@@ -474,7 +506,7 @@ public class NGWUtil
             throws JSONException
     {
         List<Feature> features = new LinkedList<>();
-        if(null != progressor){
+        if (null != progressor) {
             progressor.setMax(featuresJSONArray.length());
             progressor.setIndeterminate(false);
         }
@@ -482,7 +514,7 @@ public class NGWUtil
         for (int i = 0; i < featuresJSONArray.length(); i++) {
             JSONObject featureJSONObject = featuresJSONArray.getJSONObject(i);
 
-            if(null != progressor){
+            if (null != progressor) {
                 progressor.setValue(i);
             }
 
@@ -503,7 +535,7 @@ public class NGWUtil
             for (Field field : fields) {
                 if (field.getType() == GeoConstants.FTDateTime ||
                         field.getType() == GeoConstants.FTDate ||
-                        field.getType() == GeoConstants.FTTime ) {
+                        field.getType() == GeoConstants.FTTime) {
                     if (!fieldsJSONObject.isNull(field.getName())) {
                         JSONObject dateJson = fieldsJSONObject.getJSONObject(field.getName());
                         int nYear = 1900;
@@ -512,18 +544,24 @@ public class NGWUtil
                         int nHour = 0;
                         int nMinute = 0;
                         int nSec = 0;
-                        if(dateJson.has(NGWKEY_YEAR))
+                        if (dateJson.has(NGWKEY_YEAR)) {
                             nYear = dateJson.getInt(NGWKEY_YEAR);
-                        if(dateJson.has(NGWKEY_MONTH))
+                        }
+                        if (dateJson.has(NGWKEY_MONTH)) {
                             nMonth = dateJson.getInt(NGWKEY_MONTH);
-                        if(dateJson.has(NGWKEY_DAY))
+                        }
+                        if (dateJson.has(NGWKEY_DAY)) {
                             nDay = dateJson.getInt(NGWKEY_DAY);
-                        if(dateJson.has(NGWKEY_HOUR))
+                        }
+                        if (dateJson.has(NGWKEY_HOUR)) {
                             nHour = dateJson.getInt(NGWKEY_HOUR);
-                        if(dateJson.has(NGWKEY_MINUTE))
+                        }
+                        if (dateJson.has(NGWKEY_MINUTE)) {
                             nMinute = dateJson.getInt(NGWKEY_MINUTE);
-                        if(dateJson.has(NGWKEY_SECOND))
+                        }
+                        if (dateJson.has(NGWKEY_SECOND)) {
                             nSec = dateJson.getInt(NGWKEY_SECOND);
+                        }
 
                         TimeZone timeZone = TimeZone.getDefault();
                         timeZone.setRawOffset(0); // set to UTC
@@ -563,11 +601,18 @@ public class NGWUtil
     }
 
 
-    public static boolean signUp(String server, String login, String password, String displayName, String description) {
+    public static boolean signUp(
+            String server,
+            String login,
+            String password,
+            String displayName,
+            String description)
+    {
         server += server.endsWith("/") ? "" : "/";
         server += "api/component/auth/register";
-        if (!server.startsWith("http"))
+        if (!server.startsWith("http")) {
             server = "http://" + server;
+        }
 
         JSONObject payload = new JSONObject();
         try {
