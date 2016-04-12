@@ -173,8 +173,8 @@ public class VectorLayer
     protected Map<String, Field> mFields;
 
     protected boolean mCacheLoaded, mIsCacheRebuilding;
-    protected int  mGeometryType;
-    protected long mUniqId;
+    protected int     mGeometryType;
+    protected long    mUniqId;
     protected boolean mIsLocked;
 
     /**
@@ -328,8 +328,9 @@ public class VectorLayer
             }
 
             int nIncrement = 0;
-            BufferedReader streamReader = new BufferedReader(
-                    new InputStreamReader(inputStream, "UTF-8"), Constants.IO_BUFFER_SIZE);
+            BufferedReader streamReader =
+                    new BufferedReader(new InputStreamReader(inputStream, "UTF-8"),
+                            Constants.IO_BUFFER_SIZE);
             StringBuilder responseStrBuilder = new StringBuilder();
             String inputStr;
             while ((inputStr = streamReader.readLine()) != null) {
@@ -377,8 +378,9 @@ public class VectorLayer
             }
 
             int nIncrement = 0;
-            BufferedReader streamReader = new BufferedReader(
-                    new InputStreamReader(inputStream, "UTF-8"), Constants.IO_BUFFER_SIZE);
+            BufferedReader streamReader =
+                    new BufferedReader(new InputStreamReader(inputStream, "UTF-8"),
+                            Constants.IO_BUFFER_SIZE);
             StringBuilder responseStrBuilder = new StringBuilder();
             String inputStr;
             while ((inputStr = streamReader.readLine()) != null) {
@@ -675,8 +677,8 @@ public class VectorLayer
         if (geoGeometry.getType() == GeoConstants.GTPoint) {
             GeoPoint pt = (GeoPoint) geoGeometry;
             double delta = 0.5; // as this is 3857 - the 0.5 is meters
-            envelope = new GeoEnvelope(
-                    pt.getX() - delta, pt.getX() + delta, pt.getY() - delta, pt.getY() + delta);
+            envelope = new GeoEnvelope(pt.getX() - delta, pt.getX() + delta, pt.getY() - delta,
+                    pt.getY() + delta);
         } else {
             envelope = geoGeometry.getEnvelope();
         }
@@ -690,9 +692,8 @@ public class VectorLayer
             double tolerance)
     {
         double halfTolerance = tolerance * 0.85;
-        GeoEnvelope envelope = new GeoEnvelope(
-                pt.getX() - halfTolerance, pt.getX() + halfTolerance, pt.getY() - halfTolerance,
-                pt.getY() + halfTolerance);
+        GeoEnvelope envelope = new GeoEnvelope(pt.getX() - halfTolerance, pt.getX() + halfTolerance,
+                pt.getY() - halfTolerance, pt.getY() + halfTolerance);
         return !mCache.search(envelope).isEmpty();
     }
 
@@ -709,8 +710,7 @@ public class VectorLayer
             for (int zoom = GeoConstants.DEFAULT_CACHE_MAX_ZOOM;
                  zoom > GeoConstants.DEFAULT_MIN_ZOOM;
                  zoom -= 2) {
-                if (!checkPointOverlaps(
-                        (GeoPoint) geometry,
+                if (!checkPointOverlaps((GeoPoint) geometry,
                         MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX)) {
                     values.put(Constants.FIELD_GEOM_ + zoom, geometry.toBlob());
                 }
@@ -725,8 +725,7 @@ public class VectorLayer
                 if (multiPoint.size() == 0) {
                     break;
                 } else if (multiPoint.size() == 1) {
-                    if (!checkPointOverlaps(
-                            multiPoint.get(0),
+                    if (!checkPointOverlaps(multiPoint.get(0),
                             MapUtil.getPixelSize(zoom) * Constants.SAMPLE_DISTANCE_PX)) {
                         values.put(Constants.FIELD_GEOM_ + zoom, newGeometry.toBlob());
                     } else {
@@ -771,8 +770,7 @@ public class VectorLayer
 
             case GTLineString:
             case GTMultiLineString:
-                return new SimpleLineStyle(
-                        Color.GREEN, Color.BLUE, SimpleLineStyle.LineStyleSolid);
+                return new SimpleLineStyle(Color.GREEN, Color.BLUE, SimpleLineStyle.LineStyleSolid);
 
             case GTPolygon:
             case GTMultiPolygon:
@@ -1044,9 +1042,8 @@ public class VectorLayer
 
 
         try {
-            return db.query(
-                    mPath.getName(), projection, selection, selectionArgs, null, null, sortOrder,
-                    limit);
+            return db.query(mPath.getName(), projection, selection, selectionArgs, null, null,
+                    sortOrder, limit);
         } catch (SQLiteException e) {
             Log.d(TAG, e.getLocalizedMessage());
             return null;
@@ -1168,22 +1165,20 @@ public class VectorLayer
                         if (-1 < sortIndex) {
                             int columnType = COLUMN_TYPE_UNKNOWN;
 
-                            if (projection[sortIndex].compareToIgnoreCase(
-                                    ATTACH_DISPLAY_NAME) == 0 ||
-                                    projection[sortIndex].compareToIgnoreCase(
-                                            ATTACH_DATA) == 0 ||
-                                    projection[sortIndex].compareToIgnoreCase(
-                                            ATTACH_MIME_TYPE) == 0 ||
-                                    projection[sortIndex].compareToIgnoreCase(
-                                            ATTACH_ID) == 0 ||
-                                    projection[sortIndex].compareToIgnoreCase(
-                                            ATTACH_DESCRIPTION) == 0) {
+                            if (projection[sortIndex].compareToIgnoreCase(ATTACH_DISPLAY_NAME) == 0
+                                    ||
+                                    projection[sortIndex].compareToIgnoreCase(ATTACH_DATA) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(ATTACH_MIME_TYPE) == 0
+                                    ||
+                                    projection[sortIndex].compareToIgnoreCase(ATTACH_ID) == 0 ||
+                                    projection[sortIndex].compareToIgnoreCase(ATTACH_DESCRIPTION)
+                                            == 0) {
 
                                 columnType = COLUMN_TYPE_STRING;
 
-                            } else if (projection[sortIndex].compareToIgnoreCase(
-                                    ATTACH_SIZE) == 0 || projection[sortIndex].compareToIgnoreCase(
-                                    ATTACH_DATE_ADDED) == 0) {
+                            } else if (projection[sortIndex].compareToIgnoreCase(ATTACH_SIZE) == 0
+                                    || projection[sortIndex].compareToIgnoreCase(ATTACH_DATE_ADDED)
+                                    == 0) {
 
                                 columnType = COLUMN_TYPE_LONG;
                             }
@@ -1191,29 +1186,28 @@ public class VectorLayer
                             final int columnTypeF = columnType;
                             final int sortIndexF = sortIndex;
 
-                            Collections.sort(
-                                    rowArray, new Comparator<Object[]>()
-                                    {
-                                        @Override
-                                        public int compare(
-                                                Object[] lhs,
-                                                Object[] rhs)
-                                        {
-                                            switch (columnTypeF) {
-                                                case COLUMN_TYPE_STRING:
-                                                    return ((String) lhs[sortIndexF]).compareTo(
-                                                            (String) rhs[sortIndexF]);
+                            Collections.sort(rowArray, new Comparator<Object[]>()
+                            {
+                                @Override
+                                public int compare(
+                                        Object[] lhs,
+                                        Object[] rhs)
+                                {
+                                    switch (columnTypeF) {
+                                        case COLUMN_TYPE_STRING:
+                                            return ((String) lhs[sortIndexF]).compareTo(
+                                                    (String) rhs[sortIndexF]);
 
-                                                case COLUMN_TYPE_LONG:
-                                                    return ((Long) lhs[sortIndexF]).compareTo(
-                                                            (Long) rhs[sortIndexF]);
+                                        case COLUMN_TYPE_LONG:
+                                            return ((Long) lhs[sortIndexF]).compareTo(
+                                                    (Long) rhs[sortIndexF]);
 
-                                                case COLUMN_TYPE_UNKNOWN:
-                                                default:
-                                                    return 0;
-                                            }
-                                        }
-                                    });
+                                        case COLUMN_TYPE_UNKNOWN:
+                                        default:
+                                            return 0;
+                                    }
+                                }
+                            });
                         }
                     }
 
@@ -1238,8 +1232,7 @@ public class VectorLayer
                 //get attach path
                 AttachItem item = getAttach(featureId, attachId);
                 if (null != item) {
-                    File attachFile = new File(
-                            mPath, featureId + File.separator +
+                    File attachFile = new File(mPath, featureId + File.separator +
                             item.getAttachId()); //the attaches store in id folder in layer folder
                     Object[] row = new Object[projection.length];
                     for (int i = 0; i < projection.length; i++) {
@@ -2769,9 +2762,8 @@ public class VectorLayer
             long attachId,
             File attachFile)
     {
-        Uri uri = Uri.parse(
-                "content://" + mAuthority + "/" + mPath.getName() +
-                        "/" + featureId + "/" + Constants.URI_ATTACH + "/" + attachId);
+        Uri uri = Uri.parse("content://" + mAuthority + "/" + mPath.getName() +
+                "/" + featureId + "/" + Constants.URI_ATTACH + "/" + attachId);
         try {
             OutputStream attachOutStream = mContext.getContentResolver().openOutputStream(uri);
             if (attachOutStream != null) {
@@ -2790,8 +2782,7 @@ public class VectorLayer
 
     protected Uri insertTempFeature(Feature feature)
     {
-        Uri uri = Uri.parse(
-                "content://" + mAuthority + "/" + mPath.getName());
+        Uri uri = Uri.parse("content://" + mAuthority + "/" + mPath.getName());
 
         uri = uri.buildUpon()
                 .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.TRUE.toString())
@@ -2812,9 +2803,8 @@ public class VectorLayer
             long featureId,
             AttachItem attachItem)
     {
-        Uri uri = Uri.parse(
-                "content://" + mAuthority + "/" + mPath.getName() +
-                        "/" + featureId + "/" + Constants.URI_ATTACH);
+        Uri uri = Uri.parse("content://" + mAuthority + "/" + mPath.getName() +
+                "/" + featureId + "/" + Constants.URI_ATTACH);
 
         uri = uri.buildUpon()
                 .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.TRUE.toString())
@@ -2876,9 +2866,8 @@ public class VectorLayer
             return 0;
         }
 
-        Uri uri = Uri.parse(
-                "content://" + mAuthority + "/" + layerPathName + "/" + featureIdL + "/"
-                        + Constants.URI_ATTACH + "/" + attachIdL);
+        Uri uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + featureIdL + "/"
+                + Constants.URI_ATTACH + "/" + attachIdL);
 
         if (tempFlag) {
             uri = uri.buildUpon()
@@ -2970,8 +2959,7 @@ public class VectorLayer
             delete(uri, null, null);
 
             // delete feature
-            uri = Uri.parse(
-                    "content://" + mAuthority + "/" + layerPathName + "/" + featureId);
+            uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + featureId);
             uri = uri.buildUpon()
                     .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
                     .build();
@@ -3176,11 +3164,15 @@ public class VectorLayer
         return mContext.getSharedPreferences(getPath().getName(), Context.MODE_PRIVATE);
     }
 
-    public void setLocked(boolean state) {
+
+    public void setLocked(boolean state)
+    {
         mIsLocked = state;
     }
 
-    public boolean isLocked() {
+
+    public boolean isLocked()
+    {
         return mIsLocked;
     }
 }
