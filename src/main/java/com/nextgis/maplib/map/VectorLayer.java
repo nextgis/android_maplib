@@ -85,10 +85,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -449,75 +447,69 @@ public class VectorLayer
     }
 
 
+    protected boolean checkGeometryType(Feature feature)
+    {
+        // check if geometry type is appropriate layer geometry type
+        return feature.getGeometry().getType() == mGeometryType;
+    }
+
+
+    protected ContentValues getFeatureContentValues(Feature feature)
+    {
+        final ContentValues values = feature.getContentValues(true);
+        try {
+            prepareGeometry(values);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return values;
+    }
+
+
+    public void createFeature(Feature feature)
+            throws SQLiteException
+    {
+        if (null == feature.getGeometry() || !checkGeometryType(feature)) {
+            return;
+        }
+
+        if (!mCacheLoaded) {
+            reloadCache();
+        }
+
+        // check if such id already used
+        // maybe was added previous session
+        if (mCache.getItem(feature.getId()) != null) {
+            return;
+        }
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        SQLiteDatabase db = map.getDatabase(false);
+
+        final ContentValues values = getFeatureContentValues(feature);
+
+        if (Constants.DEBUG_MODE) {
+            Log.d(TAG, "Inserting " + values);
+        }
+        long rowId = db.insert(mPath.getName(), "", values);
+        if (rowId != Constants.NOT_FOUND) {
+            //update bbox
+            cacheGeometryEnvelope(rowId, feature.getGeometry());
+            save();
+        }
+    }
+
+
     public void createFeatureBatch(
             final Feature feature,
             final SQLiteDatabase db)
             throws SQLiteException
     {
-        // check if geometry type is appropriate layer geometry type
-        if (null == feature.getGeometry() || feature.getGeometry().getType() != mGeometryType) {
+        if (null == feature.getGeometry() || !checkGeometryType(feature)) {
             return;
         }
 
-        final ContentValues values = new ContentValues();
-        if (feature.getId() != Constants.NOT_FOUND) {
-            values.put(Constants.FIELD_ID, feature.getId());
-        }
-
-        try {
-            values.put(Constants.FIELD_GEOM, feature.getGeometry().toBlob());
-            prepareGeometry(values);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        List<Field> fields = feature.getFields();
-        for (int i = 0; i < fields.size(); ++i) {
-            if (!feature.isValuePresent(i)) {
-                continue;
-            }
-            switch (fields.get(i).getType()) {
-                case FTString:
-                    values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
-                    break;
-                case FTInteger:
-                    Object intVal = feature.getFieldValue(i);
-                    if (intVal instanceof Integer) {
-                        values.put(fields.get(i).getName(), (int) intVal);
-                    } else if (intVal instanceof Long) {
-                        values.put(fields.get(i).getName(), (long) intVal);
-                    } else {
-                        Log.d(TAG, "skip value: " + intVal.toString());
-                    }
-                    break;
-                case FTReal:
-                    Object realVal = feature.getFieldValue(i);
-                    if (realVal instanceof Double) {
-                        values.put(fields.get(i).getName(), (double) realVal);
-                    } else if (realVal instanceof Float) {
-                        values.put(fields.get(i).getName(), (float) realVal);
-                    } else {
-                        Log.d(TAG, "skip value: " + realVal.toString());
-                    }
-                    break;
-                case FTDate:
-                case FTTime:
-                case FTDateTime:
-                    Object dateVal = feature.getFieldValue(i);
-                    if (dateVal instanceof Date) {
-                        Date date = (Date) dateVal;
-                        values.put(fields.get(i).getName(), date.getTime());
-                    } else if (dateVal instanceof Long) {
-                        values.put(fields.get(i).getName(), (long) dateVal);
-                    } else if (dateVal instanceof Calendar) {
-                        Calendar cal = (Calendar) dateVal;
-                        values.put(fields.get(i).getName(), cal.getTimeInMillis());
-                    } else {
-                        Log.d(TAG, "skip value: " + dateVal.toString());
-                    }
-                    break;
-            }
-        }
+        final ContentValues values = getFeatureContentValues(feature);
 
         long rowId = db.insert(mPath.getName(), "", values);
         if (rowId != Constants.NOT_FOUND) {
@@ -568,104 +560,6 @@ public class VectorLayer
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         SQLiteDatabase db = map.getDatabase(false);
         db.execSQL(fieldCreate);
-    }
-
-
-    public void createFeature(Feature feature)
-            throws SQLiteException
-    {
-        // check if geometry type is appropriate layer geometry type
-        if (null == feature.getGeometry() || feature.getGeometry().getType() != mGeometryType) {
-            return;
-        }
-
-        if (!mCacheLoaded) {
-            reloadCache();
-        }
-
-
-        // check if such id already used
-        // maybe was added previous session
-        if (mCache.getItem(feature.getId()) != null) {
-            return;
-        }
-
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(false);
-
-        final ContentValues values = new ContentValues();
-        if (feature.getId() != Constants.NOT_FOUND) {
-            values.put(Constants.FIELD_ID, feature.getId());
-        }
-
-        try {
-            values.put(Constants.FIELD_GEOM, feature.getGeometry().toBlob());
-            prepareGeometry(values);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        List<Field> fields = feature.getFields();
-        for (int i = 0; i < fields.size(); ++i) {
-            if (!feature.isValuePresent(i)) {
-                continue;
-            }
-            switch (fields.get(i).getType()) {
-                case FTString:
-                    values.put(fields.get(i).getName(), feature.getFieldValueAsString(i));
-                    break;
-                case FTInteger:
-                    Object intVal = feature.getFieldValue(i);
-                    if (intVal instanceof Integer) {
-                        values.put(fields.get(i).getName(), (int) intVal);
-                    } else if (intVal instanceof Long) {
-                        values.put(fields.get(i).getName(), (long) intVal);
-                    } else {
-                        Log.d(TAG, "skip value: " + intVal.toString());
-                    }
-                    break;
-                case FTReal:
-                    Object realVal = feature.getFieldValue(i);
-                    if (realVal instanceof Double) {
-                        values.put(fields.get(i).getName(), (double) realVal);
-                    } else if (realVal instanceof Float) {
-                        values.put(fields.get(i).getName(), (float) realVal);
-                    } else {
-                        Log.d(TAG, "skip value: " + realVal.toString());
-                    }
-                    break;
-                case FTDate:
-                case FTTime:
-                case FTDateTime:
-                    Object dateVal = feature.getFieldValue(i);
-                    if (dateVal instanceof Date) {
-                        Date date = (Date) dateVal;
-                        values.put(fields.get(i).getName(), date.getTime());
-                    } else if (dateVal instanceof Long) {
-                        values.put(fields.get(i).getName(), (long) dateVal);
-                    } else if (dateVal instanceof Calendar) {
-                        Calendar cal = (Calendar) dateVal;
-                        values.put(fields.get(i).getName(), cal.getTimeInMillis());
-                    } else {
-                        Log.d(TAG, "skip value: " + dateVal.toString());
-                    }
-                    break;
-            }
-        }
-
-        if (Constants.DEBUG_MODE) {
-            Log.d(TAG, "Inserting " + values);
-        }
-        long rowId = db.insert(mPath.getName(), "", values);
-        if (rowId != Constants.NOT_FOUND) {
-            if (null == feature.getGeometry()) {
-                return;
-            }
-
-            //update bbox
-            cacheGeometryEnvelope(rowId, feature.getGeometry());
-            save();
-        }
     }
 
 

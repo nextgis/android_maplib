@@ -129,6 +129,15 @@ public class NGWUtil
     }
 
 
+    public static String getNgwVersionUrl(String server)
+    {
+        if (!server.startsWith("http")) {
+            server = "http://" + server;
+        }
+        return server + "/api/component/pyramid/pkg_version";
+    }
+
+
     /**
      * GeoJSON URL. Get data as GeoJSON
      *

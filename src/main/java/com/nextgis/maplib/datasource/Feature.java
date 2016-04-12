@@ -299,64 +299,81 @@ public class Feature
 
     public ContentValues getContentValues(boolean withId)
     {
-        ContentValues returnValues = new ContentValues();
+        ContentValues values = new ContentValues();
         if (withId) {
-            returnValues.put(FIELD_ID, mId);
+            if (mId != Constants.NOT_FOUND) {
+                values.put(Constants.FIELD_ID, mId);
+            } else {
+                values.putNull(Constants.FIELD_ID);
+            }
         }
 
         try {
             if (null != mGeometry) {
-                returnValues.put(FIELD_GEOM, mGeometry.toBlob());
+                values.put(FIELD_GEOM, mGeometry.toBlob());
             }
         } catch (IOException e) { //if exception - not create geom
             e.printStackTrace();
         }
+        if (!values.containsKey(FIELD_GEOM)) {
+            values.putNull(FIELD_GEOM);
+        }
 
         for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
-            Object value = getFieldValue(i);
 
-            if (null != value) {
-                switch (field.getType()) {
-                    case FTString:
-                        returnValues.put(field.getName(), (String) value);
-                        break;
-                    case FTReal:
-                        if (value instanceof Double) {
-                            returnValues.put(field.getName(), (double) value);
-                        } else {
-                            returnValues.put(field.getName(), (float) value);
-                        }
-                        break;
-                    case FTInteger:
-                        if (value instanceof Long) {
-                            returnValues.put(field.getName(), (long) value);
-                        } else {
-                            returnValues.put(field.getName(), (int) value);
-                        }
-                        break;
-                    case FTDate:
-                    case FTTime:
-                    case FTDateTime:
-                        if (value instanceof Date) {
-                            Date date = (Date) value;
-                            returnValues.put(field.getName(), date.getTime());
-                        } else if (value instanceof Long) {
-                            returnValues.put(field.getName(), (long) value);
-                        } else if (value instanceof Calendar) {
-                            Calendar cal = (Calendar) value;
-                            returnValues.put(field.getName(), cal.getTimeInMillis());
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            } else {
-                returnValues.putNull(field.getName());
+            if (!isValuePresent(i)) {
+                values.putNull(field.getName());
+                continue;
+            }
+
+            switch (field.getType()) {
+                case FTString:
+                    values.put(field.getName(), getFieldValueAsString(i));
+                    break;
+
+                case FTInteger:
+                    Object intVal = getFieldValue(i);
+                    if (intVal instanceof Integer) {
+                        values.put(field.getName(), (int) intVal);
+                    } else if (intVal instanceof Long) {
+                        values.put(field.getName(), (long) intVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + intVal.toString());
+                    }
+                    break;
+
+                case FTReal:
+                    Object realVal = getFieldValue(i);
+                    if (realVal instanceof Double) {
+                        values.put(field.getName(), (double) realVal);
+                    } else if (realVal instanceof Float) {
+                        values.put(field.getName(), (float) realVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + realVal.toString());
+                    }
+                    break;
+
+                case FTDate:
+                case FTTime:
+                case FTDateTime:
+                    Object dateVal = getFieldValue(i);
+                    if (dateVal instanceof Date) {
+                        Date date = (Date) dateVal;
+                        values.put(field.getName(), date.getTime());
+                    } else if (dateVal instanceof Long) {
+                        values.put(field.getName(), (long) dateVal);
+                    } else if (dateVal instanceof Calendar) {
+                        Calendar cal = (Calendar) dateVal;
+                        values.put(field.getName(), cal.getTimeInMillis());
+                    } else {
+                        Log.d(TAG, "skip value: " + dateVal.toString());
+                    }
+                    break;
             }
         }
 
-        return returnValues;
+        return values;
     }
 
 
