@@ -29,6 +29,7 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
+import android.util.Pair;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
@@ -135,6 +136,28 @@ public class NGWUtil
             server = "http://" + server;
         }
         return server + "/api/component/pyramid/pkg_version";
+    }
+
+
+    public static Pair<Integer, Integer> getNgwVersion(AccountUtil.AccountData accountData)
+            throws IOException, NGException, JSONException, NumberFormatException
+    {
+        String verData =
+                NetworkUtil.get(NGWUtil.getNgwVersionUrl(accountData.url), accountData.login,
+                        accountData.password);
+        if (null != verData) {
+            JSONObject verJSONObject = new JSONObject(verData);
+            String fullVer = verJSONObject.getString("nextgisweb");
+            String[] verParts = fullVer.split("\\.");
+
+            if (2 == verParts.length) {
+                Integer major = Integer.parseInt(verParts[0]);
+                Integer minor = Integer.parseInt(verParts[1]);
+                return new Pair<>(major, minor);
+            }
+        }
+
+        return null;
     }
 
 

@@ -26,8 +26,10 @@ package com.nextgis.maplib.util;
 import android.accounts.Account;
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.SyncInfo;
 import android.os.Build;
+import com.nextgis.maplib.api.IGISApplication;
 
 
 public class AccountUtil
@@ -57,5 +59,30 @@ public class AccountUtil
             }
         }
         return false;
+    }
+
+
+    public static AccountData getAccountData(
+            Context context,
+            String accountName)
+    {
+        IGISApplication app = (IGISApplication) context.getApplicationContext();
+        Account account = app.getAccount(accountName);
+
+        AccountData accountData = new AccountData();
+
+        accountData.url = app.getAccountUrl(account);
+        accountData.login = app.getAccountLogin(account);
+        accountData.password = app.getAccountPassword(account);
+
+        return accountData;
+    }
+
+
+    public static class AccountData
+    {
+        public String url;
+        public String login;
+        public String password;
     }
 }

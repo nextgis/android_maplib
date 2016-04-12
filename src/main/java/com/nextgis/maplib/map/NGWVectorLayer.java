@@ -23,7 +23,6 @@
 
 package com.nextgis.maplib.map;
 
-import android.accounts.Account;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -37,8 +36,8 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
+import android.util.Pair;
 import com.nextgis.maplib.R;
-import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
@@ -47,6 +46,7 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
+import com.nextgis.maplib.util.AccountUtil;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.DatabaseContext;
@@ -169,7 +169,7 @@ public class NGWVectorLayer
 
     public String getRemoteUrl()
     {
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
         return NGWUtil.getResourceUrl(accountData.url, mRemoteId);
     }
 
@@ -339,7 +339,7 @@ public class NGWVectorLayer
     public void createFromNGW(IProgressor progressor)
             throws NGException, IOException, JSONException, SQLiteException
     {
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         if (null == accountData.url) {
             throw new NGException(getContext().getString(R.string.error_download_data));
@@ -354,21 +354,14 @@ public class NGWVectorLayer
         }
 
         // get NGW version
+        Pair<Integer, Integer> ver = null;
         try {
-            String verData =
-                    NetworkUtil.get(NGWUtil.getNgwVersionUrl(accountData.url), accountData.login,
-                            accountData.password);
-            if (null != verData) {
-                JSONObject verJSONObject = new JSONObject(verData);
-                String fullVer = verJSONObject.getString("nextgisweb");
-                String[] verParts = fullVer.split("\\.");
-
-                if (2 == verParts.length) {
-                    mNgwVersionMajor = Integer.parseInt(verParts[0]);
-                    mNgwVersionMinor = Integer.parseInt(verParts[1]);
-                }
-            }
+            ver = NGWUtil.getNgwVersion(accountData);
         } catch (IOException | NGException | NumberFormatException ignored) {
+        }
+        if (null != ver) {
+            mNgwVersionMajor = ver.first;
+            mNgwVersionMinor = ver.second;
         }
 
         String data = NetworkUtil.get(NGWUtil.getResourceMetaUrl(accountData.url, mRemoteId),
@@ -631,7 +624,23 @@ public class NGWVectorLayer
             return;
         }
 
-        // 1. get remote changes
+        // 1. check NGW version
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+        Pair<Integer, Integer> ver = null;
+        try {
+            ver = NGWUtil.getNgwVersion(accountData);
+        } catch (IOException | NGException | JSONException | NumberFormatException ignored) {
+        }
+        if (null != ver) {
+            int majorVer = ver.first;
+            int minorVer = ver.second;
+
+            if (mNgwVersionMajor < majorVer) {
+                return;
+            }
+        }
+
+        // 2. get remote changes
         if (!getChangesFromServer(authority, syncResult)) {
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "Get remote changes failed");
@@ -643,7 +652,7 @@ public class NGWVectorLayer
             return;
         }
 
-        // 2. send current changes
+        // 3. send current changes
         if (!sendLocalChanges(syncResult)) {
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "Set local changes failed");
@@ -830,7 +839,7 @@ public class NGWVectorLayer
             return true;
         }
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
             JSONObject putData = new JSONObject();
@@ -870,7 +879,7 @@ public class NGWVectorLayer
             return false;
         }
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
 
@@ -913,7 +922,7 @@ public class NGWVectorLayer
         File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
         String fileMime = attach.getMimetype();
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
             //1. upload file
@@ -1056,7 +1065,7 @@ public class NGWVectorLayer
             return false;
         }
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "The network is available. Get changes from server");
@@ -1421,7 +1430,7 @@ public class NGWVectorLayer
             return true; //just remove buggy data
         }
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
             if (cursor.moveToFirst()) {
@@ -1471,7 +1480,7 @@ public class NGWVectorLayer
             return false;
         }
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
             if (!NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
@@ -1508,7 +1517,7 @@ public class NGWVectorLayer
             return true; //just remove buggy data
         }
 
-        AccountData accountData = getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
             if (cursor.moveToFirst()) {
@@ -2085,30 +2094,5 @@ public class NGWVectorLayer
                 "( 0 != ( " + FIELD_ATTACH_OPERATION + " & " + CHANGE_OPERATION_TEMP + " ) )";
 
         return FeatureChanges.delete(getChangeTableName(), selection);
-    }
-
-
-    protected AccountData getAccountData(
-            Context context,
-            String accountName)
-    {
-        IGISApplication app = (IGISApplication) context.getApplicationContext();
-        Account account = app.getAccount(accountName);
-
-        AccountData accountData = new AccountData();
-
-        accountData.url = app.getAccountUrl(account);
-        accountData.login = app.getAccountLogin(account);
-        accountData.password = app.getAccountPassword(account);
-
-        return accountData;
-    }
-
-
-    protected class AccountData
-    {
-        String url;
-        String login;
-        String password;
     }
 }
