@@ -58,7 +58,8 @@ public class Feature
     protected Map<String, AttachItem> mAttachments;
 
 
-    public Feature(){
+    public Feature()
+    {
         mId = Constants.NOT_FOUND;
         mFields = new ArrayList<>();
         mFieldValues = new ArrayList<>();
@@ -146,7 +147,7 @@ public class Feature
     public Object getFieldValue(int index)
     {
         if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
-            index >= mFieldValues.size()) {
+                index >= mFieldValues.size()) {
             return null;
         }
         return mFieldValues.get(index);
@@ -170,12 +171,16 @@ public class Feature
         return NOT_FOUND;
     }
 
-    public int getFieldValueAsInteger(String fieldName){
+
+    public int getFieldValueAsInteger(String fieldName)
+    {
         int index = getFieldValueIndex(fieldName);
         return getFieldValueAsInteger(index);
     }
 
-    public int getFieldValueAsInteger(int index){
+
+    public int getFieldValueAsInteger(int index)
+    {
         if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
                 index >= mFieldValues.size()) {
             return Integer.MAX_VALUE;
@@ -185,26 +190,29 @@ public class Feature
         if (null == val) {
             return Integer.MAX_VALUE;
         }
-        
-        if(val instanceof Long){
+
+        if (val instanceof Long) {
             Long lval = (Long) val;
             return lval.intValue();
-        }
-        else if(val instanceof Integer)
-            return (int)val;
-        else
+        } else if (val instanceof Integer) {
+            return (int) val;
+        } else {
             return Integer.MAX_VALUE;
+        }
     }
 
-    public String getFieldValueAsString(String fieldName){
+
+    public String getFieldValueAsString(String fieldName)
+    {
         int index = getFieldValueIndex(fieldName);
         return getFieldValueAsString(index);
     }
 
+
     public String getFieldValueAsString(int index)
     {
         if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
-            index >= mFieldValues.size()) {
+                index >= mFieldValues.size()) {
             return "";
         }
         Object val = mFieldValues.get(index);
@@ -237,6 +245,7 @@ public class Feature
         }
         return "";
     }
+
 
     @Override
     public JSONObject toJSON()
@@ -332,12 +341,10 @@ public class Feature
                         if (value instanceof Date) {
                             Date date = (Date) value;
                             returnValues.put(field.getName(), date.getTime());
-                        }
-                        else if(value instanceof Long){
+                        } else if (value instanceof Long) {
                             returnValues.put(field.getName(), (long) value);
-                        }
-                        else if(value instanceof Calendar){
-                            Calendar cal = (Calendar)value;
+                        } else if (value instanceof Calendar) {
+                            Calendar cal = (Calendar) value;
                             returnValues.put(field.getName(), cal.getTimeInMillis());
                         }
                         break;
@@ -434,27 +441,24 @@ public class Feature
                 Log.d(TAG, value + "<->" + valueOther);
                 return false;
             } else {
-                if(field.getType() == GeoConstants.FTInteger){
-                    if(!checkIntegerEqual(value, valueOther)) {
+                if (field.getType() == GeoConstants.FTInteger) {
+                    if (!checkIntegerEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if(field.getType() == GeoConstants.FTReal) {
-                    if(!checkRealEqual(value, valueOther)) {
+                } else if (field.getType() == GeoConstants.FTReal) {
+                    if (!checkRealEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if(field.getType() == GeoConstants.FTDate ||
+                } else if (field.getType() == GeoConstants.FTDate ||
                         field.getType() == GeoConstants.FTTime ||
                         field.getType() == GeoConstants.FTDateTime) {
-                    if(!checkDateEqual(value, valueOther)) {
+                    if (!checkDateEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                }
-                else if (!value.equals(valueOther)) { // any other cases
+                } else if (!value.equals(valueOther)) { // any other cases
                     Log.d(TAG, value + "<->" + valueOther);
                     return false;
                 }
@@ -469,15 +473,15 @@ public class Feature
         return mGeometry.equals(f.getGeometry());
     }
 
-    private long dateObjectToLong(Object value) {
-        if(value instanceof Long) {
+
+    private long dateObjectToLong(Object value)
+    {
+        if (value instanceof Long) {
             return (Long) value;
-        }
-        else if(value instanceof Date){
+        } else if (value instanceof Date) {
             Date date = (Date) value;
             return date.getTime();
-        }
-        else if(value instanceof Calendar){
+        } else if (value instanceof Calendar) {
             Calendar cal = (Calendar) value;
             return cal.getTimeInMillis();
         }
@@ -485,41 +489,50 @@ public class Feature
         return Constants.NOT_FOUND;
     }
 
-    private boolean checkDateEqual(Object value, Object valueOther) {
+
+    private boolean checkDateEqual(
+            Object value,
+            Object valueOther)
+    {
         return dateObjectToLong(value) == dateObjectToLong(valueOther);
     }
 
-    private boolean checkRealEqual(Object value, Object valueOther) {
+
+    private boolean checkRealEqual(
+            Object value,
+            Object valueOther)
+    {
         if (value instanceof Float && valueOther instanceof Double) {
             Float vlong = (Float) value;
             Double ovlong = (Double) valueOther;
             return vlong == ovlong.floatValue();
-        }
-        else if (value instanceof Double && valueOther instanceof Float) {
+        } else if (value instanceof Double && valueOther instanceof Float) {
             Double vlong = (Double) value;
             Float ovlong = (Float) valueOther;
             return vlong.floatValue() == ovlong;
-        }
-        else {
+        } else {
             return value.equals(valueOther);
         }
     }
 
-    private boolean checkIntegerEqual(Object value, Object valueOther) {
+
+    private boolean checkIntegerEqual(
+            Object value,
+            Object valueOther)
+    {
         if (value instanceof Integer && valueOther instanceof Long) {
             Integer vlong = (Integer) value;
             Long ovlong = (Long) valueOther;
             return vlong == ovlong.intValue();
-        }
-        else if (value instanceof Long && valueOther instanceof Integer) {
+        } else if (value instanceof Long && valueOther instanceof Integer) {
             Long vlong = (Long) value;
             Integer ovlong = (Integer) valueOther;
-            return  vlong.intValue() == ovlong;
-        }
-        else {
+            return vlong.intValue() == ovlong;
+        } else {
             return value.equals(valueOther);
         }
     }
+
 
     public boolean equalsAttachments(Feature f)
     {
