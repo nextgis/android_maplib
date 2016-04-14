@@ -26,6 +26,7 @@ package com.nextgis.maplib.datasource.ngw;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -95,6 +96,9 @@ public class ResourceGroup
                 resource = new ResourceGroup(data, mConnection);
                 break;
             case Connection.NGWResourceTypePostgisLayer:
+                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3) {
+                    break;
+                }
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
@@ -176,6 +180,9 @@ public class ResourceGroup
                     mChildren.add(resourceGroup);
                     break;
                 case Connection.NGWResourceTypePostgisLayer:
+                    if (mConnection.getNgwVersionMajor() < Constants.NGW_v3) {
+                        break;
+                    }
                 case Connection.NGWResourceTypeRasterLayer:
                 case Connection.NGWResourceTypeVectorLayer:
                 case Connection.NGWResourceTypeWMSClient:

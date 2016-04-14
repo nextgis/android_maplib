@@ -33,6 +33,8 @@ public interface Constants
     int     NOT_FOUND          = -1;
     boolean DEBUG_MODE         = true;
 
+    int NGW_v3 = 3;
+
     /**
      * HTTP parameters
      */

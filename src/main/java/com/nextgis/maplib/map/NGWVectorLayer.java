@@ -99,8 +99,8 @@ public class NGWVectorLayer
 
     protected NetworkUtil mNet;
 
-    protected int mNgwVersionMajor = NOT_FOUND;
-    protected int mNgwVersionMinor = NOT_FOUND;
+    protected int mNgwVersionMajor = Constants.NOT_FOUND;
+    protected int mNgwVersionMinor = Constants.NOT_FOUND;
 
     protected String mAccountName;
     protected long   mRemoteId;
@@ -322,14 +322,7 @@ public class NGWVectorLayer
     @Override
     protected boolean checkGeometryType(Feature feature)
     {
-        if (mNgwVersionMajor >= 3) {
-            return super.checkGeometryType(feature);
-        }
-
-        if (feature.getGeometry().getType() != mGeometryType) {
-            mGeometryType = feature.getGeometry().getType();
-        }
-        return true;
+        return mNgwVersionMajor < Constants.NGW_v3 || super.checkGeometryType(feature);
     }
 
 
@@ -356,7 +349,7 @@ public class NGWVectorLayer
         // get NGW version
         Pair<Integer, Integer> ver = null;
         try {
-            ver = NGWUtil.getNgwVersion(accountData);
+            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
         } catch (IOException | NGException | NumberFormatException ignored) {
         }
         if (null != ver) {
@@ -381,7 +374,7 @@ public class NGWVectorLayer
         if (geoJSONObject.has("vector_layer")) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
             mNGWLayerType = Connection.NGWResourceTypeVectorLayer;
-        } else if (geoJSONObject.has("postgis_layer")) {
+        } else if (mNgwVersionMajor >= Constants.NGW_v3 && geoJSONObject.has("postgis_layer")) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
             mNGWLayerType = Connection.NGWResourceTypePostgisLayer;
         }
@@ -508,8 +501,11 @@ public class NGWVectorLayer
             List<Field> fields)
             throws SQLiteException
     {
-//        if(geometryType < 4 && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) // to multi
-//            geometryType += 3;
+        if (mNgwVersionMajor < Constants.NGW_v3 && geometryType < 4
+                && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) {
+            // to multi
+            geometryType += 3;
+        }
 
         super.create(geometryType, fields);
         FeatureChanges.initialize(getChangeTableName());
@@ -628,14 +624,14 @@ public class NGWVectorLayer
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
         Pair<Integer, Integer> ver = null;
         try {
-            ver = NGWUtil.getNgwVersion(accountData);
+            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
         } catch (IOException | NGException | JSONException | NumberFormatException ignored) {
         }
         if (null != ver) {
             int majorVer = ver.first;
             int minorVer = ver.second;
 
-            if (mNgwVersionMajor < majorVer) {
+            if (mNgwVersionMajor != majorVer) {
                 return;
             }
         }

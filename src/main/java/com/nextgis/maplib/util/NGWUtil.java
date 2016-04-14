@@ -139,12 +139,13 @@ public class NGWUtil
     }
 
 
-    public static Pair<Integer, Integer> getNgwVersion(AccountUtil.AccountData accountData)
+    public static Pair<Integer, Integer> getNgwVersion(
+            String url,
+            String login,
+            String password)
             throws IOException, NGException, JSONException, NumberFormatException
     {
-        String verData =
-                NetworkUtil.get(NGWUtil.getNgwVersionUrl(accountData.url), accountData.login,
-                        accountData.password);
+        String verData = NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password);
         if (null != verData) {
             JSONObject verJSONObject = new JSONObject(verData);
             String fullVer = verJSONObject.getString("nextgisweb");
@@ -154,6 +155,10 @@ public class NGWUtil
                 Integer major = Integer.parseInt(verParts[0]);
                 Integer minor = Integer.parseInt(verParts[1]);
                 return new Pair<>(major, minor);
+            } else {
+                Log.d(
+                        TAG, "BAD format of the NGW version, must be 'major.minor', obtained: "
+                                + fullVer);
             }
         }
 

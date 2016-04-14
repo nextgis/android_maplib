@@ -26,6 +26,8 @@ package com.nextgis.maplib.datasource.ngw;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import android.util.Pair;
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -42,6 +44,9 @@ import java.util.List;
 public class Connection
         implements INGWResource
 {
+    protected int mNgwVersionMajor = Constants.NOT_FOUND;
+    protected int mNgwVersionMinor = Constants.NOT_FOUND;
+
     protected String        mName;
     protected String        mLogin;
     protected String        mPassword;
@@ -116,6 +121,7 @@ public class Connection
 
             mIsConnected = true;
 
+            setNgwVersion();
             fillCapabilities();
 
             mRootResource = new ResourceGroup(0, this);
@@ -126,6 +132,33 @@ public class Connection
             return false;
         }
     }
+
+
+    protected void setNgwVersion()
+    {
+        Pair<Integer, Integer> ver = null;
+        try {
+            ver = NGWUtil.getNgwVersion(mURL, mLogin, mPassword);
+        } catch (IOException | NGException | JSONException | NumberFormatException ignored) {
+        }
+        if (null != ver) {
+            mNgwVersionMajor = ver.first;
+            mNgwVersionMinor = ver.second;
+        }
+    }
+
+
+    public int getNgwVersionMajor()
+    {
+        return mNgwVersionMajor;
+    }
+
+
+    public int getNgwVersionMinor()
+    {
+        return mNgwVersionMinor;
+    }
+
 
     public String getCookie()
     {
