@@ -50,7 +50,10 @@
     <string name="processed">Processed</string>
     <string name="of">of</string>
     <string name="rebuild_cache">Rebuild cache</string>
+    <string name="general">General</string>
     <string name="fields">Fields</string>
+    <string name="style">Style</string>
+    <string name="cache">Cache</string>
     <string name="field_name">Field name</string>
     <string name="field_type">Field type</string>
     <string name="field_type_string">String</string>

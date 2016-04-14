@@ -50,7 +50,10 @@
     <string name="processed">Обработано</string>
     <string name="of">из</string>
     <string name="rebuild_cache">Перестроить кэш</string>
+    <string name="general">Общее</string>
     <string name="fields">Поля</string>
+    <string name="style">Стиль</string>
+    <string name="cache">Кэш</string>
     <string name="field_name">Имя поля</string>
     <string name="field_type">Тип поля</string>
     <string name="field_type_string">Строка</string>
