@@ -100,7 +100,7 @@ public class TrackLayer
 
     private static String CONTENT_TYPE, CONTENT_TYPE_TRACKPOINTS, CONTENT_ITEM_TYPE;
 
-    protected int    mColor = Color.LTGRAY;
+    protected static int    mColor = Color.LTGRAY;
     protected Cursor mCursor;
     String         mAuthority;
     SQLiteDatabase mSQLiteDatabase;
@@ -276,10 +276,14 @@ public class TrackLayer
     }
 
 
-    public int getColor(long id)
+    public int getColor(long id) {
+        return getColor(mContext, mContentUriTracks, id);
+    }
+
+    public static int getColor(Context context, Uri tracksUri, long id)
     {
         String selection = FIELD_ID + " = ?";
-        Cursor cursor = mContext.getContentResolver().query(mContentUriTracks, new String[] {FIELD_COLOR}, selection, new String[]{id + ""}, null);
+        Cursor cursor = context.getContentResolver().query(tracksUri, new String[] {FIELD_COLOR}, selection, new String[]{id + ""}, null);
 
         if (null == cursor) {
             return mColor;
