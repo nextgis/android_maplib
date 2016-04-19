@@ -133,7 +133,7 @@ public class SimpleMarkerStyle
                 break;
 
             case MarkerStyleCross:
-                // TODO
+                drawCrossMarker(scaledSize, pt, display);
                 break;
 
             case MarkerStyleTriangle:
@@ -248,6 +248,15 @@ public class SimpleMarkerStyle
 
         mOutPaint.setStrokeWidth((float) (mWidth / display.getScale()));
         display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
+    }
+
+
+    protected void drawCrossMarker(
+            float scaledSize, GeoPoint pt,
+            GISDisplay display)
+    {
+        mOutPaint.setStrokeWidth((float) (mWidth / display.getScale()));
+        display.drawCross((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
     }
 
 

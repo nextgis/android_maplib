@@ -572,6 +572,19 @@ public class GISDisplay
             return;
         }
         mMainCanvas.drawRect(x - size, y - size, x + size, y + size, paint);
+        drawCross(x, y, size, paint);
+    }
+
+
+    public void drawCross(
+            float x,
+            float y,
+            float size,
+            Paint paint)
+    {
+        if (null == mMainCanvas) {
+            return;
+        }
         mMainCanvas.drawLine(x - size, y - size, x + size, y + size, paint);
         mMainCanvas.drawLine(x - size, y + size, x + size, y - size, paint);
     }
