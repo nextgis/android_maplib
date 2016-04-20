@@ -69,7 +69,7 @@ public class GeometryRTree implements IGeometryCache {
      *          minimum number of entries per node (except for the root node)
      */
     public GeometryRTree(int maxEntries, int minEntries, SeedPicker seedPicker){
-        assert (minEntries <= (maxEntries / 2));
+        if (minEntries > (maxEntries / 2)) throw new AssertionError();
         this.maxEntries = maxEntries;
         this.minEntries = minEntries;
         this.seedPicker = seedPicker;
@@ -204,13 +204,12 @@ public class GeometryRTree implements IGeometryCache {
             minEntries = dataInputStream.readInt();
             size = dataInputStream.readInt();
 
-            boolean tmp = dataInputStream.readBoolean();
+            dataInputStream.readBoolean();
             root = new Node();
             root.read(dataInputStream);
 
             dataInputStream.close();
             fileInputStream.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -687,9 +686,9 @@ public class GeometryRTree implements IGeometryCache {
     }
 
     private void tighten(Node... nodes){
-        assert(nodes.length >= 1): "Pass some nodes to tighten!";
+        if (nodes.length < 1) throw new AssertionError("Pass some nodes to tighten!");
         for (Node n: nodes) {
-            assert(n.mChildren.size() > 0) : "tighten() called on empty node!";
+            if (n.mChildren.size() <= 0) throw new AssertionError("tighten() called on empty node!");
             n.mCoords.unInit();
 
             for (Node c : n.mChildren)
@@ -714,24 +713,24 @@ public class GeometryRTree implements IGeometryCache {
 
         double minInc = Double.MAX_VALUE;
         Node next = null;
-        for (Node c : n.mChildren)
-        {
+        for (Node c : n.mChildren) {
             double inc = getRequiredExpansion(c.mCoords, e);
-            if (inc < minInc){
+            if (inc < minInc) {
                 minInc = inc;
                 next = c;
-            }
-            else if (inc == minInc){
+            } else if (inc == minInc) {
+                if (next == null)
+                    continue;
+
                 double curArea = next.mCoords.getArea();
                 double thisArea = c.mCoords.getArea();
-                if (thisArea < curArea)
-                {
+                if (thisArea < curArea) {
                     next = c;
                 }
             }
         }
 
-        if(next == null)
+        if (next == null)
             return n;
 
         return chooseLeaf(next, e);
