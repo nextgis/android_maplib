@@ -2419,21 +2419,17 @@ public class VectorLayer
     }
 
 
-    public List<Long> query(GeoEnvelope env)
-    {
-
+    public List<Long> query(GeoEnvelope env) {
         List<IGeometryCacheItem> items;
-        if (null == env || !env.isInit() || !mExtents.isInit() || env.contains(mExtents)) {
+        if (null == env || !env.isInit() || !mExtents.isInit() || env.contains(mExtents))
             items = mCache.getAll();
-        } else {
+        else
             items = mCache.search(env);
-        }
+
         List<Long> result = new ArrayList<>(items.size());
-        for (IGeometryCacheItem item : items) {
-            if (!result.contains(item.getFeatureId())) {
-                result.add(item.getFeatureId());
-            }
-        }
+        for (IGeometryCacheItem item : items)
+            result.add(item.getFeatureId());
+
         return result;
     }
 
