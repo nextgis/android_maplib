@@ -154,14 +154,16 @@ public class NetworkUtil
     {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
         if(null == conn){
-            Log.d(TAG, "Error get connection object");
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object");
             return;
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " +
-                    responseCode);
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Problem execute getStream: " + targetURL + " HTTP response: " +
+                    responseCode + " username: " + username);
             return;
         }
 
@@ -179,13 +181,15 @@ public class NetworkUtil
             throws IOException, NGException {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
         if(null == conn){
-            Log.d(TAG, "Error get connection object");
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object");
             return null;
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " +
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " +
                     responseCode);
             throw new NGException(responseCode + "");
         }
@@ -203,7 +207,8 @@ public class NetworkUtil
     {
         final HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
         if(null == conn){
-            Log.d(TAG, "Error get connection object");
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object");
             return null;
         }
         conn.setRequestProperty("Content-type", "application/json");
@@ -220,7 +225,8 @@ public class NetworkUtil
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " +
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " +
                     responseCode);
             return null;
         }
@@ -237,13 +243,15 @@ public class NetworkUtil
     {
         final HttpURLConnection conn = getHttpConnection("DELETE", targetURL, username, password);
         if(null == conn){
-            Log.d(TAG, "Error get connection object");
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object");
             return false;
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " +
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " +
                     responseCode);
             return false;
         }
@@ -261,7 +269,8 @@ public class NetworkUtil
     {
         final HttpURLConnection conn = getHttpConnection("PUT", targetURL, username, password);
         if(null == conn){
-            Log.d(TAG, "Error get connection object");
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object");
             return null;
         }
         conn.setRequestProperty("Content-type", "application/json");
@@ -278,7 +287,8 @@ public class NetworkUtil
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " +
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " +
                     responseCode);
             return null;
         }
@@ -333,7 +343,8 @@ public class NetworkUtil
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " +
+            if(Constants.DEBUG_MODE)
+                Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " +
                     responseCode);
             return null;
         }
