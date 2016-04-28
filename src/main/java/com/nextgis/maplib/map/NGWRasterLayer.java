@@ -26,6 +26,7 @@ package com.nextgis.maplib.map;
 import android.accounts.Account;
 import android.content.Context;
 import android.content.SyncResult;
+import android.util.Log;
 
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -88,6 +89,12 @@ public class NGWRasterLayer
         if (null != account) {
             mCacheLogin = app.getAccountLogin(account);
             mCachePassword = app.getAccountPassword(account);
+            if(Constants.DEBUG_MODE){
+                Log.d(Constants.TAG, "Get account. User: " + mCacheLogin);
+            }
+        }
+        else if(Constants.DEBUG_MODE){
+            Log.d(Constants.TAG, "Failed to get account for name: " + mAccountName);
         }
     }
 
