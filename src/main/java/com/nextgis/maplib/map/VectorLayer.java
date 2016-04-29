@@ -58,6 +58,7 @@ import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.GeometryRTree;
+import com.nextgis.maplib.display.FieldStyleRule;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
@@ -652,7 +653,7 @@ public class VectorLayer
     }
 
 
-    protected Style getDefaultStyle()
+    public Style getDefaultStyle()
             throws Exception
     {
         switch (mGeometryType) {
@@ -723,6 +724,14 @@ public class VectorLayer
 
     protected IStyleRule getStyleRule()
     {
+        try {
+            JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
+            jsonObject = jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY);
+            return new FieldStyleRule(this, jsonObject.getJSONArray(JSON_RULES_KEY));
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 

@@ -44,6 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -271,34 +272,40 @@ public class SimpleFeatureRenderer
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
+        AtomicReference<Style> reference = new AtomicReference<>();
+        fromJSON(jsonObject, reference);
+        mStyle = reference.get();
+    }
+
+    public static void fromJSON(JSONObject jsonObject, AtomicReference<Style> style) throws JSONException {
         JSONObject styleJsonObject = jsonObject.getJSONObject(JSON_STYLE_KEY);
         String styleName = styleJsonObject.getString(JSON_NAME_KEY);
         switch (styleName) {
             case "SimpleMarkerStyle":
-                mStyle = new SimpleMarkerStyle();
+                style.set(new SimpleMarkerStyle());
                 break;
             case "SimpleTextMarkerStyle":
-                mStyle = new SimpleTextMarkerStyle();
+                style.set(new SimpleTextMarkerStyle());
                 break;
             case "SimpleLineStyle":
-                mStyle = new SimpleLineStyle();
+                style.set(new SimpleLineStyle());
                 break;
             case "SimpleTextLineStyle":
-                mStyle = new SimpleTextLineStyle();
+                style.set(new SimpleTextLineStyle());
                 break;
             case "SimplePolygonStyle":
-                mStyle = new SimplePolygonStyle();
+                style.set(new SimplePolygonStyle());
                 break;
             case "SimpleTiledPolygonStyle":
-                mStyle = new SimpleTiledPolygonStyle();
+                style.set(new SimpleTiledPolygonStyle());
                 break;
             case "SimpleTextPolygonStyle":
-                mStyle = new SimpleTextPolygonStyle();
+                style.set(new SimpleTextPolygonStyle());
                 break;
             default:
                 throw new JSONException("Unknown style type: " + styleName);
         }
-        mStyle.fromJSON(styleJsonObject);
+        style.get().fromJSON(styleJsonObject);
     }
 
     protected class DrawTask implements Runnable {

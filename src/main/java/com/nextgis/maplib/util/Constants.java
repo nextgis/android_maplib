@@ -20,6 +20,7 @@
  * You should have received a copy of the GNU Lesser Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package com.nextgis.maplib.util;
 
 import java.util.concurrent.TimeUnit;
@@ -119,6 +120,7 @@ public interface Constants
     String JSON_BBOX_MAXX_KEY     = "bbox_maxx";
     String JSON_BBOX_MAXY_KEY     = "bbox_maxy";
     String JSON_RENDERERPROPS_KEY = "renderer_properties";
+    String JSON_RULES_KEY         = "rules";
     String JSON_WIDTH_KEY         = "width";
     String JSON_COLOR_KEY         = "color";
     String JSON_OUTCOLOR_KEY      = "out_color";
