@@ -120,7 +120,7 @@ public interface Constants
     String JSON_BBOX_MAXX_KEY     = "bbox_maxx";
     String JSON_BBOX_MAXY_KEY     = "bbox_maxy";
     String JSON_RENDERERPROPS_KEY = "renderer_properties";
-    String JSON_RULES_KEY         = "rules";
+    String JSON_STYLE_RULE_KEY    = "style_rule";
     String JSON_WIDTH_KEY         = "width";
     String JSON_COLOR_KEY         = "color";
     String JSON_OUTCOLOR_KEY      = "out_color";

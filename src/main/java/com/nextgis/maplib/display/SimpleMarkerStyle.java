@@ -118,6 +118,8 @@ public class SimpleMarkerStyle
             return;
         }
 
+        mFillPaint.setColor(mColor);
+        mOutPaint.setColor(mOutColor);
         float scaledSize = (float) (mSize / display.getScale());
         switch (mType) {
             case MarkerStylePoint:

@@ -727,7 +727,10 @@ public class VectorLayer
         try {
             JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
             jsonObject = jsonObject.getJSONObject(JSON_RENDERERPROPS_KEY);
-            return new FieldStyleRule(this, jsonObject.getJSONArray(JSON_RULES_KEY));
+            jsonObject = jsonObject.getJSONObject(JSON_STYLE_RULE_KEY);
+            FieldStyleRule rule = new FieldStyleRule(this);
+            rule.fromJSON(jsonObject);
+            return rule;
         } catch (JSONException | IOException e) {
             e.printStackTrace();
         }

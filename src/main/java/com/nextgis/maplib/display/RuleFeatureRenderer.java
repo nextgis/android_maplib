@@ -29,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_STYLE_RULE_KEY;
 
 
 public class RuleFeatureRenderer
@@ -100,6 +101,10 @@ public class RuleFeatureRenderer
     {
         JSONObject rootJsonObject = super.toJSON();
         rootJsonObject.put(JSON_NAME_KEY, "RuleFeatureRenderer");
+
+        if (mStyleRule instanceof FieldStyleRule)
+            rootJsonObject.put(JSON_STYLE_RULE_KEY, ((FieldStyleRule) mStyleRule).toJSON());
+
         return rootJsonObject;
     }
 }

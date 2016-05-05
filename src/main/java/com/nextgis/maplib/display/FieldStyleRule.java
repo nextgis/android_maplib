@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib.display;
 
+import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.map.VectorLayer;
@@ -34,44 +35,48 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class FieldStyleRule implements IStyleRule {
+public class FieldStyleRule implements IStyleRule, IJSONStore {
+    public static final String JSON_RULES_KEY = "rules";
+    public static final String JSON_FIELD_KEY = "field";
+
     VectorLayer mLayer;
     Map<String, Style> mStyleRules;
     String mKey;
 
-    public FieldStyleRule(VectorLayer layer, JSONArray rules) {
+    public FieldStyleRule(VectorLayer layer) {
         mLayer = layer;
         mStyleRules = new TreeMap<>();
-
-        if (rules == null)
-            return;
-
-        try {
-            for (int i = 0; i < rules.length(); i++) {
-                JSONObject ruleObject = rules.getJSONObject(i);
-                AtomicReference<Style> reference = new AtomicReference<>();
-                SimpleFeatureRenderer.fromJSON(ruleObject, reference);
-
-                if (reference.get() != null) {
-                    String value = ruleObject.getString(Constants.JSON_VALUE_KEY);
-                    mStyleRules.put(value, reference.get());
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     public void setKey(String key) {
         mKey = key;
     }
 
+    public String getKey() {
+        return mKey;
+    }
+
     public void setStyle(String value, Style style) {
         mStyleRules.put(value, style);
     }
 
+    public Style getStyle(String value) {
+        return mStyleRules.get(value);
+    }
+
+    public void removeStyle(String value) {
+        mStyleRules.remove(value);
+    }
+
+    public Map<String, Style> getStyleRules() {
+        return mStyleRules;
+    }
+
     @Override
     public void setStyleParams(Style style, long featureId) {
+        if (mKey == null)
+            return;
+
         Feature feature = mLayer.getFeature(featureId);
         String value = mKey.equals(Constants.FIELD_ID) ? feature.getId() + "" : feature.getFieldValueAsString(mKey);
 
@@ -84,7 +89,7 @@ public class FieldStyleRule implements IStyleRule {
                 SimpleMarkerStyle markerStyle = (SimpleMarkerStyle) style;
                 SimpleMarkerStyle ruleStyle = (SimpleMarkerStyle) rule;
                 markerStyle.setColor(ruleStyle.getColor());
-                markerStyle.setOutlineColor(ruleStyle.getColor());
+                markerStyle.setOutlineColor(ruleStyle.getOutlineColor());
                 markerStyle.setType(ruleStyle.getType());
                 markerStyle.setSize(ruleStyle.getSize());
                 markerStyle.setWidth(ruleStyle.getWidth());
@@ -103,5 +108,50 @@ public class FieldStyleRule implements IStyleRule {
                 polygonStyle.setFill(ruleStyle.isFill());
             }
         }
+    }
+
+    @Override
+    public JSONObject toJSON() throws JSONException {
+        JSONObject result = new JSONObject();
+        JSONArray rules = new JSONArray();
+        for (Map.Entry<String, Style> rule : mStyleRules.entrySet()) {
+            JSONObject item = new JSONObject();
+            item.put(Constants.JSON_VALUE_KEY, rule.getKey());
+            item.put(SimpleFeatureRenderer.JSON_STYLE_KEY, rule.getValue().toJSON());
+            rules.put(item);
+        }
+
+        result.put(JSON_FIELD_KEY, mKey);
+        result.put(JSON_RULES_KEY, rules);
+
+        return result;
+    }
+
+    @Override
+    public void fromJSON(JSONObject jsonObject) throws JSONException {
+        if (jsonObject.has(JSON_FIELD_KEY))
+            mKey = jsonObject.getString(JSON_FIELD_KEY);
+
+        if (jsonObject.has(JSON_RULES_KEY)) {
+            JSONArray rules = jsonObject.getJSONArray(JSON_RULES_KEY);
+            try {
+                for (int i = 0; i < rules.length(); i++) {
+                    JSONObject ruleObject = rules.getJSONObject(i);
+                    AtomicReference<Style> reference = new AtomicReference<>();
+                    SimpleFeatureRenderer.fromJSON(ruleObject, reference);
+
+                    if (reference.get() != null) {
+                        String value = ruleObject.getString(Constants.JSON_VALUE_KEY);
+                        mStyleRules.put(value, reference.get());
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void clearRules() {
+        mStyleRules.clear();
     }
 }
