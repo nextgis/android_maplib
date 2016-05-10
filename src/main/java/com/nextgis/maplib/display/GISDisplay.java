@@ -303,6 +303,9 @@ public class GISDisplay
             return;
         }
 
+        if (mDoubleBufferBitmap == null || mDoubleBufferBitmap.isRecycled())
+            return;
+
         canvas.drawBitmap(
                 mDoubleBufferBitmap, x - mMainBitmapOffsetX, y - mMainBitmapOffsetY, null);
     }
