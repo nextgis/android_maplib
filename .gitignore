@@ -13,7 +13,7 @@ captures/
 
 src/main/libs
 src/main/obj
-src/main/java/com/nextgis/store/
+src/main/java/com/nextgis/store/api*
 src/main/jni/arm*
 src/main/jni/include
 src/main/jni/src
