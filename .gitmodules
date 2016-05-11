@@ -1,0 +1,3 @@
+[submodule "libngstore"]
+	path = libngstore
+	url = git@github.com:nextgis/nextgis_datastore.git
