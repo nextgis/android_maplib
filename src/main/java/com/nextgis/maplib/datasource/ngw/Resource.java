@@ -83,7 +83,7 @@ public abstract class Resource
             }
             if (JSONResource.has("owner_user")) {
                 JSONObject jsonObjectOwnerUser = JSONResource.getJSONObject("owner_user");
-                if (jsonObjectOwnerUser.has("id")) {
+                if (jsonObjectOwnerUser.has("id") && !jsonObjectOwnerUser.isNull("id")) {
                     mOwnerId = jsonObjectOwnerUser.getLong("id");
                 }
             }
