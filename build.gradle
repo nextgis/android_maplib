@@ -31,7 +31,7 @@ android {
     // drop mips for now "mips", , "mips64"
     def androidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
     defaultConfig {
-        minSdkVersion 15
+        minSdkVersion 10
         targetSdkVersion 23
         versionCode 19
         versionName '3.0'
