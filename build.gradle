@@ -53,7 +53,7 @@ android {
             description 'Execute cmake configure & build.'
             workingDir getWorkDir(androidAbi)
 
-            def cmd = "cmake -DBUILD_TARGET_PLATFORM=ANDROID -DCMAKE_BUILD_TYPE=" + buildTypeName + " -DANDROID_NDK=" + getNdkDir() + " -DANDROID_NATIVE_API_LEVEL=" + defaultConfig.minSdkVersion.mApiLevel + " -DBUILD_SHARED_LIBS=N -DANDROID_ABI=" + androidAbi + " ../"
+            def cmd = "cmake -DBUILD_TARGET_PLATFORM=ANDROID -DCMAKE_BUILD_TYPE=" + buildTypeName + " -DANDROID_NDK=" + getNdkDir() + " -DANDROID_NATIVE_API_LEVEL=" + defaultConfig.minSdkVersion.mApiLevel + " -DBUILD_SHARED_LIBS=ON -DANDROID_ABI=" + androidAbi + " ../"
 
             println(cmd)
             commandLine "cmake", "-DBUILD_TARGET_PLATFORM=ANDROID", "-DCMAKE_BUILD_TYPE=" + buildTypeName, "-DANDROID_NDK=" + getNdkDir(), "-DANDROID_NATIVE_API_LEVEL=" + defaultConfig.minSdkVersion.mApiLevel, "-DCMAKE_INSTALL_PREFIX=" + getWorkDir(androidAbi) + "/inst/", "-DBUILD_SHARED_LIBS=ON", "-DANDROID_ABI=" + androidAbi, "../"
