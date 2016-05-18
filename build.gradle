@@ -91,7 +91,7 @@ android {
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +
                         " -DANDROID_ABI=${abi}" +
-                        " -DCMAKE_BUILD_TYPE=${buildTypeName}" +
+                        " -DCMAKE_BUILD_TYPE=Release" + // let's always release ${buildTypeName}
                         " -DBUILD_SHARED_LIBS=ON" +
                         " -DCMAKE_INSTALL_PREFIX=${getWorkDir(abi)}/inst/" +
                         " ../"
