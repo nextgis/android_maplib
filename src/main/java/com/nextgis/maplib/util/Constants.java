@@ -50,6 +50,7 @@ public interface Constants
      * NGW account type
      */
     String NGW_ACCOUNT_TYPE = "com.nextgis.account";
+    String NGW_ACCOUNT_GUEST = "anonymous";
 
     /**
      * Map parameters
