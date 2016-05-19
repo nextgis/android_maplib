@@ -111,6 +111,9 @@ public class ResourceGroup
             case Connection.NGWResourceTypeLookupTable:
                 resource = new ResourceWithoutChildren(data, mConnection);
                 break;
+            case Connection.NGWResourceTypeWebMap:
+                resource = new WebMap(data, mConnection);
+                break;
         }
 
         if (null != resource) {
@@ -196,6 +199,11 @@ public class ResourceGroup
                             in.readParcelable(ResourceWithoutChildren.class.getClassLoader());
                     resourceWoChildren.setParent(this);
                     mChildren.add(resourceWoChildren);
+                case Connection.NGWResourceTypeWebMap:
+                    WebMap webMap = in.readParcelable(WebMap.class.getClassLoader());
+                    webMap.setParent(this);
+                    mChildren.add(webMap); // TODO?
+                    break;
             }
         }
     }

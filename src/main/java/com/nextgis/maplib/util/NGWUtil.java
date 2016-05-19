@@ -192,20 +192,29 @@ public class NGWUtil
      *
      * @param server
      *         URL
-     * @param styleId
-     *         Raster style id
+     * @param styleIds
+     *         Raster style ids
      *
      * @return URL to TMS for TMSLayer
      */
     public static String getTMSUrl(
             String server,
-            long styleId)
+            long[] styleIds)
     {
         if (!server.startsWith("http")) {
             server = "http://" + server;
         }
         // old url return server + "/resource/" + styleId + "/tms?z={z}&x={x}&y={y}";
-        return server + "/api/component/render/tile?x={x}&y={y}&z={z}&resource=" + styleId;
+
+        String ids = "";
+        if (styleIds != null && styleIds.length > 0) {
+            ids += styleIds[0];
+            for (int i = 1; i < styleIds.length; i++) {
+                ids += "," + styleIds[i];
+            }
+        }
+
+        return server + "/api/component/render/tile?x={x}&y={y}&z={z}&resource=" + ids;
     }
 
 
