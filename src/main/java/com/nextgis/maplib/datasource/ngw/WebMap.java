@@ -33,7 +33,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 /**
- * Resource without children
+ * Web map resource
  */
 public class WebMap extends LayerWithStyles {
     private long[] mIds;
@@ -43,8 +43,8 @@ public class WebMap extends LayerWithStyles {
         try {
             JSONArray layers = json.getJSONObject("webmap").getJSONObject("root_item").getJSONArray("children");
             mIds = new long[layers.length()];
-            for (int i = 0; i < layers.length(); i++)
-                mIds[i] = layers.getJSONObject(i).getInt("layer_style_id");
+            for (int i = layers.length() - 1; i >= 0; i--)
+                mIds[layers.length() - i - 1] = layers.getJSONObject(i).getInt("layer_style_id");
         } catch (JSONException e) {
             e.printStackTrace();
         }
