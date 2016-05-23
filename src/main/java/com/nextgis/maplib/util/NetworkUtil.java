@@ -116,7 +116,8 @@ public class NetworkUtil
         // Don't use a cached copy.
         conn.setUseCaches(false);
         // Use a post method.
-        conn.setRequestMethod(method);
+        if(method.length() > 0)
+            conn.setRequestMethod(method);
 
         conn.setConnectTimeout(TIMEOUT_CONNECTION);
         conn.setReadTimeout(TIMEOUT_SOCKET);

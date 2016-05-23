@@ -439,14 +439,8 @@ public class NGWVectorLayer
             notifyLayerChanged();
         } else {
             // get features and fill them
-            URL url = new URL(sURL);
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-            final String basicAuth =
-                    NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
-            if (null != basicAuth) {
-                urlConnection.setRequestProperty("Authorization", basicAuth);
-            }
-
+            HttpURLConnection urlConnection =
+                    NetworkUtil.getHttpConnection("", sURL, accountData.login, accountData.password);
             InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
                     urlConnection.getContentLength());
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
