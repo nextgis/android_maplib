@@ -154,4 +154,8 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
     public void clearRules() {
         mStyleRules.clear();
     }
+
+    public int size() {
+        return mStyleRules.size();
+    }
 }
