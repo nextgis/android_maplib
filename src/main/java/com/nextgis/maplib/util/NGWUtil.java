@@ -199,7 +199,7 @@ public class NGWUtil
      */
     public static String getTMSUrl(
             String server,
-            long[] styleIds)
+            Long[] styleIds)
     {
         if (!server.startsWith("http")) {
             server = "http://" + server;

@@ -164,11 +164,11 @@ public class LayerWithStyles
         if (getType() == Connection.NGWResourceTypeRasterLayer ||
             getType() == Connection.NGWResourceTypeVectorLayer ||
             getType() == Connection.NGWResourceTypePostgisLayer) {
-            return NGWUtil.getTMSUrl(mConnection.getURL(), new long[]{mStyles.get(styleNo)});
+            return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{mStyles.get(styleNo)});
         }
 
         if (getType() == Connection.NGWResourceTypeWMSClient) {
-            return NGWUtil.getTMSUrl(mConnection.getURL(), new long[]{mRemoteId});
+            return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{mRemoteId});
         }
 
         return null;

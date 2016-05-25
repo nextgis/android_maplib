@@ -21,9 +21,6 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.nextgis.maplib.util.NGWUtil;
 
 import org.json.JSONArray;
@@ -31,20 +28,33 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Web map resource
  */
 public class WebMap extends LayerWithStyles {
-    private long[] mIds;
+    private List<Long> mIds;
 
     public WebMap(JSONObject json, Connection connection) {
         super(json, connection);
         try {
             JSONArray layers = json.getJSONObject("webmap").getJSONObject("root_item").getJSONArray("children");
-            mIds = new long[layers.length()];
-            for (int i = layers.length() - 1; i >= 0; i--)
-                mIds[layers.length() - i - 1] = layers.getJSONObject(i).getInt("layer_style_id");
+            mIds = new ArrayList<>();
+            for (int i = 0; i < layers.length(); i++) {
+                JSONObject item = layers.getJSONObject(i);
+                switch (item.getString("item_type")) {
+                    case "layer":
+                        mIds.add(0, item.getLong("layer_style_id"));
+                        break;
+                    case "group":
+                        JSONArray children = item.getJSONArray("children");
+                        for (int j = 0; j < children.length(); j++) {
+                            mIds.add(0, children.getJSONObject(j).getLong("layer_style_id"));
+                        }
+                        break;
+                }
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -66,6 +76,6 @@ public class WebMap extends LayerWithStyles {
 
     @Override
     public String getTMSUrl(int styleNo) {
-        return NGWUtil.getTMSUrl(mConnection.getURL(), mIds);
+        return NGWUtil.getTMSUrl(mConnection.getURL(), mIds.toArray(new Long[mIds.size()]));
     }
 }
