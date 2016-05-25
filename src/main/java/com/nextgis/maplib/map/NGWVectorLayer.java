@@ -37,6 +37,7 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
 import android.util.Pair;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
@@ -57,6 +58,7 @@ import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.ProgressBufferedInputStream;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -76,7 +78,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_TEMP;
+import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
+import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
+import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.URI_ATTACH;
+import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 
 
 public class NGWVectorLayer
