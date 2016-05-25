@@ -240,7 +240,7 @@ public class GeoGeometryFactory
             output.setCoordinatesFromWKT(wkt.substring(10).trim());
         } else if (wkt.startsWith("POLYGON")) {
             output = new GeoPolygon();
-            output.setCoordinatesFromWKT(wkt.substring(7).trim());
+            output.setCoordinatesFromWKT(wkt.substring(8, wkt.length() - 1).trim());
         } else if (wkt.startsWith("MULTIPOINT")) {
             output = new GeoMultiPoint();
             output.setCoordinatesFromWKT(wkt.substring(10).trim());
