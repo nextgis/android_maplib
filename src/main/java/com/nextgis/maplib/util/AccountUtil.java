@@ -69,6 +69,10 @@ public class AccountUtil
         IGISApplication app = (IGISApplication) context.getApplicationContext();
         Account account = app.getAccount(accountName);
 
+        if (null == account) {
+            throw new IllegalStateException("Account is null");
+        }
+
         AccountData accountData = new AccountData();
 
         accountData.url = app.getAccountUrl(account);
