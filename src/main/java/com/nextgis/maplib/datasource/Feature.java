@@ -415,7 +415,7 @@ public class Feature
                             timeZone.setRawOffset(0); // set to UTC
                             Calendar calendar = Calendar.getInstance(timeZone);
                             calendar.setTimeInMillis(cursor.getLong(index));
-                            setFieldValue(i, calendar.getTime());
+                            setFieldValue(i, calendar.getTimeInMillis());
                             break;
                         default:
                             break;

@@ -476,6 +476,7 @@ public class NGWUtil
         timeZone.setRawOffset(0); // set to UTC
         Calendar calendar = new GregorianCalendar(timeZone);
         calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
+        calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
         feature.setFieldValue(fieldName, calendar.getTimeInMillis());
 
         reader.endObject();
@@ -613,7 +614,8 @@ public class NGWUtil
                         timeZone.setRawOffset(0); // set to UTC
                         Calendar calendar = new GregorianCalendar(timeZone);
                         calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSec);
-                        feature.setFieldValue(field.getName(), calendar.getTime());
+                        calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
+                        feature.setFieldValue(field.getName(), calendar.getTimeInMillis());
                     }
                 } else {
                     if (!fieldsJSONObject.isNull(field.getName())) {
