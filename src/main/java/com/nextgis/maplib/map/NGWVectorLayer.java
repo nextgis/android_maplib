@@ -37,7 +37,6 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
 import android.util.Pair;
-
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
@@ -58,7 +57,6 @@ import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.ProgressBufferedInputStream;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -78,17 +76,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
-import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_TEMP;
-import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
-import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_ID;
-import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
-import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
-import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.URI_ATTACH;
-import static com.nextgis.maplib.util.Constants.URI_CHANGES;
+import static com.nextgis.maplib.util.Constants.*;
 
 
 public class NGWVectorLayer
@@ -338,6 +326,27 @@ public class NGWVectorLayer
     }
 
 
+    // for overriding in the subclasses
+    protected String getFeaturesUrl(AccountUtil.AccountData accountData)
+    {
+        return NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere);
+    }
+
+
+    // for overriding in the subclasses
+    protected String getResourceMetaUrl(AccountUtil.AccountData accountData)
+    {
+        return NGWUtil.getResourceMetaUrl(accountData.url, mRemoteId);
+    }
+
+
+    // for overriding in the subclasses
+    protected String getRequiredCls()
+    {
+        return "vector_layer";
+    }
+
+
     /**
      * download and create new NGW layer from GeoJSON data
      */
@@ -369,7 +378,7 @@ public class NGWVectorLayer
             mNgwVersionMinor = ver.second;
         }
 
-        String data = NetworkUtil.get(NGWUtil.getResourceMetaUrl(accountData.url, mRemoteId),
+        String data = NetworkUtil.get(getResourceMetaUrl(accountData),
                 accountData.login, accountData.password);
         if (null == data) {
             throw new NGException(getContext().getString(R.string.error_download_data));
@@ -383,8 +392,8 @@ public class NGWVectorLayer
 
         //fill SRS
         JSONObject vectorLayerJSONObject = null;
-        if (geoJSONObject.has("vector_layer")) {
-            vectorLayerJSONObject = geoJSONObject.getJSONObject("vector_layer");
+        if (geoJSONObject.has(getRequiredCls())) {
+            vectorLayerJSONObject = geoJSONObject.getJSONObject(getRequiredCls());
             mNGWLayerType = Connection.NGWResourceTypeVectorLayer;
         } else if (mNgwVersionMajor >= Constants.NGW_v3 && geoJSONObject.has("postgis_layer")) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
@@ -404,7 +413,7 @@ public class NGWVectorLayer
 
         create(geomType, fields);
 
-        String sURL = NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere);
+        String sURL = getFeaturesUrl(accountData);
         if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "download features from: " + sURL);
         }
@@ -1078,9 +1087,8 @@ public class NGWVectorLayer
 
             String data;
             try {
-                data = NetworkUtil.get(
-                        NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere),
-                        accountData.login, accountData.password);
+                data = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login,
+                        accountData.password);
             } catch (IOException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
@@ -1108,7 +1116,7 @@ public class NGWVectorLayer
             }
         } else {
             try {
-                URL url = new URL(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere));
+                URL url = new URL(getFeaturesUrl(accountData));
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 final String basicAuth =
                         NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
