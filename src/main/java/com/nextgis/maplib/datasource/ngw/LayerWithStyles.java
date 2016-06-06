@@ -25,11 +25,9 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -135,8 +133,15 @@ public class LayerWithStyles
                 //mStyles.add(new Style(styleObject, mConnection);
                 JSONObject styleObject = children.getJSONObject(i);
                 JSONObject JSONResource = styleObject.getJSONObject("resource");
-                long remoteId = JSONResource.getLong("id");
-                mStyles.add(remoteId);
+
+                String type = JSONResource.getString("cls");
+                switch (type) {
+                    case "mapserver_style":
+                    case "qgis_style":
+                        long remoteId = JSONResource.getLong("id");
+                        mStyles.add(remoteId);
+                        break;
+                }
             }
         } catch (IOException | JSONException | NGException e) {
             e.printStackTrace();
