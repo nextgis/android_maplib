@@ -656,7 +656,6 @@ public class NGWVectorLayer
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "Get remote changes failed");
             }
-            return;
         }
 
         if (isRemoteReadOnly()) {
@@ -668,7 +667,6 @@ public class NGWVectorLayer
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "Set local changes failed");
             }
-            //return;
         }
     }
 
