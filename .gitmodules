@@ -1,3 +1,6 @@
 [submodule "libngstore"]
 	path = libngstore
 	url = https://github.com/nextgis/nextgis_datastore.git
+[submodule "borsch"]
+	path = borsch
+	url = https://github.com/nextgis-borsch/borsch.git

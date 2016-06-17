@@ -87,6 +87,7 @@ android {
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake" +
+                        " -DBORSCH_ROOT_FULL_PATH=${projectDir}/borsch" +
                         " -DBUILD_TARGET_PLATFORM=ANDROID" +
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +
@@ -98,7 +99,7 @@ android {
 
                 commandLine getShell(), getShellArg(), "${cmakeCmd}"
 
-                println("command line of ${task.getName()}: ${commandLine}")
+                println("Command line of ${task.getName()}: ${commandLine}")
         }
 
         task "cmakeBuild-${abi}"(type: Exec, dependsOn: "cmakeConfigure-${abi}") {
@@ -110,7 +111,7 @@ android {
 
                 commandLine getShell(), getShellArg(), "${cmakeCmd}"
 
-                println("command line of ${task.getName()}: ${commandLine}")
+                println("Command line of ${task.getName()}: ${commandLine}")
         }
 
         task "cmakeInstall-${abi}"(type: Exec, dependsOn: "cmakeBuild-${abi}") {
@@ -122,7 +123,7 @@ android {
 
                 commandLine getShell(), getShellArg(), "${cmakeCmd}"
 
-                println("command line of ${task.getName()}: ${commandLine}")
+                println("Command line of ${task.getName()}: ${commandLine}")
         }
 
         task "copyNativeLibs-${abi}"(type: Copy, dependsOn: "cmakeInstall-${abi}") {
@@ -133,9 +134,8 @@ android {
         }
     }
 
-    task copyIncludes(type: Copy, dependsOn: androidAbis.collect {
-        androidAbi -> "copyNativeLibs-${androidAbi}"
-    }) {
+    task copyIncludes(type: Copy,
+            dependsOn: androidAbis.collect { androidAbi -> "copyNativeLibs-${androidAbi}" }) {
         description 'Copy h files.'
 
         from(new File(getWorkDir(androidAbis.get(0)), '/inst/include')) { include '**/*.h' }
