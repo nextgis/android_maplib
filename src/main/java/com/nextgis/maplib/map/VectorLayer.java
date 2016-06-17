@@ -85,6 +85,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -313,7 +314,12 @@ public class VectorLayer
             IProgressor progressor)
             throws IOException, JSONException, NGException, SQLiteException
     {
-        InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
+        InputStream inputStream;
+        if (android.util.Patterns.WEB_URL.matcher(uri.toString()).matches())
+            inputStream = new URL(uri.toString()).openStream();
+        else
+            inputStream = mContext.getContentResolver().openInputStream(uri);
+
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
         }
