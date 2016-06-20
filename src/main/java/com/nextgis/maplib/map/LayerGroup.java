@@ -182,7 +182,6 @@ public class LayerGroup
         }
     }
 
-
     /**
      * Create existed layer from path and add it to the map
      *
