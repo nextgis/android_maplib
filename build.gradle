@@ -87,7 +87,6 @@ android {
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake" +
-                        " -DBORSCH_ROOT_FULL_PATH=${projectDir}/borsch" +
                         " -DBUILD_TARGET_PLATFORM=ANDROID" +
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +
