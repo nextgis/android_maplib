@@ -227,7 +227,11 @@ public class GeoLineString
         if (!super.equals(o)) {
             return false;
         }
+
         GeoLineString otherLn = (GeoLineString) o;
+        if (mPoints.size() != otherLn.getPointCount())
+            return false;
+
         for (int i = 0; i < mPoints.size(); i++) {
             GeoPoint pt = mPoints.get(i);
             GeoPoint otherPt = otherLn.getPoint(i);
