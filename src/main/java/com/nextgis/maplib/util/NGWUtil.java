@@ -44,10 +44,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -318,6 +322,21 @@ public class NGWUtil
         }
 
         return server + "/api/resource/" + remoteId + "/feature/?" + where;
+    }
+
+
+    public static String getTrackedFeaturesUrl(
+            String server,
+            long remoteId,
+            long startDate)
+    {
+        if (!server.startsWith("http")) {
+            server = "http://" + server;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
+        String start = sdf.format(new Date(startDate));
+        return server + "/api/vector_layer/" + remoteId + "/diff/?ts_start=" + start;
     }
 
 

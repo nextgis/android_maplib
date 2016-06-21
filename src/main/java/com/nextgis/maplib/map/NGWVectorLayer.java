@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.map;
 
+import android.annotation.TargetApi;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -57,6 +58,8 @@ import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 import com.nextgis.maplib.util.ProgressBufferedInputStream;
+import com.nextgis.maplib.util.SettingsConstants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -71,6 +74,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,6 +93,7 @@ public class NGWVectorLayer
     protected static final String JSON_SYNC_TYPE_KEY         = "sync_type";
     protected static final String JSON_NGWLAYER_TYPE_KEY     = "ngw_layer_type";
     protected static final String JSON_SERVERWHERE_KEY       = "server_where";
+    protected static final String JSON_TRACKED_KEY           = "tracked";
 
     protected static final int TYPE_CHANGES_TABLE     = 125;
     protected static final int TYPE_CHANGES_FEATURE   = 126;
@@ -107,6 +112,7 @@ public class NGWVectorLayer
     protected int    mSyncType;
     protected int    mNGWLayerType;
     protected String mServerWhere;
+    protected boolean mTracked;
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/attachments
 
@@ -211,6 +217,7 @@ public class NGWVectorLayer
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
         rootConfig.put(JSON_NGWLAYER_TYPE_KEY, mNGWLayerType);
         rootConfig.put(JSON_SERVERWHERE_KEY, mServerWhere);
+        rootConfig.put(JSON_TRACKED_KEY, mTracked);
 
         return rootConfig;
     }
@@ -222,6 +229,7 @@ public class NGWVectorLayer
     {
         super.fromJSON(jsonObject);
 
+        mTracked = jsonObject.optBoolean(JSON_TRACKED_KEY);
         if (jsonObject.has(JSON_NGW_VERSION_MAJOR_KEY)) {
             mNgwVersionMajor = jsonObject.getInt(JSON_NGW_VERSION_MAJOR_KEY);
         }
@@ -329,7 +337,10 @@ public class NGWVectorLayer
     // for overriding in the subclasses
     protected String getFeaturesUrl(AccountUtil.AccountData accountData)
     {
-        return NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere);
+        if (mTracked)
+            return NGWUtil.getTrackedFeaturesUrl(accountData.url, mRemoteId, getPreferences().getLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, 0));
+        else
+            return NGWUtil.getFeaturesUrl(accountData.url, mRemoteId, mServerWhere);
     }
 
 
@@ -403,7 +414,7 @@ public class NGWVectorLayer
             throw new NGException(getContext().getString(R.string.error_download_data));
         }
 
-        String geomTypeString = vectorLayerJSONObject.getString("geometry_type");
+        String geomTypeString = vectorLayerJSONObject.getString(JSON_GEOMETRY_TYPE_KEY);
         int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
         JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
         int nSRS = srs.getInt("id");
@@ -419,7 +430,6 @@ public class NGWVectorLayer
         }
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-
             //get layer data
             data = NetworkUtil.get(sURL, accountData.login, accountData.password);
             if (null == data) {
@@ -457,6 +467,7 @@ public class NGWVectorLayer
                 }
             }
 
+            mTracked = vectorLayerJSONObject.optBoolean(JSON_TRACKED_KEY);
             notifyLayerChanged();
         } else {
             // get features and fill them
@@ -500,6 +511,7 @@ public class NGWVectorLayer
             //db.close();
 
             urlConnection.disconnect();
+            mTracked = vectorLayerJSONObject.optBoolean(JSON_TRACKED_KEY);
 
             save();
 
@@ -1074,15 +1086,337 @@ public class NGWVectorLayer
             return false;
         }
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "The network is available. Get changes from server");
         }
-        List<Feature> features;
-        // read layer contents as string
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 
+        List<Feature> features, added = null, deleted = null, changed = null;
+        List<Long> deleteItems = new ArrayList<>();
+
+        if (mTracked) {
+            HashMap<Integer, List<Feature>> tracked = getFeatures(syncResult, true);
+            added = tracked.get(0);
+            changed = tracked.get(1);
+            deleted = tracked.get(2);
+            features = new ArrayList<>();
+            features.addAll(added);
+            features.addAll(changed);
+            features.addAll(deleted);
+
+            if (Constants.DEBUG_MODE) {
+                Log.d(TAG, "Layer " + mName + " is tracked for history");
+                Log.d(Constants.TAG, "added: " + added.size() + " | changed: " + changed.size() + " | deleted: " + deleted.size());
+            }
+        } else
+            features = getFeatures(syncResult, false).get(0);
+
+        if (features == null)
+            return false;
+
+        if (Constants.DEBUG_MODE) {
+            Log.d(Constants.TAG, "Got " + features.size() + " feature(s) from server");
+        }
+
+        try {
+            if (!mCacheLoaded) {
+                reloadCache();
+            }
+
+            String changeTableName = getChangeTableName();
+            if (mTracked) {
+                if (added != null)
+                    for (Feature remoteFeature : added) {
+                        Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
+                        boolean hasFeature = false;
+                        if (cursor != null) {
+                            if (cursor.moveToFirst()){
+                                compareFeature(cursor, authority, remoteFeature, changeTableName);
+                                hasFeature = true;
+                            }
+
+                            cursor.close();
+                        }
+
+                        if (!hasFeature)
+                            createNewFeature(remoteFeature, authority);
+                    }
+
+                if (changed != null)
+                    for (Feature remoteFeature : changed) {
+                        Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
+                        compareFeature(cursor, authority, remoteFeature, changeTableName);
+                        cursor.close();
+                    }
+
+                if (deleted != null) {
+                    for (Feature remoteFeature : deleted)
+                        deleteItems.add(remoteFeature.getId());
+
+                    deleteFeatures(deleteItems);
+                }
+            } else {
+                // analyse feature
+                for (Feature remoteFeature : features) {
+                    Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
+
+                    try {
+                        //no local feature
+                        if (null == cursor || cursor.getCount() == 0) {
+                            //if we have changes (delete) not create new feature
+                            boolean createNewFeature =
+                                    !FeatureChanges.isChanges(changeTableName, remoteFeature.getId());
+
+                            //create new feature with remoteId
+                            if (createNewFeature)
+                                createNewFeature(remoteFeature, authority);
+                        } else {
+                            compareFeature(cursor, authority, remoteFeature, changeTableName);
+                        }
+                    } catch (Exception e) {
+                        //Log.d(TAG, e.getLocalizedMessage());
+                    } finally {
+                        if (null != cursor) {
+                            cursor.close();
+                        }
+                    }
+                }
+
+                // remove features not exist on server from local layer
+                // if no operation is in changes array or change operation for local feature present
+                for (Long featureId : query(null)) {
+                    boolean bDeleteFeature = true;
+                    for (Feature remoteFeature : features) {
+                        if (remoteFeature.getId() == featureId) {
+                            bDeleteFeature = false;
+                            break;
+                        }
+                    }
+
+                    // if local item is in update list and state ADD_NEW skip delete
+                    bDeleteFeature =
+                            bDeleteFeature && !FeatureChanges.isChanges(changeTableName, featureId,
+                                    Constants.CHANGE_OPERATION_NEW) &&
+                                    !FeatureChanges.hasFeatureFlags(changeTableName, featureId);
+
+                    if (bDeleteFeature) {
+                        deleteItems.add(featureId);
+                    }
+                }
+
+                deleteFeatures(deleteItems);
+            }
+
+            if (!mTracked) {
+                Cursor changeCursor = FeatureChanges.getChanges(changeTableName);
+                // remove changes already applied on server (delete already deleted id or add already added)
+                if (null != changeCursor) {
+                    try {
+                        if (changeCursor.moveToFirst()) {
+                            int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
+                            int featureIdColumn =
+                                    changeCursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
+                            int operationColumn =
+                                    changeCursor.getColumnIndex(Constants.FIELD_OPERATION);
+                            int attachOperationColumn =
+                                    changeCursor.getColumnIndex(Constants.FIELD_ATTACH_OPERATION);
+
+                            do {
+                                long changeRecordId = changeCursor.getLong(recordIdColumn);
+                                long changeFeatureId = changeCursor.getLong(featureIdColumn);
+                                int changeOperation = changeCursor.getInt(operationColumn);
+                                int attachChangeOperation = changeCursor.getInt(attachOperationColumn);
+
+                                boolean bDeleteChange = true; // if feature not exist on server
+                                for (Feature remoteFeature : features) {
+                                    if (remoteFeature.getId() == changeFeatureId) {
+                                        if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
+                                            // if feature already exist, just change it
+                                            FeatureChanges.setOperation(changeTableName, changeRecordId,
+                                                    Constants.CHANGE_OPERATION_CHANGED);
+                                        }
+                                        bDeleteChange = false; // in other cases just apply
+                                        break;
+                                    }
+                                }
+
+                                if ((0 != (changeOperation & Constants.CHANGE_OPERATION_NEW) || 0 != (
+                                        attachChangeOperation & Constants.CHANGE_OPERATION_NEW))
+                                        && bDeleteChange) {
+
+                                    bDeleteChange = false;
+                                }
+
+                                if (bDeleteChange) {
+                                    if (Constants.DEBUG_MODE) {
+                                        Log.d(Constants.TAG,
+                                                "Delete change for feature #" + changeFeatureId +
+                                                        ", changeOperation " + changeOperation +
+                                                        ", attachChangeOperation " +
+                                                        attachChangeOperation);
+                                    }
+                                    // TODO: analise for operation, remove all equal
+                                    FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                                }
+
+                            } while (changeCursor.moveToNext());
+                        }
+                    } catch (Exception e) {
+                        //Log.d(TAG, e.getLocalizedMessage());
+                    } finally {
+                        changeCursor.close();
+                    }
+                }
+            }
+        } catch (SQLiteException | ConcurrentModificationException e) {
+            syncResult.stats.numConflictDetectedExceptions++;
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "proceed getChangesFromServer() failed");
+            }
+            e.printStackTrace();
+            return false;
+        }
+
+        getPreferences().edit().putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis()).commit();
+        return true;
+    }
+
+
+    protected void createNewFeature(Feature remoteFeature, String authority) {
+        ContentValues values = remoteFeature.getContentValues(true);
+        Uri uri = Uri.parse("content://" + authority + "/" + getPath().getName());
+        //prevent add changes and events
+        uri = uri.buildUpon().fragment(NO_SYNC).build();
+        Uri newFeatureUri = insert(uri, values);
+        if (Constants.DEBUG_MODE) {
+            Log.d(Constants.TAG, "Add new feature from server - " + newFeatureUri.toString());
+        }
+    }
+
+
+    protected void deleteFeatures(List<Long> deleteItems) {
+        for (long itemId : deleteItems) {
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Delete feature #" + itemId + " not exist on server");
+            }
+            delete(itemId, Constants.FIELD_ID + " = " + itemId, null);
+        }
+    }
+
+    protected void compareFeature(Cursor cursor, String authority, Feature remoteFeature, String changeTableName) {
+        cursor.moveToFirst();
+        // with the given ID (remoteFeature.getId()) must be only one feature
+        Feature currentFeature = cursorToFeature(cursor);
+
+        //compare features
+        boolean eqData = remoteFeature.equalsData(currentFeature);
+        boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
+
+        //process data
+        if (eqData) {
+            //remove from changes
+            if (FeatureChanges.isChanges(changeTableName, remoteFeature.getId())) {
+                if (eqAttach && !FeatureChanges.isAttachesForDelete(
+                        changeTableName, remoteFeature.getId())
+                        || !FeatureChanges.isAttachChanges(
+                        changeTableName, remoteFeature.getId())) {
+
+                    FeatureChanges.removeChanges(
+                            changeTableName, remoteFeature.getId());
+                }
+            }
+        } else {
+            // we have local changes ready for sent to server
+            boolean isChangedLocal = FeatureChanges.isChanges(changeTableName,
+                    remoteFeature.getId());
+
+            //no local changes - update local feature
+            if (!isChangedLocal) {
+                ContentValues values = remoteFeature.getContentValues(false);
+
+                Uri uri = Uri.parse(
+                        "content://" + authority + "/" + getPath().getName());
+                Uri updateUri =
+                        ContentUris.withAppendedId(uri, remoteFeature.getId());
+                updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
+                //prevent add changes
+                int count = update(updateUri, values, null, null);
+                if (Constants.DEBUG_MODE) {
+                    Log.d(Constants.TAG,
+                            "Update feature (" + count + ") from server - " +
+                                    remoteFeature.getId());
+                }
+            }
+        }
+
+        //process attachments
+        if (eqAttach) {
+            if (FeatureChanges.isChanges(changeTableName, remoteFeature.getId())
+                    && (eqData || FeatureChanges.isAttachChanges(
+                    changeTableName, remoteFeature.getId()))) {
+
+                if (Constants.DEBUG_MODE) {
+                    Log.d(Constants.TAG, "The feature " + remoteFeature.getId() +
+                            " already changed on server. Remove changes for it");
+                }
+
+                FeatureChanges.removeChanges(
+                        changeTableName, remoteFeature.getId());
+            }
+
+        } else {
+            boolean isChangedLocal = FeatureChanges.isAttachChanges(changeTableName,
+                    remoteFeature.getId());
+
+            if (!isChangedLocal) {
+                Iterator<String> iterator =
+                        currentFeature.getAttachments().keySet().iterator();
+
+                while (iterator.hasNext()) {
+                    String attachId = iterator.next();
+
+                    //delete attachment which not exist on server
+                    if (!remoteFeature.getAttachments().containsKey(attachId)) {
+                        iterator.remove();
+                        saveAttach("" + currentFeature.getId(),
+                                currentFeature.getAttachments());
+
+                    } else { //or change attachment properties
+                        AttachItem currentItem =
+                                currentFeature.getAttachments().get(attachId);
+                        AttachItem remoteItem =
+                                remoteFeature.getAttachments().get(attachId);
+
+                        if (null != currentItem && !currentItem.equals(
+                                remoteItem)) {
+                            long attachIdL =
+                                    Long.parseLong(remoteItem.getAttachId());
+                            boolean changeOnServer =
+                                    !FeatureChanges.isAttachChanges(changeTableName,
+                                            remoteFeature.getId(), attachIdL);
+
+                            if (changeOnServer) {
+                                currentItem.setDescription(
+                                        remoteItem.getDescription());
+                                currentItem.setMimetype(remoteItem.getMimetype());
+                                currentItem.setDisplayName(
+                                        remoteItem.getDisplayName());
+                                saveAttach("" + currentFeature.getId(),
+                                        currentFeature.getAttachments());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    // read layer contents as string
+    protected HashMap<Integer, List<Feature>> getFeatures(SyncResult syncResult, boolean tracked) {
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+        HashMap<Integer, List<Feature>> results = new HashMap<>();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             String data;
             try {
                 data = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login,
@@ -1090,31 +1424,44 @@ public class NGWVectorLayer
             } catch (IOException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
-                return false;
+                return null;
             } catch (NGException e) {
                 e.printStackTrace();
                 syncResult.stats.numIoExceptions++;
-                return false;
+                return null;
             }
 
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
-                return false;
+                return null;
             }
 
             // parse layer contents to Feature list
             try {
-                JSONArray featuresJSONArray = new JSONArray(data);
-                features = NGWUtil.jsonToFeatures(featuresJSONArray, getFields(),
-                        GeoConstants.CRS_WEB_MERCATOR, null);
+                if (tracked) {
+                    JSONObject featuresJSONObject = new JSONObject(data);
+                    JSONArray addedFeatures = featuresJSONObject.getJSONArray("added");
+                    List<Feature> added = NGWUtil.jsonToFeatures(addedFeatures, getFields(), GeoConstants.CRS_WEB_MERCATOR, null);
+                    JSONArray changedFeatures = featuresJSONObject.getJSONArray("changed");
+                    List<Feature> changed = NGWUtil.jsonToFeatures(changedFeatures, getFields(), GeoConstants.CRS_WEB_MERCATOR, null);
+                    JSONArray deletedFeatures = featuresJSONObject.getJSONArray("deleted");
+                    List<Feature> deleted = NGWUtil.jsonToFeatures(deletedFeatures, getFields(), GeoConstants.CRS_WEB_MERCATOR, null);
+                    results.put(0, added);
+                    results.put(1, changed);
+                    results.put(2, deleted);
+                } else  {
+                    JSONArray featuresJSONArray = new JSONArray(data);
+                    results.put(0, NGWUtil.jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR, null));
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
-                return false;
+                return null;
             }
         } else {
             try {
                 URL url = new URL(getFeaturesUrl(accountData));
+                Log.d(TAG, "url: " + url.toString());
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 final String basicAuth =
                         NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
@@ -1125,297 +1472,64 @@ public class NGWVectorLayer
                 InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
                         urlConnection.getContentLength());
                 JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
-                features = new LinkedList<>();
-                reader.beginArray();
-                while (reader.hasNext()) {
-                    final Feature feature = NGWUtil.readNGWFeature(reader, getFields(),
-                            GeoConstants.CRS_WEB_MERCATOR);
-                    features.add(feature);
+
+                if (tracked) {
+                    List<Feature> added = new LinkedList<>(), changed = new LinkedList<>(), deleted = new LinkedList<>();
+                    reader.beginObject();
+                    while (reader.hasNext()) {
+                        String name = reader.nextName();
+                        switch (name) {
+                            case "deleted":
+                                reader.beginArray();
+                                while (reader.hasNext())
+                                    deleted.add(new Feature(reader.nextLong(), getFields()));
+                                reader.endArray();
+                                break;
+                            case "added":
+                                readFeatures(reader, added);
+                                break;
+                            case "changed":
+                                readFeatures(reader, changed);
+                                break;
+                        }
+                    }
+                    reader.endObject();
+
+                    results.put(0, added);
+                    results.put(1, changed);
+                    results.put(2, deleted);
+                } else {
+                    List<Feature> features = new LinkedList<>();
+                    readFeatures(reader, features);
+                    results.put(0, features);
                 }
-                reader.endArray();
                 reader.close();
 
                 urlConnection.disconnect();
-
             } catch (MalformedURLException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
-                return false;
+                return null;
             } catch (IOException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
-                return false;
+                return null;
             }
         }
 
+        return results;
+    }
 
-        try {
-            if (!mCacheLoaded) {
-                reloadCache();
-            }
 
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "Get " + features.size() + " feature(s) from server");
-            }
-
-            String changeTableName = getChangeTableName();
-
-            // analyse feature
-            for (Feature remoteFeature : features) {
-
-                Cursor cursor =
-                        query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null,
-                                null);
-                try {
-                    //no local feature
-                    if (null == cursor || cursor.getCount() == 0) {
-
-                        //if we have changes (delete) not create new feature
-                        boolean createNewFeature =
-                                !FeatureChanges.isChanges(changeTableName, remoteFeature.getId());
-
-                        //create new feature with remoteId
-                        if (createNewFeature) {
-                            ContentValues values = remoteFeature.getContentValues(true);
-                            Uri uri =
-                                    Uri.parse("content://" + authority + "/" + getPath().getName());
-                            //prevent add changes and events
-                            uri = uri.buildUpon().fragment(NO_SYNC).build();
-                            Uri newFeatureUri = insert(uri, values);
-                            if (Constants.DEBUG_MODE) {
-                                Log.d(
-                                        Constants.TAG, "Add new feature from server - "
-                                                + newFeatureUri.toString());
-                            }
-                        }
-
-                    } else {
-                        cursor.moveToFirst();
-                        // with the given ID (remoteFeature.getId()) must be only one feature
-                        Feature currentFeature = cursorToFeature(cursor);
-
-                        //compare features
-                        boolean eqData = remoteFeature.equalsData(currentFeature);
-                        boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
-
-                        //process data
-                        if (eqData) {
-                            //remove from changes
-
-                            if (FeatureChanges.isChanges(changeTableName, remoteFeature.getId())) {
-
-                                if (eqAttach && !FeatureChanges.isAttachesForDelete(
-                                        changeTableName, remoteFeature.getId())
-                                        || !FeatureChanges.isAttachChanges(
-                                        changeTableName, remoteFeature.getId())) {
-
-                                    FeatureChanges.removeChanges(
-                                            changeTableName, remoteFeature.getId());
-                                }
-                            }
-
-                        } else {
-
-                            // we have local changes ready for sent to server
-                            boolean isChangedLocal = FeatureChanges.isChanges(changeTableName,
-                                    remoteFeature.getId());
-
-                            //no local changes - update local feature
-                            if (!isChangedLocal) {
-                                ContentValues values = remoteFeature.getContentValues(false);
-
-                                Uri uri = Uri.parse(
-                                        "content://" + authority + "/" + getPath().getName());
-                                Uri updateUri =
-                                        ContentUris.withAppendedId(uri, remoteFeature.getId());
-                                updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
-                                //prevent add changes
-                                int count = update(updateUri, values, null, null);
-                                if (Constants.DEBUG_MODE) {
-                                    Log.d(Constants.TAG,
-                                            "Update feature (" + count + ") from server - " +
-                                                    remoteFeature.getId());
-                                }
-                            }
-                        }
-
-                        //process attachments
-                        if (eqAttach) {
-
-                            if (FeatureChanges.isChanges(changeTableName, remoteFeature.getId())
-                                    && (eqData || FeatureChanges.isAttachChanges(
-                                    changeTableName, remoteFeature.getId()))) {
-
-                                if (Constants.DEBUG_MODE) {
-                                    Log.d(Constants.TAG, "The feature " + remoteFeature.getId() +
-                                            " already changed on server. Remove changes for it");
-                                }
-
-                                FeatureChanges.removeChanges(
-                                        changeTableName, remoteFeature.getId());
-                            }
-
-                        } else {
-                            boolean isChangedLocal = FeatureChanges.isAttachChanges(changeTableName,
-                                    remoteFeature.getId());
-
-                            if (!isChangedLocal) {
-                                Iterator<String> iterator =
-                                        currentFeature.getAttachments().keySet().iterator();
-
-                                while (iterator.hasNext()) {
-                                    String attachId = iterator.next();
-
-                                    //delete attachment which not exist on server
-                                    if (!remoteFeature.getAttachments().containsKey(attachId)) {
-                                        iterator.remove();
-                                        saveAttach("" + currentFeature.getId(),
-                                                currentFeature.getAttachments());
-
-                                    } else { //or change attachment properties
-                                        AttachItem currentItem =
-                                                currentFeature.getAttachments().get(attachId);
-                                        AttachItem remoteItem =
-                                                remoteFeature.getAttachments().get(attachId);
-
-                                        if (null != currentItem && !currentItem.equals(
-                                                remoteItem)) {
-                                            long attachIdL =
-                                                    Long.parseLong(remoteItem.getAttachId());
-                                            boolean changeOnServer =
-                                                    !FeatureChanges.isAttachChanges(changeTableName,
-                                                            remoteFeature.getId(), attachIdL);
-
-                                            if (changeOnServer) {
-                                                currentItem.setDescription(
-                                                        remoteItem.getDescription());
-                                                currentItem.setMimetype(remoteItem.getMimetype());
-                                                currentItem.setDisplayName(
-                                                        remoteItem.getDisplayName());
-                                                saveAttach("" + currentFeature.getId(),
-                                                        currentFeature.getAttachments());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                } catch (Exception e) {
-                    //Log.d(TAG, e.getLocalizedMessage());
-                } finally {
-                    if (null != cursor) {
-                        cursor.close();
-                    }
-                }
-            }
-
-            // remove features not exist on server from local layer
-            // if no operation is in changes array or change operation for local feature present
-
-            List<Long> deleteItems = new ArrayList<>();
-
-            for (Long featureId : query(null)) {
-                boolean bDeleteFeature = true;
-                for (Feature remoteFeature : features) {
-                    if (remoteFeature.getId() == featureId) {
-                        bDeleteFeature = false;
-                        break;
-                    }
-                }
-
-                // if local item is in update list and state ADD_NEW skip delete
-                bDeleteFeature =
-                        bDeleteFeature && !FeatureChanges.isChanges(changeTableName, featureId,
-                                Constants.CHANGE_OPERATION_NEW) &&
-                                !FeatureChanges.hasFeatureFlags(changeTableName, featureId);
-
-                if (bDeleteFeature) {
-                    deleteItems.add(featureId);
-                }
-            }
-
-            for (long itemId : deleteItems) {
-                if (Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Delete feature #" + itemId + " not exist on server");
-                }
-                delete(itemId, Constants.FIELD_ID + " = " + itemId, null);
-            }
-
-            Cursor changeCursor = FeatureChanges.getChanges(changeTableName);
-
-            // remove changes already applied on server (delete already deleted id or add already added)
-            if (null != changeCursor) {
-                try {
-
-                    if (changeCursor.moveToFirst()) {
-                        int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
-                        int featureIdColumn =
-                                changeCursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
-                        int operationColumn =
-                                changeCursor.getColumnIndex(Constants.FIELD_OPERATION);
-                        int attachOperationColumn =
-                                changeCursor.getColumnIndex(Constants.FIELD_ATTACH_OPERATION);
-
-                        do {
-                            long changeRecordId = changeCursor.getLong(recordIdColumn);
-                            long changeFeatureId = changeCursor.getLong(featureIdColumn);
-                            int changeOperation = changeCursor.getInt(operationColumn);
-                            int attachChangeOperation = changeCursor.getInt(attachOperationColumn);
-
-                            boolean bDeleteChange = true; // if feature not exist on server
-                            for (Feature remoteFeature : features) {
-                                if (remoteFeature.getId() == changeFeatureId) {
-                                    if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
-                                        // if feature already exist, just change it
-                                        FeatureChanges.setOperation(changeTableName, changeRecordId,
-                                                Constants.CHANGE_OPERATION_CHANGED);
-                                    }
-                                    bDeleteChange = false; // in other cases just apply
-                                    break;
-                                }
-                            }
-
-                            if ((0 != (changeOperation & Constants.CHANGE_OPERATION_NEW) || 0 != (
-                                    attachChangeOperation & Constants.CHANGE_OPERATION_NEW))
-                                    && bDeleteChange) {
-
-                                bDeleteChange = false;
-                            }
-
-                            if (bDeleteChange) {
-                                if (Constants.DEBUG_MODE) {
-                                    Log.d(Constants.TAG,
-                                            "Delete change for feature #" + changeFeatureId +
-                                                    ", changeOperation " + changeOperation +
-                                                    ", attachChangeOperation " +
-                                                    attachChangeOperation);
-                                }
-                                // TODO: analise for operation, remove all equal
-                                FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
-                            }
-
-                        } while (changeCursor.moveToNext());
-                    }
-
-                } catch (Exception e) {
-                    //Log.d(TAG, e.getLocalizedMessage());
-                } finally {
-                    changeCursor.close();
-                }
-            }
-
-        } catch (SQLiteException | ConcurrentModificationException e) {
-            syncResult.stats.numConflictDetectedExceptions++;
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "proceed getChangesFromServer() failed");
-            }
-            e.printStackTrace();
-            return false;
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException {
+        reader.beginArray();
+        while (reader.hasNext()) {
+            final Feature feature = NGWUtil.readNGWFeature(reader, getFields(),
+                    GeoConstants.CRS_WEB_MERCATOR);
+            features.add(feature);
         }
-
-        return true;
+        reader.endArray();
     }
 
 
@@ -1664,6 +1778,9 @@ public class NGWVectorLayer
         if (syncType == Constants.SYNC_NONE) {
             FeatureChanges.removeAllChanges(getChangeTableName());
         } else {
+            if (mTracked)
+                return;
+
             for (Long featureId : query(null)) {
                 addChange(featureId, Constants.CHANGE_OPERATION_NEW);
                 //add attach
