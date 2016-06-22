@@ -490,7 +490,11 @@ public class GeometryRTree implements IGeometryCache {
                 tighten(nn); // Not sure this is required.
                 return nn;
             }
+
             Node c = seedPicker == SeedPicker.LINEAR ? lPickNext(cc) : qPickNext(cc, nn);
+            if (c == null)
+                return nn;
+
             Node preferred;
             double e0 = getRequiredExpansion(nn[0].mCoords, c);
             double e1 = getRequiredExpansion(nn[1].mCoords, c);
