@@ -15,6 +15,9 @@ src/main/libs
 src/main/obj
 src/main/java/com/nextgis/store/api*
 src/main/jni/arm*
+src/main/jni/bin
 src/main/jni/include
+src/main/jni/lib
+src/main/jni/share
 src/main/jni/src
 src/main/jni/x86*
