@@ -41,6 +41,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IGeometryCache;
@@ -73,6 +74,7 @@ import com.nextgis.maplib.util.GeoJSONUtil;
 import com.nextgis.maplib.util.LayerUtil;
 import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -97,8 +99,35 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.nextgis.maplib.util.Constants.*;
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
+import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_STYLE_RULE_KEY;
+import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
+import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
+import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.URI_ATTACH;
+import static com.nextgis.maplib.util.Constants.URI_PARAMETER_NOT_SYNC;
+import static com.nextgis.maplib.util.Constants.URI_PARAMETER_TEMP;
+import static com.nextgis.maplib.util.GeoConstants.FTDate;
+import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
+import static com.nextgis.maplib.util.GeoConstants.FTInteger;
+import static com.nextgis.maplib.util.GeoConstants.FTReal;
+import static com.nextgis.maplib.util.GeoConstants.FTString;
+import static com.nextgis.maplib.util.GeoConstants.FTTime;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
 /**
@@ -314,11 +343,14 @@ public class VectorLayer
             IProgressor progressor)
             throws IOException, JSONException, NGException, SQLiteException
     {
-        InputStream inputStream;
-        if (android.util.Patterns.WEB_URL.matcher(uri.toString()).matches())
+        InputStream inputStream, is;
+        if (android.util.Patterns.WEB_URL.matcher(uri.toString()).matches()) {
             inputStream = new URL(uri.toString()).openStream();
-        else
+            is = new URL(uri.toString()).openStream();
+        } else {
             inputStream = mContext.getContentResolver().openInputStream(uri);
+            is = mContext.getContentResolver().openInputStream(uri);
+        }
 
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
@@ -356,9 +388,12 @@ public class VectorLayer
             GeoJSONUtil.createLayerFromGeoJSON(this, jsonObject, progressor);
         } else {
             if (null != progressor) {
-                progressor.setMessage(mContext.getString(R.string.create_features));
+                progressor.setMessage(mContext.getString(R.string.message_opening));
+                progressor.setIndeterminate(true);
             }
-            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor);
+
+            boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
+            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
         }
     }
 
@@ -419,7 +454,8 @@ public class VectorLayer
             throws IOException, JSONException, NGException
     {
         if (null != progressor) {
-            progressor.setMessage(mContext.getString(R.string.create_features));
+            progressor.setMessage(mContext.getString(R.string.message_opening));
+            progressor.setIndeterminate(true);
         }
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
@@ -428,7 +464,9 @@ public class VectorLayer
             GeoJSONUtil.createLayerFromGeoJSON(this, jsonObject, progressor);
         } else {
             FileInputStream inputStream = new FileInputStream(path);
-            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor);
+            FileInputStream is = new FileInputStream(path);
+            boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
+            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
         }
     }
 

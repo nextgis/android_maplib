@@ -386,7 +386,7 @@ public class GeoJSONUtil {
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static void createLayerFromGeoJSONStream(VectorLayer layer, InputStream in, IProgressor progressor) throws IOException, NGException {
+    public static void createLayerFromGeoJSONStream(VectorLayer layer, InputStream in, IProgressor progressor, boolean isWGS84) throws IOException, NGException {
         int streamSize = in.available();
         if(null != progressor){
             progressor.setIndeterminate(false);
@@ -400,17 +400,11 @@ public class GeoJSONUtil {
         }
 
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
-        boolean isWGS84 = true;
         long counter = 0;
         reader.beginObject();
-
-
         while (reader.hasNext()) {
             String name = reader.nextName();
-            if(name.equals(GeoConstants.GEOJSON_CRS)) {
-                isWGS84 = readGeoJSONCRS(reader, layer.getContext());
-            }
-            else if(name.equals(GeoConstants.GEOJSON_TYPE_FEATURES)){
+            if (name.equals(GeoConstants.GEOJSON_TYPE_FEATURES)) {
                 reader.beginArray();
                 while (reader.hasNext()) {
                     Feature feature = readGeoJSONFeature(reader, layer, isWGS84);
@@ -433,8 +427,7 @@ public class GeoJSONUtil {
                     }
                 }
                 reader.endArray();
-            }
-            else {
+            } else {
                 reader.skipValue();
             }
         }
@@ -557,30 +550,40 @@ public class GeoJSONUtil {
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private static boolean readGeoJSONCRS(JsonReader reader, Context context) throws IOException, NGException {
+    public static boolean readGeoJSONCRS(InputStream is, Context context) throws IOException, NGException {
+        JsonReader reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
         boolean isWGS = true;
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            if(name.equals(GeoConstants.GEOJSON_PROPERTIES)) {
+            if(name.equals(GeoConstants.GEOJSON_CRS)) {
                 reader.beginObject();
                 while (reader.hasNext()) {
-                    String subname = reader.nextName();
-                    if(subname.equals(GeoConstants.GEOJSON_NAME)){
-                        String val = reader.nextString();
-                        isWGS = checkCRSSupportAndWGS(val, context);
-                    }
-                    else {
+                    name = reader.nextName();
+                    if(name.equals(GeoConstants.GEOJSON_PROPERTIES)) {
+                        reader.beginObject();
+                        while (reader.hasNext()) {
+                            String subname = reader.nextName();
+                            if(subname.equals(GeoConstants.GEOJSON_NAME)){
+                                String val = reader.nextString();
+                                isWGS = checkCRSSupportAndWGS(val, context);
+                            }
+                            else {
+                                reader.skipValue();
+                            }
+                        }
+                        reader.endObject();
+                    } else {
                         reader.skipValue();
                     }
                 }
                 reader.endObject();
-            }
-            else {
+            } else {
                 reader.skipValue();
             }
         }
         reader.endObject();
+        reader.close();
         return isWGS;
     }
 
