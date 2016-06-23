@@ -11,13 +11,23 @@ captures/
 # Temp files
 *~
 
+src/main/java/com/nextgis/store/Api.java
+src/main/java/com/nextgis/store/ApiJNI.java
+src/main/java/com/nextgis/store/ProgressCallback.java
+
 src/main/libs
 src/main/obj
-src/main/java/com/nextgis/store/api*
 src/main/jni/arm*
+src/main/jni/x86*
+
 src/main/jni/bin
 src/main/jni/include
 src/main/jni/lib
 src/main/jni/share
 src/main/jni/src
-src/main/jni/x86*
+
+src/main/cpp/inst/bin
+src/main/cpp/inst/include
+src/main/cpp/inst/lib
+src/main/cpp/inst/share
+src/main/cpp/inst/src
