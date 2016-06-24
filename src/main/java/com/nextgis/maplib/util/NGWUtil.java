@@ -376,7 +376,7 @@ public class NGWUtil
             JsonReader reader,
             List<Field> fields,
             int nSRS)
-            throws IOException
+            throws IOException, OutOfMemoryError
     {
         final Feature feature = new Feature(Constants.NOT_FOUND, fields);
 

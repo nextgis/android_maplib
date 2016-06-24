@@ -500,8 +500,17 @@ public class NGWVectorLayer
 
             int featureCount = 0;
             while (reader.hasNext()) {
-                final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
-                createFeatureBatch(feature, db);
+                try {
+                    final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
+                    createFeatureBatch(feature, db);
+                } catch (OutOfMemoryError e) {
+                    e.printStackTrace();
+                    if (null != progressor)
+                        progressor.setMessage(getContext().getString(R.string.error_download_data));
+
+                    save();
+                    return;
+                }
 
                 if (null != progressor) {
                     if (progressor.isCanceled()) {
@@ -1119,9 +1128,12 @@ public class NGWVectorLayer
 
         List<Feature> features, added = null, deleted = null, changed = null;
         List<Long> deleteItems = new ArrayList<>();
+        HashMap<Integer, List<Feature>> tracked = getFeatures(syncResult, mTracked);
+
+        if (tracked == null)
+            return false;
 
         if (mTracked) {
-            HashMap<Integer, List<Feature>> tracked = getFeatures(syncResult, true);
             added = tracked.get(0);
             changed = tracked.get(1);
             deleted = tracked.get(2);
@@ -1135,7 +1147,7 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, "added: " + added.size() + " | changed: " + changed.size() + " | deleted: " + deleted.size());
             }
         } else
-            features = getFeatures(syncResult, false).get(0);
+            features = tracked.get(0);
 
         if (features == null)
             return false;
@@ -1549,6 +1561,10 @@ public class NGWVectorLayer
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
                 return null;
+            } catch (OutOfMemoryError e) {
+                e.printStackTrace();
+                syncResult.stats.numIoExceptions++;
+                return null;
             }
         }
 
@@ -1557,7 +1573,7 @@ public class NGWVectorLayer
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException {
+    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, OutOfMemoryError {
         reader.beginArray();
         while (reader.hasNext()) {
             final Feature feature = NGWUtil.readNGWFeature(reader, getFields(),
