@@ -64,7 +64,7 @@ public class AccountUtil
 
     public static AccountData getAccountData(
             Context context,
-            String accountName)
+            String accountName) throws IllegalStateException
     {
         IGISApplication app = (IGISApplication) context.getApplicationContext();
         Account account = app.getAccount(accountName);

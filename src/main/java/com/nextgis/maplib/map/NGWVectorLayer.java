@@ -175,8 +175,12 @@ public class NGWVectorLayer
 
     public String getRemoteUrl()
     {
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-        return NGWUtil.getResourceUrl(accountData.url, mRemoteId);
+        try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+            return NGWUtil.getResourceUrl(accountData.url, mRemoteId);
+        } catch (IllegalStateException e) {
+            return null;
+        }
     }
 
 
@@ -364,12 +368,6 @@ public class NGWVectorLayer
     public void createFromNGW(IProgressor progressor)
             throws NGException, IOException, JSONException, SQLiteException
     {
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
-        if (null == accountData.url) {
-            throw new NGException(getContext().getString(R.string.error_download_data));
-        }
-
         if (!mNet.isNetworkAvailable()) { //return tile from cache
             throw new NGException(getContext().getString(R.string.error_network_unavailable));
         }
@@ -378,22 +376,33 @@ public class NGWVectorLayer
             Log.d(Constants.TAG, "download layer " + getName());
         }
 
+        AccountUtil.AccountData accountData = null;
         // get NGW version
         Pair<Integer, Integer> ver = null;
         try {
+            accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+            if (null == accountData || null == accountData.url) {
+                throw new NGException(getContext().getString(R.string.error_download_data));
+            }
+
             ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
-        } catch (IOException | NGException | NumberFormatException ignored) {
-        }
+        } catch (IllegalStateException e) {
+            throw new NGException(getContext().getString(R.string.error_download_data));
+        } catch (IOException | NGException | NumberFormatException ignored) { }
+
         if (null != ver) {
             mNgwVersionMajor = ver.first;
             mNgwVersionMinor = ver.second;
         }
 
+        if (null == accountData)
+            throw new NGException(getContext().getString(R.string.error_download_data));
         String data = NetworkUtil.get(getResourceMetaUrl(accountData),
                 accountData.login, accountData.password);
-        if (null == data) {
+        if (null == data)
             throw new NGException(getContext().getString(R.string.error_download_data));
-        }
+
         JSONObject geoJSONObject = new JSONObject(data);
 
         //fill field list
@@ -648,12 +657,12 @@ public class NGWVectorLayer
         }
 
         // 1. check NGW version
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
         Pair<Integer, Integer> ver = null;
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
-        } catch (IOException | NGException | JSONException | NumberFormatException ignored) {
-        }
+        } catch (IOException | NGException | JSONException | NumberFormatException ignored) { }
+
         if (null != ver) {
             int majorVer = ver.first;
             int minorVer = ver.second;
@@ -860,9 +869,8 @@ public class NGWVectorLayer
             return true;
         }
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             JSONObject putData = new JSONObject();
             //putData.put(JSON_ID_KEY, attach.getAttachId());
             putData.put(Constants.JSON_NAME_KEY, attach.getDisplayName());
@@ -887,6 +895,13 @@ public class NGWVectorLayer
             }
             syncResult.stats.numIoExceptions++;
             return false;
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, e.getLocalizedMessage());
+            }
+            syncResult.stats.numAuthExceptions++;
+            return false;
         }
     }
 
@@ -900,9 +915,8 @@ public class NGWVectorLayer
             return false;
         }
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
             if (!NetworkUtil.delete(
                     NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId)
@@ -919,6 +933,13 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, e.getLocalizedMessage());
             }
             syncResult.stats.numIoExceptions++;
+            return false;
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, e.getLocalizedMessage());
+            }
+            syncResult.stats.numAuthExceptions++;
             return false;
         }
     }
@@ -943,9 +964,8 @@ public class NGWVectorLayer
         File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
         String fileMime = attach.getMimetype();
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             //1. upload file
             String data = NetworkUtil.postFile(NGWUtil.getFileUploadUrl(accountData.url), fileName,
                     filePath, fileMime, accountData.login, accountData.password);
@@ -1016,6 +1036,13 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, e.getLocalizedMessage());
             }
             syncResult.stats.numIoExceptions++;
+            return false;
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, e.getLocalizedMessage());
+            }
+            syncResult.stats.numAuthExceptions++;
             return false;
         }
     }
@@ -1413,7 +1440,15 @@ public class NGWVectorLayer
 
     // read layer contents as string
     protected HashMap<Integer, List<Feature>> getFeatures(SyncResult syncResult, boolean tracked) {
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+        AccountUtil.AccountData accountData;
+        try {
+            accountData = AccountUtil.getAccountData(mContext, mAccountName);
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            syncResult.stats.numAuthExceptions++;
+            return null;
+        }
+
         HashMap<Integer, List<Feature>> results = new HashMap<>();
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
@@ -1552,11 +1587,10 @@ public class NGWVectorLayer
             return true; //just remove buggy data
         }
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         try {
-            if (cursor.moveToFirst()) {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
+            if (cursor.moveToFirst()) {
                 String payload = cursorToJson(cursor);
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
@@ -1602,9 +1636,9 @@ public class NGWVectorLayer
             return false;
         }
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
             if (!NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
                     accountData.login, accountData.password)) {
 
@@ -1615,6 +1649,17 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             e.printStackTrace();
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, e.getLocalizedMessage());
+            }
+            syncResult.stats.numIoExceptions++;
+            return false;
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, e.getLocalizedMessage());
+            }
+            syncResult.stats.numAuthExceptions++;
             return false;
         }
     }
@@ -1639,9 +1684,9 @@ public class NGWVectorLayer
             return true; //just remove buggy data
         }
 
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
             if (cursor.moveToFirst()) {
                 String payload = cursorToJson(cursor);
                 if (Constants.DEBUG_MODE) {
