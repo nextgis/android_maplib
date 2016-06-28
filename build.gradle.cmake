@@ -118,14 +118,14 @@ android {
                     "-DCXX_STANDARD_REQUIRED=ON",
 
 //                    "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
-                    "-DCMAKE_BUILD_TYPE=Debug" // TODO:
+                    "-DCMAKE_BUILD_TYPE=Debug", // TODO:
+
+                    // include flags for code editor
+                    "-DCMAKE_C_FLAGS=-I ${cmakeInstDir}}/include",
+                    "-DCMAKE_CXX_FLAGS=-I ${cmakeInstDir}}/include"
 
 //                    "-DANDROID_ABI=${abi}",
 //                    "-DBUILD_SHARED_LIBS=ON",
-
-            // include flags for code editor
-            cFlags   "-I ${cmakeInstDir}}/include"
-            cppFlags "-I ${cmakeInstDir}/include"
         }
     }
     externalNativeBuild {
