@@ -26,7 +26,7 @@ import org.gradle.internal.os.OperatingSystem;
 apply plugin: 'com.android.library'
 
 
-def getNdkPlatformLevel(abi)
+def getNdkPlatformLevel(String abi)
 {
     def platform32 = 9
     def platform64 = 21
@@ -53,10 +53,12 @@ def getNdkPlatformLevel(abi)
 }
 
 
+def buildTypeName = ""
+
+
 android {
-    compileSdkVersion = 23
-    buildToolsVersion = '24.0.0'
-    def buildTypeName = ''
+    compileSdkVersion 23
+    buildToolsVersion '23.0.3'
 
     defaultConfig {
         minSdkVersion 9
@@ -90,12 +92,14 @@ android {
     def abiFiltersString = androidAbis.toString()
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
-    def cmakeInstDir = "${projectDir}/src/main/cpp/inst"
     def cmakeSdkExe = "${getSdkDir()}/cmake/bin/cmake"
+    def cmakeInstDir = "${buildDir}/cpp/inst"
 
     defaultConfig {
         cmake {
             abiFilters "${abiFiltersString}"
+
+            // targets /*"ngstore",*/ "install" // TODO: for AS 2.2 preview 4
 
             arguments "-DCMAKE_INSTALL_PREFIX=${cmakeInstDir}/",
 
@@ -113,7 +117,8 @@ android {
                     "-DCXX_STANDARD=14",
                     "-DCXX_STANDARD_REQUIRED=ON",
 
-                    "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
+//                    "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
+                    "-DCMAKE_BUILD_TYPE=Debug" // TODO:
 
 //                    "-DANDROID_ABI=${abi}",
 //                    "-DBUILD_SHARED_LIBS=ON",
@@ -125,7 +130,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path 'libngstore/CMakeLists.txt'
+            path "libngstore/CMakeLists.txt"
         }
     }
     sourceSets {
@@ -142,7 +147,7 @@ android {
     task "cmakeInstall"(type: Exec) {
         task ->
             description 'Execute cmake install.'
-            workingDir "${projectDir}/build/intermediates/cmake/debug/json/armeabi-v7a" // TODO:
+            workingDir "${projectDir}/build/intermediates/cmake/debug/json/armeabi-v7a" // TODO: set from buildType
 
             def cmakeCmd = "${cmakeSdkExe} --build . --target install"
             commandLine getShell(), getShellArg(), "${cmakeCmd}"
@@ -154,6 +159,10 @@ android {
 
         from(new File("${cmakeInstDir}", "/src")) { include '**/*.java' }
         into new File("src/main/java/com/nextgis/store")
+    }
+
+    cmakeInstall.dependsOn {
+        tasks.findAll { task -> task.name.equals("externalNativeBuildDebug") }
     }
 
 // TODO:
@@ -169,10 +178,15 @@ android {
 
 tasks.all {
     task ->
-        if (task.name.equals("compileDebugSources")) { // TODO:
+        if (task.name.equals("compileDebugSources")) { // TODO: set from buildType
             task.dependsOn copyJSources
         }
+
+        if (task.name.equals("externalNativeBuildRelease")) { // TODO: set from !buildType
+            task.enabled = false
+        }
 }
+
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
