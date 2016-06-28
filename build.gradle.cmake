@@ -58,7 +58,7 @@ def buildTypeName = ""
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '23.0.3'
+    buildToolsVersion '24.0.0'
 
     defaultConfig {
         minSdkVersion 9
@@ -147,7 +147,9 @@ android {
     task "cmakeInstall"(type: Exec) {
         task ->
             description 'Execute cmake install.'
-            workingDir "${projectDir}/build/intermediates/cmake/debug/json/armeabi-v7a" // TODO: set from buildType
+            // TODO: set from buildType
+            // if externalNativeBuildDebug is enabled then debug else release folder
+            workingDir "${projectDir}/build/intermediates/cmake/debug/json/armeabi-v7a"
 
             def cmakeCmd = "${cmakeSdkExe} --build . --target install"
             commandLine getShell(), getShellArg(), "${cmakeCmd}"
@@ -162,6 +164,9 @@ android {
     }
 
     cmakeInstall.dependsOn {
+        // TODO: set from buildType
+        // externalNativeBuildDebug is before externalNativeBuildRelease
+        // if externalNativeBuildDebug is enabled then externalNativeBuildDebug else externalNativeBuildRelease
         tasks.findAll { task -> task.name.equals("externalNativeBuildDebug") }
     }
 
@@ -178,12 +183,15 @@ android {
 
 tasks.all {
     task ->
-        if (task.name.equals("compileDebugSources")) { // TODO: set from buildType
+        // TODO: set from buildType
+        // compileDebugSources is before compileReleaseSources
+        // if externalNativeBuildDebug is enabled then compileDebugSources else compileReleaseSources
+        if (task.name.equals("compileDebugSources")) {
             task.dependsOn copyJSources
         }
 
-        if (task.name.equals("externalNativeBuildRelease")) { // TODO: set from !buildType
-            task.enabled = false
+        if (task.name.equals("externalNativeBuildDebug")) { // TODO: set from !buildType
+//            task.enabled = false
         }
 }
 
