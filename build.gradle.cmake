@@ -105,6 +105,7 @@ android {
 
                     "-DSUPRESS_VERBOSE_OUTPUT=OFF",
 //                    "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
+//                    "-DSKIP_GIT_PULL=TRUE",
 
                     "-DBUILD_TARGET_PLATFORM=ANDROID",
 
@@ -114,8 +115,8 @@ android {
                     "-GAndroid Gradle - Unix Makefiles",
                     "-DCMAKE_MAKE_PROGRAM=make",
 
-                    "-DCXX_STANDARD=14",
-                    "-DCXX_STANDARD_REQUIRED=ON",
+//                    "-DCXX_STANDARD=14",
+//                    "-DCXX_STANDARD_REQUIRED=ON",
 
 //                    "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
                     "-DCMAKE_BUILD_TYPE=Debug", // TODO:
@@ -130,7 +131,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            path "libngstore/CMakeLists.txt"
+            path "libngsandroid/CMakeLists.txt"
         }
     }
     sourceSets {
@@ -186,7 +187,7 @@ tasks.all {
         // TODO: set from buildType
         // compileDebugSources is before compileReleaseSources
         // if externalNativeBuildDebug is enabled then compileDebugSources else compileReleaseSources
-        if (task.name.equals("compileDebugSources")) {
+        if (task.name.equals("mergeReleaseJniLibFolders")) { // compileDebugSources mergeReleaseJniLibFolders mergeDebugJniLibFolders
             task.dependsOn copyJSources
         }
 
