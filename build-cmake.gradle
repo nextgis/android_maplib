@@ -20,76 +20,14 @@
  * You should have received a copy of the GNU Lesser Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.gradle.internal.os.OperatingSystem;
 
 
-apply plugin: 'com.android.library'
-
-
-def getNdkPlatformLevel(String abi)
-{
-    def platform32 = 9
-    def platform64 = 21
-
-    switch (abi) {
-        case "armeabi":
-            return platform32
-        case "armeabi-v7a":
-            return platform32
-        case "x86":
-            return platform32
-        case "mips":
-            return platform32
-        default:
-            return platform32
-
-        case "arm64-v8a":
-            return platform64
-        case "x86_64":
-            return platform64
-        case "mips64":
-            return platform64
-    }
-}
-
-
-def buildTypeName = ""
-
-
-android {
-    compileSdkVersion 23
-    buildToolsVersion '24.0.0'
-
-    defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 23
-        versionCode = 19
-        versionName = '3.0'
-    }
-
-    buildTypes {
-        release {
-            buildTypeName = 'Release'
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            buildTypeName = 'Debug'
-            jniDebuggable true
-        }
-    }
-
-    productFlavors {
-    }
-}
-
-
-// native part
+// native cmaked part
 android {
     // drop mips for now "mips", , "mips64"
-//    def androidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
-    def androidAbis = ["armeabi-v7a"] // TODO:
-    def abiFiltersString = androidAbis.toString()
+//    def cmAndroidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
+    def cmAndroidAbis = ["armeabi-v7a"] // TODO:
+    def abiFiltersString = cmAndroidAbis.toString()
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
     def cmakeSdkExe = "${getSdkDir()}/cmake/bin/cmake"
@@ -105,7 +43,7 @@ android {
 
                     "-DSUPRESS_VERBOSE_OUTPUT=OFF",
 //                    "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
-//                    "-DSKIP_GIT_PULL=TRUE",
+                    "-DSKIP_GIT_PULL=TRUE",
 
                     "-DBUILD_TARGET_PLATFORM=ANDROID",
 
@@ -145,7 +83,7 @@ android {
         }
     }
 
-    task "cmakeInstall"(type: Exec) {
+    task "cmCmakeInstall"(type: Exec) {
         task ->
             description 'Execute cmake install.'
             // TODO: set from buildType
@@ -157,14 +95,14 @@ android {
             println("Command line of ${task.getName()}: ${commandLine}")
     }
 
-    task copyJSources(type: Copy, dependsOn: cmakeInstall) {
+    task cmCopyJSources(type: Copy, dependsOn: cmCmakeInstall) {
         description 'Copy java files.'
 
         from(new File("${cmakeInstDir}", "/src")) { include '**/*.java' }
         into new File("src/main/java/com/nextgis/store")
     }
 
-    cmakeInstall.dependsOn {
+    cmCmakeInstall.dependsOn {
         // TODO: set from buildType
         // externalNativeBuildDebug is before externalNativeBuildRelease
         // if externalNativeBuildDebug is enabled then externalNativeBuildDebug else externalNativeBuildRelease
@@ -188,98 +126,10 @@ tasks.all {
         // compileDebugSources is before compileReleaseSources
         // if externalNativeBuildDebug is enabled then compileDebugSources else compileReleaseSources
         if (task.name.equals("mergeReleaseJniLibFolders")) { // compileDebugSources mergeReleaseJniLibFolders mergeDebugJniLibFolders
-            task.dependsOn copyJSources
+            task.dependsOn cmCopyJSources
         }
 
         if (task.name.equals("externalNativeBuildDebug")) { // TODO: set from !buildType
 //            task.enabled = false
         }
-}
-
-
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-}
-
-
-def getSdkDir()
-{
-    if (System.env.ANDROID_HOME != null) {
-        return System.env.ANDROID_HOME
-    }
-
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    def sdkdir = properties.getProperty('sdk.dir', null)
-    if (sdkdir == null) {
-        throw new GradleException("""\
-                SDK location not found.
-                Define location with sdk.dir in the local.properties file
-                or with an ANDROID_HOME environment variable.""")
-    }
-
-    return sdkdir
-}
-
-
-def getNdkDir()
-{
-    if (System.env.ANDROID_NDK_ROOT != null) {
-        return System.env.ANDROID_NDK_ROOT
-    }
-
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    def ndkdir = properties.getProperty('ndk.dir', null)
-    if (ndkdir == null) {
-        throw new GradleException("""\
-                NDK location not found.
-                Define location with ndk.dir in the local.properties file
-                or with an ANDROID_NDK_ROOT environment variable.""")
-    }
-
-    return ndkdir
-}
-
-
-def getNdkBuildCmd()
-{
-    def ndkbuild = getNdkDir() + "/ndk-build"
-    if (OperatingSystem.current().isWindows()) {
-        ndkbuild += ".cmd"
-    }
-    return ndkbuild
-}
-
-
-def getShell()
-{
-    if (OperatingSystem.current().isWindows()) {
-        return "cmd"
-    } else {
-        return "sh"
-    }
-}
-
-
-def getShellArg()
-{
-    if (OperatingSystem.current().isWindows()) {
-        return "/c"
-    } else {
-        return "-c"
-    }
-}
-
-
-def getWorkDir(String abi)
-{
-    def libngstorefolder = 'libngstore'
-    def folder = project.file("${libngstorefolder}/build-${abi}/inst")
-    if (!folder.exists()) {
-        // Create all folders up-to and including build
-        folder.mkdirs()
-    }
-
-    return folder.parent
 }
