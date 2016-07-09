@@ -6,13 +6,19 @@ import android.graphics.Bitmap;
 
 public class NgsCoreAndroid
 {
+    public native static boolean initLogger();
+
+
     public native static long lockBitmapPixels(Bitmap bitmap);
 
 
     public native static void unlockBitmapPixels(Bitmap bitmap);
 
 
-    public native static boolean fillImage(long imagePointer, int imageWidth, int imageHeight);
+    public native static boolean fillImage(
+            long imagePointer,
+            int imageWidth,
+            int imageHeight);
 
 
     static {
