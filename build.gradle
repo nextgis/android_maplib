@@ -107,6 +107,7 @@ android {
 
                 def cmakeCmd = "cmake" +
 //                        " -DSKIP_GIT_PULL=TRUE" +
+//                        " -DSTRIP_NGS_LIBS=TRUE" +
                         " -DBUILD_TARGET_PLATFORM=ANDROID" +
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +

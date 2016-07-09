@@ -44,6 +44,7 @@ android {
                         "-DSUPRESS_VERBOSE_OUTPUT=OFF",
 //                        "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
                         "-DSKIP_GIT_PULL=TRUE",
+//                        "-DSTRIP_NGS_LIBS=TRUE",
 
                         "-DBUILD_TARGET_PLATFORM=ANDROID",
 
