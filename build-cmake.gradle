@@ -30,41 +30,42 @@ android {
     def abiFiltersString = cmAndroidAbis.toString()
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
-    def cmakeSdkExe = "${getSdkDir()}/cmake/bin/cmake"
-    def cmakeInstDir = "${buildDir}/cpp/inst"
+    def cmakeInstPath = "${buildDir}/cmake/inst"
 
     defaultConfig {
-        cmake {
-            abiFilters "${abiFiltersString}"
+        externalNativeBuild {
+            cmake {
+                abiFilters "${abiFiltersString}"
 
-            // targets /*"ngstore",*/ "install" // TODO: for AS 2.2 preview 4
+//                targets "ngsandroid"
 
-            arguments "-DCMAKE_INSTALL_PREFIX=${cmakeInstDir}/",
+                arguments "-DCMAKE_INSTALL_PREFIX=${cmakeInstPath}/",
 
-                    "-DSUPRESS_VERBOSE_OUTPUT=OFF",
-//                    "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
-                    "-DSKIP_GIT_PULL=TRUE",
+                        "-DSUPRESS_VERBOSE_OUTPUT=OFF",
+//                        "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
+                        "-DSKIP_GIT_PULL=TRUE",
 
-                    "-DBUILD_TARGET_PLATFORM=ANDROID",
+                        "-DBUILD_TARGET_PLATFORM=ANDROID",
 
-                    "-DANDROID_NATIVE_API_LEVEL=9", // ${getNdkPlatformLevel(abi)}
-                    "-DANDROID_STL=gnustl_static",
-                    "-DANDROID_TOOLCHAIN_NAME=arm-linux-androideabi-4.9",
-                    "-GAndroid Gradle - Unix Makefiles",
-                    "-DCMAKE_MAKE_PROGRAM=make",
+                        "-DANDROID_NATIVE_API_LEVEL=9", // ${getNdkPlatformLevel(abi)} // TODO:
+                        "-DANDROID_STL=gnustl_static",
+                        "-DANDROID_TOOLCHAIN_NAME=arm-linux-androideabi-4.9",
+                        "-GAndroid Gradle - Unix Makefiles",
+                        "-DCMAKE_MAKE_PROGRAM=make",
 
-//                    "-DCXX_STANDARD=14",
-//                    "-DCXX_STANDARD_REQUIRED=ON",
+//                        "-DCXX_STANDARD=14",
+//                        "-DCXX_STANDARD_REQUIRED=ON",
 
-//                    "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
-                    "-DCMAKE_BUILD_TYPE=Debug", // TODO:
+//                        "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
+                        "-DCMAKE_BUILD_TYPE=Debug" // TODO:
 
-                    // include flags for code editor
-                    "-DCMAKE_C_FLAGS=-I ${cmakeInstDir}}/include",
-                    "-DCMAKE_CXX_FLAGS=-I ${cmakeInstDir}}/include"
+                        // include flags for code editor
+//                        "-DCMAKE_C_FLAGS=-I ${cmakeInstDir}}/include",
+//                        "-DCMAKE_CXX_FLAGS=-I ${cmakeInstDir}}/include"
 
-//                    "-DANDROID_ABI=${abi}",
-//                    "-DBUILD_SHARED_LIBS=ON",
+//                        "-DANDROID_ABI=${abi}",
+//                        "-DBUILD_SHARED_LIBS=ON",
+            }
         }
     }
     externalNativeBuild {
@@ -72,37 +73,15 @@ android {
             path "libngsandroid/CMakeLists.txt"
         }
     }
-    sourceSets {
-        main {
-            // let gradle pack the shared library into apk
-// TODO:
-//            jniLibs.srcDirs = ["${cmakeInstDir}"]
-//            jniLibs.srcDir 'src/main/libs' //set libs as .so's location instead of jniLibs
-            //jni.srcDirs = []  // disable automatic ndk-build, if you do not have
-            // src/main/jni directory at all, no need for it
-        }
-    }
 
-    task "cmCmakeInstall"(type: Exec) {
-        task ->
-            description 'Execute cmake install.'
-            // TODO: set from buildType
-            // if externalNativeBuildDebug is enabled then debug else release folder
-            workingDir "${projectDir}/build/intermediates/cmake/debug/json/armeabi-v7a"
+    task cmCopyJSources(type: Copy) {
+        description "Copy java files."
 
-            def cmakeCmd = "${cmakeSdkExe} --build . --target install"
-            commandLine getShell(), getShellArg(), "${cmakeCmd}"
-            println("Command line of ${task.getName()}: ${commandLine}")
-    }
-
-    task cmCopyJSources(type: Copy, dependsOn: cmCmakeInstall) {
-        description 'Copy java files.'
-
-        from(new File("${cmakeInstDir}", "/src")) { include '**/*.java' }
+        from(new File("libngstore/build/gen/bindings")) { include "**/*.java" }
         into new File("src/main/java/com/nextgis/store")
     }
 
-    cmCmakeInstall.dependsOn {
+    cmCopyJSources.dependsOn {
         // TODO: set from buildType
         // externalNativeBuildDebug is before externalNativeBuildRelease
         // if externalNativeBuildDebug is enabled then externalNativeBuildDebug else externalNativeBuildRelease

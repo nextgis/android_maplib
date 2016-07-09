@@ -23,7 +23,7 @@
 import org.gradle.internal.os.OperatingSystem;
 
 
-apply plugin: 'com.android.library'
+apply plugin: "com.android.library"
 
 
 def float ndkBuildGradleVersion = 2.10
@@ -65,27 +65,36 @@ def getNdkPlatformLevel(abi)
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '24.0.0'
-    def buildTypeName = ''
+    buildToolsVersion "24.0.0"
+    def buildTypeName = ""
     // drop mips for now "mips", , "mips64"
     def androidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
+//    def androidAbis = ["armeabi-v7a"] // for debug
 
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23
         versionCode 19
-        versionName '3.0'
+        versionName "3.0"
     }
 
     buildTypes {
         release {
-            buildTypeName = 'Release'
+            buildTypeName = "Release"
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
         debug {
-            buildTypeName = 'Debug'
+            buildTypeName = "Debug"
             jniDebuggable true
+        }
+    }
+
+    sourceSets {
+        main {
+            java {
+                exclude "${projectDir}/libngstore/build/gen/bindings/*.java"
+            }
         }
     }
 
@@ -93,7 +102,7 @@ android {
 
         task "cmakeConfigure-${abi}"(type: Exec) {
             task ->
-                description 'Execute cmake configure.'
+                description "Execute cmake configure."
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake" +
@@ -113,7 +122,7 @@ android {
 
         task "cmakeBuild-${abi}"(type: Exec, dependsOn: "cmakeConfigure-${abi}") {
             task ->
-                description 'Execute cmake build.'
+                description "Execute cmake build."
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake --build ."
@@ -122,43 +131,33 @@ android {
                 println("Command line of ${task.getName()}: ${commandLine}")
         }
 
-        task "cmakeInstall-${abi}"(type: Exec, dependsOn: "cmakeBuild-${abi}") {
-            task ->
-                description 'Execute cmake install.'
-                workingDir getWorkDir(abi)
+        task "copyNativeLibs-${abi}"(type: Copy, dependsOn: "cmakeBuild-${abi}") {
+            description "Copy so files."
 
-                def cmakeCmd = "cmake --build . --target install"
-
-                commandLine getShell(), getShellArg(), "${cmakeCmd}"
-                println("Command line of ${task.getName()}: ${commandLine}")
-        }
-
-        task "copyNativeLibs-${abi}"(type: Copy, dependsOn: "cmakeInstall-${abi}") {
-            description 'Copy so files.'
-
-            from(new File(getWorkDir(abi), '/inst/lib')) { include '**/*.so' }
-            into new File('src/main/jni', abi)
+            from(new File(getWorkDir(abi), "/libngstore/src")) { include "*.so" }
+            from(new File(getWorkDir(abi), "/src")) { include "*.so" }
+            into(new File("src/main/jni", abi))
         }
     }
 
     task copyJSources(type: Copy,
             dependsOn: androidAbis.collect { androidAbi -> "copyNativeLibs-${androidAbi}" }) {
-        description 'Copy java files.'
+        description "Copy java files."
 
-        from(new File(getWorkDir(androidAbis.get(0)), '/inst/src')) { include '**/*.java' }
-        into new File('src/main/java/com/nextgis/store')
+        from(new File("libngstore/build/gen/bindings")) { include "**/*.java" }
+        into(new File("src/main/java/com/nextgis/store"))
     }
 
     sourceSets.main {
         if(!isCmakeBuild) {
-            jniLibs.srcDir 'src/main/libs' //set libs as .so's location instead of jniLibs
+            jniLibs.srcDir "src/main/libs" //set libs as .so's location instead of jniLibs
             jni.srcDirs = [] //disable automatic ndk-build call with auto-generated Android.mk
         }
     }
 
     // call regular ndk-build(.cmd) script from app directory
     task ndkBuild(type: Exec, dependsOn: copyJSources) {
-        commandLine "${getNdkBuildCmd()}", "-C", file('src/main').absolutePath
+        commandLine "${getNdkBuildCmd()}", "-C", file("src/main").absolutePath
     }
 
     tasks.withType(JavaCompile) { compileTask ->
@@ -181,7 +180,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(dir: "libs", include: ["*.jar"])
 }
 
 
@@ -192,8 +191,8 @@ def getSdkDir()
     }
 
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    def sdkdir = properties.getProperty('sdk.dir', null)
+    properties.load(project.rootProject.file("local.properties").newDataInputStream())
+    def sdkdir = properties.getProperty("sdk.dir", null)
     if (sdkdir == null) {
         throw new GradleException("""\
                 SDK location not found.
@@ -212,8 +211,8 @@ def getNdkDir()
     }
 
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    def ndkdir = properties.getProperty('ndk.dir', null)
+    properties.load(project.rootProject.file("local.properties").newDataInputStream())
+    def ndkdir = properties.getProperty("ndk.dir", null)
     if (ndkdir == null) {
         throw new GradleException("""\
                 NDK location not found.
