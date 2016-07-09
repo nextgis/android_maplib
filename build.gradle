@@ -150,8 +150,10 @@ android {
     }
 
     sourceSets.main {
-        jniLibs.srcDir 'src/main/libs' //set libs as .so's location instead of jniLibs
-        jni.srcDirs = [] //disable automatic ndk-build call with auto-generated Android.mk
+        if(!isCmakeBuild) {
+            jniLibs.srcDir 'src/main/libs' //set libs as .so's location instead of jniLibs
+            jni.srcDirs = [] //disable automatic ndk-build call with auto-generated Android.mk
+        }
     }
 
     // call regular ndk-build(.cmd) script from app directory
