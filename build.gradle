@@ -69,7 +69,6 @@ android {
     def buildTypeName = ""
     // drop mips for now "mips", , "mips64"
     def androidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
-//    def androidAbis = ["armeabi-v7a"] // for debug
 
     defaultConfig {
         minSdkVersion 9
@@ -90,14 +89,6 @@ android {
         }
     }
 
-    sourceSets {
-        main {
-            java {
-                exclude "${projectDir}/libngstore/build/gen/bindings/*.java"
-            }
-        }
-    }
-
     androidAbis.each { abi ->
 
         task "cmakeConfigure-${abi}"(type: Exec) {
@@ -106,8 +97,6 @@ android {
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake" +
-//                        " -DSKIP_GIT_PULL=TRUE" +
-//                        " -DSTRIP_NGS_LIBS=TRUE" +
                         " -DBUILD_TARGET_PLATFORM=ANDROID" +
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +
@@ -126,27 +115,39 @@ android {
                 description "Execute cmake build."
                 workingDir getWorkDir(abi)
 
-                def cmakeCmd = "cmake --build ."
+                def cmakeCmd = "cmake --build . -- -j2"
 
                 commandLine getShell(), getShellArg(), "${cmakeCmd}"
                 println("Command line of ${task.getName()}: ${commandLine}")
         }
 
-        task "copyNativeLibs-${abi}"(type: Copy, dependsOn: "cmakeBuild-${abi}") {
-            description "Copy so files."
+        task "cmakeInstall-${abi}"(type: Exec, dependsOn: "cmakeBuild-${abi}") {
+            task ->
+                description 'Execute cmake install.'
+                workingDir getWorkDir(abi)
 
-            from(new File(getWorkDir(abi), "/libngstore/src")) { include "*.so" }
-            from(new File(getWorkDir(abi), "/src")) { include "*.so" }
-            into(new File("src/main/jni", abi))
+                def cmakeCmd = "cmake --build . --target install"
+
+                commandLine getShell(), getShellArg(), "${cmakeCmd}"
+
+                println("command line of ${task.getName()}: ${commandLine}")
+        }
+
+        task "copyNativeLibs-${abi}"(type: Copy, dependsOn: "cmakeInstall-${abi}") {
+            description 'Copy so files.'
+
+            from(new File(getWorkDir(abi), '/inst/lib')) { include '**/*.so' }
+            into new File('src/main/jni', abi)
         }
     }
 
-    task copyJSources(type: Copy,
-            dependsOn: androidAbis.collect { androidAbi -> "copyNativeLibs-${androidAbi}" }) {
-        description "Copy java files."
+    task copyJSources(type: Copy, dependsOn: androidAbis.collect {
+        androidAbi -> "copyNativeLibs-${androidAbi}"
+    }) {
+        description 'Copy java files.'
 
-        from(new File("libngstore/build/gen/bindings")) { include "**/*.java" }
-        into(new File("src/main/java/com/nextgis/store"))
+        from(new File(getWorkDir(androidAbis.get(0)), '/inst/src')) { include '**/*.java' }
+        into new File('src/main/java/com/nextgis/store')
     }
 
     sourceSets.main {
@@ -254,11 +255,10 @@ def getShellArg()
     }
 }
 
-
 def getWorkDir(String abi)
 {
-    def libngsandroidfolder = "libngsandroid"
-    def folder = project.file("${libngsandroidfolder}/build-${abi}/inst")
+    def libngstorefolder = 'libngstore'
+    def folder = project.file("${libngstorefolder}/build-${abi}/inst")
     if (!folder.exists()) {
         // Create all folders up-to and including build
         folder.mkdirs()
