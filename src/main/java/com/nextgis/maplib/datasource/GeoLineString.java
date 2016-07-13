@@ -702,6 +702,10 @@ public class GeoLineString
 
     @Override
     public boolean isValid() {
+        for (GeoPoint point : mPoints)
+            if (!point.isValid())
+                return false;
+
         return mPoints.size() > 1;
     }
 

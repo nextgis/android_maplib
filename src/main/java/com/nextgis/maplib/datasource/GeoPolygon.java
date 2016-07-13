@@ -385,6 +385,10 @@ public class GeoPolygon
 
     @Override
     public boolean isValid() {
+        for (GeoLinearRing ring : mInnerRings)
+            if (!ring.isValid())
+                return false;
+
         return mOuterRing.isValid();
     }
 
