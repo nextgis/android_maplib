@@ -502,11 +502,14 @@ public class NGWVectorLayer
             while (reader.hasNext()) {
                 try {
                     final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
+                    if (feature.getGeometry() == null || !feature.getGeometry().isValid())
+                        throw new NGException(getContext().getString(R.string.error_download_data));
+
                     createFeatureBatch(feature, db);
                 } catch (OutOfMemoryError e) {
                     e.printStackTrace();
                     if (null != progressor)
-                        progressor.setMessage(getContext().getString(R.string.error_download_data));
+                        throw new NGException(getContext().getString(R.string.error_download_data));
 
                     save();
                     return;
