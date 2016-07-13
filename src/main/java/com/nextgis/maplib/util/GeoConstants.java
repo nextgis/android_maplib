@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -69,6 +69,7 @@ public interface GeoConstants
     /**
      * geojson see http://geojson.org/geojson-spec.html
      */
+    String GEOJSON_CRS_EPSG_4326           = "EPSG:4326";
     String GEOJSON_CRS_WGS84               = "urn:ogc:def:crs:OGC:1.3:CRS84";
     String GEOJSON_CRS_WEB_MERCATOR        = "EPSG:3857";
     String GEOJSON_CRS_EPSG_3857           = "urn:ogc:def:crs:EPSG::3857";

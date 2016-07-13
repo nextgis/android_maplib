@@ -1,3 +1,25 @@
+/*
+ * Project:  NextGIS Mobile
+ * Purpose:  Mobile GIS for Android.
+ * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
+ * *****************************************************************************
+ * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.nextgis.maplib.util;
 
 import android.annotation.TargetApi;
@@ -14,8 +36,6 @@ import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
-import com.nextgis.maplib.map.MapBase;
-import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.VectorLayer;
 
 import org.json.JSONArray;
@@ -175,9 +195,10 @@ public class GeoJSONUtil {
      * @throws NGException
      */
     public static boolean checkCRSSupportAndWGS(String crsName, Context context) throws NGException {
-        boolean isWGS84 = true;
+        boolean isWGS84;
         switch (crsName) {
             case GeoConstants.GEOJSON_CRS_WGS84:  // WGS84
+            case GeoConstants.GEOJSON_CRS_EPSG_4326:  // WGS84
                 isWGS84 = true;
                 break;
             case GeoConstants.GEOJSON_CRS_EPSG_3857:
@@ -408,12 +429,15 @@ public class GeoJSONUtil {
                 reader.beginArray();
                 while (reader.hasNext()) {
                     Feature feature = readGeoJSONFeature(reader, layer, isWGS84);
-                    if(null != feature) {
-                        if(layer.getFields() == null || layer.getFields().isEmpty()){
-                            layer.create(feature.getGeometry().getType(), feature.getFields());
+                    if (null != feature) {
+                        if (layer.getFields() != null && !layer.getFields().isEmpty()) {
+                            if (feature.getGeometry() != null)
+                                layer.create(feature.getGeometry().getType(), feature.getFields());
+
                             db = DatabaseContext.getDbForLayer(layer);
                         }
-                        if(feature.getGeometry() != null) {
+
+                        if (feature.getGeometry() != null) {
                             layer.createFeatureBatch(feature, db);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
