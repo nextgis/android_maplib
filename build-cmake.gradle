@@ -24,10 +24,17 @@
 
 // native cmaked part
 android {
+//    defaultPublishConfig "debug" // uncomment it for the debug of the native code
+}
+
+def String buildConfig = android.defaultPublishConfig.substring(0, 1).toUpperCase() +
+        android.defaultPublishConfig.substring(1, android.defaultPublishConfig.length())
+
+android {
     // drop mips for now "mips", , "mips64"
 //    def cmAndroidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
     def cmAndroidAbis = ["armeabi-v7a"] // TODO:
-    def abiFiltersString = cmAndroidAbis.toString()
+    def String abiFiltersString = cmAndroidAbis.toString()
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
     def cmakeInstPath = "${buildDir}/cmake/inst"
@@ -52,13 +59,12 @@ android {
                         "-DANDROID_STL=gnustl_static",
                         "-DANDROID_TOOLCHAIN_NAME=arm-linux-androideabi-4.9",
                         "-GAndroid Gradle - Unix Makefiles",
-                        "-DCMAKE_MAKE_PROGRAM=make",
+                        "-DCMAKE_MAKE_PROGRAM=make"
 
 //                        "-DCXX_STANDARD=14",
 //                        "-DCXX_STANDARD_REQUIRED=ON",
 
 //                        "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
-                        "-DCMAKE_BUILD_TYPE=Debug" // TODO:
 
                         // include flags for code editor
 //                        "-DCMAKE_C_FLAGS=-I ${cmakeInstDir}}/include",
@@ -75,10 +81,13 @@ android {
         }
     }
 
+    def String genSrcJavaDir = "${projectDir}/externalNativeBuild/cmake/${defaultPublishConfig}" +
+            "/${cmAndroidAbis.get(0)}/libngstoreapi/libngstore/bindings"
+
     task cmCopyJSources(type: Copy) {
         description "Copy java files."
 
-        from(new File("libngstore/build/gen/bindings")) { include "**/*.java" }
+        from(new File(genSrcJavaDir)) { include "*.java" }
         into new File("src/main/java/com/nextgis/store")
     }
 
@@ -100,16 +109,11 @@ android {
 //    clean.dependsOn androidAbis.collect { androidAbi -> "cleanNative-${androidAbi}" }
 }
 
+def String dependedTask = "compile${buildConfig}JavaWithJavac"
+
 tasks.all {
     task ->
-        // TODO: set from buildType
-        // compileDebugSources is before compileReleaseSources
-        // if externalNativeBuildDebug is enabled then compileDebugSources else compileReleaseSources
-        if (task.name.equals("mergeReleaseJniLibFolders")) { // compileDebugSources mergeReleaseJniLibFolders mergeDebugJniLibFolders
+        if (task.name.equals(dependedTask)) {
             task.dependsOn cmCopyJSources
-        }
-
-        if (task.name.equals("externalNativeBuildDebug")) { // TODO: set from !buildType
-//            task.enabled = false
         }
 }

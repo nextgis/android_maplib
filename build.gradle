@@ -69,7 +69,7 @@ android {
     def buildTypeName = ""
     // drop mips for now "mips", , "mips64"
     def androidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
-
+//    def androidAbis = ["armeabi-v7a"] // for debug
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23
@@ -116,6 +116,7 @@ android {
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake --build . -- -j2"
+//                def cmakeCmd = "cmake --build ." // for debug
 
                 commandLine getShell(), getShellArg(), "${cmakeCmd}"
                 println("Command line of ${task.getName()}: ${commandLine}")
@@ -134,24 +135,24 @@ android {
         }
 
         task "copyNativeLibs-${abi}"(type: Copy, dependsOn: "cmakeInstall-${abi}") {
-            description 'Copy so files.'
+            description "Copy so files."
 
-            from(new File(getWorkDir(abi), '/inst/lib')) { include '**/*.so' }
-            into new File('src/main/jni', abi)
+            from(new File(getWorkDir(abi), "inst/lib")) { include "**/*.so" }
+            into(new File("src/main/jni", abi))
         }
     }
 
     task copyJSources(type: Copy, dependsOn: androidAbis.collect {
         androidAbi -> "copyNativeLibs-${androidAbi}"
     }) {
-        description 'Copy java files.'
+        description "Copy java files."
 
-        from(new File(getWorkDir(androidAbis.get(0)), '/inst/src')) { include '**/*.java' }
-        into new File('src/main/java/com/nextgis/store')
+        from(new File(getWorkDir(androidAbis.get(0)), "/inst/src")) { include "**/*.java" }
+        into(new File("src/main/java/com/nextgis/store"))
     }
 
     sourceSets.main {
-        if(!isCmakeBuild) {
+        if (!isCmakeBuild) {
             jniLibs.srcDir "src/main/libs" //set libs as .so's location instead of jniLibs
             jni.srcDirs = [] //disable automatic ndk-build call with auto-generated Android.mk
         }
@@ -163,7 +164,7 @@ android {
     }
 
     tasks.withType(JavaCompile) { compileTask ->
-        if(!isCmakeBuild) {
+        if (!isCmakeBuild) {
             compileTask.dependsOn ndkBuild
         }
     }
@@ -255,10 +256,11 @@ def getShellArg()
     }
 }
 
+
 def getWorkDir(String abi)
 {
-    def libngstorefolder = 'libngstore'
-    def folder = project.file("${libngstorefolder}/build-${abi}/inst")
+    def ngsmakerfolder = "libngsandroid"
+    def folder = project.file("${ngsmakerfolder}/build-${abi}/inst")
     if (!folder.exists()) {
         // Create all folders up-to and including build
         folder.mkdirs()
