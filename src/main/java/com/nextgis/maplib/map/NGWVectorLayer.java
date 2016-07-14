@@ -111,6 +111,7 @@ public class NGWVectorLayer
     protected long   mRemoteId;
     protected int    mSyncType;
     protected int    mNGWLayerType;
+    protected int    mCRS = GeoConstants.CRS_WEB_MERCATOR;
     protected String mServerWhere;
     protected boolean mTracked;
     //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
@@ -222,6 +223,7 @@ public class NGWVectorLayer
         rootConfig.put(JSON_NGWLAYER_TYPE_KEY, mNGWLayerType);
         rootConfig.put(JSON_SERVERWHERE_KEY, mServerWhere);
         rootConfig.put(JSON_TRACKED_KEY, mTracked);
+        rootConfig.put(GeoConstants.GEOJSON_CRS, mCRS);
 
         return rootConfig;
     }
@@ -234,6 +236,7 @@ public class NGWVectorLayer
         super.fromJSON(jsonObject);
 
         mTracked = jsonObject.optBoolean(JSON_TRACKED_KEY);
+        mCRS = jsonObject.optInt(GeoConstants.GEOJSON_CRS, GeoConstants.CRS_WEB_MERCATOR);
         if (jsonObject.has(JSON_NGW_VERSION_MAJOR_KEY)) {
             mNgwVersionMajor = jsonObject.getInt(JSON_NGW_VERSION_MAJOR_KEY);
         }
@@ -426,8 +429,8 @@ public class NGWVectorLayer
         String geomTypeString = vectorLayerJSONObject.getString(JSON_GEOMETRY_TYPE_KEY);
         int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
         JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
-        int nSRS = srs.getInt("id");
-        if (nSRS != GeoConstants.CRS_WEB_MERCATOR && nSRS != GeoConstants.CRS_WGS84) {
+        mCRS = srs.getInt("id");
+        if (mCRS != GeoConstants.CRS_WEB_MERCATOR && mCRS != GeoConstants.CRS_WGS84) {
             throw new NGException(getContext().getString(R.string.error_crs_unsupported));
         }
 
@@ -450,7 +453,7 @@ public class NGWVectorLayer
                 progressor.setMessage(getContext().getString(R.string.parse_features));
             }
             List<Feature> features =
-                    NGWUtil.jsonToFeatures(featuresJSONArray, fields, nSRS, progressor);
+                    NGWUtil.jsonToFeatures(featuresJSONArray, fields, mCRS, progressor);
 
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "feature count: " + features.size());
@@ -501,7 +504,7 @@ public class NGWVectorLayer
             int featureCount = 0;
             while (reader.hasNext()) {
                 try {
-                    final Feature feature = NGWUtil.readNGWFeature(reader, fields, nSRS);
+                    final Feature feature = NGWUtil.readNGWFeature(reader, fields, mCRS);
                     if (feature.getGeometry() == null || !feature.getGeometry().isValid())
                         throw new NGException(getContext().getString(R.string.error_download_data));
 
@@ -1491,17 +1494,17 @@ public class NGWVectorLayer
                 if (tracked) {
                     JSONObject featuresJSONObject = new JSONObject(data);
                     JSONArray addedFeatures = featuresJSONObject.getJSONArray("added");
-                    List<Feature> added = NGWUtil.jsonToFeatures(addedFeatures, getFields(), GeoConstants.CRS_WEB_MERCATOR, null);
+                    List<Feature> added = NGWUtil.jsonToFeatures(addedFeatures, getFields(), mCRS, null);
                     JSONArray changedFeatures = featuresJSONObject.getJSONArray("changed");
-                    List<Feature> changed = NGWUtil.jsonToFeatures(changedFeatures, getFields(), GeoConstants.CRS_WEB_MERCATOR, null);
+                    List<Feature> changed = NGWUtil.jsonToFeatures(changedFeatures, getFields(), mCRS, null);
                     JSONArray deletedFeatures = featuresJSONObject.getJSONArray("deleted");
-                    List<Feature> deleted = NGWUtil.jsonToFeatures(deletedFeatures, getFields(), GeoConstants.CRS_WEB_MERCATOR, null);
+                    List<Feature> deleted = NGWUtil.jsonToFeatures(deletedFeatures, getFields(), mCRS, null);
                     results.put(0, added);
                     results.put(1, changed);
                     results.put(2, deleted);
                 } else  {
                     JSONArray featuresJSONArray = new JSONArray(data);
-                    results.put(0, NGWUtil.jsonToFeatures(featuresJSONArray, getFields(), GeoConstants.CRS_WEB_MERCATOR, null));
+                    results.put(0, NGWUtil.jsonToFeatures(featuresJSONArray, getFields(), mCRS, null));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -1579,8 +1582,7 @@ public class NGWVectorLayer
     protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, OutOfMemoryError {
         reader.beginArray();
         while (reader.hasNext()) {
-            final Feature feature = NGWUtil.readNGWFeature(reader, getFields(),
-                    GeoConstants.CRS_WEB_MERCATOR);
+            final Feature feature = NGWUtil.readNGWFeature(reader, getFields(), mCRS);
             features.add(feature);
         }
         reader.endArray();
@@ -1814,6 +1816,10 @@ public class NGWVectorLayer
             //may be found geometry in cache by id is faster
             GeoGeometry geometry = GeoGeometryFactory.fromBlob(
                     cursor.getBlob(cursor.getColumnIndex(Constants.FIELD_GEOM)));
+
+            geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
+            if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
+                geometry.project(mCRS);
 
             rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
             //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
