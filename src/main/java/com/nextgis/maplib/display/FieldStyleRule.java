@@ -93,6 +93,8 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
                 markerStyle.setType(ruleStyle.getType());
                 markerStyle.setSize(ruleStyle.getSize());
                 markerStyle.setWidth(ruleStyle.getWidth());
+                markerStyle.setText(ruleStyle.getText());
+                markerStyle.setField(ruleStyle.getField());
             } else if (style instanceof SimpleLineStyle) {
                 SimpleLineStyle lineStyle = (SimpleLineStyle) style;
                 SimpleLineStyle ruleStyle = (SimpleLineStyle) rule;
@@ -100,12 +102,16 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
                 lineStyle.setOutColor(ruleStyle.getOutColor());
                 lineStyle.setType(ruleStyle.getType());
                 lineStyle.setWidth(ruleStyle.getWidth());
+                lineStyle.setText(ruleStyle.getText());
+                lineStyle.setField(ruleStyle.getField());
             } else if (style instanceof SimplePolygonStyle) {
                 SimplePolygonStyle polygonStyle = (SimplePolygonStyle) style;
                 SimplePolygonStyle ruleStyle = (SimplePolygonStyle) rule;
                 polygonStyle.setColor(ruleStyle.getColor());
                 polygonStyle.setWidth(ruleStyle.getWidth());
                 polygonStyle.setFill(ruleStyle.isFill());
+                polygonStyle.setText(ruleStyle.getText());
+                polygonStyle.setField(ruleStyle.getField());
             }
         }
     }

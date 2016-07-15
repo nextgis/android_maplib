@@ -67,4 +67,5 @@
     <string name="sync_canceled">Sync canceled</string>
     <string name="sync_error">Sync error</string>
     <string name="sync_finished">Sync finished</string>
+    <string name="text">Text</string>
 </resources>

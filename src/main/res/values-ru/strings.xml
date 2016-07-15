@@ -68,4 +68,5 @@
     <string name="sync_canceled">Синхронизация отменена</string>
     <string name="sync_error">Ошибка синхронизации</string>
     <string name="sync_finished">Синхронизация завершена</string>
+    <string name="text">Текст</string>
 </resources>

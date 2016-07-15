@@ -26,6 +26,9 @@ package com.nextgis.maplib.display;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.util.Log;
+
+import com.nextgis.maplib.api.ITextStyle;
+import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.Layer;
@@ -226,7 +229,27 @@ public class SimpleFeatureRenderer
      */
     protected Style getStyle(long featureId)
     {
+        applyField(mStyle, featureId);
         return mStyle;
+    }
+
+
+    protected Style applyField(Style style, long featureId) {
+        if (style instanceof ITextStyle) {
+            String fieldValue = ((ITextStyle) style).getField();
+
+            if (fieldValue != null) {
+                Feature feature = ((VectorLayer) getLayer()).getFeature(featureId);
+                if (fieldValue.equals(FIELD_ID))
+                    fieldValue = feature.getId() + "";
+                else
+                    fieldValue = feature.getFieldValueAsString(fieldValue);
+
+                ((ITextStyle) style).setText(fieldValue);
+            }
+        }
+
+        return style;
     }
 
 
@@ -284,23 +307,14 @@ public class SimpleFeatureRenderer
             case "SimpleMarkerStyle":
                 style.set(new SimpleMarkerStyle());
                 break;
-            case "SimpleTextMarkerStyle":
-                style.set(new SimpleTextMarkerStyle());
-                break;
             case "SimpleLineStyle":
                 style.set(new SimpleLineStyle());
-                break;
-            case "SimpleTextLineStyle":
-                style.set(new SimpleTextLineStyle());
                 break;
             case "SimplePolygonStyle":
                 style.set(new SimplePolygonStyle());
                 break;
             case "SimpleTiledPolygonStyle":
                 style.set(new SimpleTiledPolygonStyle());
-                break;
-            case "SimpleTextPolygonStyle":
-                style.set(new SimpleTextPolygonStyle());
                 break;
             default:
                 throw new JSONException("Unknown style type: " + styleName);

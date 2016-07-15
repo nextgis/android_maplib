@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -23,8 +23,14 @@
 
 package com.nextgis.maplib.display;
 
+import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
+import android.text.TextUtils;
+
+import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -34,17 +40,21 @@ import org.json.JSONObject;
 
 import java.util.List;
 
+import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_VALUE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 
 public class SimplePolygonStyle
-        extends Style
+        extends Style implements ITextStyle
 {
     protected float   mWidth;
     protected boolean mFill;
+    protected String mField;
+    protected String mText;
 
     protected static final String JSON_FILL_KEY = "fill";
 
@@ -103,21 +113,59 @@ public class SimplePolygonStyle
             GeoGeometry geoGeometry,
             GISDisplay display)
     {
+        float textSize = (float) (25 / display.getScale());
+        GeoPoint center = geoGeometry.getEnvelope().getCenter();
         switch (geoGeometry.getType()) {
             case GTPolygon:
                 drawPolygon((GeoPolygon) geoGeometry, display);
+                drawText(textSize, center, display);
                 break;
             case GTMultiPolygon:
                 GeoMultiPolygon multiPolygon = (GeoMultiPolygon) geoGeometry;
 
                 for (int i = 0; i < multiPolygon.size(); i++) {
                     drawPolygon(multiPolygon.get(i), display);
+                    drawText(textSize, center, display);
                 }
                 break;
 
             //throw new IllegalArgumentException(
             //        "The input geometry type is not support by this style");
         }
+    }
+
+
+    protected void drawText(float scaledSize, GeoPoint center, GISDisplay display) {
+        if (TextUtils.isEmpty(mText))
+            return;
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.BLACK);
+        textPaint.setAntiAlias(true);
+        textPaint.setStyle(Paint.Style.FILL);
+        textPaint.setStrokeCap(Paint.Cap.ROUND);
+        textPaint.setAlpha(128);
+
+        Rect textRect = new Rect();
+        textPaint.setTextSize(scaledSize);
+        textPaint.getTextBounds(mText, 0, mText.length(), textRect);
+
+        float halfW = textRect.width() / 2;
+        float halfH = textRect.height() / 2;
+
+        float textX = (float) (center.getX() - halfW);
+        float textY = (float) (center.getY() + halfH);
+
+        Path textPath = new Path();
+        textPaint.getTextPath(mText, 0, mText.length(), textX, textY, textPath);
+        textPath.close();
+
+        Matrix matrix = new Matrix();
+        matrix.reset();
+        matrix.setScale(1, -1, (float) center.getX(), (float) center.getY());
+        textPath.transform(matrix);
+
+        display.drawPath(textPath, textPaint);
     }
 
 
@@ -147,6 +195,33 @@ public class SimplePolygonStyle
     }
 
 
+    public String getField()
+    {
+        return mField;
+    }
+
+
+    public void setField(String field)
+    {
+        mField = field;
+    }
+
+
+    public String getText()
+    {
+        return mText;
+    }
+
+
+    public void setText(String text)
+    {
+        if (!TextUtils.isEmpty(text))
+            mText = text;
+        else
+            mText = null;
+    }
+
+
     @Override
     public JSONObject toJSON()
             throws JSONException
@@ -155,6 +230,8 @@ public class SimplePolygonStyle
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_FILL_KEY, mFill);
         rootConfig.put(JSON_NAME_KEY, "SimplePolygonStyle");
+        rootConfig.put(JSON_DISPLAY_NAME, mText);
+        rootConfig.put(JSON_VALUE_KEY, mField);
         return rootConfig;
     }
 
@@ -164,10 +241,10 @@ public class SimplePolygonStyle
             throws JSONException
     {
         super.fromJSON(jsonObject);
-        if (jsonObject.has(JSON_WIDTH_KEY)) {
-            mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
-        }
-        if (jsonObject.has(JSON_FILL_KEY)) { mFill = jsonObject.getBoolean(JSON_FILL_KEY); }
+        mWidth = (float) jsonObject.optDouble(JSON_WIDTH_KEY, 3);
+        mFill = jsonObject.optBoolean(JSON_FILL_KEY, true);
+        mText = jsonObject.optString(JSON_DISPLAY_NAME);
+        mField = jsonObject.optString(JSON_VALUE_KEY);
     }
 
 

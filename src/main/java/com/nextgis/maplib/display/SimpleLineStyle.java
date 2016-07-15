@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -25,6 +25,9 @@ package com.nextgis.maplib.display;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
+import android.text.TextUtils;
+
+import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoMultiLineString;
@@ -40,7 +43,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 
 
 public class SimpleLineStyle
-        extends Style
+        extends Style implements ITextStyle
 {
     public final static int LineStyleSolid       = 1;
     public final static int LineStyleDash        = 2;
@@ -50,6 +53,8 @@ public class SimpleLineStyle
     protected float mWidth;
     protected int   mOutColor;
     protected Paint.Cap mStrokeCap;
+    protected String mField;
+    protected String mText;
 
 
     public SimpleLineStyle()
@@ -96,21 +101,76 @@ public class SimpleLineStyle
             return;
         }
 
+        float scaledWidth = (float) (mWidth / display.getScale());
+        Path mainPath = null;
         switch (mType) {
             case LineStyleSolid:
-                drawSolidLine(lineString, display);
+                mainPath = drawSolidLine(scaledWidth, lineString, display);
                 break;
 
             case LineStyleDash:
-                drawDashLine(lineString, display);
+                mainPath = drawDashLine(scaledWidth, lineString, display);
                 break;
 
             case LineStyleEdgingSolid:
-                drawSolidEdgingLine(lineString, display);
+                mainPath = drawSolidEdgingLine(scaledWidth, lineString, display);
                 break;
         }
+
+        drawText(scaledWidth, mainPath, display);
     }
 
+
+    protected void drawText(float scaledWidth, Path mainPath, GISDisplay display) {
+        if (TextUtils.isEmpty(mText) || mainPath == null)
+            return;
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(mOutColor);
+        textPaint.setAntiAlias(true);
+        textPaint.setStyle(Paint.Style.FILL);
+        textPaint.setStrokeCap(Paint.Cap.ROUND);
+        textPaint.setStrokeWidth(scaledWidth);
+
+        float textSize = 12 * scaledWidth;
+        textPaint.setTextSize(textSize);
+        float textWidth = textPaint.measureText(mText);
+        float vOffset = (float) (textSize / 2.7);
+
+        // draw text along the main path
+        PathMeasure pm = new PathMeasure(mainPath, false);
+        float length = pm.getLength();
+        float gap = textPaint.measureText("_");
+        float period = textWidth + gap;
+        float startD = gap;
+        float stopD = startD + period;
+
+        Path textPath = new Path();
+
+        while (stopD < length) {
+            textPath.reset();
+            pm.getSegment(startD, stopD, textPath, true);
+            textPath.rLineTo(0, 0); // workaround for API <= 19
+
+            display.drawTextOnPath(mText, textPath, 0, vOffset, textPaint);
+
+            startD += period;
+            stopD += period;
+        }
+
+        stopD = startD;
+        float rest = length - stopD;
+
+        if (rest > gap * 2) {
+            stopD = length - gap;
+
+            textPath.reset();
+            pm.getSegment(startD, stopD, textPath, true);
+            textPath.rLineTo(0, 0); // workaround for API <= 19
+
+            display.drawTextOnPath(mText, textPath, 0, vOffset, textPaint);
+        }
+    }
 
     @Override
     public void onDraw(
@@ -138,7 +198,8 @@ public class SimpleLineStyle
     }
 
 
-    protected void drawSolidLine(
+    protected Path drawSolidLine(
+            float scaledWidth,
             GeoLineString lineString,
             GISDisplay display)
     {
@@ -147,7 +208,7 @@ public class SimpleLineStyle
         paint.setAntiAlias(true);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(mStrokeCap);
-        paint.setStrokeWidth((float) (mWidth / display.getScale()));
+        paint.setStrokeWidth(scaledWidth);
 
         List<GeoPoint> points = lineString.getPoints();
 
@@ -161,10 +222,13 @@ public class SimpleLineStyle
         }
 
         display.drawPath(path, paint);
+
+        return path;
     }
 
 
-    protected void drawDashLine(
+    protected Path drawDashLine(
+            float scaledWidth,
             GeoLineString lineString,
             GISDisplay display)
     {
@@ -173,7 +237,7 @@ public class SimpleLineStyle
         paint.setAntiAlias(true);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(Paint.Cap.BUTT);
-        paint.setStrokeWidth((float) (mWidth / display.getScale()));
+        paint.setStrokeWidth(scaledWidth);
 
         List<GeoPoint> points = lineString.getPoints();
 
@@ -232,26 +296,26 @@ public class SimpleLineStyle
         }
 
         display.drawPath(dashPath, paint);
+
+        return mainPath;
     }
 
 
-    protected void drawSolidEdgingLine(
-            GeoLineString lineString,
+    protected Path drawSolidEdgingLine(
+            float scaledWidth, GeoLineString lineString,
             GISDisplay display)
     {
-        double scaledWidth = mWidth / display.getScale();
-
         Paint mainPaint = new Paint();
         mainPaint.setColor(mColor);
         mainPaint.setAntiAlias(true);
         mainPaint.setStyle(Paint.Style.STROKE);
         mainPaint.setStrokeCap(Paint.Cap.BUTT);
-        mainPaint.setStrokeWidth((float) (scaledWidth));
+        mainPaint.setStrokeWidth(scaledWidth);
 
         Paint edgingPaint = new Paint(mainPaint);
         edgingPaint.setColor(mOutColor);
         edgingPaint.setStrokeCap(Paint.Cap.BUTT);
-        edgingPaint.setStrokeWidth((float) (scaledWidth * 3));
+        edgingPaint.setStrokeWidth(scaledWidth * 3);
 
         List<GeoPoint> points = lineString.getPoints();
 
@@ -266,6 +330,8 @@ public class SimpleLineStyle
 
         display.drawPath(path, edgingPaint);
         display.drawPath(path, mainPaint);
+
+        return path;
     }
 
 
@@ -305,6 +371,33 @@ public class SimpleLineStyle
     }
 
 
+    public String getField()
+    {
+        return mField;
+    }
+
+
+    public void setField(String field)
+    {
+        mField = field;
+    }
+
+
+    public String getText()
+    {
+        return mText;
+    }
+
+
+    public void setText(String text)
+    {
+        if (!TextUtils.isEmpty(text))
+            mText = text;
+        else
+            mText = null;
+    }
+
+
     @Override
     public JSONObject toJSON()
             throws JSONException
@@ -314,6 +407,8 @@ public class SimpleLineStyle
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
+        rootConfig.put(JSON_DISPLAY_NAME, mText);
+        rootConfig.put(JSON_VALUE_KEY, mField);
         return rootConfig;
     }
 
@@ -326,5 +421,7 @@ public class SimpleLineStyle
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
+        mText = jsonObject.getString(JSON_DISPLAY_NAME);
+        mField = jsonObject.getString(JSON_VALUE_KEY);
     }
 }

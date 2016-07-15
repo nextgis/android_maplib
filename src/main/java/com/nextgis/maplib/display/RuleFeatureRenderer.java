@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.display;
 
+import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.map.Layer;
 import org.json.JSONException;
@@ -68,17 +69,17 @@ public class RuleFeatureRenderer
     protected Style getStyle(long featureId)
     {
         if (null == mStyleRule) {
-            return mStyle;
+            return super.getStyle(featureId);
         }
 
         try {
             Style styleClone = mStyle.clone();
             mStyleRule.setStyleParams(styleClone, featureId);
+            applyField(styleClone, featureId);
             return styleClone;
-
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
-            return mStyle;
+            return super.getStyle(featureId);
         }
     }
 
@@ -102,8 +103,8 @@ public class RuleFeatureRenderer
         JSONObject rootJsonObject = super.toJSON();
         rootJsonObject.put(JSON_NAME_KEY, "RuleFeatureRenderer");
 
-        if (mStyleRule instanceof FieldStyleRule)
-            rootJsonObject.put(JSON_STYLE_RULE_KEY, ((FieldStyleRule) mStyleRule).toJSON());
+        if (mStyleRule instanceof IJSONStore)
+            rootJsonObject.put(JSON_STYLE_RULE_KEY, ((IJSONStore) mStyleRule).toJSON());
 
         return rootJsonObject;
     }
