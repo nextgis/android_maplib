@@ -406,6 +406,7 @@ public class GeoJSONUtil {
         layer.save();
     }
 
+    // TODO refactor it and fillLayerFromGeoJsonStream
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static void createLayerFromGeoJSONStream(VectorLayer layer, InputStream in, IProgressor progressor, boolean isWGS84) throws IOException, NGException {
         int streamSize = in.available();
@@ -430,7 +431,7 @@ public class GeoJSONUtil {
                 while (reader.hasNext()) {
                     Feature feature = readGeoJSONFeature(reader, layer, isWGS84);
                     if (null != feature) {
-                        if (layer.getFields() != null && !layer.getFields().isEmpty()) {
+                        if (layer.getFields() == null || layer.getFields().isEmpty()) {
                             if (feature.getGeometry() != null)
                                 layer.create(feature.getGeometry().getType(), feature.getFields());
 
