@@ -138,6 +138,7 @@ public class LayerWithStyles
                 switch (type) {
                     case "mapserver_style":
                     case "qgis_style":
+                    case "qgis_vector_style":
                         long remoteId = JSONResource.getLong("id");
                         mStyles.add(remoteId);
                         break;
