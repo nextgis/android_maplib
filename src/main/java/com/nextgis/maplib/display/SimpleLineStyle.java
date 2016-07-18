@@ -421,7 +421,7 @@ public class SimpleLineStyle
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
-        mText = jsonObject.getString(JSON_DISPLAY_NAME);
-        mField = jsonObject.getString(JSON_VALUE_KEY);
+        mText = jsonObject.optString(JSON_DISPLAY_NAME);
+        mField = jsonObject.optString(JSON_VALUE_KEY);
     }
 }
