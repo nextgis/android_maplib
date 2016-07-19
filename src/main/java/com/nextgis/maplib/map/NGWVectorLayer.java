@@ -506,7 +506,7 @@ public class NGWVectorLayer
                 try {
                     final Feature feature = NGWUtil.readNGWFeature(reader, fields, mCRS);
                     if (feature.getGeometry() == null || !feature.getGeometry().isValid())
-                        throw new NGException(getContext().getString(R.string.error_download_data));
+                        continue;
 
                     createFeatureBatch(feature, db);
                 } catch (OutOfMemoryError e) {
@@ -1583,6 +1583,8 @@ public class NGWVectorLayer
         reader.beginArray();
         while (reader.hasNext()) {
             final Feature feature = NGWUtil.readNGWFeature(reader, getFields(), mCRS);
+            if (feature.getGeometry() == null || !feature.getGeometry().isValid())
+                continue;
             features.add(feature);
         }
         reader.endArray();

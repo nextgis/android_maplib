@@ -30,6 +30,8 @@ public interface GeoConstants
      * Mercator projection constants
      */
     double MERCATOR_MAX = 20037508.34;
+    double WGS_LONG_MAX = 180;
+    double WGS_LAT_MAX  = 90;
 
     /**
      * TMS type

@@ -30,11 +30,13 @@ import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
 import android.util.Pair;
+
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,7 +46,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -54,7 +55,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.JSON_DESCRIPTION;
+import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
+import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_KEYNAME;
+import static com.nextgis.maplib.util.Constants.JSON_PASSWORD;
+import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class NGWUtil
@@ -589,13 +595,15 @@ public class NGWUtil
             JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(NGWUtil.NGWKEY_FIELDS);
             Feature feature = new Feature(id, fields);
             GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
-            if (null == geom) {
+            if (null == geom)
                 continue;
-            }
+
             geom.setCRS(nSRS);
-            if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
+            if (nSRS != GeoConstants.CRS_WEB_MERCATOR)
                 geom.project(GeoConstants.CRS_WEB_MERCATOR);
-            }
+            if (!geom.isValid())
+                continue;
+
             feature.setGeometry(geom);
 
             for (Field field : fields) {

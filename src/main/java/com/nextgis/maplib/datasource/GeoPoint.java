@@ -275,7 +275,20 @@ public class GeoPoint
 
     @Override
     public boolean isValid() {
-        return !Double.isNaN(mX) && !Double.isNaN(mY);
+        return inBounds();
+    }
+
+    public boolean inBounds() {
+        if (getEnvelope().isInit()) {
+            switch (mCRS) {
+                case CRS_WGS84:
+                    return mX >= -WGS_LONG_MAX && mX <= WGS_LONG_MAX && mY >= -WGS_LAT_MAX && mY < WGS_LAT_MAX;
+                case CRS_WEB_MERCATOR:
+                    return mX >= -MERCATOR_MAX && mX <= MERCATOR_MAX && mY >= -MERCATOR_MAX && mY < MERCATOR_MAX;
+            }
+        }
+
+        return false;
     }
 
     @Override
