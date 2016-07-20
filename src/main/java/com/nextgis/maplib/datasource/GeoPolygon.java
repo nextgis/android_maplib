@@ -165,17 +165,17 @@ public class GeoPolygon
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
-    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+    public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
+        setCRS(crs);
         boolean outerRingFilled = false;
         reader.beginArray();
         while (reader.hasNext()){
-            if(!outerRingFilled){
-                mOuterRing.setCoordinatesFromJSONStream(reader);
+            if (!outerRingFilled) {
+                mOuterRing.setCoordinatesFromJSONStream(reader, crs);
                 outerRingFilled = true;
-            }
-            else{
+            } else {
                 GeoLinearRing ring = new GeoLinearRing();
-                ring.setCoordinatesFromJSONStream(reader);
+                ring.setCoordinatesFromJSONStream(reader, crs);
                 mInnerRings.add(ring);
             }
         }
@@ -184,8 +184,9 @@ public class GeoPolygon
 
 
     @Override
-    public void setCoordinatesFromWKT(String wkt)
+    public void setCoordinatesFromWKT(String wkt, int crs)
     {
+        setCRS(crs);
         if (wkt.contains("EMPTY")) {
             return;
         }
@@ -197,9 +198,9 @@ public class GeoPolygon
         int pos = wkt.indexOf(")");
         if (pos == Constants.NOT_FOUND) // no inner rings
         {
-            mOuterRing.setCoordinatesFromWKT(wkt);
+            mOuterRing.setCoordinatesFromWKT(wkt, crs);
         } else {
-            mOuterRing.setCoordinatesFromWKT(wkt.substring(0, pos));
+            mOuterRing.setCoordinatesFromWKT(wkt.substring(0, pos), crs);
         }
         pos = wkt.indexOf("(");
         while (pos != Constants.NOT_FOUND) {
@@ -210,7 +211,7 @@ public class GeoPolygon
             }
 
             GeoLinearRing innerRing = new GeoLinearRing();
-            innerRing.setCoordinatesFromWKT(wkt.substring(0, pos));
+            innerRing.setCoordinatesFromWKT(wkt.substring(0, pos), crs);
             mInnerRings.add(innerRing);
 
             pos = wkt.indexOf("(");

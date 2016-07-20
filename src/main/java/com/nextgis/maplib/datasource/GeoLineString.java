@@ -157,11 +157,12 @@ public class GeoLineString
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
-    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+    public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
+        setCRS(crs);
         reader.beginArray();
         while (reader.hasNext()){
             GeoPoint pt = new GeoPoint();
-            pt.setCoordinatesFromJSONStream(reader);
+            pt.setCoordinatesFromJSONStream(reader, crs);
             mPoints.add(pt);
         }
         reader.endArray();
@@ -169,8 +170,9 @@ public class GeoLineString
 
 
     @Override
-    public void setCoordinatesFromWKT(String wkt)
+    public void setCoordinatesFromWKT(String wkt, int crs)
     {
+        setCRS(crs);
         if (wkt.contains("EMPTY")) {
             return;
         }
@@ -181,7 +183,7 @@ public class GeoLineString
 
         for (String token : wkt.split(",")) {
             GeoPoint point = new GeoPoint();
-            point.setCoordinatesFromWKT(token.trim());
+            point.setCoordinatesFromWKT(token.trim(), crs);
             add(point);
         }
     }

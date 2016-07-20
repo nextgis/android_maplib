@@ -90,19 +90,21 @@ public class GeoMultiLineString
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
-    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+    public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
+        setCRS(crs);
         reader.beginArray();
         while (reader.hasNext()){
             GeoLineString line = new GeoLineString();
-            line.setCoordinatesFromJSONStream(reader);
+            line.setCoordinatesFromJSONStream(reader, crs);
             mGeometries.add(line);
         }
         reader.endArray();
     }
 
     @Override
-    public void setCoordinatesFromWKT(String wkt)
+    public void setCoordinatesFromWKT(String wkt, int crs)
     {
+        setCRS(crs);
         if (wkt.contains("EMPTY")) {
             return;
         }
@@ -120,7 +122,7 @@ public class GeoMultiLineString
             }
 
             GeoLineString lineString = new GeoLineString();
-            lineString.setCoordinatesFromWKT(wkt.substring(0, pos).trim());
+            lineString.setCoordinatesFromWKT(wkt.substring(0, pos).trim(), crs);
             add(lineString);
 
             pos = wkt.indexOf("(");

@@ -33,8 +33,6 @@ import org.json.JSONException;
 
 import java.io.IOException;
 
-import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
-
 
 public class GeoMultiPoint
         extends GeoGeometryCollection
@@ -89,19 +87,21 @@ public class GeoMultiPoint
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
-    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+    public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
+        setCRS(crs);
         reader.beginArray();
         while (reader.hasNext()){
             GeoPoint pt = new GeoPoint();
-            pt.setCoordinatesFromJSONStream(reader);
+            pt.setCoordinatesFromJSONStream(reader, crs);
             mGeometries.add(pt);
         }
         reader.endArray();
     }
 
     @Override
-    public void setCoordinatesFromWKT(String wkt)
+    public void setCoordinatesFromWKT(String wkt, int crs)
     {
+        setCRS(crs);
         if (wkt.contains("EMPTY")) {
             return;
         }
@@ -111,7 +111,7 @@ public class GeoMultiPoint
         }
         for (String wktPt : wkt.split(",")) {
             GeoPoint pt = new GeoPoint();
-            pt.setCoordinatesFromWKT(wktPt.trim());
+            pt.setCoordinatesFromWKT(wktPt.trim(), crs);
             add(pt);
         }
     }

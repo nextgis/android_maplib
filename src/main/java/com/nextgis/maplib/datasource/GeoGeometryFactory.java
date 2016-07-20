@@ -64,7 +64,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 public class GeoGeometryFactory
 {
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static GeoGeometry fromJsonStream(JsonReader reader) throws IOException {
+    public static GeoGeometry fromJsonStream(JsonReader reader, int crs) throws IOException {
         GeoGeometry geometry = null;
         reader.beginObject();
         while (reader.hasNext()) {
@@ -96,17 +96,21 @@ public class GeoGeometryFactory
                     default:
                         break;
                 }
-            }
-            else if(name.equalsIgnoreCase(GeoConstants.GEOJSON_COORDINATES)){
-                if(geometry == null)
+            } else if(name.equalsIgnoreCase(GeoConstants.GEOJSON_COORDINATES)) {
+                if (geometry == null)
                     reader.skipValue();
                 else
-                    geometry.setCoordinatesFromJSONStream(reader);
+                    geometry.setCoordinatesFromJSONStream(reader, crs);
             }
         }
         reader.endObject();
-        if(geometry != null && !geometry.isValid())
-            return null;
+
+        if (geometry != null) {
+            geometry.setCRS(crs);
+            if (!geometry.isValid())
+                return null;
+        }
+
         return geometry;
     }
 
@@ -225,35 +229,39 @@ public class GeoGeometryFactory
     }
 
 
-    public static GeoGeometry fromWKT(String wkt)
+    public static GeoGeometry fromWKT(String wkt, int crs)
     {
         GeoGeometry output = null;
         wkt = wkt.trim();
         if (wkt.startsWith("POINT")) {
             output = new GeoPoint();
-            output.setCoordinatesFromWKT(wkt.substring(5).trim());
+            output.setCoordinatesFromWKT(wkt.substring(5).trim(), crs);
         } else if (wkt.startsWith("LINESTRING")) {
             output = new GeoLineString();
-            output.setCoordinatesFromWKT(wkt.substring(10).trim());
+            output.setCoordinatesFromWKT(wkt.substring(10).trim(), crs);
         } else if (wkt.startsWith("LINEARRING")) {
             output = new GeoLinearRing();
-            output.setCoordinatesFromWKT(wkt.substring(10).trim());
+            output.setCoordinatesFromWKT(wkt.substring(10).trim(), crs);
         } else if (wkt.startsWith("POLYGON")) {
             output = new GeoPolygon();
-            output.setCoordinatesFromWKT(wkt.substring(8, wkt.length() - 1).trim());
+            output.setCoordinatesFromWKT(wkt.substring(8, wkt.length() - 1).trim(), crs);
         } else if (wkt.startsWith("MULTIPOINT")) {
             output = new GeoMultiPoint();
-            output.setCoordinatesFromWKT(wkt.substring(10).trim());
+            output.setCoordinatesFromWKT(wkt.substring(10).trim(), crs);
         } else if (wkt.startsWith("MULTILINESTRING")) {
             output = new GeoMultiLineString();
-            output.setCoordinatesFromWKT(wkt.substring(15).trim());
+            output.setCoordinatesFromWKT(wkt.substring(15).trim(), crs);
         } else if (wkt.startsWith("MULTIPOLYGON")) {
             output = new GeoMultiPolygon();
-            output.setCoordinatesFromWKT(wkt.substring(12).trim());
+            output.setCoordinatesFromWKT(wkt.substring(12).trim(), crs);
         } else if (wkt.startsWith("GEOMETRYCOLLECTION")) {
             output = new GeoGeometryCollection();
-            output.setCoordinatesFromWKT(wkt.substring(18).trim());
+            output.setCoordinatesFromWKT(wkt.substring(18).trim(), crs);
         }
+
+        if (output != null)
+            output.setCRS(crs);
+
         return output;
     }
 

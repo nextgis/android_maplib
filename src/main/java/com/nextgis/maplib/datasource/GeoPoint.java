@@ -168,7 +168,8 @@ public class GeoPoint
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
-    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+    public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
+        setCRS(crs);
         reader.beginArray();
         int pos = 0;
         while (reader.hasNext()) {
@@ -185,8 +186,9 @@ public class GeoPoint
 
 
     @Override
-    public void setCoordinatesFromWKT(String wkt)
+    public void setCoordinatesFromWKT(String wkt, int crs)
     {
+        setCRS(crs);
         if (wkt.contains("EMPTY")) {
             return;
         }

@@ -211,7 +211,8 @@ public class GeoJSONUtil {
         return isWGS84;
     }
 
-    public static void fillLayerFromGeoJSON(VectorLayer layer, JSONObject geoJSONObject, int srs, IProgressor progressor) throws NGException, JSONException, SQLiteException {
+    public static void fillLayerFromGeoJSON(VectorLayer layer, JSONObject geoJSONObject, int srs, IProgressor progressor)
+            throws NGException, JSONException, SQLiteException {
         if(null != progressor){
             progressor.setIndeterminate(false);
             progressor.setMessage(layer.getContext().getString(R.string.start_fill_layer) + " " + layer.getName());
@@ -373,11 +374,12 @@ public class GeoJSONUtil {
                 reader.beginArray();
                 while (reader.hasNext()) {
                     Feature feature = readGeoJSONFeature(reader, layer, isWGS84);
-                    if(null != feature) {
+                    if (null != feature) {
                         if(layer.getFields() != null && !layer.getFields().isEmpty()){
                             layer.create(feature.getGeometry().getType(), feature.getFields());
                             db = DatabaseContext.getDbForLayer(layer);
                         }
+
                         if(feature.getGeometry() != null) {
                             layer.createFeatureBatch(feature, db);
                             if(null != progressor){
@@ -472,23 +474,23 @@ public class GeoJSONUtil {
         else
             feature = new Feature();
 
+        int crs = isWGS84 ? GeoConstants.CRS_WGS84 : GeoConstants.CRS_WEB_MERCATOR;
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
-            if(name.equals(GeoConstants.GEOJSON_PROPERTIES)) {
+            if (name.equals(GeoConstants.GEOJSON_PROPERTIES)) {
                 readGeoJSONFeatureProperties(reader, layer, feature);
-            }
-            else if(name.equals(GeoConstants.GEOJSON_GEOMETRY)) {
-                GeoGeometry geometry = readGeoJSONGeometry(reader);
-                if(null != geometry) {
-                    if(isWGS84) {
+            } else if (name.equals(GeoConstants.GEOJSON_GEOMETRY)) {
+                GeoGeometry geometry = GeoGeometryFactory.fromJsonStream(reader, crs);
+                if (null != geometry) {
+                    if (isWGS84) {
                         geometry.setCRS(GeoConstants.CRS_WGS84);
                         geometry.project(GeoConstants.CRS_WEB_MERCATOR);
                     }
+
                     feature.setGeometry(geometry);
                 }
-            }
-            else {
+            } else {
                 reader.skipValue();
             }
         }
@@ -496,10 +498,6 @@ public class GeoJSONUtil {
         return feature;
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private static GeoGeometry readGeoJSONGeometry(JsonReader reader) throws IOException {
-        return GeoGeometryFactory.fromJsonStream(reader);
-    }
 
     private static int getOrCreateField(String name, int type, VectorLayer layer, Feature feature) {
         boolean isFieldsFilled = layer.getFields() != null && !layer.getFields().isEmpty();

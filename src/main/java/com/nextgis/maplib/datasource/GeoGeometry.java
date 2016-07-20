@@ -140,10 +140,10 @@ public abstract class GeoGeometry
             throws JSONException;
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public abstract void setCoordinatesFromJSONStream(JsonReader reader)
+    public abstract void setCoordinatesFromJSONStream(JsonReader reader, int crs)
             throws IOException;
 
-    public abstract void setCoordinatesFromWKT(String wkt);
+    public abstract void setCoordinatesFromWKT(String wkt, int crs);
 
 
     public byte[] toBlobOld()

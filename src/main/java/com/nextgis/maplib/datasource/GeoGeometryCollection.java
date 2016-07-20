@@ -172,10 +172,11 @@ public class GeoGeometryCollection
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
-    public void setCoordinatesFromJSONStream(JsonReader reader) throws IOException {
+    public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
+        setCRS(crs);
         reader.beginArray();
         while (reader.hasNext()){
-            GeoGeometry geometry = GeoGeometryFactory.fromJsonStream(reader);
+            GeoGeometry geometry = GeoGeometryFactory.fromJsonStream(reader, crs);
             if(null != geometry)
                 mGeometries.add(geometry);
         }
@@ -184,7 +185,7 @@ public class GeoGeometryCollection
 
 
     @Override
-    public void setCoordinatesFromWKT(String wkt)
+    public void setCoordinatesFromWKT(String wkt, int crs)
     {
         //TODO: implement this
     }

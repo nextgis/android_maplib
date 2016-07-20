@@ -393,7 +393,7 @@ public class NGWUtil
                 feature.setId(reader.nextLong());
             } else if (name.equals(NGWUtil.NGWKEY_GEOM)) {
                 String wkt = reader.nextString();
-                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt, nSRS);
                 geom.setCRS(nSRS);
                 if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
                     geom.project(GeoConstants.CRS_WEB_MERCATOR);
@@ -594,7 +594,7 @@ public class NGWUtil
             String wkt = featureJSONObject.getString(NGWUtil.NGWKEY_GEOM);
             JSONObject fieldsJSONObject = featureJSONObject.getJSONObject(NGWUtil.NGWKEY_FIELDS);
             Feature feature = new Feature(id, fields);
-            GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt);
+            GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt, nSRS);
             if (null == geom)
                 continue;
 

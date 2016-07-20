@@ -64,6 +64,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -493,10 +494,10 @@ public class NGWVectorLayer
             SQLiteDatabase db = DatabaseContext.getDbForLayer(this);
 
             int streamSize = in.available();
-
             if (null != progressor) {
                 progressor.setIndeterminate(false);
-                progressor.setMax(streamSize);
+                if (streamSize > 0)
+                    progressor.setMax(streamSize);
                 progressor.setMessage(
                         getContext().getString(R.string.start_fill_layer) + " " + getName());
             }
