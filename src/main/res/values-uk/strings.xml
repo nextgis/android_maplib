@@ -35,7 +35,11 @@
     <string name="unit_kilometer">km</string>
     <string name="unit_square_kilometer">km²</string>
     <string name="unit_second">s</string>
+    <string name="unit_min">min</string>
     <string name="unit_hour">h</string>
+    <string name="unit_day">день</string>
+    <string name="unit_month">мес</string>
+    <string name="unit_year">год</string>
     <string name="warning_remove_field">Поле \'%s\' заборонено, поле видалено</string>
     <string name="warning_replace_field">Ім’я містить заборонені символи, нове ім’я \'%s\'</string>
     <string name="tracks">Мої треки</string>

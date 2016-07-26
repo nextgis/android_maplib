@@ -36,7 +36,11 @@
     <string name="unit_kilometer">km</string>
     <string name="unit_square_kilometer">km²</string>
     <string name="unit_second">s</string>
+    <string name="unit_min">min</string>
     <string name="unit_hour">h</string>
+    <string name="unit_day">day</string>
+    <string name="unit_month">month</string>
+    <string name="unit_year">year</string>
     <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
     <string name="warning_replace_field">Name contains forbidden chars, renamed to \'%s\'</string>
     <string name="tracks">My tracks</string>
