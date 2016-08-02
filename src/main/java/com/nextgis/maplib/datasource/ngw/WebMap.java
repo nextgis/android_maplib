@@ -21,6 +21,9 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.nextgis.maplib.util.NGWUtil;
 
 import org.json.JSONArray;
@@ -34,34 +37,70 @@ import java.util.List;
  * Web map resource
  */
 public class WebMap extends LayerWithStyles {
-    private List<Long> mIds;
+    private List<WebMapChild> mChildren;
+
+    protected WebMap(Parcel in)
+    {
+        super(in);
+    }
 
     public WebMap(JSONObject json, Connection connection) {
         super(json, connection);
         try {
             JSONArray layers = json.getJSONObject("webmap").getJSONObject("root_item").getJSONArray("children");
-            mIds = new ArrayList<>();
-            for (int i = 0; i < layers.length(); i++) {
-                JSONObject item = layers.getJSONObject(i);
-                switch (item.getString("item_type")) {
-                    case "layer":
-                        mIds.add(0, item.getLong("layer_style_id"));
-                        break;
-                    case "group":
-                        JSONArray children = item.getJSONArray("children");
-                        for (int j = 0; j < children.length(); j++) {
-                            mIds.add(0, children.getJSONObject(j).getLong("layer_style_id"));
-                        }
-                        break;
-                }
-            }
+            mChildren = new ArrayList<>();
+            for (int i = 0; i < layers.length(); i++)
+                fill(layers.getJSONObject(i), "");
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
+    private void fill(JSONObject item, String root) throws JSONException {
+        String name = item.getString("display_name");
+        switch (item.getString("item_type")) {
+            case "layer":
+                long id = item.getLong("layer_style_id");
+                boolean visible = item.getBoolean("layer_enabled");
+                mChildren.add(0, new WebMapChild(id, root + name, visible));
+                break;
+            case "group":
+                JSONArray children = item.getJSONArray("children");
+                for (int j = 0; j < children.length(); j++)
+                    fill(children.getJSONObject(j), root + name + "/");
+                break;
+        }
+    }
+
     public WebMap(long remoteId, Connection connection) {
         super(remoteId, connection);
+    }
+
+    public static final Parcelable.Creator<WebMap> CREATOR =
+            new Parcelable.Creator<WebMap>()
+            {
+                public WebMap createFromParcel(Parcel in)
+                {
+                    return new WebMap(in);
+                }
+
+
+                public WebMap[] newArray(int size)
+                {
+                    return new WebMap[size];
+                }
+            };
+
+    @Override
+    public void writeToParcel(
+            Parcel parcel,
+            int i)
+    {
+        super.writeToParcel(parcel, i);
+    }
+
+    public List<WebMapChild> getChildren() {
+        return mChildren;
     }
 
     @Override
@@ -76,6 +115,11 @@ public class WebMap extends LayerWithStyles {
 
     @Override
     public String getTMSUrl(int styleNo) {
-        return NGWUtil.getTMSUrl(mConnection.getURL(), mIds.toArray(new Long[mIds.size()]));
+        ArrayList<Long> visibleIds = new ArrayList<>();
+        for (WebMapChild child : mChildren)
+            if (child.isVisible())
+                visibleIds.add(child.getId());
+
+        return NGWUtil.getTMSUrl(mConnection.getURL(), visibleIds.toArray(new Long[visibleIds.size()]));
     }
 }
