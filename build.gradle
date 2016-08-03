@@ -26,10 +26,9 @@ import org.gradle.internal.os.OperatingSystem;
 apply plugin: "com.android.library"
 
 
-def float ndkBuildGradleVersion = 2.10
+def String ndkBuildGradleVersion = "2.10"
 def String gradleVerStr = "$gradle.gradleVersion"
-def float gradleVerInt = gradleVerStr.isFloat() ? gradleVerStr.toFloat() : ndkBuildGradleVersion
-def boolean isCmakeBuild = gradleVerInt > ndkBuildGradleVersion
+def boolean isCmakeBuild = !gradleVerStr.equals(ndkBuildGradleVersion)
 
 if (isCmakeBuild) {
     apply from: "build-cmake.gradle"
