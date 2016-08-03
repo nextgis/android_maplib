@@ -81,7 +81,7 @@ android {
         }
     }
 
-    def String genSrcJavaDir = "${projectDir}/externalNativeBuild/cmake/${defaultPublishConfig}" +
+    def String genSrcJavaDir = "${projectDir}/.externalNativeBuild/cmake/${defaultPublishConfig}" +
             "/${cmAndroidAbis.get(0)}/libngstoreapi/libngstore/bindings"
 
     task cmCopyJSources(type: Copy) {
