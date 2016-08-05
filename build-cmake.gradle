@@ -24,7 +24,7 @@
 
 // native cmaked part
 android {
-    defaultPublishConfig "debug" // uncomment it for the debug of the native code
+//    defaultPublishConfig "debug" // uncomment it for the debug of the native code
 }
 
 def String buildConfig = android.defaultPublishConfig.substring(0, 1).toUpperCase() +
@@ -87,7 +87,7 @@ android {
         // TODO: set from buildType
         // externalNativeBuildDebug is before externalNativeBuildRelease
         // if externalNativeBuildDebug is enabled then externalNativeBuildDebug else externalNativeBuildRelease
-//        tasks.findAll { task -> task.name.equals("externalNativeBuildDebug") }
+        tasks.findAll { task -> task.name.equals("externalNativeBuildDebug") }
     }
 
 // TODO:
@@ -106,6 +106,6 @@ def String dependedTask = "compile${buildConfig}JavaWithJavac"
 tasks.all {
     task ->
         if (task.name.equals(dependedTask)) {
-//            task.dependsOn cmCopyJSources
+            task.dependsOn cmCopyJSources
         }
 }
