@@ -37,41 +37,33 @@ android {
     def String abiFiltersString = cmAndroidAbis.toString()
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
-    def cmakeInstPath = "${buildDir}/cmake/inst"
-
     defaultConfig {
         externalNativeBuild {
             cmake {
                 abiFilters "${abiFiltersString}"
 
-//                targets "ngsandroid"
+//                targets "ngstore", "ngstoreapi", "ngsandroid"
 
-                arguments "-DCMAKE_INSTALL_PREFIX=${cmakeInstPath}/",
-
-                        "-DSUPRESS_VERBOSE_OUTPUT=OFF",
+                arguments "-DSUPRESS_VERBOSE_OUTPUT=OFF",
 //                        "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
                         "-DSKIP_GIT_PULL=TRUE",
 //                        "-DSTRIP_NGS_LIBS=TRUE",
 
-                        "-DBUILD_TARGET_PLATFORM=ANDROID",
-
-                        "-DANDROID_NATIVE_API_LEVEL=9", // ${getNdkPlatformLevel(abi)} // TODO:
+                        "-DANDROID_PLATFORM=android-9", // ${getNdkPlatformLevel(abi)} // TODO:
                         "-DANDROID_STL=gnustl_static",
-                        "-DANDROID_TOOLCHAIN_NAME=arm-linux-androideabi-4.9",
+                        "-DANDROID_CPP_FEATURES=rtti exceptions",
+                        "-DANDROID_TOOLCHAIN=gcc",
+//                        "-DCMAKE_TOOLCHAIN_FILE=${projectDir}/libngsandroid/cmake/android.toolchain.cmake",
                         "-GAndroid Gradle - Unix Makefiles",
-                        "-DCMAKE_MAKE_PROGRAM=make"
+                        "-DCMAKE_MAKE_PROGRAM=make",
+                        "-DBUILD_SHARED_LIBS=ON",
+
+                        "-DBUILD_TARGET_PLATFORM=ANDROID"
 
 //                        "-DCXX_STANDARD=14",
 //                        "-DCXX_STANDARD_REQUIRED=ON",
 
 //                        "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
-
-                        // include flags for code editor
-//                        "-DCMAKE_C_FLAGS=-I ${cmakeInstDir}}/include",
-//                        "-DCMAKE_CXX_FLAGS=-I ${cmakeInstDir}}/include"
-
-//                        "-DANDROID_ABI=${abi}",
-//                        "-DBUILD_SHARED_LIBS=ON",
             }
         }
     }
