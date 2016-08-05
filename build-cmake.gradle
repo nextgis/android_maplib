@@ -38,7 +38,7 @@ android {
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
     defaultConfig {
-        externalNativeBuild {
+//        externalNativeBuild {
             cmake {
                 abiFilters "${abiFiltersString}"
 
@@ -65,7 +65,7 @@ android {
 
 //                        "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
             }
-        }
+//        }
     }
     externalNativeBuild {
         cmake {
