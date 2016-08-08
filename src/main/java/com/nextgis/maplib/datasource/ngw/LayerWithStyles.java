@@ -159,9 +159,12 @@ public class LayerWithStyles
     }
 
 
-    public long getStyleId(int i)
+    public Long getStyleId(int i)
     {
-        return mStyles.get(i);
+        if (mStyles != null && mStyles.size() > 0)
+            return mStyles.get(i);
+
+        return null;
     }
 
 
@@ -170,7 +173,11 @@ public class LayerWithStyles
         if (getType() == Connection.NGWResourceTypeRasterLayer ||
             getType() == Connection.NGWResourceTypeVectorLayer ||
             getType() == Connection.NGWResourceTypePostgisLayer) {
-            return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{mStyles.get(styleNo)});
+            Long id = getStyleId(styleNo);
+            if (id == null)
+                return null;
+
+            return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{id});
         }
 
         if (getType() == Connection.NGWResourceTypeWMSClient) {
