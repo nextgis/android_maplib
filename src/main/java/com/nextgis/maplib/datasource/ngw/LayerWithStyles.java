@@ -170,21 +170,17 @@ public class LayerWithStyles
 
     public String getTMSUrl(int styleNo)
     {
+        Long id = null;
+
         if (getType() == Connection.NGWResourceTypeRasterLayer ||
-            getType() == Connection.NGWResourceTypeVectorLayer ||
-            getType() == Connection.NGWResourceTypePostgisLayer) {
-            Long id = getStyleId(styleNo);
-            if (id == null)
-                return null;
+                getType() == Connection.NGWResourceTypePostgisLayer ||
+                getType() == Connection.NGWResourceTypeWMSClient)
+            id = mRemoteId;
 
-            return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{id});
-        }
+        if (getType() == Connection.NGWResourceTypeVectorLayer)
+            id = getStyleId(styleNo);
 
-        if (getType() == Connection.NGWResourceTypeWMSClient) {
-            return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{mRemoteId});
-        }
-
-        return null;
+        return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{id});
     }
 
 
