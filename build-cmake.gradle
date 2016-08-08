@@ -38,7 +38,7 @@ android {
     abiFiltersString = abiFiltersString.substring(1, abiFiltersString.length() - 1)
 
     defaultConfig {
-//        externalNativeBuild {
+        externalNativeBuild {
             cmake {
                 abiFilters "${abiFiltersString}"
 
@@ -50,9 +50,11 @@ android {
 //                        "-DSTRIP_NGS_LIBS=TRUE",
 
                         "-DANDROID_PLATFORM=android-9", // ${getNdkPlatformLevel(abi)} // TODO:
-                        "-DANDROID_STL=gnustl_static",
-                        "-DANDROID_CPP_FEATURES=rtti exceptions",
                         "-DANDROID_TOOLCHAIN=gcc",
+//                        "-DANDROID_TOOLCHAIN=clang",
+                        "-DANDROID_STL=gnustl_static",
+//                        "-DANDROID_STL=c++_static",
+                        "-DANDROID_CPP_FEATURES=rtti exceptions",
 //                        "-DCMAKE_TOOLCHAIN_FILE=${projectDir}/libngsandroid/cmake/android.toolchain.cmake",
                         "-GAndroid Gradle - Unix Makefiles",
                         "-DCMAKE_MAKE_PROGRAM=make",
@@ -65,7 +67,7 @@ android {
 
 //                        "-DCMAKE_BUILD_TYPE=Release" // let's always release ${buildTypeName}
             }
-//        }
+        }
     }
     externalNativeBuild {
         cmake {
