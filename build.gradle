@@ -27,7 +27,7 @@ apply plugin: "com.android.library"
 
 
 def String ndkBuildGradleVersion = "2.10"
-def String gradleVerStr = "$gradle.gradleVersion"
+def String gradleVerStr = "${gradle.gradleVersion}"
 def boolean isCmakeBuild = !gradleVerStr.equals(ndkBuildGradleVersion)
 
 if (isCmakeBuild) {
@@ -64,7 +64,7 @@ def getNdkPlatformLevel(abi)
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "24.0.0"
+    buildToolsVersion '24.0.1'
     def buildTypeName = ""
     // drop mips for now "mips", , "mips64"
     def androidAbis = ["armeabi", "armeabi-v7a", "x86", "arm64-v8a", "x86_64"]
