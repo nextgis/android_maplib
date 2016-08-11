@@ -96,6 +96,7 @@ android {
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake" +
+                        //" -DSKIP_GIT_PULL=TRUE" + // for debug
                         " -DBUILD_TARGET_PLATFORM=ANDROID" +
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +
