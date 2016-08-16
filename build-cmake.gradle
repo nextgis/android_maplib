@@ -85,7 +85,11 @@ android {
         into new File("src/main/java/com/nextgis/store")
     }
 
-    cmCopyJSources.dependsOn {
+    task cmMoveJSources(type: Delete, dependsOn: cmCopyJSources) {
+        delete fileTree(new File(genSrcJavaDir)) { include "*.java" }
+    }
+
+    cmMoveJSources.dependsOn {
         // TODO: set from buildType
         // externalNativeBuildDebug is before externalNativeBuildRelease
         // if externalNativeBuildDebug is enabled then externalNativeBuildDebug else externalNativeBuildRelease
@@ -108,6 +112,6 @@ def String dependedTask = "compile${buildConfig}JavaWithJavac"
 tasks.all {
     task ->
         if (task.name.equals(dependedTask)) {
-            task.dependsOn cmCopyJSources
+            task.dependsOn cmMoveJSources
         }
 }
