@@ -26,9 +26,8 @@ import org.gradle.internal.os.OperatingSystem;
 apply plugin: "com.android.library"
 
 
-def String ndkBuildGradleVersion = "2.10"
-def String gradleVerStr = "${gradle.gradleVersion}"
-def boolean isCmakeBuild = !gradleVerStr.equals(ndkBuildGradleVersion)
+def boolean isCmakeBuild = false
+//def boolean isCmakeBuild = true // for debug
 
 if (isCmakeBuild) {
     apply from: "build-cmake.gradle"
