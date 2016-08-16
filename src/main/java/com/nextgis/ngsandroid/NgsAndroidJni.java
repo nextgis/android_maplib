@@ -3,6 +3,8 @@ package com.nextgis.ngsandroid;
 
 import android.graphics.Bitmap;
 
+import java.nio.ByteBuffer;
+
 
 public class NgsAndroidJni
 {
@@ -15,10 +17,10 @@ public class NgsAndroidJni
     public native static void unlockBitmapPixels(Bitmap bitmap);
 
 
-    public native static boolean fillImage(
-            long imagePointer,
-            int imageWidth,
-            int imageHeight);
+    public native static Bitmap fillBitmapFromBuffer(
+            ByteBuffer buffer,
+            int width,
+            int height);
 
 
     static {
