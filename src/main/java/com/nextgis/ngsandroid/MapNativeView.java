@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import com.nextgis.maplib.util.SettingsConstants;
 import com.nextgis.store.Api;
+import com.nextgis.store.ErrorCodes;
 import com.nextgis.store.ProgressCallback;
 
 import java.io.File;
@@ -34,10 +35,13 @@ public class MapNativeView
     protected int        mWidth;
     protected int        mHeight;
 
-    protected long             mMapId = -1;
-    protected ProgressCallback mProgressCallback;
+    protected ProgressCallback mDrawCallback;
+    protected ProgressCallback mLoadCallback;
+
+    protected long mMapId = -1;
 
     protected double mDrawComplete = 0;
+
     protected long mTime;
 
 
@@ -48,7 +52,7 @@ public class MapNativeView
         DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
         mBuffer = ByteBuffer.allocateDirect(metrics.widthPixels * metrics.heightPixels * 4);
 
-        mProgressCallback = new ProgressCallback()
+        mDrawCallback = new ProgressCallback()
         {
             @Override
             public int run(
@@ -71,8 +75,24 @@ public class MapNativeView
             }
         };
 
-//        newMap();
-        loadMap();
+        mLoadCallback = new ProgressCallback()
+        {
+            @Override
+            public int run(
+                    double complete,
+                    String message)
+            {
+                if (complete >= 1) {
+                    onLoadFinished();
+                }
+
+                return 1;
+            }
+        };
+
+        newMap();
+//        loadMap();
+//        openMap();
     }
 
 
@@ -115,7 +135,7 @@ public class MapNativeView
     protected void newMap()
     {
         int mapId = Api.ngsCreateMap(DEFAULT_MAP_NAME, "test gl map", DEFAULT_EPSG, DEFAULT_MIN_X,
-                                  DEFAULT_MIN_Y, DEFAULT_MAX_X, DEFAULT_MAX_Y);
+                                     DEFAULT_MIN_Y, DEFAULT_MAX_X, DEFAULT_MAX_Y);
 
         if (mapId != -1) {
             mMapId = mapId;
@@ -136,11 +156,11 @@ public class MapNativeView
         Api.ngsInitMap(mMapId, mBuffer, width, height, 1);
 
         mDrawComplete = 0;
-        Api.ngsDrawMap(mMapId, mProgressCallback);
+        Api.ngsDrawMap(mMapId, mDrawCallback);
     }
 
 
-    protected void loadMap()
+    protected String getMapPath()
     {
         Context context = getContext();
         SharedPreferences sharedPreferences =
@@ -149,17 +169,70 @@ public class MapNativeView
         if (defaultPath == null) {
             defaultPath = new File(context.getFilesDir(), SettingsConstants.KEY_PREF_MAP);
         }
-        String mapPath = sharedPreferences.getString(SettingsConstants.KEY_PREF_MAP_PATH,
-                                                     defaultPath.getPath());
+        return sharedPreferences.getString(SettingsConstants.KEY_PREF_MAP_PATH,
+                                           defaultPath.getPath());
+    }
 
 
-        File mapNativePath = new File(mapPath, "test-db-mini.ngmd");
+    protected void openMap()
+    {
+        File mapNativePath = new File(getMapPath(), "test-db-mini.ngmd");
 
         int mapId = Api.ngsOpenMap(mapNativePath.getPath());
         if (-1 == mapId) {
             Log.d(TAG, "Error: Map load failed");
         } else {
             mMapId = mapId;
+        }
+    }
+
+
+    protected void loadMap()
+    {
+        String mapPath = getMapPath();
+        File sceneDir = new File(mapPath, "scenes");
+        File sceneFile = new File(sceneDir, "scenes.shp");
+        String sceneFilePath = sceneFile.getPath();
+
+        File dbPath = new File(mapPath, "test-db");
+        File dbFile = new File(dbPath, "ngs.gpkg");
+
+        if (Api.ngsInitDataStore(dbFile.getPath()) != ErrorCodes.SUCCESS) {
+            Log.d(TAG, "Error: Storage initialize failed");
+            return;
+        }
+
+        if (Api.ngsLoad("orbv3", sceneFilePath, "", false, 1, mLoadCallback)
+                != ErrorCodes.SUCCESS) {
+            Log.d(TAG, "Error: Load scene failed");
+        }
+    }
+
+
+    protected void onLoadFinished()
+    {
+        String mapPath = getMapPath();
+        File dbPath = new File(mapPath, "test-db");
+        File dbFile = new File(dbPath, "ngs.gpkg");
+        File dbLayer = new File(dbFile, "orbv3");
+        String layerPath = dbLayer.getPath();
+
+
+        if (Api.ngsCreateLayer(mMapId, "orbv3", layerPath) == ErrorCodes.SUCCESS) {
+            saveMap();
+//            mDrawComplete = 0;
+//            Api.ngsDrawMap (mMapId, mDrawCallback);
+        }
+    }
+
+
+    protected void saveMap()
+    {
+        String mapPath = getMapPath();
+        File ngmdFile = new File(mapPath, "test.ngmd");
+
+        if (Api.ngsSaveMap(mMapId, ngmdFile.getPath()) != ErrorCodes.SUCCESS) {
+            Log.d(TAG, "Error: Map save failed");
         }
     }
 }
