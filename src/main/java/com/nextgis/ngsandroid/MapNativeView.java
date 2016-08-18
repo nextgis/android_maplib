@@ -90,6 +90,8 @@ public class MapNativeView
             }
         };
 
+        Api.ngsInit(null, null);
+        Log.d(TAG, "NGS formats: " + Api.ngsGetVersionString("formats"));
         newMap();
 //        loadMap();
 //        openMap();
