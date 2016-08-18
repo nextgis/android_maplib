@@ -181,7 +181,8 @@ public class MapNativeView
 
     protected void openMap()
     {
-        File mapNativePath = new File(getMapPath(), "test-db-mini.ngmd");
+//        File mapNativePath = new File(getMapPath(), "test-db-mini.ngmd");
+        File mapNativePath = new File(getMapPath(), "test.ngmd");
 
         int mapId = Api.ngsOpenMap(mapNativePath.getPath());
         if (-1 == mapId) {
@@ -221,7 +222,6 @@ public class MapNativeView
         File dbFile = new File(dbPath, "ngs.gpkg");
         File dbLayer = new File(dbFile, "orbv3");
         String layerPath = dbLayer.getPath();
-
 
         if (Api.ngsCreateLayer(mMapId, "orbv3", layerPath) == ErrorCodes.SUCCESS) {
             saveMap();
