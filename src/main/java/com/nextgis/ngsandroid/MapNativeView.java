@@ -90,8 +90,11 @@ public class MapNativeView
             }
         };
 
-        Api.ngsInit(null, null);
+        String mapPath = getMapPath();
+        File gdalDir = new File(mapPath, "gdal_data");
+        Api.ngsInit(gdalDir.getPath(), null);
         Log.d(TAG, "NGS formats: " + Api.ngsGetVersionString("formats"));
+
         newMap();
 //        loadMap();
 //        openMap();
