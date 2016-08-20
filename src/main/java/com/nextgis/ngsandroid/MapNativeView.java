@@ -95,9 +95,9 @@ public class MapNativeView
         Api.ngsInit(gdalDir.getPath(), null);
         Log.d(TAG, "NGS formats: " + Api.ngsGetVersionString("formats"));
 
-        newMap();
+//        newMap();
 //        loadMap();
-//        openMap();
+        openMap();
     }
 
 
@@ -153,12 +153,19 @@ public class MapNativeView
             final int width,
             final int height)
     {
+        if (width == mWidth && height == mHeight) {
+            return;
+        }
+
         mTime = System.currentTimeMillis();
 
         mWidth = width;
         mHeight = height;
 
         Api.ngsInitMap(mMapId, mBuffer, width, height, 1);
+
+//        Api.ngsSetMapCenter(mMapId, 308854.653167, 4808439.3765);
+//        Api.ngsSetMapScale(mMapId, 0.00007);
 
         mDrawComplete = 0;
         Api.ngsDrawMap(mMapId, mDrawCallback);
@@ -189,6 +196,7 @@ public class MapNativeView
             Log.d(TAG, "Error: Map load failed");
         } else {
             mMapId = mapId;
+            Api.ngsSetMapBackgroundColor(mMapId, (short) 0, (short) 255, (short) 0, (short) 255);
         }
     }
 
