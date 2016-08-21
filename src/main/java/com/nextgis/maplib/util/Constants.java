@@ -167,8 +167,9 @@ public interface Constants
     int LAYERTYPE_TRACKS       = 1 << 6;
     int LAYERTYPE_LOOKUPTABLE  = 1 << 7;
     int LAYERTYPE_NGW_WEBMAP   = 1 << 8;
+    int LAYERTYPE_NGW_TRACKS   = 1 << 9;
 
-    int LAYERTYPE_SYSMAX = 9; // should be the max + 1 of system layer type
+    int LAYERTYPE_SYSMAX = 10; // should be the max + 1 of system layer type
 
     /**
      * File type

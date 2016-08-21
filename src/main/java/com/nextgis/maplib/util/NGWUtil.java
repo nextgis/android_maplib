@@ -36,6 +36,10 @@ import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoGeometryFactory;
+import com.nextgis.maplib.datasource.ngw.Connection;
+import com.nextgis.maplib.datasource.ngw.INGWResource;
+import com.nextgis.maplib.datasource.ngw.Resource;
+import com.nextgis.maplib.datasource.ngw.ResourceGroup;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,6 +57,7 @@ import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 import static com.nextgis.maplib.util.Constants.JSON_DESCRIPTION;
@@ -703,6 +708,52 @@ public class NGWUtil
         }
 
         return false;
+    }
+
+    public static boolean getResourceByKey(INGWResource resource, Map<String, Resource> keys) {
+        if (resource instanceof Connection) {
+            Connection connection = (Connection) resource;
+            connection.loadChildren();
+        } else if (resource instanceof ResourceGroup) {
+            ResourceGroup resourceGroup = (ResourceGroup) resource;
+            resourceGroup.loadChildren();
+        }
+
+        for (int i = 0; i < resource.getChildrenCount(); ++i) {
+            INGWResource childResource = resource.getChild(i);
+
+            if (keys.containsKey(childResource.getKey()) && childResource instanceof Resource) {
+                Resource ngwResource = (Resource) childResource;
+                keys.put(ngwResource.getKey(), ngwResource);
+            }
+
+            boolean bIsFill = true;
+            for (Map.Entry<String, Resource> entry : keys.entrySet()) {
+                if (entry.getValue() == null) {
+                    bIsFill = false;
+                    break;
+                }
+            }
+
+            if (bIsFill) {
+                return true;
+            }
+
+            if (getResourceByKey(childResource, keys)) {
+                return true;
+            }
+        }
+
+        boolean bIsFill = true;
+
+        for (Map.Entry<String, Resource> entry : keys.entrySet()) {
+            if (entry.getValue() == null) {
+                bIsFill = false;
+                break;
+            }
+        }
+
+        return bIsFill;
     }
 
 }
