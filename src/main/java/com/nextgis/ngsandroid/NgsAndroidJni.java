@@ -17,7 +17,7 @@ public class NgsAndroidJni
     public native static void unlockBitmapPixels(Bitmap bitmap);
 
 
-    public native static Bitmap fillBitmapFromBuffer(
+    public native static Bitmap createBitmapFromBuffer(
             ByteBuffer buffer,
             int width,
             int height);
