@@ -82,7 +82,7 @@ android {
         description "Copy java files."
 
         from(new File(genSrcJavaDir)) { include "*.java" }
-        into new File("src/main/java/com/nextgis/store")
+        into new File("src/main/java/com/nextgis/store/bindings")
     }
 
     task cmMoveJSources(type: Delete, dependsOn: cmCopyJSources) {

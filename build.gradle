@@ -95,7 +95,7 @@ android {
                 workingDir getWorkDir(abi)
 
                 def cmakeCmd = "cmake" +
-                        //" -DSKIP_GIT_PULL=TRUE" + // for debug
+//                        " -DSKIP_GIT_PULL=TRUE" + // for debug
                         " -DBUILD_TARGET_PLATFORM=ANDROID" +
                         " -DANDROID_NDK=${getNdkDir()}" +
                         " -DANDROID_NATIVE_API_LEVEL=${getNdkPlatformLevel(abi)}" +
@@ -147,7 +147,7 @@ android {
         description "Copy java files."
 
         from(new File(getWorkDir(androidAbis.get(0)), "/inst/src")) { include "**/*.java" }
-        into(new File("src/main/java/com/nextgis/store"))
+        into(new File("src/main/java/com/nextgis/store/bindings"))
     }
 
     sourceSets.main {

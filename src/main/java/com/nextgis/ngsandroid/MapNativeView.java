@@ -16,10 +16,10 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.Scroller;
 import com.nextgis.maplib.util.SettingsConstants;
-import com.nextgis.store.Api;
-import com.nextgis.store.ErrorCodes;
-import com.nextgis.store.RawPoint;
-import com.nextgis.store.ProgressCallback;
+import com.nextgis.store.bindings.Api;
+import com.nextgis.store.bindings.ErrorCodes;
+import com.nextgis.store.bindings.RawPoint;
+import com.nextgis.store.bindings.ProgressCallback;
 
 import java.io.File;
 import java.nio.ByteBuffer;
