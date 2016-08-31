@@ -13,7 +13,7 @@ captures/
 # Temp files
 *~
 
-src/main/java/com/nextgis/store/*.java
+src/main/java/com/nextgis/store/bindings/*.java
 
 src/main/libs
 src/main/obj
