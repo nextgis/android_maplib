@@ -49,7 +49,6 @@ import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IJSONStore;
-import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.datasource.Feature;
@@ -3128,11 +3127,16 @@ public class VectorLayer
         return mIsLocked;
     }
 
-    public void toNGW(Long id, String account) {
+    public void toNGW(Long id, String account, Pair<Integer, Integer> ver) {
         if (id != null && id != NOT_FOUND) {
             mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
             try {
                 JSONObject rootConfig = toJSON();
+                if (ver != null) {
+                    rootConfig.put(NGWVectorLayer.JSON_NGW_VERSION_MAJOR_KEY, ver.first);
+                    rootConfig.put(NGWVectorLayer.JSON_NGW_VERSION_MINOR_KEY, ver.second);
+                }
+
                 rootConfig.put(NGWVectorLayer.JSON_ACCOUNT_KEY, account);
                 rootConfig.put(Constants.JSON_ID_KEY, id);
                 rootConfig.put(NGWVectorLayer.JSON_NGWLAYER_TYPE_KEY, Connection.NGWResourceTypeVectorLayer);
