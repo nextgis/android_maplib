@@ -1,14 +1,12 @@
-package com.nextgis.ngsandroid;
+package com.nextgis.store.map;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.os.Build;
 import android.preference.PreferenceManager;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -16,30 +14,19 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.Scroller;
 import com.nextgis.maplib.util.SettingsConstants;
-import com.nextgis.store.bindings.Api;
-import com.nextgis.store.bindings.ErrorCodes;
-import com.nextgis.store.bindings.RawPoint;
-import com.nextgis.store.bindings.ProgressCallback;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
 
-public class MapNativeView
+public class MapView
         extends View
-        implements GestureDetector.OnGestureListener,
+        implements MapDrawing.OnMapDrawListener,
+                   GestureDetector.OnGestureListener,
                    GestureDetector.OnDoubleTapListener,
                    ScaleGestureDetector.OnScaleGestureListener
 {
-    protected static final int    DEFAULT_EPSG     = 3857;
-    protected static final double DEFAULT_MAX_X    = 20037508.34; // 180.0
-    protected static final double DEFAULT_MAX_Y    = 20037508.34; // 90.0
-    protected static final double DEFAULT_MIN_X    = -DEFAULT_MAX_X;
-    protected static final double DEFAULT_MIN_Y    = -DEFAULT_MAX_Y;
-    protected static final String DEFAULT_MAP_NAME = "default";
-
     protected static final int DRAW_STATE_none              = 0;
     protected static final int DRAW_STATE_drawing           = 1;
     protected static final int DRAW_STATE_drawing_noclearbk = 2;
@@ -48,19 +35,11 @@ public class MapNativeView
     protected static final int DRAW_STATE_zooming           = 5;
     protected static final int DRAW_STATE_resizing          = 6;
 
-    protected ByteBuffer mBuffer;
-    protected Bitmap     mBitmap;
-    protected int        mWidth;
-    protected int        mHeight;
-
-    protected long mMapId = -1;
-
-    protected ProgressCallback mDrawCallback;
-    protected ProgressCallback mLoadCallback;
-
     protected GestureDetector      mGestureDetector;
     protected ScaleGestureDetector mScaleGestureDetector;
     protected Scroller             mScroller;
+
+    protected MapDrawing mMapDrawing;
 
     protected PointF mStartDragLocation;
     protected PointF mCurrentDragOffset;
@@ -68,7 +47,6 @@ public class MapNativeView
     protected PointF mCurrentFocusOffset;
     protected PointF mMapDisplayCenter;
 
-    protected double mDrawComplete;
     protected int    mDrawingState;
     protected double mScaleFactor;
     protected double mCurrentSpan;
@@ -76,7 +54,7 @@ public class MapNativeView
     protected long mDrawTime;
 
 
-    public MapNativeView(Context context)
+    public MapView(Context context)
     {
         super(context);
 
@@ -94,39 +72,11 @@ public class MapNativeView
         mCurrentFocusOffset = new PointF();
         mMapDisplayCenter = new PointF();
 
-        mDrawComplete = 0;
+        mMapDrawing = new MapDrawing(getMapPath());
 
-        DisplayMetrics metrics = Resources.getSystem().getDisplayMetrics();
-        mBuffer = ByteBuffer.allocateDirect(metrics.widthPixels * metrics.heightPixels * 4);
-
-        mDrawCallback = createDrawCallback();
-        mLoadCallback = createLoadCallback();
-
-        String mapPath = getMapPath();
-        File gdalDir = new File(mapPath, "gdal_data");
-        Api.ngsInit(gdalDir.getPath(), null);
-        Log.d(TAG, "NGS formats: " + Api.ngsGetVersionString("formats"));
-
-//        newMap();
-//        loadMap();
-        openMap();
-    }
-
-
-    protected void newMap()
-    {
-        int mapId = Api.ngsCreateMap(DEFAULT_MAP_NAME, "test gl map", DEFAULT_EPSG, DEFAULT_MIN_X,
-                                     DEFAULT_MIN_Y, DEFAULT_MAX_X, DEFAULT_MAX_Y);
-
-        if (mapId != -1) {
-            mMapId = mapId;
-            Api.ngsSetMapBackgroundColor(mMapId, (short) 0, (short) 255, (short) 0, (short) 255);
-
-            RawPoint center = new RawPoint();
-            Api.ngsGetMapDisplayCenter(mMapId, center);
-            mMapDisplayCenter.x = (float) center.getX();
-            mMapDisplayCenter.y = (float) center.getY();
-        }
+        mMapDrawing.createMap();
+//        mMapDrawing.loadMap();
+//        mMapDrawing.openMap();
     }
 
 
@@ -144,88 +94,6 @@ public class MapNativeView
     }
 
 
-    protected void openMap()
-    {
-        File mapNativePath = new File(getMapPath(), "test-desktop.ngmd");
-//        File mapNativePath = new File(getMapPath(), "test-desktop-big.ngmd");
-        int mapId = Api.ngsOpenMap(mapNativePath.getPath());
-        if (-1 == mapId) {
-            Log.d(TAG, "Error: Map load failed");
-        } else {
-            mMapId = mapId;
-            Api.ngsSetMapBackgroundColor(mMapId, (short) 0, (short) 255, (short) 0, (short) 255);
-        }
-    }
-
-
-    protected void loadMap()
-    {
-        String mapPath = getMapPath();
-        File sceneDir = new File(mapPath, "scenes");
-        File sceneFile = new File(sceneDir, "scenes.shp");
-        String sceneFilePath = sceneFile.getPath();
-
-        File dbPath = new File(mapPath, "test-db");
-        File dbFile = new File(dbPath, "ngs.gpkg");
-
-        if (Api.ngsInitDataStore(dbFile.getPath()) != ErrorCodes.SUCCESS) {
-            Log.d(TAG, "Error: Storage initialize failed");
-            return;
-        }
-
-        if (Api.ngsLoad("orbv3", sceneFilePath, "", false, 1, mLoadCallback)
-                != ErrorCodes.SUCCESS) {
-            Log.d(TAG, "Error: Load scene failed");
-        }
-    }
-
-
-    protected ProgressCallback createLoadCallback()
-    {
-        return new ProgressCallback()
-        {
-            @Override
-            public int run(
-                    double complete,
-                    String message)
-            {
-                if (complete >= 1) {
-                    onLoadFinished();
-                }
-
-                return 1;
-            }
-        };
-    }
-
-
-    protected void onLoadFinished()
-    {
-        String mapPath = getMapPath();
-        File dbPath = new File(mapPath, "test-db");
-        File dbFile = new File(dbPath, "ngs.gpkg");
-        File dbLayer = new File(dbFile, "orbv3");
-        String layerPath = dbLayer.getPath();
-
-        if (Api.ngsCreateLayer(mMapId, "orbv3", layerPath) == ErrorCodes.SUCCESS) {
-            saveMap();
-//            mDrawComplete = 0;
-//            Api.ngsDrawMap (mMapId, mDrawCallback);
-        }
-    }
-
-
-    protected void saveMap()
-    {
-        String mapPath = getMapPath();
-        File ngmdFile = new File(mapPath, "test.ngmd");
-
-        if (Api.ngsSaveMap(mMapId, ngmdFile.getPath()) != ErrorCodes.SUCCESS) {
-            Log.d(TAG, "Error: Map save failed");
-        }
-    }
-
-
     @Override
     protected void onDraw(Canvas canvas)
     {
@@ -234,35 +102,37 @@ public class MapNativeView
         //                + " current focus: " + mCurrentFocusLocation.toString() + " scale: "
         //                + mScaleFactor);
 
-        if (null == mBitmap) {
+        if (mMapDrawing.isDrawingEmpty()) {
             super.onDraw(canvas);
             return;
         }
 
+        Bitmap drawing = mMapDrawing.getDrawing();
+
         switch (mDrawingState) {
 
             case DRAW_STATE_drawing:
-                canvas.drawBitmap(mBitmap, 0, 0, null);
+                canvas.drawBitmap(drawing, 0, 0, null);
                 break;
 
 //TODO: add invalidate rect to prevent flicker
             case DRAW_STATE_drawing_noclearbk:
-                canvas.drawBitmap(mBitmap, 0, 0, null);
+                canvas.drawBitmap(drawing, 0, 0, null);
                 break;
 
             case DRAW_STATE_resizing:
-                canvas.drawBitmap(mBitmap, 0, 0, null);
+                canvas.drawBitmap(drawing, 0, 0, null);
                 break;
 
             case DRAW_STATE_panning:
             case DRAW_STATE_panning_fling:
-                canvas.drawBitmap(mBitmap, -mCurrentDragOffset.x, -mCurrentDragOffset.y, null);
+                canvas.drawBitmap(drawing, -mCurrentDragOffset.x, -mCurrentDragOffset.y, null);
                 break;
 
             case DRAW_STATE_zooming:
                 canvas.save();
                 canvas.scale((float) mScaleFactor, (float) mScaleFactor);
-                canvas.drawBitmap(mBitmap, -mCurrentFocusOffset.x, -mCurrentFocusOffset.y, null);
+                canvas.drawBitmap(drawing, -mCurrentFocusOffset.x, -mCurrentFocusOffset.y, null);
                 canvas.restore();
                 break;
 
@@ -286,48 +156,20 @@ public class MapNativeView
                 break;
 
             case DRAW_STATE_resizing:
-                mDrawComplete = 0;
-                Api.ngsDrawMap(mMapId, mDrawCallback);
+                mMapDrawing.draw();
                 break;
 
             case DRAW_STATE_panning:
             case DRAW_STATE_panning_fling: {
                 mDrawingState = DRAW_STATE_drawing;
-
-                RawPoint center = new RawPoint();
-                center.setX(mMapDisplayCenter.x);
-                center.setY(mMapDisplayCenter.y);
-                Api.ngsSetMapDisplayCenter(mMapId, center);
-
-                mDrawComplete = 0;
-                Api.ngsDrawMap(mMapId, mDrawCallback);
+                mMapDrawing.centeredDraw(mMapDisplayCenter.x, mMapDisplayCenter.y);
                 break;
             }
 
             case DRAW_STATE_zooming: {
                 mDrawingState = DRAW_STATE_drawing;
-
-                double[] scale = new double[1];
-                Api.ngsGetMapScale(mMapId, scale);
-                scale[0] *= mScaleFactor;
-                Api.ngsSetMapScale(mMapId, scale[0]);
-
-                RawPoint center = new RawPoint();
-                Api.ngsGetMapDisplayCenter(mMapId, center);
-
-                double distX = center.getX() - mCurrentFocusLocation.x;
-                double distY = center.getY() - mCurrentFocusLocation.y;
-                double scaledDistX = distX * mScaleFactor;
-                double scaledDistY = distY * mScaleFactor;
-                double offX = scaledDistX - distX;
-                double offY = scaledDistY - distY;
-
-                center.setX(center.getX() - offX);
-                center.setY(center.getY() - offY);
-                Api.ngsSetMapDisplayCenter(mMapId, center);
-
-                mDrawComplete = 0;
-                Api.ngsDrawMap(mMapId, mDrawCallback);
+                mMapDrawing.scaledDraw(
+                        mScaleFactor, mCurrentFocusLocation.x, mCurrentFocusLocation.y);
                 break;
             }
 
@@ -340,60 +182,30 @@ public class MapNativeView
     }
 
 
-    protected ProgressCallback createDrawCallback()
+    @Override
+    public void onMapDraw()
     {
-        return new ProgressCallback()
-        {
-            @Override
-            public int run(
-                    double complete,
-                    String message)
-            {
-                if (complete - mDrawComplete > 0.045) { // each 5% redraw
-                    mDrawComplete = complete;
-                    if (null != mBitmap) {
-                        mBitmap.recycle();
-                    }
-                    mBitmap = NgsAndroidJni.createBitmapFromBuffer(mBuffer, mWidth, mHeight);
-                    MapNativeView.this.postInvalidate();
+        postInvalidate();
 
-                    mDrawTime = System.currentTimeMillis() - mDrawTime;
-                    Log.d(TAG, "Native map draw time: " + mDrawTime);
-                }
-
-                return 1;
-            }
-        };
+        mDrawTime = System.currentTimeMillis() - mDrawTime;
+        Log.d(TAG, "Native map draw_old time: " + mDrawTime);
     }
 
 
-    protected void setMapSize(
+    public void resize(
             int width,
             int height)
     {
-        if (width == mWidth && height == mHeight) {
-            return;
-        }
-
         mDrawTime = System.currentTimeMillis();
 
         mDrawingState = DRAW_STATE_resizing;
-        mWidth = width;
-        mHeight = height;
-
-        Api.ngsInitMap(mMapId, mBuffer, width, height, 1);
-
-//        Point center = new Point();
-//        center.setX(308854.653167);
-//        center.setY(4808439.3765);
-//        Api.ngsSetMapCenter(mMapId, center);
-//        Api.ngsSetMapScale(mMapId, 0.0003);
+        mMapDrawing.setSize(width, height);
 
         drawMap();
     }
 
 
-    protected void panStart(final MotionEvent e)
+    public void panStart(final MotionEvent e)
     {
 
         if (mDrawingState == DRAW_STATE_zooming || mDrawingState == DRAW_STATE_panning ||
@@ -407,14 +219,11 @@ public class MapNativeView
         mStartDragLocation.set(e.getX(), e.getY());
         mCurrentDragOffset.set(0, 0);
 
-        RawPoint center = new RawPoint();
-        Api.ngsGetMapDisplayCenter(mMapId, center);
-        mMapDisplayCenter.x = (float) center.getX();
-        mMapDisplayCenter.y = (float) center.getY();
+        mMapDisplayCenter.set(mMapDrawing.getCenter());
     }
 
 
-    protected void panMoveTo(final MotionEvent e)
+    public void panMoveTo(final MotionEvent e)
     {
 
         if (mDrawingState == DRAW_STATE_zooming || mDrawingState == DRAW_STATE_drawing_noclearbk ||
@@ -434,7 +243,7 @@ public class MapNativeView
     }
 
 
-    protected void panStop()
+    public void panStop()
     {
         //Log.d(Constants.TAG, "panStop state: " + mDrawingState);
 
@@ -444,7 +253,7 @@ public class MapNativeView
             float y = mCurrentDragOffset.y;
 
             //Log.d(TAG, "panStop x - " + x + " y - " + y);
-            //Log.d(TAG, "panStop: drawMap");
+            //Log.d(TAG, "panStop: draw_old");
 
             mMapDisplayCenter.offset(x, y);
             drawMap();
@@ -452,7 +261,7 @@ public class MapNativeView
     }
 
 
-    protected void zoomStart(ScaleGestureDetector scaleGestureDetector)
+    public void zoomStart(ScaleGestureDetector scaleGestureDetector)
     {
         if (mDrawingState == DRAW_STATE_zooming) {
             return;
@@ -467,7 +276,7 @@ public class MapNativeView
     }
 
 
-    protected void zoom(ScaleGestureDetector scaleGestureDetector)
+    public void zoom(ScaleGestureDetector scaleGestureDetector)
     {
         if (mDrawingState != DRAW_STATE_zooming) {
             zoomStart(scaleGestureDetector);
@@ -488,7 +297,7 @@ public class MapNativeView
     }
 
 
-    protected void zoomStop()
+    public void zoomStop()
     {
         if (mDrawingState == DRAW_STATE_zooming) {
             drawMap();
@@ -499,7 +308,7 @@ public class MapNativeView
     @Override
     public boolean onDoubleTap(MotionEvent e)
     {
-        if (null == mBitmap) {
+        if (mMapDrawing.isDrawingEmpty()) {
             return false;
         }
 
@@ -527,7 +336,7 @@ public class MapNativeView
             int oldh)
     {
         super.onSizeChanged(w, h, oldw, oldh);
-        setMapSize(w, h);
+        resize(w, h);
     }
 
 
@@ -540,7 +349,7 @@ public class MapNativeView
             int bottom)
     {
         super.onLayout(changed, left, top, right, bottom);
-        setMapSize((right - left), (bottom - top));
+        resize((right - left), (bottom - top));
     }
 
 
@@ -627,8 +436,7 @@ public class MapNativeView
             float velocityX,
             float velocityY)
     {
-        if (null == mBitmap) //fling not always exec panStop
-        {
+        if (mMapDrawing.isDrawingEmpty()) { //fling not always exec panStop
             return false;
         }
 
@@ -642,8 +450,8 @@ public class MapNativeView
         float y = mCurrentDragOffset.y;
 
         mScroller.forceFinished(true);
-        mScroller.fling(
-                (int) x, (int) y, (int) -velocityX, (int) -velocityY, 0, mWidth, 0, mHeight);
+        mScroller.fling((int) x, (int) y, (int) -velocityX, (int) -velocityY, 0,
+                        mMapDrawing.getWidth(), 0, mMapDrawing.getHeight());
 
         postInvalidate();
 
