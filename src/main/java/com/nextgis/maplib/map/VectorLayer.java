@@ -28,6 +28,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SyncResult;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
@@ -35,6 +36,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
@@ -47,6 +49,7 @@ import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 import com.nextgis.maplib.api.IJSONStore;
+import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.api.IStyleRule;
 import com.nextgis.maplib.datasource.Feature;
@@ -59,6 +62,7 @@ import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.GeometryRTree;
+import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.display.FieldStyleRule;
 import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleFeatureRenderer;
@@ -68,6 +72,7 @@ import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.display.Style;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.GeoJSONUtil;
@@ -111,6 +116,7 @@ import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
 import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
 import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
+import static com.nextgis.maplib.util.Constants.SYNC_ALL;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_PARAMETER_NOT_SYNC;
@@ -3120,5 +3126,41 @@ public class VectorLayer
     public boolean isLocked()
     {
         return mIsLocked;
+    }
+
+    public void toNGW(Long id, String account) {
+        if (id != null && id != NOT_FOUND) {
+            mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
+            try {
+                JSONObject rootConfig = toJSON();
+                rootConfig.put(NGWVectorLayer.JSON_ACCOUNT_KEY, account);
+                rootConfig.put(Constants.JSON_ID_KEY, id);
+                rootConfig.put(NGWVectorLayer.JSON_NGWLAYER_TYPE_KEY, Connection.NGWResourceTypeVectorLayer);
+                FileUtil.writeToFile(getFileName(), rootConfig.toString());
+                MapBase map = MapDrawable.getInstance();
+                map.load();
+                new Sync(mAuthority, (NGWVectorLayer) map.getLayerById(getId())).execute();
+            } catch (IOException | JSONException ignored) { }
+        }
+    }
+
+    class Sync extends AsyncTask<Void, Void, Void> {
+        protected NGWVectorLayer mLayer;
+        protected String mAuthority;
+
+        public Sync(String authority, NGWVectorLayer layer) {
+            mAuthority = authority;
+            mLayer = layer;
+        }
+
+        protected Void doInBackground(Void... params) {
+            try {
+                FeatureChanges.initialize(mLayer.getChangeTableName());
+                mLayer.setSyncType(SYNC_ALL);
+                mLayer.sync(mAuthority, new SyncResult());
+            } catch (Exception ignored) { }
+
+            return null;
+        }
     }
 }

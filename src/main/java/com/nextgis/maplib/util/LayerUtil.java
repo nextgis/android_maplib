@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -82,6 +82,25 @@ public class LayerUtil {
                 return GeoConstants.FTTime;
             default:
                 return Constants.NOT_FOUND;
+        }
+    }
+
+    public static String typeToString(int type) {
+        switch (type) {
+            case GeoConstants.FTString:
+                return "STRING";
+            case GeoConstants.FTInteger:
+                return "INTEGER";
+            case GeoConstants.FTReal:
+                return "REAL";
+            case GeoConstants.FTDateTime:
+                return "DATETIME";
+            case GeoConstants.FTDate:
+                return "DATE";
+            case GeoConstants.FTTime:
+                return "TIME";
+            default:
+                return "";
         }
     }
 

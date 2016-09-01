@@ -225,7 +225,7 @@ public class NetworkUtil
         os.close();
 
         int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
+        if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " +
                     responseCode);

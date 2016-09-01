@@ -40,6 +40,7 @@ import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.INGWResource;
 import com.nextgis.maplib.datasource.ngw.Resource;
 import com.nextgis.maplib.datasource.ngw.ResourceGroup;
+import com.nextgis.maplib.map.VectorLayer;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,11 +61,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import static com.nextgis.maplib.util.Constants.JSON_CLS_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_DATATYPE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_DESCRIPTION;
 import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
+import static com.nextgis.maplib.util.Constants.JSON_FIELDS_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_GEOMETRY_TYPE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_KEYNAME;
+import static com.nextgis.maplib.util.Constants.JSON_PARENT_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_PASSWORD;
+import static com.nextgis.maplib.util.Constants.JSON_RESOURCE_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_SRS_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_VECTOR_LAYER_KEY;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 
@@ -268,10 +277,22 @@ public class NGWUtil
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http")) {
+        return getBaseUrl(server) + remoteId;
+    }
+
+    /**
+     * The resource base url
+     *
+     * @param server
+     *         URL
+     *
+     * @return URL to base resource
+     */
+    public static String getBaseUrl(String server) {
+        if (!server.startsWith("http"))
             server = "http://" + server;
-        }
-        return server + "/api/resource/" + remoteId;
+
+        return server + "/api/resource/";
     }
 
 
@@ -756,4 +777,39 @@ public class NGWUtil
         return bIsFill;
     }
 
+    public static String createNewLayer(Connection connection, VectorLayer layer) {
+        String result = null;
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(layer.getContext(), connection.getName());
+        try {
+            JSONObject payload = new JSONObject();
+            JSONObject resource = new JSONObject();
+            resource.put(JSON_CLS_KEY, JSON_VECTOR_LAYER_KEY);
+            JSONObject id = new JSONObject();
+            id.put(JSON_ID_KEY, 0);
+            resource.put(JSON_PARENT_KEY, id);
+            resource.put(JSON_DISPLAY_NAME, layer.getName());
+            payload.put(JSON_RESOURCE_KEY, resource);
+
+            JSONObject vectorLayer = new JSONObject();
+            JSONObject srs = new JSONObject();
+            srs.put(JSON_ID_KEY, GeoConstants.CRS_WEB_MERCATOR);
+            vectorLayer.put(JSON_SRS_KEY, srs);
+            vectorLayer.put(JSON_GEOMETRY_TYPE_KEY, GeoGeometryFactory.typeToString(layer.getGeometryType()));
+            JSONArray fields = new JSONArray();
+            for (Field field : layer.getFields()) {
+                JSONObject current = new JSONObject();
+                current.put(JSON_KEYNAME, field.getName());
+                current.put(JSON_DATATYPE_KEY, LayerUtil.typeToString(field.getType()));
+                fields.put(current);
+            }
+            vectorLayer.put(JSON_FIELDS_KEY, fields);
+
+            payload.put(JSON_VECTOR_LAYER_KEY, vectorLayer);
+            result = NetworkUtil.post(getBaseUrl(accountData.url), payload.toString(), accountData.login, accountData.password);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
 }
