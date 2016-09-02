@@ -227,7 +227,7 @@ public class MapDrawing
 //                    MapNativeView.this.postInvalidate();
 
 //                    mDrawTime = System.currentTimeMillis() - mDrawTime;
-//                    Log.d(TAG, "Native map draw_old time: " + mDrawTime);
+//                    Log.d(TAG, "Native map draw time: " + mDrawTime);
                 }
 
                 return 1;

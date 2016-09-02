@@ -73,10 +73,11 @@ public class MapView
         mMapDisplayCenter = new PointF();
 
         mMapDrawing = new MapDrawing(getMapPath());
+        mMapDrawing.setOnMapDrawListener(this);
 
-        mMapDrawing.createMap();
+//        mMapDrawing.createMap();
 //        mMapDrawing.loadMap();
-//        mMapDrawing.openMap();
+        mMapDrawing.openMap();
     }
 
 
@@ -188,7 +189,7 @@ public class MapView
         postInvalidate();
 
         mDrawTime = System.currentTimeMillis() - mDrawTime;
-        Log.d(TAG, "Native map draw_old time: " + mDrawTime);
+        Log.d(TAG, "Native map draw time: " + mDrawTime);
     }
 
 
@@ -253,7 +254,7 @@ public class MapView
             float y = mCurrentDragOffset.y;
 
             //Log.d(TAG, "panStop x - " + x + " y - " + y);
-            //Log.d(TAG, "panStop: draw_old");
+            //Log.d(TAG, "panStop: draw");
 
             mMapDisplayCenter.offset(x, y);
             drawMap();
