@@ -148,6 +148,8 @@ public class MapView
 
     protected void drawMap()
     {
+        mDrawTime = System.currentTimeMillis();
+
         switch (mDrawingState) {
 
             case DRAW_STATE_drawing:
@@ -162,13 +164,11 @@ public class MapView
 
             case DRAW_STATE_panning:
             case DRAW_STATE_panning_fling: {
-                mDrawingState = DRAW_STATE_drawing;
                 mMapDrawing.centeredDraw(mMapDisplayCenter.x, mMapDisplayCenter.y);
                 break;
             }
 
             case DRAW_STATE_zooming: {
-                mDrawingState = DRAW_STATE_drawing;
                 mMapDrawing.scaledDraw(
                         mScaleFactor, mCurrentFocusLocation.x, mCurrentFocusLocation.y);
                 break;
@@ -186,6 +186,7 @@ public class MapView
     @Override
     public void onMapDraw()
     {
+        mDrawingState = DRAW_STATE_drawing;
         postInvalidate();
 
         mDrawTime = System.currentTimeMillis() - mDrawTime;
@@ -197,8 +198,6 @@ public class MapView
             int width,
             int height)
     {
-        mDrawTime = System.currentTimeMillis();
-
         mDrawingState = DRAW_STATE_resizing;
         mMapDrawing.setSize(width, height);
 
