@@ -510,7 +510,7 @@ public class NGWVectorLayer
                         continue;
 
                     createFeatureBatch(feature, db);
-                } catch (OutOfMemoryError e) {
+                } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException e) {
                     e.printStackTrace();
                     if (null != progressor)
                         throw new NGException(getContext().getString(R.string.error_download_data));
@@ -1572,6 +1572,10 @@ public class NGWVectorLayer
                 e.printStackTrace();
                 syncResult.stats.numIoExceptions++;
                 return null;
+            } catch (IllegalStateException | NumberFormatException e) {
+                e.printStackTrace();
+                syncResult.stats.numParseExceptions++;
+                return null;
             }
         }
 
@@ -1580,7 +1584,7 @@ public class NGWVectorLayer
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, OutOfMemoryError {
+    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, IllegalStateException, NumberFormatException, OutOfMemoryError {
         reader.beginArray();
         while (reader.hasNext()) {
             final Feature feature = NGWUtil.readNGWFeature(reader, getFields(), mCRS);
