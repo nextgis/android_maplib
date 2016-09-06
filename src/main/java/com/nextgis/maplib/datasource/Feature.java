@@ -225,21 +225,21 @@ public class Feature
             case FTInteger:
                 return val.toString();
             case FTDate:
-                if (val instanceof Date) {
+                if (val instanceof Long) {
                     DateFormat dateFormat = DateFormat.getDateInstance();
-                    return dateFormat.format((Date) val);
+                    return dateFormat.format(new Date((Long) val));
                 }
                 break;
             case FTTime:
-                if (val instanceof Date) {
-                    DateFormat dateFormat = DateFormat.getDateInstance();
-                    return dateFormat.format((Date) val);
+                if (val instanceof Long) {
+                    DateFormat dateFormat = DateFormat.getTimeInstance();
+                    return dateFormat.format(new Date((Long) val));
                 }
                 break;
             case FTDateTime:
-                if (val instanceof Date) {
+                if (val instanceof Long) {
                     DateFormat dateFormat = DateFormat.getDateTimeInstance();
-                    return dateFormat.format((Date) val);
+                    return dateFormat.format(new Date((Long) val));
                 }
                 break;
         }
