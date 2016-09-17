@@ -114,7 +114,8 @@ public class SyncAdapter
         getContext().sendBroadcast(new Intent(SYNC_START));
 
         if (null != mapContentProviderHelper) {
-            mapContentProviderHelper.load(); // reload map for deleted/added layers
+            // Temporary fix till 3.0
+//            mapContentProviderHelper.load(); // reload map for deleted/added layers
             sync(mapContentProviderHelper, authority, syncResult);
         }
 
