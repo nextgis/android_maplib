@@ -285,9 +285,8 @@ public class GeometryRTree implements IGeometryCache {
         {
             for (Node e : n.mChildren)
             {
-                Entry entry = (Entry)e;
-                if (entry.intersects(extent))
-                {
+                if (e.mCoords.intersects(extent) && e instanceof Entry) {
+                    Entry entry = (Entry)e;
                     results.add(entry);
                 }
             }
