@@ -23,7 +23,10 @@ package com.nextgis.maplib.map;
 
 import android.content.Context;
 import android.content.SyncResult;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 
+import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.util.Constants;
 
 import java.io.File;
@@ -38,5 +41,15 @@ public class NGWTrackLayer extends NGWVectorLayer {
     @Override
     public boolean getChangesFromServer(String authority, SyncResult syncResult) {
         return true;
+    }
+
+    @Override
+    public void createFeature(Feature feature) throws SQLiteException {
+
+    }
+
+    @Override
+    public void createFeatureBatch(Feature feature, SQLiteDatabase db) throws SQLiteException {
+
     }
 }
