@@ -81,7 +81,7 @@ public class ResourceGroup
                 addResource(children.getJSONObject(i));
             }
             mChildrenLoaded = true;
-        } catch (IOException | JSONException | NGException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }

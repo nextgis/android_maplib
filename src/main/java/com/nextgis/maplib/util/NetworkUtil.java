@@ -134,9 +134,8 @@ public class NetworkUtil
         return null;
     }
 
-    protected static String responseToString(final HttpURLConnection conn) throws IOException {
+    protected static String responseToString(final InputStream is) throws IOException {
         byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
-        InputStream is = conn.getInputStream();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         FileUtil.copyStream(is, baos, buffer, Constants.IO_BUFFER_SIZE);
         byte[] bytesReceived = baos.toByteArray();
@@ -179,7 +178,7 @@ public class NetworkUtil
             String targetURL,
             String username,
             String password)
-            throws IOException, NGException {
+            throws IOException {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
         if(null == conn){
             if(Constants.DEBUG_MODE)
@@ -190,12 +189,11 @@ public class NetworkUtil
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " +
-                    responseCode);
-            throw new NGException(responseCode + "");
+                Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " + responseCode);
+            return responseToString(conn.getErrorStream());
         }
 
-        return responseToString(conn);
+        return responseToString(conn.getInputStream());
     }
 
 
@@ -227,12 +225,11 @@ public class NetworkUtil
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
             if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " +
-                    responseCode);
-            return null;
+                Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " + responseCode);
+            return responseToString(conn.getErrorStream());
         }
 
-        return responseToString(conn);
+        return responseToString(conn.getInputStream());
     }
 
 
@@ -294,7 +291,7 @@ public class NetworkUtil
             return null;
         }
 
-        return responseToString(conn);
+        return responseToString(conn.getInputStream());
     }
 
 
@@ -350,6 +347,6 @@ public class NetworkUtil
             return null;
         }
 
-        return responseToString(conn);
+        return responseToString(conn.getInputStream());
     }
 }

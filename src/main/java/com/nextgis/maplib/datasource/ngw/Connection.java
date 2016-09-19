@@ -195,7 +195,7 @@ public class Connection
                     }
                 }
             }
-        } catch (IOException | NGException | JSONException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }

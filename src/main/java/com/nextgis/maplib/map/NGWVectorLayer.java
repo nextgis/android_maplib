@@ -409,6 +409,9 @@ public class NGWVectorLayer
 
         JSONObject geoJSONObject = new JSONObject(data);
 
+        if (geoJSONObject.has(JSON_MESSAGE_KEY))
+            throw new NGException(geoJSONObject.getString(JSON_MESSAGE_KEY));
+
         //fill field list
         JSONObject featureLayerJSONObject = geoJSONObject.getJSONObject("feature_layer");
         JSONArray fieldsJSONArray = featureLayerJSONObject.getJSONArray(NGWUtil.NGWKEY_FIELDS);
@@ -1478,9 +1481,6 @@ public class NGWVectorLayer
             } catch (IOException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
-                return null;
-            } catch (NGException e) {
-                e.printStackTrace();
                 syncResult.stats.numIoExceptions++;
                 return null;
             }

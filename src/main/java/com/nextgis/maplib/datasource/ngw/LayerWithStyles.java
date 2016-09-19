@@ -144,7 +144,7 @@ public class LayerWithStyles
                         break;
                 }
             }
-        } catch (IOException | JSONException | NGException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }

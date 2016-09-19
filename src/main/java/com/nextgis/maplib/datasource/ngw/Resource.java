@@ -25,6 +25,7 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.os.Parcel;
 
+import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -102,7 +103,9 @@ public abstract class Resource
             if(null == sResponse)
                 return;
             mPermissions = new JSONObject(sResponse);
-        } catch (IOException | JSONException | NGException e) {
+            if (!mPermissions.has(Constants.JSON_RESOURCE_KEY))
+                mPermissions = null;
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }
