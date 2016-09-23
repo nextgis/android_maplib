@@ -53,11 +53,11 @@
     <string name="process_features">Zpracované objekty</string>
     <string name="processed">Zpracované</string>
     <string name="of">z</string>
-    <string name="rebuild_cache">Obnovit keš</string>
+    <string name="rebuild_cache">Obnovit mezipaměť</string>
     <string name="general">Obecné</string>
     <string name="fields">Pole</string>
     <string name="style">Styl</string>
-    <string name="cache">Keš</string>
+    <string name="cache">Mezipaměť</string>
     <string name="field_name">Název pole</string>
     <string name="field_type">Typ pole</string>
     <string name="field_type_string">String</string>
