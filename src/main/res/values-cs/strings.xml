@@ -1,0 +1,76 @@
+<!--
+  ~ Project:  NextGIS Mobile
+  ~ Purpose:  Mobile GIS for Android.
+  ~ Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+  ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
+  ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
+  ~ ******************************************************************************
+  ~ Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Lesser Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Lesser Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Lesser Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">Mapová knihovna</string>
+    <string name="error_crs_unsupported">Nepodpodovaný souřadnicový systém</string>
+    <string name="error_empty_dataset">Dataset je prázdný</string>
+    <string name="error_network_unavailable">Síť není k dispozici</string>
+    <string name="error_download_data">Selhalo stažení dat</string>
+    <string name="N">S</string>
+    <string name="S">J</string>
+    <string name="E">V</string>
+    <string name="W">Z</string>
+    <string name="unit_meter">m</string>
+    <string name="unit_square_meter">m²</string>
+    <string name="unit_kilometer">km</string>
+    <string name="unit_square_kilometer">km²</string>
+    <string name="unit_second">s</string>
+    <string name="unit_min">min</string>
+    <string name="unit_hour">h</string>
+    <string name="unit_day">den</string>
+    <string name="unit_month">měsíc</string>
+    <string name="unit_year">rok</string>
+    <string name="warning_remove_field">Pole \'%s\' je zakázané, pole bude odstraněné</string>
+    <string name="warning_replace_field">Název obsahuje zakázané znaky, byl změněn na \'%s\'</string>
+    <string name="tracks">Moje trasy</string>
+    <string name="create_features">Vytvořit objekt</string>
+    <string name="parse_features">Analyzovat objekty</string>
+    <string name="message_loading">Načítám…</string>
+    <string name="error_layer_create">Vytvoření vrstvy selhalo</string>
+    <string name="start_fill_layer">Zpracování dat…</string>
+    <string name="message_opening">Otevírám…</string>
+    <string name="process_features">Zpracované objekty</string>
+    <string name="processed">Zpracované</string>
+    <string name="of">z</string>
+    <string name="rebuild_cache">Obnovit mezipaměť</string>
+    <string name="general">Obecné</string>
+    <string name="fields">Pole</string>
+    <string name="style">Styl</string>
+    <string name="cache">Mezipaměť</string>
+    <string name="field_name">Název pole</string>
+    <string name="field_type">Typ pole</string>
+    <string name="field_type_string">String</string>
+    <string name="field_type_int">Integer</string>
+    <string name="field_type_real">Real</string>
+    <string name="field_type_datetime">Date &amp; Time</string>
+    <string name="field_type_date">Date</string>
+    <string name="field_type_time">Time</string>
+    <string name="synchronization">Synchronizace</string>
+    <string name="sync_started">Synchronizace zahájena</string>
+    <string name="sync_progress">Probíhá synchronizace</string>
+    <string name="sync_canceled">Synchronizace zrušena</string>
+    <string name="sync_error">Chyba synchronizace</string>
+    <string name="sync_finished">Synchronizace dokončena</string>
+    <string name="text">Text</string>
+</resources>
