@@ -799,6 +799,7 @@ public class NGWUtil
             for (Field field : layer.getFields()) {
                 JSONObject current = new JSONObject();
                 current.put(JSON_KEYNAME, field.getName());
+                current.put(JSON_DISPLAY_NAME, field.getAlias());
                 current.put(JSON_DATATYPE_KEY, LayerUtil.typeToString(field.getType()));
                 fields.put(current);
             }
