@@ -78,6 +78,7 @@ import com.nextgis.maplib.util.GeoJSONUtil;
 import com.nextgis.maplib.util.LayerUtil;
 import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
+import com.nextgis.maplib.util.NGWUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -3161,7 +3162,8 @@ public class VectorLayer
             try {
                 FeatureChanges.initialize(mLayer.getChangeTableName());
                 mLayer.setSyncType(SYNC_ALL);
-                mLayer.sync(mAuthority, new SyncResult());
+                Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, mLayer.getAccountName());
+                mLayer.sync(mAuthority, ver, new SyncResult());
             } catch (Exception ignored) { }
 
             return null;

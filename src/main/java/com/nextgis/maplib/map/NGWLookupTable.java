@@ -2,8 +2,9 @@
  * Project: Forest violations
  * Purpose: Mobile application for registering facts of the forest violations.
  * Author:  Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +26,7 @@ import android.accounts.Account;
 import android.content.Context;
 import android.content.SyncResult;
 import android.util.Log;
+import android.util.Pair;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
@@ -141,7 +143,7 @@ public class NGWLookupTable extends Table
     }
 
     @Override
-    public void sync(String authority, SyncResult syncResult) {
+    public void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult) {
         if (0 != (mSyncType & Constants.SYNC_NONE)) {
             return;
         }

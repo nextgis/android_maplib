@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -24,6 +24,7 @@
 package com.nextgis.maplib.api;
 
 import android.content.SyncResult;
+import android.util.Pair;
 
 /**
  * Each NGW layer must implement this interface.
@@ -53,7 +54,7 @@ public interface INGWLayer
      * @param authority the account authority
      * @param syncResult object for storing results of operations
      */
-    void sync( String authority, SyncResult syncResult);
+    void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult);
 
     /**
      * Return the sync type (i.e. sync only attributes or the whole feature)

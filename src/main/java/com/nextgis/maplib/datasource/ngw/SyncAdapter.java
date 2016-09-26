@@ -36,6 +36,7 @@ import android.content.SyncResult;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
@@ -44,7 +45,10 @@ import com.nextgis.maplib.map.LayerGroup;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.SettingsConstants;
+
+import java.util.HashMap;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
@@ -70,6 +74,8 @@ public class SyncAdapter
     public static final String SYNC_CANCELED = "com.nextgis.maplib.sync_canceled";
     public static final String SYNC_CHANGES  = "com.nextgis.maplib.sync_changes";
 
+
+    private HashMap<String, Pair<Integer, Integer>> mVersions;
 
     public SyncAdapter(
             Context context,
@@ -113,8 +119,9 @@ public class SyncAdapter
 
         getContext().sendBroadcast(new Intent(SYNC_START));
 
+        mVersions = new HashMap<>();
         if (null != mapContentProviderHelper) {
-            // Temporary fix till 3.0
+            // FIXME Temporary fix till 3.0
 //            mapContentProviderHelper.load(); // reload map for deleted/added layers
             sync(mapContentProviderHelper, authority, syncResult);
         }
@@ -153,7 +160,12 @@ public class SyncAdapter
                 sync((LayerGroup) layer, authority, syncResult);
             } else if (layer instanceof INGWLayer) {
                 INGWLayer ngwLayer = (INGWLayer) layer;
-                ngwLayer.sync(authority, syncResult);
+                String accountName = ngwLayer.getAccountName();
+                if (!mVersions.containsKey(accountName))
+                    mVersions.put(accountName, NGWUtil.getNgwVersion(getContext(), accountName));
+
+                Pair<Integer, Integer> ver = mVersions.get(accountName);
+                ngwLayer.sync(authority, ver, syncResult);
             }
         }
     }

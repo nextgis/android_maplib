@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -27,6 +27,7 @@ import android.accounts.Account;
 import android.content.Context;
 import android.content.SyncResult;
 import android.util.Log;
+import android.util.Pair;
 
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -99,7 +100,7 @@ public class NGWRasterLayer
     }
 
     @Override
-    public void sync(String authority, SyncResult syncResult) {
+    public void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult) {
         // TODO: 26.07.15 By now nothing to sync
     }
 

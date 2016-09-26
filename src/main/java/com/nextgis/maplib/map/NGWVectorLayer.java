@@ -664,6 +664,7 @@ public class NGWVectorLayer
     @Override
     public void sync(
             String authority,
+            Pair<Integer, Integer> ver,
             SyncResult syncResult)
     {
         syncResult.clear();
@@ -676,12 +677,6 @@ public class NGWVectorLayer
         }
 
         // 1. check NGW version
-        Pair<Integer, Integer> ver = null;
-        try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
-        } catch (IOException | NGException | JSONException | NumberFormatException ignored) { }
-
         if (null != ver) {
             int majorVer = ver.first;
             int minorVer = ver.second;

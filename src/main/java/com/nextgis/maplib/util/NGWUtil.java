@@ -24,6 +24,7 @@
 package com.nextgis.maplib.util;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.JsonReader;
@@ -160,6 +161,17 @@ public class NGWUtil
             server = "http://" + server;
         }
         return server + "/api/component/pyramid/pkg_version";
+    }
+
+
+    public static Pair<Integer, Integer> getNgwVersion (Context context, String account) {
+        Pair<Integer, Integer> ver = new Pair<>(-1, -1);
+        try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, account);
+            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+        } catch (IOException | NGException | JSONException | NumberFormatException ignored) { }
+
+        return ver;
     }
 
 
