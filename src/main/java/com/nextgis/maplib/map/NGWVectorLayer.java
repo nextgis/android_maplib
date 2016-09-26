@@ -1052,14 +1052,16 @@ public class NGWVectorLayer
         } catch (JSONException | IOException e) {
             e.printStackTrace();
             if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
+                String error = e.getLocalizedMessage() == null ? "addFeatureOnServer: Exception" : e.getLocalizedMessage();
+                Log.d(Constants.TAG, error);
             }
             syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
             e.printStackTrace();
             if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
+                String error = e.getLocalizedMessage() == null ? "addFeatureOnServer: Exception" : e.getLocalizedMessage();
+                Log.d(Constants.TAG, error);
             }
             syncResult.stats.numAuthExceptions++;
             return false;
@@ -1646,7 +1648,8 @@ public class NGWVectorLayer
         } catch (Exception e) {
 //        } catch (SQLiteConstraintException | ClassNotFoundException | JSONException | IOException e) {
             if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
+                String error = e.getLocalizedMessage() == null ? "addFeatureOnServer: Exception" : e.getLocalizedMessage();
+                Log.d(Constants.TAG, error);
                 e.printStackTrace();
             }
             return false;
