@@ -181,7 +181,7 @@ public class GeometryRTree implements IGeometryCache {
             fileOutputStream.close();
 
             mHasEdits = false;
-        } catch (IOException e) {
+        } catch (RuntimeException | IOException e) {
             e.printStackTrace();
         }
     }

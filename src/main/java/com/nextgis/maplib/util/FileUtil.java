@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -93,7 +93,7 @@ public class FileUtil
     }
 
 
-    public static synchronized void createDir(File dir)
+    public static synchronized void createDir(File dir) throws RuntimeException
     {
         if (dir.exists()) {
             return;
@@ -319,7 +319,7 @@ public class FileUtil
             ZipEntry entry,
             byte[] buffer,
             File outputDir)
-            throws IOException
+            throws IOException, RuntimeException
     {
         String entryName = entry.getName();
         int pos = entryName.indexOf('/');

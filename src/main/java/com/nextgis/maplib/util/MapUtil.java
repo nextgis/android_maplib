@@ -58,7 +58,12 @@ public class MapUtil {
         if (path != null)
             temp = new File(temp, path);
 
-        FileUtil.createDir(temp);
+        try {
+            FileUtil.createDir(temp);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+        }
+
         return temp;
     }
 
@@ -177,7 +182,7 @@ public class MapUtil {
                     return true;
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             e.printStackTrace();
         }
 

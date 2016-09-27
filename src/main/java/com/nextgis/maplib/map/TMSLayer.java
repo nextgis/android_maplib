@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -230,7 +230,7 @@ public abstract class TMSLayer
         };
     }
 
-    protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+    protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
         InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
         if (inputStream == null) {
             throw new NGException(mContext.getString(R.string.error_download_data));
@@ -255,7 +255,6 @@ public abstract class TMSLayer
                     return;
                 progressor.setValue(increment);
                 progressor.setMessage(getContext().getString(R.string.processed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
-
             }
         }
     }

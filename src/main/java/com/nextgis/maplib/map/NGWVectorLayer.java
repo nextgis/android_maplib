@@ -38,6 +38,7 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
 import android.util.Pair;
+
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
@@ -52,7 +53,6 @@ import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.DatabaseContext;
 import com.nextgis.maplib.util.FeatureChanges;
-import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
@@ -64,7 +64,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +80,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
+import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_TEMP;
+import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
+import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_ID;
+import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
+import static com.nextgis.maplib.util.Constants.JSON_MESSAGE_KEY;
+import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
+import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.Constants.URI_ATTACH;
+import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 
 
 public class NGWVectorLayer
@@ -281,57 +291,6 @@ public class NGWVectorLayer
         }
 
         return super.insertInternal(contentValues);
-    }
-
-
-    @Override
-    protected long insertAttach(
-            String featureId,
-            ContentValues contentValues)
-    {
-        if (contentValues.containsKey(ATTACH_DISPLAY_NAME) && contentValues.containsKey(
-                ATTACH_MIME_TYPE)) {
-            //get attach path
-            File attachFolder = new File(mPath, featureId);
-            //we start files from MIN_LOCAL_FEATURE_ID to not overlap with NGW files id's
-            long maxId = MIN_LOCAL_FEATURE_ID;
-            if (attachFolder.isDirectory()) {
-                for (File attachFile : attachFolder.listFiles()) {
-                    if (attachFile.getName().equals(META)) {
-                        continue;
-                    }
-                    long val = Long.parseLong(attachFile.getName());
-                    if (val >= maxId) {
-                        maxId = val + 1;
-                    }
-                }
-            } else {
-                FileUtil.createDir(attachFolder);
-            }
-
-            File attachFile = new File(attachFolder, "" + maxId);
-            try {
-                if (attachFile.createNewFile()) {
-                    //create new record in attaches - description, mime_type, ext
-                    String displayName = contentValues.getAsString(ATTACH_DISPLAY_NAME);
-                    String mimeType = contentValues.getAsString(ATTACH_MIME_TYPE);
-                    String description = "";
-
-                    if (contentValues.containsKey(ATTACH_DESCRIPTION)) {
-                        description = contentValues.getAsString(ATTACH_DESCRIPTION);
-                    }
-
-                    AttachItem item =
-                            new AttachItem("" + maxId, displayName, mimeType, description);
-                    addAttach(featureId, item);
-
-                    return maxId;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return NOT_FOUND;
     }
 
 

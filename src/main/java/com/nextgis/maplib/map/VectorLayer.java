@@ -1349,7 +1349,11 @@ public class VectorLayer
                     }
                 }
             } else {
-                FileUtil.createDir(attachFolder);
+                try {
+                    FileUtil.createDir(attachFolder);
+                } catch (RuntimeException e) {
+                    e.printStackTrace();
+                }
             }
 
             File attachFile = new File(attachFolder, "" + maxId);

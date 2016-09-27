@@ -2,8 +2,9 @@
  * Project: Forest violations
  * Purpose: Mobile application for registering facts of the forest violations.
  * Author:  Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Author:  Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -116,7 +117,13 @@ public class Table implements ILayer, IJSONStore {
 
     protected File getFileName()
     {
-        FileUtil.createDir(getPath());
+        // do we need this?
+        try {
+            FileUtil.createDir(getPath());
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+        }
+
         return new File(getPath(), CONFIG);
     }
 

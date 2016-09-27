@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -135,11 +135,9 @@ public class RemoteTMSLayer
 
             mAvailable.release();
 
-        } catch (InterruptedException | IOException | IllegalArgumentException e) {
+        } catch (InterruptedException | IOException | RuntimeException e) {
             e.printStackTrace();
-            Log.d(
-                    TAG, "Problem downloading MapTile: " + url + " Error: " +
-                            e.getLocalizedMessage());
+            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         }
     }
 
@@ -210,11 +208,9 @@ public class RemoteTMSLayer
             putBitmapToCache(tile.getHash(), ret);
             return ret;
 
-        } catch (InterruptedException | IOException | IllegalArgumentException e) {
+        } catch (InterruptedException | IOException | RuntimeException e) {
             e.printStackTrace();
-            Log.d(
-                    TAG, "Problem downloading MapTile: " + url + " Error: " +
-                         e.getLocalizedMessage());
+            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         }
 
         if (exist) //if exist but not reload from internet
