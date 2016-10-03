@@ -72,6 +72,7 @@ public class RemoteTMSLayer
     protected       String       mStartDate, mEndDate;
     protected       Semaphore    mAvailable;
     protected long mTileMaxAge;
+    protected volatile long mLastCheckTime;
 
     public final static long DELAY = NetworkUtil.TIMEOUT_SOCKET + NetworkUtil.TIMEOUT_CONNECTION;
 
@@ -175,7 +176,7 @@ public class RemoteTMSLayer
             }
         }
 
-        if (!mNet.isNetworkAvailable()) { //return tile from cache
+        if (System.currentTimeMillis() - mLastCheckTime < DELAY || !mNet.isNetworkAvailable()) { //return tile from cache
             return null;
         }
 
@@ -191,6 +192,7 @@ public class RemoteTMSLayer
                     ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
                 }
 
+                mLastCheckTime = System.currentTimeMillis();
                 putBitmapToCache(tile.getHash(), ret);
                 return ret;
             }
@@ -208,7 +210,11 @@ public class RemoteTMSLayer
             putBitmapToCache(tile.getHash(), ret);
             return ret;
 
-        } catch (InterruptedException | IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
+            e.printStackTrace();
+            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
+        } catch (InterruptedException e) {
+            mLastCheckTime = System.currentTimeMillis();
             e.printStackTrace();
             Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         }
