@@ -34,6 +34,7 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteFullException;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -887,11 +888,15 @@ public class VectorLayer
     public boolean delete()
             throws SQLiteException
     {
-        //drop table
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(false);
-        String tableDrop = "DROP TABLE IF EXISTS " + mPath.getName();
-        db.execSQL(tableDrop);
+        try {
+            //drop table
+            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+            SQLiteDatabase db = map.getDatabase(false);
+            String tableDrop = "DROP TABLE IF EXISTS " + mPath.getName();
+            db.execSQL(tableDrop);
+        } catch (SQLiteFullException e) {
+            e.printStackTrace();
+        }
 
         return super.delete();
     }

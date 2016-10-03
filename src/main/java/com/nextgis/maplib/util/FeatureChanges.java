@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -28,6 +28,7 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteFullException;
 import android.text.TextUtils;
 import android.util.Log;
 import com.nextgis.maplib.map.MapBase;
@@ -171,10 +172,14 @@ public class FeatureChanges
 
     public static void delete(String tableName)
     {
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        SQLiteDatabase db = map.getDatabase(true);
-        String tableDrop = "DROP TABLE IF EXISTS " + tableName;
-        db.execSQL(tableDrop);
+        try {
+            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+            SQLiteDatabase db = map.getDatabase(true);
+            String tableDrop = "DROP TABLE IF EXISTS " + tableName;
+            db.execSQL(tableDrop);
+        } catch (SQLiteFullException e) {
+            e.printStackTrace();
+        }
     }
 
 
