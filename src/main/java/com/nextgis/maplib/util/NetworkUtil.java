@@ -136,11 +136,15 @@ public class NetworkUtil
 
     protected static String responseToString(final InputStream is) throws IOException {
         byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        FileUtil.copyStream(is, baos, buffer, Constants.IO_BUFFER_SIZE);
-        byte[] bytesReceived = baos.toByteArray();
-        baos.close();
-        is.close();
+        byte[] bytesReceived = "".getBytes();
+
+        if (is != null) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            FileUtil.copyStream(is, baos, buffer, Constants.IO_BUFFER_SIZE);
+            bytesReceived = baos.toByteArray();
+            baos.close();
+            is.close();
+        }
 
         return new String(bytesReceived);
     }
