@@ -111,7 +111,7 @@ public class NGWUtil
         String sPayload = "login=" + login + "&password=" + password;
         final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
         if (null == conn) {
-            Log.d(TAG, "Error get connection object");
+            Log.d(TAG, "Error get connection object: " + sUrl);
             return null;
         }
         conn.setInstanceFollowRedirects(false);
@@ -128,10 +128,8 @@ public class NGWUtil
         os.close();
 
         int responseCode = conn.getResponseCode();
-        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP
-                || responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
-            Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " +
-                    responseCode);
+        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
+            Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " + responseCode);
             return null;
         }
 
@@ -164,11 +162,11 @@ public class NGWUtil
     }
 
 
-    public static Pair<Integer, Integer> getNgwVersion (Context context, String account) {
+    public static Pair<Integer, Integer> getNgwVersion(Context context, String account) {
         Pair<Integer, Integer> ver = new Pair<>(-1, -1);
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, account);
-            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+            ver = NGWUtil.getNgwVersion(context, accountData.url, accountData.login, accountData.password);
         } catch (IOException | NGException | JSONException | NumberFormatException ignored) { }
 
         return ver;
@@ -176,12 +174,13 @@ public class NGWUtil
 
 
     public static Pair<Integer, Integer> getNgwVersion(
+            Context context,
             String url,
             String login,
             String password)
             throws IOException, NGException, JSONException, NumberFormatException
     {
-        String verData = NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password);
+        String verData = NetworkUtil.get(context, NGWUtil.getNgwVersionUrl(url), login, password);
         if (null != verData) {
             JSONObject verJSONObject = new JSONObject(verData);
             String fullVer = verJSONObject.getString("nextgisweb");
@@ -192,9 +191,7 @@ public class NGWUtil
                 Integer minor = Integer.parseInt(verParts[1]);
                 return new Pair<>(major, minor);
             } else {
-                Log.d(
-                        TAG, "BAD format of the NGW version, must be 'major.minor', obtained: "
-                                + fullVer);
+                Log.d(TAG, "BAD format of the NGW version, must be 'major.minor', obtained: " + fullVer);
             }
         }
 
@@ -715,6 +712,7 @@ public class NGWUtil
 
 
     public static boolean signUp(
+            Context context,
             String server,
             String login,
             String password,
@@ -734,7 +732,7 @@ public class NGWUtil
             payload.put(JSON_DISPLAY_NAME, displayName == null ? login : displayName);
             payload.put(JSON_DESCRIPTION, description);
 
-            String result = NetworkUtil.post(server, payload.toString(), null, null);
+            String result = NetworkUtil.post(context, server, payload.toString(), null, null);
             return result != null && new JSONObject(result).has(JSON_ID_KEY);
         } catch (JSONException | IOException e) {
             e.printStackTrace();
@@ -743,13 +741,13 @@ public class NGWUtil
         return false;
     }
 
-    public static boolean getResourceByKey(INGWResource resource, Map<String, Resource> keys) {
+    public static boolean getResourceByKey(Context context, INGWResource resource, Map<String, Resource> keys) {
         if (resource instanceof Connection) {
             Connection connection = (Connection) resource;
             connection.loadChildren();
         } else if (resource instanceof ResourceGroup) {
             ResourceGroup resourceGroup = (ResourceGroup) resource;
-            resourceGroup.loadChildren();
+            resourceGroup.loadChildren(context);
         }
 
         for (int i = 0; i < resource.getChildrenCount(); ++i) {
@@ -772,7 +770,7 @@ public class NGWUtil
                 return true;
             }
 
-            if (getResourceByKey(childResource, keys)) {
+            if (getResourceByKey(context, childResource, keys)) {
                 return true;
             }
         }
@@ -818,7 +816,7 @@ public class NGWUtil
             vectorLayer.put(JSON_FIELDS_KEY, fields);
 
             payload.put(JSON_VECTOR_LAYER_KEY, vectorLayer);
-            result = NetworkUtil.post(getBaseUrl(accountData.url), payload.toString(), accountData.login, accountData.password);
+            result = NetworkUtil.post(layer.getContext(), getBaseUrl(accountData.url), payload.toString(), accountData.login, accountData.password);
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }

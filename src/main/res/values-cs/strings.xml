@@ -73,4 +73,8 @@
     <string name="sync_error">Chyba synchronizace</string>
     <string name="sync_finished">Synchronizace dokončena</string>
     <string name="text">Text</string>
+    <string name="error_connect_failed">Spojení selhalo</string>
+    <string name="error_403">Forbidden</string>
+    <string name="error_404">Resource not found</string>
+    <string name="error_500">Internal server error</string>
 </resources>

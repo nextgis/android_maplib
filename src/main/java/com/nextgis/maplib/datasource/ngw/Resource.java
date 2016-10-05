@@ -23,6 +23,7 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
+import android.content.Context;
 import android.os.Parcel;
 
 import com.nextgis.maplib.util.Constants;
@@ -95,11 +96,11 @@ public abstract class Resource
     }
 
 
-    public void fillPermissions()
+    public void fillPermissions(Context context)
     {
         try {
             String sURL = mConnection.getURL() + "/api/resource/" + mRemoteId + "/permission";
-            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            String sResponse = NetworkUtil.get(context, sURL, mConnection.getLogin(), mConnection.getPassword());
             if(null == sResponse)
                 return;
             mPermissions = new JSONObject(sResponse);

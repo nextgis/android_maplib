@@ -72,4 +72,8 @@
     <string name="sync_error">Помилка синхронізації</string>
     <string name="sync_finished">Синхронізація заверешена</string>
     <string name="text">Текст</string>
+    <string name="error_connect_failed">Помилка підключення</string>
+    <string name="error_403">Не хватает прав</string>
+    <string name="error_404">Ресурс не найден</string>
+    <string name="error_500">Ошибка сервера</string>
 </resources>

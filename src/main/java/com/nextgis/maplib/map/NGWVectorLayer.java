@@ -65,6 +65,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -349,7 +350,7 @@ public class NGWVectorLayer
                 throw new NGException(getContext().getString(R.string.error_download_data));
             }
 
-            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+            ver = NGWUtil.getNgwVersion(mContext, accountData.url, accountData.login, accountData.password);
         } catch (IllegalStateException e) {
             throw new NGException(getContext().getString(R.string.error_download_data));
         } catch (IOException | NGException | NumberFormatException ignored) { }
@@ -361,15 +362,14 @@ public class NGWVectorLayer
 
         if (null == accountData)
             throw new NGException(getContext().getString(R.string.error_download_data));
-        String data = NetworkUtil.get(getResourceMetaUrl(accountData),
-                accountData.login, accountData.password);
-        if (null == data)
-            throw new NGException(getContext().getString(R.string.error_download_data));
 
-        JSONObject geoJSONObject = new JSONObject(data);
-
-        if (geoJSONObject.has(JSON_MESSAGE_KEY))
-            throw new NGException(geoJSONObject.getString(JSON_MESSAGE_KEY));
+        JSONObject geoJSONObject;
+        String data = NetworkUtil.get(mContext, getResourceMetaUrl(accountData), accountData.login, accountData.password);
+        try {
+            geoJSONObject = new JSONObject(data);
+        } catch (JSONException e) {
+            throw new NGException(data);
+        }
 
         //fill field list
         JSONObject featureLayerJSONObject = geoJSONObject.getJSONObject("feature_layer");
@@ -406,7 +406,7 @@ public class NGWVectorLayer
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             //get layer data
-            data = NetworkUtil.get(sURL, accountData.login, accountData.password);
+            data = NetworkUtil.get(mContext, sURL, accountData.login, accountData.password);
             if (null == data) {
                 throw new NGException(getContext().getString(R.string.error_download_data));
             }
@@ -446,10 +446,18 @@ public class NGWVectorLayer
             notifyLayerChanged();
         } else {
             // get features and fill them
-            HttpURLConnection urlConnection =
-                    NetworkUtil.getHttpConnection("", sURL, accountData.login, accountData.password);
-            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
-                    urlConnection.getContentLength());
+            HttpURLConnection urlConnection = NetworkUtil.getHttpConnection("GET", sURL, accountData.login, accountData.password);
+            if (null == urlConnection) {
+                if (Constants.DEBUG_MODE)
+                    Log.d(TAG, "Error get connection object: " + sURL);
+
+                if (null != progressor)
+                    progressor.setMessage(getContext().getString(R.string.error_connect_failed));
+
+                return;
+            }
+
+            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
             reader.beginArray();
 
@@ -850,10 +858,8 @@ public class NGWVectorLayer
             //putData.put("mime_type", attach.getMimetype());
             putData.put("description", attach.getDescription());
 
-            String data = NetworkUtil.put(
-                    NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId)
-                            + attachId, putData.toString(), accountData.login,
-                    accountData.password);
+            String data = NetworkUtil.put(mContext, NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId, putData.toString(),
+                    accountData.login, accountData.password);
 
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
@@ -940,7 +946,7 @@ public class NGWVectorLayer
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             //1. upload file
-            String data = NetworkUtil.postFile(NGWUtil.getFileUploadUrl(accountData.url), fileName,
+            String data = NetworkUtil.postFile(mContext, NGWUtil.getFileUploadUrl(accountData.url), fileName,
                     filePath, fileMime, accountData.login, accountData.password);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
@@ -978,8 +984,7 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, "postload: " + postload);
             }
 
-            data = NetworkUtil.post(
-                    NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId),
+            data = NetworkUtil.post(mContext, NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId),
                     postload, accountData.login, accountData.password);
             if (null == data) {
                 syncResult.stats.numIoExceptions++;
@@ -1432,8 +1437,7 @@ public class NGWVectorLayer
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             String data;
             try {
-                data = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login,
-                        accountData.password);
+                data = NetworkUtil.get(mContext, getFeaturesUrl(accountData), accountData.login, accountData.password);
             } catch (IOException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
@@ -1473,14 +1477,12 @@ public class NGWVectorLayer
                 URL url = new URL(getFeaturesUrl(accountData));
                 Log.d(TAG, "url: " + url.toString());
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                final String basicAuth =
-                        NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
+                final String basicAuth = NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
                 if (null != basicAuth) {
                     urlConnection.setRequestProperty("Authorization", basicAuth);
                 }
 
-                InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
-                        urlConnection.getContentLength());
+                InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
                 JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
 
                 if (tracked) {
@@ -1519,6 +1521,10 @@ public class NGWVectorLayer
             } catch (MalformedURLException e) {
                 e.printStackTrace();
                 syncResult.stats.numParseExceptions++;
+                return null;
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                syncResult.stats.numIoExceptions++;
                 return null;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -1579,8 +1585,8 @@ public class NGWVectorLayer
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
                 }
-                String data = NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId),
-                        payload, accountData.login, accountData.password);
+
+                String data = NetworkUtil.post(mContext, NGWUtil.getFeaturesUrl(accountData.url, mRemoteId), payload, accountData.login, accountData.password);
                 if (null == data) {
                     syncResult.stats.numIoExceptions++;
                     return false;
@@ -1677,8 +1683,7 @@ public class NGWVectorLayer
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
                 }
-                String data = NetworkUtil.put(
-                        NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), payload,
+                String data = NetworkUtil.put(mContext, NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), payload,
                         accountData.login, accountData.password);
                 if (null == data) {
                     syncResult.stats.numIoExceptions++;

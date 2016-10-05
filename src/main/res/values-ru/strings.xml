@@ -73,4 +73,8 @@
     <string name="sync_error">Ошибка синхронизации</string>
     <string name="sync_finished">Синхронизация завершена</string>
     <string name="text">Текст</string>
+    <string name="error_connect_failed">Соединение не установлено</string>
+    <string name="error_403">Не хватает прав</string>
+    <string name="error_404">Ресурс не найден</string>
+    <string name="error_500">Ошибка сервера</string>
 </resources>

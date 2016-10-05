@@ -72,4 +72,8 @@
     <string name="sync_error">Sync error</string>
     <string name="sync_finished">Sync finished</string>
     <string name="text">Text</string>
+    <string name="error_connect_failed">Connect failed</string>
+    <string name="error_403">Forbidden</string>
+    <string name="error_404">Resource not found</string>
+    <string name="error_500">Internal server error</string>
 </resources>

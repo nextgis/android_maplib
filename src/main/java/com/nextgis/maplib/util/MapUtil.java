@@ -189,4 +189,14 @@ public class MapUtil {
         return false;
     }
 
+    public static boolean isParsable(String string) {
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            Long.parseLong(string);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
 }

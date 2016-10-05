@@ -31,6 +31,8 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
+import com.nextgis.maplib.R;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -100,8 +102,12 @@ public class NetworkUtil
         return mLastState;
     }
 
-    public static HttpURLConnection getHttpConnection(String method, String targetURL, String username,
-                                               String password) throws IOException {
+    public static HttpURLConnection getHttpConnection(
+            String method,
+            String targetURL,
+            String username,
+            String password)
+            throws IOException {
         URL url = new URL(targetURL);
         // Open a HTTP connection to the URL
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -123,7 +129,7 @@ public class NetworkUtil
         conn.setReadTimeout(TIMEOUT_SOCKET);
         conn.setRequestProperty("Accept", "*/*");
 
-        return conn;
+        return android.util.Patterns.WEB_URL.matcher(targetURL).matches() ? conn : null;
     }
 
     public static String getHTTPBaseAuth(String username, String password){
@@ -157,12 +163,11 @@ public class NetworkUtil
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
-        if(null == conn){
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Error get connection object");
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get stream: " + targetURL);
             return;
         }
-
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
@@ -179,22 +184,23 @@ public class NetworkUtil
 
 
     public static String get(
+            Context context,
             String targetURL,
             String username,
             String password)
             throws IOException {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
-        if(null == conn){
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Error get connection object");
-            return null;
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + targetURL);
+            return context.getString(R.string.error_connect_failed);
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " + responseCode);
-            return responseToString(conn.getErrorStream());
+            return getError(context, responseCode, conn.getErrorStream());
         }
 
         return responseToString(conn.getInputStream());
@@ -202,6 +208,7 @@ public class NetworkUtil
 
 
     public static String post(
+            Context context,
             String targetURL,
             String payload,
             String username,
@@ -209,10 +216,10 @@ public class NetworkUtil
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
-        if(null == conn){
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Error get connection object");
-            return null;
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + targetURL);
+            return context.getString(R.string.error_connect_failed);
         }
         conn.setRequestProperty("Content-type", "application/json");
         // Allow Outputs
@@ -230,7 +237,7 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " + responseCode);
-            return responseToString(conn.getErrorStream());
+            return getError(context, responseCode, conn.getErrorStream());
         }
 
         return responseToString(conn.getInputStream());
@@ -244,17 +251,16 @@ public class NetworkUtil
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("DELETE", targetURL, username, password);
-        if(null == conn){
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Error get connection object");
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + targetURL);
             return false;
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " +
-                    responseCode);
+                Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " + responseCode);
             return false;
         }
 
@@ -263,6 +269,7 @@ public class NetworkUtil
 
 
     public static String put(
+            Context context,
             String targetURL,
             String payload,
             String username,
@@ -270,10 +277,10 @@ public class NetworkUtil
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("PUT", targetURL, username, password);
-        if(null == conn){
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Error get connection object");
-            return null;
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + targetURL);
+            return context.getString(R.string.error_connect_failed);
         }
         conn.setRequestProperty("Content-type", "application/json");
         // Allow Outputs
@@ -290,9 +297,8 @@ public class NetworkUtil
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " +
-                    responseCode);
-            return null;
+                Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " + responseCode);
+            return getError(context, responseCode, conn.getErrorStream());
         }
 
         return responseToString(conn.getInputStream());
@@ -300,6 +306,7 @@ public class NetworkUtil
 
 
     public static String postFile(
+            Context context,
             String targetURL,
             String fileName,
             File file,
@@ -317,6 +324,11 @@ public class NetworkUtil
         // open a URL connection to the Servlet
 
         HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + targetURL);
+            return context.getString(R.string.error_connect_failed);
+        }
         conn.setRequestProperty("Connection", "Keep-Alive");
         conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
         // Allow Outputs
@@ -346,11 +358,23 @@ public class NetworkUtil
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " +
-                    responseCode);
-            return null;
+                Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " + responseCode);
+            return getError(context, responseCode, conn.getErrorStream());
         }
 
         return responseToString(conn.getInputStream());
+    }
+
+    private static String getError(Context context, int responseCode, InputStream errorStream) throws IOException {
+        switch (responseCode) {
+            case HttpURLConnection.HTTP_FORBIDDEN:
+                return context.getString(R.string.error_403);
+            case HttpURLConnection.HTTP_NOT_FOUND:
+                return context.getString(R.string.error_404);
+            case HttpURLConnection.HTTP_INTERNAL_ERROR:
+                return context.getString(R.string.error_500);
+            default:
+                return responseToString(errorStream);
+        }
     }
 }
