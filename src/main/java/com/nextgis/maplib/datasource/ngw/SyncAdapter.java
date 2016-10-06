@@ -38,6 +38,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
 
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
@@ -74,6 +75,8 @@ public class SyncAdapter
     public static final String SYNC_CANCELED = "com.nextgis.maplib.sync_canceled";
     public static final String SYNC_CHANGES  = "com.nextgis.maplib.sync_changes";
 
+    public static final String EXCEPTION = "exception";
+    protected String mError;
 
     private HashMap<String, Pair<Integer, Integer>> mVersions;
 
@@ -142,7 +145,28 @@ public class SyncAdapter
                 SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
         editor.commit();
 
-        getContext().sendBroadcast(new Intent(SYNC_FINISH));
+        mError = "";
+        if (syncResult.stats.numIoExceptions > 0)
+            mError += getContext().getString(R.string.sync_error_io);
+        if (syncResult.stats.numParseExceptions > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_parse);
+        }
+        if (syncResult.stats.numAuthExceptions > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.error_auth);
+        }
+        if (syncResult.stats.numConflictDetectedExceptions > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_conflict);
+        }
+
+        Intent finish = new Intent(SYNC_FINISH);
+        finish.putExtra(EXCEPTION, mError);
+        getContext().sendBroadcast(finish);
     }
 
 

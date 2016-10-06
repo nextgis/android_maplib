@@ -26,6 +26,8 @@ package com.nextgis.maplib.datasource.ngw;
 import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
+
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -118,13 +120,13 @@ public class LayerWithStyles
     }
 
 
-    public void fillStyles(Context context)
+    public void fillStyles()
     {
         mStyles = new ArrayList<>();
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            String sResponse = NetworkUtil.get(context, sURL, mConnection.getLogin(), mConnection.getPassword());
-            if(null == sResponse)
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(MapUtil.isParsable(sResponse))
                 return;
             JSONArray children = new JSONArray(sResponse);
             for (int i = 0; i < children.length(); i++) {

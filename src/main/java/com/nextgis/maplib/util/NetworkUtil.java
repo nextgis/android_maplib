@@ -142,7 +142,7 @@ public class NetworkUtil
 
     protected static String responseToString(final InputStream is) throws IOException {
         byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
-        byte[] bytesReceived = "".getBytes();
+        byte[] bytesReceived = "1".getBytes();
 
         if (is != null) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -184,7 +184,6 @@ public class NetworkUtil
 
 
     public static String get(
-            Context context,
             String targetURL,
             String username,
             String password)
@@ -193,14 +192,14 @@ public class NetworkUtil
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return context.getString(R.string.error_connect_failed);
+            return "0";
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " + responseCode);
-            return getError(context, responseCode, conn.getErrorStream());
+            return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
@@ -208,7 +207,6 @@ public class NetworkUtil
 
 
     public static String post(
-            Context context,
             String targetURL,
             String payload,
             String username,
@@ -219,7 +217,7 @@ public class NetworkUtil
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return context.getString(R.string.error_connect_failed);
+            return "0";
         }
         conn.setRequestProperty("Content-type", "application/json");
         // Allow Outputs
@@ -237,7 +235,7 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " + responseCode);
-            return getError(context, responseCode, conn.getErrorStream());
+            return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
@@ -269,7 +267,6 @@ public class NetworkUtil
 
 
     public static String put(
-            Context context,
             String targetURL,
             String payload,
             String username,
@@ -280,7 +277,7 @@ public class NetworkUtil
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return context.getString(R.string.error_connect_failed);
+            return "0";
         }
         conn.setRequestProperty("Content-type", "application/json");
         // Allow Outputs
@@ -298,7 +295,7 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " + responseCode);
-            return getError(context, responseCode, conn.getErrorStream());
+            return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
@@ -306,7 +303,6 @@ public class NetworkUtil
 
 
     public static String postFile(
-            Context context,
             String targetURL,
             String fileName,
             File file,
@@ -327,7 +323,7 @@ public class NetworkUtil
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return context.getString(R.string.error_connect_failed);
+            return "0";
         }
         conn.setRequestProperty("Connection", "Keep-Alive");
         conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
@@ -359,14 +355,26 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " + responseCode);
-            return getError(context, responseCode, conn.getErrorStream());
+            return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
     }
 
-    private static String getError(Context context, int responseCode, InputStream errorStream) throws IOException {
-        switch (responseCode) {
+    public static String getError(Context context, String responseCode) {
+        if (!MapUtil.isParsable(responseCode))
+            return null;
+
+        int code = Integer.parseInt(responseCode);
+        switch (code) {
+            case -1:
+                return context.getString(R.string.error_network_unavailable);
+            case 0:
+                return context.getString(R.string.error_connect_failed);
+            case 1:
+                return context.getString(R.string.error_download_data);
+            case HttpURLConnection.HTTP_UNAUTHORIZED:
+                return context.getString(R.string.error_401);
             case HttpURLConnection.HTTP_FORBIDDEN:
                 return context.getString(R.string.error_403);
             case HttpURLConnection.HTTP_NOT_FOUND:
@@ -374,7 +382,7 @@ public class NetworkUtil
             case HttpURLConnection.HTTP_INTERNAL_ERROR:
                 return context.getString(R.string.error_500);
             default:
-                return responseToString(errorStream);
+                return context.getString(R.string.error_500);
         }
     }
 }

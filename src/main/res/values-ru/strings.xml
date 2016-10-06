@@ -25,7 +25,6 @@
     <string name="app_name">Библиотека карт</string>
     <string name="error_crs_unsupported">Система координат не поддерживается</string>
     <string name="error_empty_dataset">Набор данных пустой</string>
-    <string name="error_network_unavailable">Нет соединения с сетью</string>
     <string name="error_download_data">Не удалось загрузить данные</string>
     <string name="N">С</string>
     <string name="S">Ю</string>
@@ -77,4 +76,10 @@
     <string name="error_403">Не хватает прав</string>
     <string name="error_404">Ресурс не найден</string>
     <string name="error_500">Ошибка сервера</string>
+    <string name="error_401">Требуется авторизация</string>
+    <string name="error_network_unavailable">Нет соединения с сетью</string>
+    <string name="error_auth">Проблема аутентификации</string>
+    <string name="sync_error_conflict">Обнаружены конфликты</string>
+    <string name="sync_error_io">Неизвестная ошибка</string>
+    <string name="sync_error_parse">Ошибка сервера NetGIS Web</string>
 </resources>

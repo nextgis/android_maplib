@@ -27,6 +27,7 @@ import android.content.Context;
 import android.os.Parcel;
 
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -96,12 +97,12 @@ public abstract class Resource
     }
 
 
-    public void fillPermissions(Context context)
+    public void fillPermissions()
     {
         try {
             String sURL = mConnection.getURL() + "/api/resource/" + mRemoteId + "/permission";
-            String sResponse = NetworkUtil.get(context, sURL, mConnection.getLogin(), mConnection.getPassword());
-            if(null == sResponse)
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(MapUtil.isParsable(sResponse))
                 return;
             mPermissions = new JSONObject(sResponse);
             if (!mPermissions.has(Constants.JSON_RESOURCE_KEY))

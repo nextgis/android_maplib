@@ -23,12 +23,12 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
-import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import android.util.Pair;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -58,7 +58,6 @@ public class Connection
     protected ResourceGroup mRootResource;
     protected int           mId;
     protected INGWResource  mParent;
-    protected Context mContext;
 
     public final static int NGWResourceTypeNone              = 1 << 0;
     public final static int NGWResourceTypeResourceGroup     = 1 << 1;
@@ -80,13 +79,11 @@ public class Connection
 
 
     public Connection(
-            Context context,
             String name,
             String login,
             String password,
             String URL)
     {
-        mContext = context;
         mName = name;
         mLogin = login;
         mPassword = password;
@@ -142,9 +139,9 @@ public class Connection
     {
         Pair<Integer, Integer> ver = null;
         try {
-            ver = NGWUtil.getNgwVersion(mContext, mURL, mLogin, mPassword);
-        } catch (IOException | NGException | JSONException | NumberFormatException ignored) {
-        }
+            ver = NGWUtil.getNgwVersion(mURL, mLogin, mPassword);
+        } catch (IOException | JSONException | NumberFormatException ignored) { }
+
         if (null != ver) {
             mNgwVersionMajor = ver.first;
             mNgwVersionMinor = ver.second;
@@ -181,8 +178,8 @@ public class Connection
         mSupportedTypes.clear();
         try {
             String sURL = mURL + "/resource/schema";
-            String sResponse = NetworkUtil.get(mContext, sURL, getLogin(), getPassword());
-            if(null == sResponse)
+            String sResponse = NetworkUtil.get(sURL, getLogin(), getPassword());
+            if(MapUtil.isParsable(sResponse))
                 return;
             JSONObject schema = new JSONObject(sResponse);
             JSONObject resources = schema.getJSONObject("resources");
@@ -327,7 +324,7 @@ public class Connection
     public void loadChildren()
     {
         if (null != mRootResource) {
-            mRootResource.loadChildren(mContext);
+            mRootResource.loadChildren();
         }
     }
 

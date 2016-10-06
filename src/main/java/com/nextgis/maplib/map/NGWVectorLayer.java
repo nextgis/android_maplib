@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SyncResult;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
@@ -54,6 +55,7 @@ import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.DatabaseContext;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -88,7 +90,6 @@ import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
 import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.FIELD_ID;
 import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
-import static com.nextgis.maplib.util.Constants.JSON_MESSAGE_KEY;
 import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
@@ -340,35 +341,36 @@ public class NGWVectorLayer
             Log.d(Constants.TAG, "download layer " + getName());
         }
 
-        AccountUtil.AccountData accountData = null;
+        // get account
+        AccountUtil.AccountData accountData;
+        try {
+            accountData = AccountUtil.getAccountData(mContext, mAccountName);
+        } catch (IllegalStateException e) {
+            throw new NGException(getContext().getString(R.string.error_auth));
+        }
+
+        if (null == accountData.url) {
+            throw new NGException(getContext().getString(R.string.error_404));
+        }
+
         // get NGW version
         Pair<Integer, Integer> ver = null;
         try {
-            accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
-            if (null == accountData || null == accountData.url) {
-                throw new NGException(getContext().getString(R.string.error_download_data));
-            }
-
-            ver = NGWUtil.getNgwVersion(mContext, accountData.url, accountData.login, accountData.password);
-        } catch (IllegalStateException e) {
-            throw new NGException(getContext().getString(R.string.error_download_data));
-        } catch (IOException | NGException | NumberFormatException ignored) { }
+            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+        } catch (IOException | JSONException | NumberFormatException ignored) { }
 
         if (null != ver) {
             mNgwVersionMajor = ver.first;
             mNgwVersionMinor = ver.second;
         }
 
-        if (null == accountData)
-            throw new NGException(getContext().getString(R.string.error_download_data));
-
+        // get layer description
         JSONObject geoJSONObject;
-        String data = NetworkUtil.get(mContext, getResourceMetaUrl(accountData), accountData.login, accountData.password);
+        String data = NetworkUtil.get(getResourceMetaUrl(accountData), accountData.login, accountData.password);
         try {
             geoJSONObject = new JSONObject(data);
         } catch (JSONException e) {
-            throw new NGException(data);
+            throw new NGException(NetworkUtil.getError(mContext, data));
         }
 
         //fill field list
@@ -406,17 +408,16 @@ public class NGWVectorLayer
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             //get layer data
-            data = NetworkUtil.get(mContext, sURL, accountData.login, accountData.password);
-            if (null == data) {
-                throw new NGException(getContext().getString(R.string.error_download_data));
+            data = NetworkUtil.get(sURL, accountData.login, accountData.password);
+            if (MapUtil.isParsable(data)) {
+                throw new NGException(NetworkUtil.getError(mContext, data));
             }
 
             JSONArray featuresJSONArray = new JSONArray(data);
             if (null != progressor) {
                 progressor.setMessage(getContext().getString(R.string.parse_features));
             }
-            List<Feature> features =
-                    NGWUtil.jsonToFeatures(featuresJSONArray, fields, mCRS, progressor);
+            List<Feature> features = NGWUtil.jsonToFeatures(featuresJSONArray, fields, mCRS, progressor);
 
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "feature count: " + features.size());
@@ -468,8 +469,7 @@ public class NGWVectorLayer
                 progressor.setIndeterminate(false);
                 if (streamSize > 0)
                     progressor.setMax(streamSize);
-                progressor.setMessage(
-                        getContext().getString(R.string.start_fill_layer) + " " + getName());
+                progressor.setMessage(getContext().getString(R.string.start_fill_layer) + " " + getName());
             }
 
             int featureCount = 0;
@@ -495,8 +495,7 @@ public class NGWVectorLayer
                         return;
                     }
                     progressor.setValue(streamSize - in.available());
-                    progressor.setMessage(getContext().getString(R.string.process_features) + ": " +
-                            featureCount);
+                    progressor.setMessage(getContext().getString(R.string.process_features) + ": " + featureCount);
                 }
 
                 ++featureCount;
@@ -737,7 +736,6 @@ public class NGWVectorLayer
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                         } else {
                             isError = true;
-                            syncResult.stats.numIoExceptions++;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed deleteFeatureOnServer() failed");
                             }
@@ -750,7 +748,6 @@ public class NGWVectorLayer
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
-                            syncResult.stats.numIoExceptions++;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed addFeatureOnServer() failed");
                             }
@@ -763,7 +760,6 @@ public class NGWVectorLayer
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
-                            syncResult.stats.numIoExceptions++;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed changeFeatureOnServer() failed");
                             }
@@ -779,7 +775,6 @@ public class NGWVectorLayer
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                         } else {
                             isError = true;
-                            syncResult.stats.numIoExceptions++;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed deleteAttachOnServer() failed");
                             }
@@ -793,7 +788,6 @@ public class NGWVectorLayer
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
-                            syncResult.stats.numIoExceptions++;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
                             }
@@ -806,7 +800,6 @@ public class NGWVectorLayer
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             isError = true;
-                            syncResult.stats.numIoExceptions++;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed changeAttachOnServer() failed");
                             }
@@ -841,12 +834,12 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
         AttachItem attach = getAttach("" + featureId, "" + attachId);
-        if (null == attach) //just remove buggy item
-        {
+        if (null == attach) {   // just remove buggy item
             return true;
         }
 
@@ -858,27 +851,25 @@ public class NGWVectorLayer
             //putData.put("mime_type", attach.getMimetype());
             putData.put("description", attach.getDescription());
 
-            String data = NetworkUtil.put(mContext, NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId, putData.toString(),
-                    accountData.login, accountData.password);
+            String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId;
+            String data = NetworkUtil.put(url, putData.toString(), accountData.login, accountData.password);
 
-            if (null == data) {
-                syncResult.stats.numIoExceptions++;
+            if (MapUtil.isParsable(data)) {
+                log(syncResult, data);
                 return false;
             }
 
             return true;
-        } catch (JSONException | IOException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-            }
+        } catch (JSONException e) {
+            log(e, "changeAttachOnServer JSONException");
+            syncResult.stats.numParseExceptions++;
+            return false;
+        } catch (IOException e) {
+            log(e, "changeAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-            }
+            log(e, "changeAttachOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
         }
@@ -891,6 +882,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -907,17 +899,11 @@ public class NGWVectorLayer
 
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-            }
+            log(e, "deleteAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-            }
+            log(e, "deleteAttachOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
         }
@@ -930,76 +916,75 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
         AttachItem attach = getAttach("" + featureId, "" + attachId);
-        if (null == attach) //just remove buggy item
-        {
+        if (null == attach) {   //just remove buggy item
             return true;
         }
 
+        // fill attach info
         String fileName = attach.getDisplayName();
         File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
         String fileMime = attach.getMimetype();
 
         try {
+            // get account data
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-            //1. upload file
-            String data = NetworkUtil.postFile(mContext, NGWUtil.getFileUploadUrl(accountData.url), fileName,
-                    filePath, fileMime, accountData.login, accountData.password);
-            if (null == data) {
-                syncResult.stats.numIoExceptions++;
+
+            // upload file
+            String url = NGWUtil.getFileUploadUrl(accountData.url);
+            String data = NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login, accountData.password);
+            if (MapUtil.isParsable(data)) {
+                log(syncResult, data);
                 return false;
             }
+
+            // get attach info
             JSONObject result = new JSONObject(data);
             if (!result.has("upload_meta")) {
                 if (Constants.DEBUG_MODE) {
-                    Log.d(
-                            Constants.TAG,
-                            "Problem sendAttachOnServer(), result has not upload_meta, result: "
-                                    + result.toString());
+                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " + result.toString());
                 }
-                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numParseExceptions++;
                 return false;
             }
 
             JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
             if (uploadMetaArray.length() == 0) {
                 if (Constants.DEBUG_MODE) {
-                    Log.d(
-                            Constants.TAG,
-                            "Problem sendAttachOnServer(), result upload_meta length() == 0");
+                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
                 }
-                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numParseExceptions++;
                 return false;
             }
-            //2. add attachment to row
+
+            // add attachment to row
             JSONObject postJsonData = new JSONObject();
             postJsonData.put("file_upload", uploadMetaArray.get(0));
             postJsonData.put("description", attach.getDescription());
-
             String postload = postJsonData.toString();
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "postload: " + postload);
             }
 
-            data = NetworkUtil.post(mContext, NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId),
-                    postload, accountData.login, accountData.password);
-            if (null == data) {
-                syncResult.stats.numIoExceptions++;
+            // update record in NGW
+            url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId);
+            data = NetworkUtil.post(url, postload, accountData.login, accountData.password);
+            if (MapUtil.isParsable(data)) {
+                log(syncResult, data);
                 return false;
             }
 
+            // set new local id for attach
             result = new JSONObject(data);
             if (!result.has(Constants.JSON_ID_KEY)) {
                 if (Constants.DEBUG_MODE) {
-                    Log.d(
-                            Constants.TAG,
-                            "Problem sendAttachOnServer(), result has not ID key, result: " + result
-                                    .toString());
+                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not ID key, result: " + result.toString());
                 }
-                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numParseExceptions++;
                 return false;
             }
 
@@ -1007,23 +992,47 @@ public class NGWVectorLayer
             setNewAttachId("" + featureId, attach, "" + newAttachId);
 
             return true;
-
-        } catch (JSONException | IOException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                String error = e.getLocalizedMessage() == null ? "addFeatureOnServer: Exception" : e.getLocalizedMessage();
-                Log.d(Constants.TAG, error);
-            }
+        } catch (IOException e) {
+            log(e, "sendAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             return false;
+        }  catch (JSONException e) {
+            log(e, "sendAttachOnServer JSONException");
+            syncResult.stats.numParseExceptions++;
+            return false;
         } catch (IllegalStateException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                String error = e.getLocalizedMessage() == null ? "addFeatureOnServer: Exception" : e.getLocalizedMessage();
-                Log.d(Constants.TAG, error);
-            }
+            log(e, "sendAttachOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
+        }
+    }
+
+
+    protected void log(SyncResult syncResult, String code) {
+        int responseCode = Integer.parseInt(code);
+        switch (responseCode) {
+            case HttpURLConnection.HTTP_UNAUTHORIZED:
+            case HttpURLConnection.HTTP_FORBIDDEN:
+                syncResult.stats.numAuthExceptions++;
+                break;
+            case 1:
+                syncResult.stats.numParseExceptions++;
+                break;
+            case 0:
+            default:
+            case HttpURLConnection.HTTP_NOT_FOUND:
+            case HttpURLConnection.HTTP_INTERNAL_ERROR:
+                syncResult.stats.numIoExceptions++;
+                break;
+        }
+    }
+
+
+    protected void log(Exception e, String tag) {
+        e.printStackTrace();
+        if (Constants.DEBUG_MODE) {
+            String error = e.getLocalizedMessage() == null ? tag + ": Exception" : e.getLocalizedMessage();
+            Log.d(Constants.TAG, error);
         }
     }
 
@@ -1427,7 +1436,7 @@ public class NGWVectorLayer
         try {
             accountData = AccountUtil.getAccountData(mContext, mAccountName);
         } catch (IllegalStateException e) {
-            e.printStackTrace();
+            log(e, "getFeatures(): account is null");
             syncResult.stats.numAuthExceptions++;
             return null;
         }
@@ -1437,16 +1446,15 @@ public class NGWVectorLayer
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             String data;
             try {
-                data = NetworkUtil.get(mContext, getFeaturesUrl(accountData), accountData.login, accountData.password);
+                data = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login, accountData.password);
             } catch (IOException e) {
-                e.printStackTrace();
-                syncResult.stats.numParseExceptions++;
+                log(e, "getFeatures(): getFeaturesUrl exception (sdk < 11)");
                 syncResult.stats.numIoExceptions++;
                 return null;
             }
 
-            if (null == data) {
-                syncResult.stats.numIoExceptions++;
+            if (MapUtil.isParsable(data)) {
+                log(syncResult, data);
                 return null;
             }
 
@@ -1468,7 +1476,7 @@ public class NGWVectorLayer
                     results.put(0, NGWUtil.jsonToFeatures(featuresJSONArray, getFields(), mCRS, null));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                log(e, "getFeatures(): JSON exception (sdk < 11)");
                 syncResult.stats.numParseExceptions++;
                 return null;
             }
@@ -1519,15 +1527,15 @@ public class NGWVectorLayer
 
                 urlConnection.disconnect();
             } catch (MalformedURLException e) {
-                e.printStackTrace();
-                syncResult.stats.numParseExceptions++;
+                log(e, "getFeatures(): MalformedURLException");
+                syncResult.stats.numIoExceptions++;
                 return null;
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                log(e, "getFeatures(): FileNotFoundException");
                 syncResult.stats.numIoExceptions++;
                 return null;
             } catch (IOException e) {
-                e.printStackTrace();
+                log(e, "getFeatures(): IOException");
                 syncResult.stats.numParseExceptions++;
                 return null;
             } catch (OutOfMemoryError e) {
@@ -1535,7 +1543,7 @@ public class NGWVectorLayer
                 syncResult.stats.numIoExceptions++;
                 return null;
             } catch (IllegalStateException | NumberFormatException e) {
-                e.printStackTrace();
+                log(e, "getFeatures(): IllegalStateException | NumberFormatException");
                 syncResult.stats.numParseExceptions++;
                 return null;
             }
@@ -1564,6 +1572,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
             return false;
         }
         Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
@@ -1581,17 +1590,20 @@ public class NGWVectorLayer
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
             if (cursor.moveToFirst()) {
+                // feature to string
                 String payload = cursorToJson(cursor);
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
                 }
 
-                String data = NetworkUtil.post(mContext, NGWUtil.getFeaturesUrl(accountData.url, mRemoteId), payload, accountData.login, accountData.password);
-                if (null == data) {
-                    syncResult.stats.numIoExceptions++;
+                // post to NGW
+                String data = NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId), payload, accountData.login, accountData.password);
+                if (MapUtil.isParsable(data)) {
+                    log(syncResult, data);
                     return false;
                 }
-                //set new id from server! {"id": 24}
+
+                //set new id from server // like: {"id": 24}
                 JSONObject result = new JSONObject(data);
                 if (result.has(Constants.JSON_ID_KEY)) {
                     long id = result.getLong(Constants.JSON_ID_KEY);
@@ -1599,19 +1611,26 @@ public class NGWVectorLayer
                 }
 
                 return true;
-
             } else {
                 Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
                 return true; //just remove buggy data
             }
 
-        } catch (Exception e) {
-//        } catch (SQLiteConstraintException | ClassNotFoundException | JSONException | IOException e) {
-            if (Constants.DEBUG_MODE) {
-                String error = e.getLocalizedMessage() == null ? "addFeatureOnServer: Exception" : e.getLocalizedMessage();
-                Log.d(Constants.TAG, error);
-                e.printStackTrace();
-            }
+        } catch (JSONException e) {
+            log(e, "addFeatureOnServer JSONException");
+            syncResult.stats.numParseExceptions++;
+            return false;
+        } catch (IOException | ClassNotFoundException e) {
+            log(e, "addFeatureOnServer IOException | ClassNotFoundException");
+            syncResult.stats.numIoExceptions++;
+            return false;
+        } catch (SQLiteConstraintException e) {
+            log(e, "addFeatureOnServer SQLiteConstraintException");
+            syncResult.stats.numConflictDetectedExceptions++;
+            return false;
+        } catch (IllegalStateException e) {
+            log(e, "addFeatureOnServer IllegalStateException");
+            syncResult.stats.numAuthExceptions++;
             return false;
         } finally {
             cursor.close();
@@ -1624,6 +1643,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -1639,17 +1659,11 @@ public class NGWVectorLayer
 
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-            }
+            log(e, "deleteFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
-            e.printStackTrace();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-            }
+            log(e, "deleteFeatureOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
         }
@@ -1662,11 +1676,15 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
             return false;
         }
+
+        // get uri for feature
         Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
+        // get it's cursor
         Cursor cursor = query(uri, null, null, null, null, null);
         if (null == cursor) {
             if (Constants.DEBUG_MODE) {
@@ -1679,14 +1697,17 @@ public class NGWVectorLayer
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
             if (cursor.moveToFirst()) {
+                // get payload from cursor
                 String payload = cursorToJson(cursor);
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
                 }
-                String data = NetworkUtil.put(mContext, NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId), payload,
-                        accountData.login, accountData.password);
-                if (null == data) {
-                    syncResult.stats.numIoExceptions++;
+
+                // change on server
+                String url = NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId);
+                String data = NetworkUtil.put(url, payload, accountData.login, accountData.password);
+                if (MapUtil.isParsable(data)) {
+                    log(syncResult, data);
                     return false;
                 }
 
@@ -1695,12 +1716,17 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, "changeFeatureOnServer(), empty cursor for uri: " + uri);
                 return true; //just remove buggy data
             }
-        } catch (Exception e) {
-//        } catch (JSONException | ClassNotFoundException | IOException e) {
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, e.getLocalizedMessage());
-                e.printStackTrace();
-            }
+        } catch (IllegalStateException e) {
+            log(e, "changeFeatureOnServer IllegalStateException");
+            syncResult.stats.numAuthExceptions++;
+            return false;
+        } catch (IOException | ClassNotFoundException e) {
+            log(e, "changeFeatureOnServer IOException");
+            syncResult.stats.numIoExceptions++;
+            return false;
+        } catch (JSONException e) {
+            log(e, "changeFeatureOnServer JSONException");
+            syncResult.stats.numParseExceptions++;
             return false;
         } finally {
             cursor.close();

@@ -166,22 +166,21 @@ public class NGWUtil
         Pair<Integer, Integer> ver = new Pair<>(-1, -1);
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, account);
-            ver = NGWUtil.getNgwVersion(context, accountData.url, accountData.login, accountData.password);
-        } catch (IOException | NGException | JSONException | NumberFormatException ignored) { }
+            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+        } catch (IOException | JSONException | NumberFormatException ignored) { }
 
         return ver;
     }
 
 
     public static Pair<Integer, Integer> getNgwVersion(
-            Context context,
             String url,
             String login,
             String password)
-            throws IOException, NGException, JSONException, NumberFormatException
+            throws IOException, JSONException, NumberFormatException
     {
-        String verData = NetworkUtil.get(context, NGWUtil.getNgwVersionUrl(url), login, password);
-        if (null != verData) {
+        String verData = NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password);
+        if (!MapUtil.isParsable(verData)) {
             JSONObject verJSONObject = new JSONObject(verData);
             String fullVer = verJSONObject.getString("nextgisweb");
             String[] verParts = fullVer.split("\\.");
@@ -712,7 +711,6 @@ public class NGWUtil
 
 
     public static boolean signUp(
-            Context context,
             String server,
             String login,
             String password,
@@ -732,8 +730,8 @@ public class NGWUtil
             payload.put(JSON_DISPLAY_NAME, displayName == null ? login : displayName);
             payload.put(JSON_DESCRIPTION, description);
 
-            String result = NetworkUtil.post(context, server, payload.toString(), null, null);
-            return result != null && new JSONObject(result).has(JSON_ID_KEY);
+            String result = NetworkUtil.post(server, payload.toString(), null, null);
+            return !MapUtil.isParsable(result) && new JSONObject(result).has(JSON_ID_KEY);
         } catch (JSONException | IOException e) {
             e.printStackTrace();
         }
@@ -747,7 +745,7 @@ public class NGWUtil
             connection.loadChildren();
         } else if (resource instanceof ResourceGroup) {
             ResourceGroup resourceGroup = (ResourceGroup) resource;
-            resourceGroup.loadChildren(context);
+            resourceGroup.loadChildren();
         }
 
         for (int i = 0; i < resource.getChildrenCount(); ++i) {
@@ -789,8 +787,8 @@ public class NGWUtil
 
     public static String createNewLayer(Connection connection, VectorLayer layer) {
         String result = null;
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(layer.getContext(), connection.getName());
         try {
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(layer.getContext(), connection.getName());
             JSONObject payload = new JSONObject();
             JSONObject resource = new JSONObject();
             resource.put(JSON_CLS_KEY, JSON_VECTOR_LAYER_KEY);
@@ -816,9 +814,11 @@ public class NGWUtil
             vectorLayer.put(JSON_FIELDS_KEY, fields);
 
             payload.put(JSON_VECTOR_LAYER_KEY, vectorLayer);
-            result = NetworkUtil.post(layer.getContext(), getBaseUrl(accountData.url), payload.toString(), accountData.login, accountData.password);
+            result = NetworkUtil.post(getBaseUrl(accountData.url), payload.toString(), accountData.login, accountData.password);
         } catch (IOException | JSONException e) {
             e.printStackTrace();
+        } catch (IllegalStateException e) {
+            result = "401";
         }
 
         return result;

@@ -25,7 +25,7 @@
     <string name="app_name">Map Library</string>
     <string name="error_crs_unsupported">Unsupported spatial reference</string>
     <string name="error_empty_dataset">Dataset is empty</string>
-    <string name="error_network_unavailable">The network is unavailable</string>
+    <string name="error_network_unavailable">Network is unavailable</string>
     <string name="error_download_data">Download data failed</string>
     <string name="N">N</string>
     <string name="S">S</string>
@@ -72,9 +72,14 @@
     <string name="sync_canceled">Sync canceled</string>
     <string name="sync_error">Sync error</string>
     <string name="sync_finished">Sync finished</string>
+    <string name="error_auth">Account authentication problem</string>
+    <string name="sync_error_parse">NextGIS Web server error</string>
+    <string name="sync_error_conflict">Conflicts found</string>
     <string name="text">Text</string>
     <string name="error_connect_failed">Connect failed</string>
+    <string name="error_401">Authorization required</string>
     <string name="error_403">Forbidden</string>
     <string name="error_404">Resource not found</string>
     <string name="error_500">Internal server error</string>
+    <string name="sync_error_io">Unexpected error</string>
 </resources>

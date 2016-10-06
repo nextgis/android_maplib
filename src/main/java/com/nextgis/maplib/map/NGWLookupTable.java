@@ -33,6 +33,7 @@ import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -232,9 +233,9 @@ public class NGWLookupTable extends Table
         }
 
         Log.d(Constants.TAG, "download layer " + getName());
-        String data = NetworkUtil.get(mContext, NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
-        if (null == data) {
-            throw new NGException(getContext().getString(R.string.error_download_data));
+        String data = NetworkUtil.get(NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
+        if (MapUtil.isParsable(data)) {
+            throw new NGException(NetworkUtil.getError(mContext, data));
         }
         JSONObject geoJSONObject = new JSONObject(data);
         JSONObject lookupTable = geoJSONObject.getJSONObject("lookup_table");

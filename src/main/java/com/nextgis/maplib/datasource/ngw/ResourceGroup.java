@@ -23,12 +23,11 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
-import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.NGException;
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONArray;
@@ -67,19 +66,19 @@ public class ResourceGroup
     }
 
 
-    public void loadChildren(Context mContext)
+    public void loadChildren()
     {
         if (mChildrenLoaded) {
             return;
         }
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            String sResponse = NetworkUtil.get(mContext, sURL, mConnection.getLogin(), mConnection.getPassword());
-            if(null == sResponse)
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            if(MapUtil.isParsable(sResponse))
                 return;
             JSONArray children = new JSONArray(sResponse);
             for (int i = 0; i < children.length(); i++) {
-                addResource(mContext, children.getJSONObject(i));
+                addResource(children.getJSONObject(i));
             }
             mChildrenLoaded = true;
         } catch (IOException | JSONException e) {
@@ -88,7 +87,7 @@ public class ResourceGroup
     }
 
 
-    protected void addResource(Context context, JSONObject data)
+    protected void addResource(JSONObject data)
     {
         int type = getType(data);
         Resource resource = null;
@@ -103,7 +102,7 @@ public class ResourceGroup
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
-                layer.fillStyles(context);
+                layer.fillStyles();
                 resource = layer;
                 break;
             case Connection.NGWResourceTypeWMSClient:
@@ -119,7 +118,7 @@ public class ResourceGroup
 
         if (null != resource) {
             resource.setParent(this);
-            resource.fillPermissions(context);
+            resource.fillPermissions();
             mChildren.add(resource);
         }
     }
