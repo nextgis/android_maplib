@@ -785,7 +785,7 @@ public class NGWUtil
         return bIsFill;
     }
 
-    public static String createNewLayer(Connection connection, VectorLayer layer) {
+    public static String createNewLayer(Connection connection, VectorLayer layer, long parentId) {
         String result = null;
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(layer.getContext(), connection.getName());
@@ -793,7 +793,7 @@ public class NGWUtil
             JSONObject resource = new JSONObject();
             resource.put(JSON_CLS_KEY, JSON_VECTOR_LAYER_KEY);
             JSONObject id = new JSONObject();
-            id.put(JSON_ID_KEY, 0);
+            id.put(JSON_ID_KEY, parentId);
             resource.put(JSON_PARENT_KEY, id);
             resource.put(JSON_DISPLAY_NAME, layer.getName());
             payload.put(JSON_RESOURCE_KEY, resource);
