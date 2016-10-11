@@ -62,39 +62,38 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import static com.nextgis.maplib.util.Constants.JSON_CLS_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_DATATYPE_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_DESCRIPTION;
 import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
-import static com.nextgis.maplib.util.Constants.JSON_FIELDS_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_GEOMETRY_TYPE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_KEYNAME;
-import static com.nextgis.maplib.util.Constants.JSON_PARENT_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_PASSWORD;
 import static com.nextgis.maplib.util.Constants.JSON_RESOURCE_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_SRS_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_VECTOR_LAYER_KEY;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class NGWUtil
 {
-    public static String NGWKEY_ID            = "id";
-    public static String NGWKEY_GEOM          = "geom";
-    public static String NGWKEY_FIELDS        = "fields";
-    public static String NGWKEY_SRS           = "srs";
-    public static String NGWKEY_EXTENSIONS    = "extensions";
-    public static String NGWKEY_NAME          = "name";
-    public static String NGWKEY_MIME          = "mime_type";
-    public static String NGWKEY_DESCRIPTION   = "description";
-    public static String NGWKEY_YEAR          = "year";
-    public static String NGWKEY_MONTH         = "month";
-    public static String NGWKEY_DAY           = "day";
-    public static String NGWKEY_HOUR          = "hour";
-    public static String NGWKEY_MINUTE        = "minute";
-    public static String NGWKEY_SECOND        = "second";
-    public static String NGWKEY_FEATURE_COUNT = "total_count";
+    public static String NGWKEY_ID              = "id";
+    public static String NGWKEY_GEOM            = "geom";
+    public static String NGWKEY_FIELDS          = "fields";
+    public static String NGWKEY_SRS             = "srs";
+    public static String NGWKEY_EXTENSIONS      = "extensions";
+    public static String NGWKEY_NAME            = "name";
+    public static String NGWKEY_MIME            = "mime_type";
+    public static String NGWKEY_DESCRIPTION     = "description";
+    public static String NGWKEY_DISPLAY_NAME    = JSON_DISPLAY_NAME;
+    public static String NGWKEY_YEAR            = "year";
+    public static String NGWKEY_MONTH           = "month";
+    public static String NGWKEY_DAY             = "day";
+    public static String NGWKEY_HOUR            = "hour";
+    public static String NGWKEY_MINUTE          = "minute";
+    public static String NGWKEY_SECOND          = "second";
+    public static String NGWKEY_FEATURE_COUNT   = "total_count";
+    public static String NGWKEY_KEYNAME         = "keyname";
+    public static String NGWKEY_PASSWORD        = "password";
+    public static String NGWKEY_CLS             = "cls";
+    public static String NGWKEY_VECTOR_LAYER    = "vector_layer";
+    public static String NGWKEY_RESOURCE_GROUP  = "resource_group";
+    public static String NGWKEY_PARENT          = "parent";
+    public static String NGWKEY_GEOMETRY_TYPE   = "geometry_type";
+    public static String NGWKEY_DATATYPE        = "datatype";
 
 
     /**
@@ -725,10 +724,10 @@ public class NGWUtil
 
         JSONObject payload = new JSONObject();
         try {
-            payload.put(JSON_KEYNAME, login);
-            payload.put(JSON_PASSWORD, password);
-            payload.put(JSON_DISPLAY_NAME, displayName == null ? login : displayName);
-            payload.put(JSON_DESCRIPTION, description);
+            payload.put(NGWKEY_KEYNAME, login);
+            payload.put(NGWKEY_PASSWORD, password);
+            payload.put(NGWKEY_DISPLAY_NAME, displayName == null ? login : displayName);
+            payload.put(NGWKEY_DESCRIPTION, description);
 
             String result = NetworkUtil.post(server, payload.toString(), null, null);
             return !MapUtil.isParsable(result) && new JSONObject(result).has(JSON_ID_KEY);
@@ -785,42 +784,71 @@ public class NGWUtil
         return bIsFill;
     }
 
-    public static String createNewLayer(Connection connection, VectorLayer layer, long parentId) {
-        String result = null;
+    public static String createNewResource(Context context, Connection connection, JSONObject json) {
+        String result;
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(layer.getContext(), connection.getName());
-            JSONObject payload = new JSONObject();
+            AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, connection.getName());
+            result = NetworkUtil.post(getBaseUrl(accountData.url), json.toString(), accountData.login, accountData.password);
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = "500";
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            result = "401";
+        }
+
+        return result;
+    }
+
+    public static String createNewGroup(Context context, Connection connection, long parentId, String name) {
+        JSONObject payload = new JSONObject();
+        try {
             JSONObject resource = new JSONObject();
-            resource.put(JSON_CLS_KEY, JSON_VECTOR_LAYER_KEY);
+            resource.put(NGWKEY_CLS, NGWKEY_RESOURCE_GROUP);
             JSONObject id = new JSONObject();
             id.put(JSON_ID_KEY, parentId);
-            resource.put(JSON_PARENT_KEY, id);
+            resource.put(NGWKEY_PARENT, id);
+            resource.put(NGWKEY_DISPLAY_NAME, name);
+            payload.put(JSON_RESOURCE_KEY, resource);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return "500";
+        }
+
+        return createNewResource(context, connection, payload);
+    }
+
+    public static String createNewLayer(Connection connection, VectorLayer layer, long parentId) {
+        JSONObject payload = new JSONObject();
+        try {
+            JSONObject resource = new JSONObject();
+            resource.put(NGWKEY_CLS, NGWKEY_VECTOR_LAYER);
+            JSONObject id = new JSONObject();
+            id.put(JSON_ID_KEY, parentId);
+            resource.put(NGWKEY_PARENT, id);
             resource.put(JSON_DISPLAY_NAME, layer.getName());
             payload.put(JSON_RESOURCE_KEY, resource);
 
             JSONObject vectorLayer = new JSONObject();
             JSONObject srs = new JSONObject();
             srs.put(JSON_ID_KEY, GeoConstants.CRS_WEB_MERCATOR);
-            vectorLayer.put(JSON_SRS_KEY, srs);
-            vectorLayer.put(JSON_GEOMETRY_TYPE_KEY, GeoGeometryFactory.typeToString(layer.getGeometryType()));
+            vectorLayer.put(NGWKEY_SRS, srs);
+            vectorLayer.put(NGWKEY_GEOMETRY_TYPE, GeoGeometryFactory.typeToString(layer.getGeometryType()));
             JSONArray fields = new JSONArray();
             for (Field field : layer.getFields()) {
                 JSONObject current = new JSONObject();
-                current.put(JSON_KEYNAME, field.getName());
-                current.put(JSON_DISPLAY_NAME, field.getAlias());
-                current.put(JSON_DATATYPE_KEY, LayerUtil.typeToString(field.getType()));
+                current.put(NGWKEY_KEYNAME, field.getName());
+                current.put(NGWKEY_DISPLAY_NAME, field.getAlias());
+                current.put(NGWKEY_DATATYPE, LayerUtil.typeToString(field.getType()));
                 fields.put(current);
             }
-            vectorLayer.put(JSON_FIELDS_KEY, fields);
-
-            payload.put(JSON_VECTOR_LAYER_KEY, vectorLayer);
-            result = NetworkUtil.post(getBaseUrl(accountData.url), payload.toString(), accountData.login, accountData.password);
-        } catch (IOException | JSONException e) {
+            vectorLayer.put(NGWKEY_FIELDS, fields);
+            payload.put(NGWKEY_VECTOR_LAYER, vectorLayer);
+        } catch (JSONException e) {
             e.printStackTrace();
-        } catch (IllegalStateException e) {
-            result = "401";
+            return "500";
         }
 
-        return result;
+        return createNewResource(layer.getContext(), connection, payload);
     }
 }

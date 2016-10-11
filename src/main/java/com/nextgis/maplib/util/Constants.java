@@ -128,18 +128,8 @@ public interface Constants
     String JSON_CHANGES_KEY       = "changes";
     String JSON_VALUE_KEY         = "value";
     String JSON_SIZE_KEY          = "size";
-    String JSON_KEYNAME           = "keyname";
     String JSON_DISPLAY_NAME      = "display_name";
-    String JSON_PASSWORD          = "password";
-    String JSON_DESCRIPTION       = "description";
-    String JSON_CLS_KEY           = "cls";
-    String JSON_VECTOR_LAYER_KEY  = "vector_layer";
-    String JSON_PARENT_KEY        = "parent";
     String JSON_RESOURCE_KEY      = "resource";
-    String JSON_SRS_KEY           = "srs";
-    String JSON_GEOMETRY_TYPE_KEY = "geometry_type";
-    String JSON_FIELDS_KEY        = "fields";
-    String JSON_DATATYPE_KEY      = "datatype";
     String JSON_MESSAGE_KEY       = "message";
 
     /**

@@ -260,4 +260,8 @@ public class ResourceGroup
     {
         return mChildrenLoaded;
     }
+
+    public void setLoadChildren(boolean loadChildren) {
+        mChildrenLoaded = loadChildren;
+    }
 }
