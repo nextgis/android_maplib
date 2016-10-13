@@ -35,6 +35,7 @@ import android.content.SharedPreferences;
 import android.content.SyncResult;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -117,9 +118,7 @@ public class SyncAdapter
     {
         Log.d(TAG, "onPerformSync");
 
-        MapContentProviderHelper mapContentProviderHelper =
-                (MapContentProviderHelper) MapBase.getInstance();
-
+        MapContentProviderHelper mapContentProviderHelper =(MapContentProviderHelper) MapBase.getInstance();
         getContext().sendBroadcast(new Intent(SYNC_START));
 
         mVersions = new HashMap<>();
@@ -136,13 +135,10 @@ public class SyncAdapter
         }
 
         final String accountNameHash = "_" + account.name.hashCode();
-        SharedPreferences settings = getContext().getSharedPreferences(
-                Constants.PREFERENCES, Context.MODE_PRIVATE | Constants.MODE_MULTI_PROCESS);
+        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES, Constants.MODE_MULTI_PROCESS);
         SharedPreferences.Editor editor = settings.edit();
-        editor.putLong(
-                SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP + accountNameHash, System.currentTimeMillis());
-        editor.putLong(
-                SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
+        editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP + accountNameHash, System.currentTimeMillis());
+        editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
         editor.commit();
 
         mError = "";
@@ -165,7 +161,8 @@ public class SyncAdapter
         }
 
         Intent finish = new Intent(SYNC_FINISH);
-        finish.putExtra(EXCEPTION, mError);
+        if (!TextUtils.isEmpty(mError))
+            finish.putExtra(EXCEPTION, mError);
         getContext().sendBroadcast(finish);
     }
 
