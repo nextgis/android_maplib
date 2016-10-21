@@ -44,8 +44,8 @@ public class NGWTrackLayer extends NGWVectorLayer {
     }
 
     @Override
-    public void createFeature(Feature feature) throws SQLiteException {
-
+    public long createFeature(Feature feature) throws SQLiteException {
+        return Constants.NOT_FOUND;
     }
 
     @Override

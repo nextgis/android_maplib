@@ -518,11 +518,11 @@ public class VectorLayer
     }
 
 
-    public void createFeature(Feature feature)
+    public long createFeature(Feature feature)
             throws SQLiteException
     {
         if (null == feature.getGeometry() || !checkGeometryType(feature)) {
-            return;
+            return NOT_FOUND;
         }
 
         if (!mCacheLoaded) {
@@ -532,7 +532,7 @@ public class VectorLayer
         // check if such id already used
         // maybe was added previous session
         if (mCache.getItem(feature.getId()) != null) {
-            return;
+            return NOT_FOUND;
         }
 
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
@@ -549,6 +549,8 @@ public class VectorLayer
             cacheGeometryEnvelope(rowId, feature.getGeometry());
             save();
         }
+
+        return rowId;
     }
 
 
