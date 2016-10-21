@@ -257,20 +257,12 @@ public class NGWVectorLayer
             mNgwVersionMinor = jsonObject.getInt(JSON_NGW_VERSION_MINOR_KEY);
         }
 
-        setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
+        setAccountName(jsonObject.optString(JSON_ACCOUNT_KEY));
 
-        mRemoteId = jsonObject.getLong(Constants.JSON_ID_KEY);
-        if (jsonObject.has(JSON_SYNC_TYPE_KEY)) {
-            mSyncType = jsonObject.getInt(JSON_SYNC_TYPE_KEY);
-        }
-
-        if (jsonObject.has(JSON_NGWLAYER_TYPE_KEY)) {
-            mNGWLayerType = jsonObject.getInt(JSON_NGWLAYER_TYPE_KEY);
-        }
-
-        if (jsonObject.has(JSON_SERVERWHERE_KEY)) {
-            mServerWhere = jsonObject.getString(JSON_SERVERWHERE_KEY);
-        }
+        mRemoteId = jsonObject.optLong(Constants.JSON_ID_KEY);
+        mSyncType = jsonObject.optInt(JSON_SYNC_TYPE_KEY, Constants.SYNC_NONE);
+        mNGWLayerType = jsonObject.optInt(JSON_NGWLAYER_TYPE_KEY, Constants.LAYERTYPE_NGW_VECTOR);
+        mServerWhere = jsonObject.optString(JSON_SERVERWHERE_KEY);
     }
 
 
