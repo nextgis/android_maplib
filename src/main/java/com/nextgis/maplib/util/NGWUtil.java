@@ -166,7 +166,7 @@ public class NGWUtil
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, account);
             ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
-        } catch (IOException | JSONException | NumberFormatException ignored) { }
+        } catch (IOException | JSONException | NumberFormatException | IllegalStateException ignored) { }
 
         return ver;
     }
@@ -295,7 +295,7 @@ public class NGWUtil
      *
      * @return URL to base resource
      */
-    public static String getBaseUrl(String server) {
+    private static String getBaseUrl(String server) {
         if (!server.startsWith("http"))
             server = "http://" + server;
 
@@ -448,10 +448,7 @@ public class NGWUtil
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWFeatureFields(
-            Feature feature,
-            JsonReader reader,
-            List<Field> fields)
+    private static void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields)
             throws IOException, IllegalStateException, NumberFormatException
     {
         reader.beginObject();
@@ -498,10 +495,7 @@ public class NGWUtil
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWDate(
-            Feature feature,
-            JsonReader reader,
-            String fieldName)
+    private static void readNGWDate(Feature feature, JsonReader reader, String fieldName)
             throws IOException
     {
         reader.beginObject();
@@ -542,9 +536,7 @@ public class NGWUtil
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWFeatureAttachments(
-            Feature feature,
-            JsonReader reader)
+    private static void readNGWFeatureAttachments(Feature feature, JsonReader reader)
             throws IOException
     {
         //add extensions
@@ -567,9 +559,7 @@ public class NGWUtil
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    protected static void readNGWFeatureAttachment(
-            Feature feature,
-            JsonReader reader)
+    private static void readNGWFeatureAttachment(Feature feature, JsonReader reader)
             throws IOException
     {
         reader.beginObject();
