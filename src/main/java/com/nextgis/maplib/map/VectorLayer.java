@@ -117,7 +117,6 @@ import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
 import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
 import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
-import static com.nextgis.maplib.util.Constants.SYNC_ALL;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_PARAMETER_NOT_SYNC;
@@ -3139,7 +3138,7 @@ public class VectorLayer
         return mIsLocked;
     }
 
-    public void toNGW(Long id, String account, Pair<Integer, Integer> ver) {
+    public void toNGW(Long id, String account, int syncType, Pair<Integer, Integer> ver) {
         if (id != null && id != NOT_FOUND) {
             mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
             try {
@@ -3151,6 +3150,7 @@ public class VectorLayer
 
                 rootConfig.put(NGWVectorLayer.JSON_ACCOUNT_KEY, account);
                 rootConfig.put(Constants.JSON_ID_KEY, id);
+                rootConfig.put(NGWVectorLayer.JSON_SYNC_TYPE_KEY, syncType);
                 rootConfig.put(NGWVectorLayer.JSON_NGWLAYER_TYPE_KEY, Connection.NGWResourceTypeVectorLayer);
                 FileUtil.writeToFile(getFileName(), rootConfig.toString());
                 MapBase map = MapDrawable.getInstance();
@@ -3172,7 +3172,6 @@ public class VectorLayer
         protected Void doInBackground(Void... params) {
             try {
                 FeatureChanges.initialize(mLayer.getChangeTableName());
-                mLayer.setSyncType(SYNC_ALL);
                 Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, mLayer.getAccountName());
                 mLayer.sync(mAuthority, ver, new SyncResult());
             } catch (Exception ignored) { }
