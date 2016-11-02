@@ -137,14 +137,13 @@ public class LayerWithStyles
                 JSONObject styleObject = children.getJSONObject(i);
                 JSONObject JSONResource = styleObject.getJSONObject("resource");
 
-                String type = JSONResource.getString("cls");
-                switch (type) {
-                    case "mapserver_style":
-                    case "qgis_style":
-                    case "qgis_vector_style":
+                JSONArray interfaces = JSONResource.getJSONArray("interfaces");
+                for (int j = 0; j < interfaces.length(); j++) {
+                    if (interfaces.getString(j).equals("IRenderableStyle")) {
                         long remoteId = JSONResource.getLong("id");
                         mStyles.add(remoteId);
                         break;
+                    }
                 }
             }
         } catch (IOException | JSONException e) {
@@ -167,20 +166,15 @@ public class LayerWithStyles
         if (mStyles != null && mStyles.size() > 0)
             return mStyles.get(i);
 
-        return null;
+        return mRemoteId;
     }
 
 
     public String getTMSUrl(int styleNo)
     {
-        Long id = null;
-
-        if (getType() == Connection.NGWResourceTypeRasterLayer ||
-                getType() == Connection.NGWResourceTypePostgisLayer ||
-                getType() == Connection.NGWResourceTypeWMSClient)
-            id = mRemoteId;
-
-        if (getType() == Connection.NGWResourceTypeVectorLayer)
+        Long id = mRemoteId;
+        if (getType() == Connection.NGWResourceTypePostgisLayer || getType() == Connection.NGWResourceTypeWMSClient ||
+                getType() == Connection.NGWResourceTypeRasterLayer || getType() == Connection.NGWResourceTypeVectorLayer)
             id = getStyleId(styleNo);
 
         return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{id});
