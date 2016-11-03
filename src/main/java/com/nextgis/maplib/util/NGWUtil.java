@@ -211,10 +211,7 @@ public class NGWUtil
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/resource/" + remoteId + "/geojson/";
+        return getResourceUrl(server, remoteId) + "/geojson/";
     }
 
 
@@ -320,10 +317,7 @@ public class NGWUtil
             long remoteId,
             long featureId)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/api/resource/" + remoteId + "/feature/" + featureId;
+        return getFeaturesUrl(server, remoteId) + featureId;
     }
 
 
@@ -341,10 +335,7 @@ public class NGWUtil
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/api/resource/" + remoteId + "/feature/";
+        return getResourceMetaUrl(server, remoteId) + "/feature/";
     }
 
 
@@ -353,14 +344,15 @@ public class NGWUtil
             long remoteId,
             String where)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        if (TextUtils.isEmpty(where)) {
-            return server + "/api/resource/" + remoteId + "/feature/";
-        }
+        if (TextUtils.isEmpty(where))
+            return getFeaturesUrl(server, remoteId);
 
-        return server + "/api/resource/" + remoteId + "/feature/?" + where;
+        return getFeaturesUrl(server, remoteId) + "?" + where;
+    }
+
+
+    public static String getExtent(String server, long remoteId) {
+        return getResourceMetaUrl(server, remoteId) + "/extent";
     }
 
 
@@ -384,10 +376,7 @@ public class NGWUtil
             long remoteId,
             long featureId)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/api/resource/" + remoteId + "/feature/" + featureId + "/attachment/";
+        return getFeaturesUrl(server, remoteId) + featureId + "/attachment/";
     }
 
 

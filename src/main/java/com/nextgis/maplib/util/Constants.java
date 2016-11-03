@@ -131,6 +131,11 @@ public interface Constants
     String JSON_DISPLAY_NAME      = "display_name";
     String JSON_RESOURCE_KEY      = "resource";
     String JSON_MESSAGE_KEY       = "message";
+    String JSON_EXTENT_KEY        = "extent";
+    String JSON_MIN_LAT_KEY        = "minLat";
+    String JSON_MAX_LAT_KEY        = "maxLat";
+    String JSON_MIN_LON_KEY        = "minLon";
+    String JSON_MAX_LON_KEY        = "maxLon";
 
     /**
      * database fields

@@ -23,14 +23,15 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
-import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.nextgis.maplib.datasource.Geo;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.util.MapUtil;
-import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,12 +40,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.nextgis.maplib.util.Constants.JSON_EXTENT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MAX_LAT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MAX_LON_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MIN_LAT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MIN_LON_KEY;
 
 public class LayerWithStyles
         extends Resource
 {
-    List<Long> mStyles;
-
+    private List<Long> mStyles;
+    private GeoEnvelope mExtent;
 
     protected LayerWithStyles(Parcel in)
     {
@@ -190,5 +196,26 @@ public class LayerWithStyles
     public String getResourceUrl()
     {
         return mConnection.getURL() + "/resource/" + mRemoteId;
+    }
+
+    public void fillExtent() {
+        try {
+            mExtent = new GeoEnvelope();
+            String url = NGWUtil.getExtent(mConnection.getURL(), mRemoteId);
+            String result = NetworkUtil.get(url, mConnection.getLogin(), mConnection.getPassword());
+            if (MapUtil.isParsable(result))
+                return;
+            JSONObject extent = new JSONObject(result).getJSONObject(JSON_EXTENT_KEY);
+            double x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MAX_LON_KEY));
+            double y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MAX_LAT_KEY));
+            mExtent.setMax(x, y);
+            x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MIN_LON_KEY));
+            y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MIN_LAT_KEY));
+            mExtent.setMin(x, y);
+        } catch (IOException | JSONException ignored) { }
+    }
+
+    public GeoEnvelope getExtent() {
+        return mExtent;
     }
 }

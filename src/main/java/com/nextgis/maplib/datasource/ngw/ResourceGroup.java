@@ -102,6 +102,7 @@ public class ResourceGroup
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
+                layer.fillExtent();
                 layer.fillStyles();
                 resource = layer;
                 break;

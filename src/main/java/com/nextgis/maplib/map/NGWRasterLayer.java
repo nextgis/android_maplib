@@ -26,20 +26,34 @@ package com.nextgis.maplib.map;
 import android.accounts.Account;
 import android.content.Context;
 import android.content.SyncResult;
+import android.graphics.Bitmap;
+import android.os.Handler;
 import android.util.Log;
 import android.util.Pair;
 
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
+import com.nextgis.maplib.datasource.Geo;
+import com.nextgis.maplib.datasource.GeoEnvelope;
+import com.nextgis.maplib.datasource.TileItem;
+import com.nextgis.maplib.util.AccountUtil;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.NGWUtil;
+import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
 
+import static com.nextgis.maplib.util.Constants.JSON_EXTENT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MAX_LAT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MAX_LON_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MIN_LAT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MIN_LON_KEY;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_RASTER;
-
+import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 public class NGWRasterLayer
         extends RemoteTMSLayer
@@ -49,6 +63,7 @@ public class NGWRasterLayer
     protected String mCacheLogin;
     protected String mCachePassword;
     protected long        mRemoteId;
+    protected boolean mExtentReceived = false;
 
     protected final static short  MAX_THREAD_COUNT = 8;
     protected static final String JSON_ACCOUNT_KEY = "account";
@@ -69,6 +84,12 @@ public class NGWRasterLayer
     {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
+        if (mExtents.isInit()) {
+            rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
+            rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
+            rootConfig.put(Constants.JSON_BBOX_MAXY_KEY, mExtents.getMaxY());
+            rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
+        }
         return rootConfig;
     }
 
@@ -79,6 +100,10 @@ public class NGWRasterLayer
     {
         super.fromJSON(jsonObject);
         setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
+        mExtents.setMaxX(jsonObject.optDouble(Constants.JSON_BBOX_MAXX_KEY, MERCATOR_MAX));
+        mExtents.setMinX(jsonObject.optDouble(Constants.JSON_BBOX_MINX_KEY, -MERCATOR_MAX));
+        mExtents.setMaxY(jsonObject.optDouble(Constants.JSON_BBOX_MAXY_KEY, MERCATOR_MAX));
+        mExtents.setMinY(jsonObject.optDouble(Constants.JSON_BBOX_MINY_KEY, -MERCATOR_MAX));
     }
 
 
@@ -174,5 +199,25 @@ public class NGWRasterLayer
     public void setPassword(String password)
     {
         throw new AssertionError("NGWRasterLayer.setPassword() can not be used");
+    }
+
+    @Override
+    public Bitmap getBitmap(TileItem tile) {
+        if (!mExtentReceived) {
+            try {
+                AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, getAccountName());
+                String result = NetworkUtil.get(NGWUtil.getExtent(accountData.url, mRemoteId), getLogin(), getPassword());
+                JSONObject extent = new JSONObject(result).getJSONObject(JSON_EXTENT_KEY);
+                double x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MAX_LON_KEY));
+                double y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MAX_LAT_KEY));
+                mExtents.setMax(x, y);
+                x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MIN_LON_KEY));
+                y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MIN_LAT_KEY));
+                mExtents.setMin(x, y);
+                mExtentReceived = true;
+            } catch (IOException | JSONException | IllegalStateException ignored) { }
+        }
+
+        return super.getBitmap(tile);
     }
 }
