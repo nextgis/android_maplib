@@ -26,6 +26,7 @@ package com.nextgis.maplib.util;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -129,7 +130,9 @@ public class NetworkUtil
         conn.setReadTimeout(TIMEOUT_SOCKET);
         conn.setRequestProperty("Accept", "*/*");
 
-        return android.util.Patterns.WEB_URL.matcher(targetURL).matches() ? conn : null;
+        String query = Uri.parse(targetURL).getQuery();
+        String path = targetURL.replace("?" + query, "");
+        return android.util.Patterns.WEB_URL.matcher(path).matches() ? conn : null;
     }
 
     public static String getHTTPBaseAuth(String username, String password){
