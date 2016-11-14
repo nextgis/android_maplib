@@ -114,7 +114,8 @@ public class GeometryPlainList implements IGeometryCache {
     @Override
     public void changeId(long oldFeatureId, long newFeatureId) {
         IGeometryCacheItem item = getItem(oldFeatureId);
-        item.setFeatureId(newFeatureId);
+        if (null != item)
+            item.setFeatureId(newFeatureId);
     }
 
     @Override
