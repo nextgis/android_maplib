@@ -257,7 +257,7 @@ public class VectorLayer
                     mAuthority, "*/#/" + URI_ATTACH + "/#", TYPE_ATTACH_ID); //get attach by id
         }
 
-        mCache = new GeometryRTree();
+        mCache = createNewCache();
         mIgnoreFeatures = new LinkedList<>();
 
         mLayerType = LAYERTYPE_LOCAL_VECTOR;
@@ -2551,6 +2551,9 @@ public class VectorLayer
         notifyLayerChanged();
     }
 
+    protected IGeometryCache createNewCache() {
+        return new GeometryRTree();
+    }
 
     public void rebuildCache(IProgressor progressor)
     {
@@ -2567,7 +2570,7 @@ public class VectorLayer
                 }
 
                 mIsCacheRebuilding = true;
-                mCache = new GeometryRTree();
+                mCache = createNewCache();
                 int counter = 0;
                 do {
                     GeoGeometry geometry = null;
