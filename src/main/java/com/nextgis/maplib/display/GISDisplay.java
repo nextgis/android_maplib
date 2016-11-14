@@ -785,4 +785,12 @@ public class GISDisplay
     public void setBackground(Bitmap bkBitmap) {
         mBkBitmap = bkBitmap;
     }
+
+    public void setMaxZoomLevel(float maxZoom) {
+        mMaxZoomLevel = maxZoom;
+    }
+
+    public void setMinZoomLevel(float minZoom) {
+        mMinZoomLevel = minZoom;
+    }
 }

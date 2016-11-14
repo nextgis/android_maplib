@@ -343,6 +343,25 @@ public class MapDrawable
         return 0;
     }
 
+    @Override
+    public void setMaxZoom(float maxZoom)
+    {
+        super.setMaxZoom(maxZoom);
+        if (mDisplay != null) {
+            mDisplay.setMaxZoomLevel(maxZoom);
+        }
+    }
+
+
+    @Override
+    public void setMinZoom(float minZoom)
+    {
+        super.setMinZoom(minZoom);
+        if (mDisplay != null) {
+            mDisplay.setMinZoomLevel(minZoom);
+        }
+    }
+
 
     public void clearBackground(Canvas canvas)
     {
