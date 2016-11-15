@@ -40,10 +40,7 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
-import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_VALUE_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
+import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
@@ -55,6 +52,7 @@ public class SimplePolygonStyle
     protected boolean mFill;
     protected String mField;
     protected String mText;
+    protected Float  mTextSize;
 
     protected static final String JSON_FILL_KEY = "fill";
 
@@ -80,6 +78,9 @@ public class SimplePolygonStyle
         SimplePolygonStyle obj = (SimplePolygonStyle) super.clone();
         obj.mWidth = mWidth;
         obj.mFill = mFill;
+        obj.mText = mText;
+        obj.mTextSize = mTextSize;
+        obj.mField = mField;
         return obj;
     }
 
@@ -113,19 +114,20 @@ public class SimplePolygonStyle
             GeoGeometry geoGeometry,
             GISDisplay display)
     {
-        float textSize = (float) (25 / display.getScale());
+        Float scaledTextSize =
+                (null == mTextSize) ? null : (float) (mTextSize / display.getScale());
         GeoPoint center = geoGeometry.getEnvelope().getCenter();
         switch (geoGeometry.getType()) {
             case GTPolygon:
                 drawPolygon((GeoPolygon) geoGeometry, display);
-                drawText(textSize, center, display);
+                drawText(scaledTextSize, center, display);
                 break;
             case GTMultiPolygon:
                 GeoMultiPolygon multiPolygon = (GeoMultiPolygon) geoGeometry;
 
                 for (int i = 0; i < multiPolygon.size(); i++) {
                     drawPolygon(multiPolygon.get(i), display);
-                    drawText(textSize, center, display);
+                    drawText(scaledTextSize, center, display);
                 }
                 break;
 
@@ -135,9 +137,12 @@ public class SimplePolygonStyle
     }
 
 
-    protected void drawText(float scaledSize, GeoPoint center, GISDisplay display) {
-        if (TextUtils.isEmpty(mText))
-            return;
+    protected void drawText(
+            Float scaledTextSize,
+            GeoPoint center,
+            GISDisplay display)
+    {
+        if (TextUtils.isEmpty(mText) || null == scaledTextSize) { return; }
 
         Paint textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
@@ -147,7 +152,7 @@ public class SimplePolygonStyle
         textPaint.setAlpha(128);
 
         Rect textRect = new Rect();
-        textPaint.setTextSize(scaledSize);
+        textPaint.setTextSize(scaledTextSize);
         textPaint.getTextBounds(mText, 0, mText.length(), textRect);
 
         float halfW = textRect.width() / 2;
@@ -222,6 +227,18 @@ public class SimplePolygonStyle
     }
 
 
+    public Float getTextSize()
+    {
+        return mTextSize;
+    }
+
+
+    public void setTextSize(Float textSize)
+    {
+        mTextSize = textSize;
+    }
+
+
     @Override
     public JSONObject toJSON()
             throws JSONException
@@ -230,8 +247,17 @@ public class SimplePolygonStyle
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_FILL_KEY, mFill);
         rootConfig.put(JSON_NAME_KEY, "SimplePolygonStyle");
-        rootConfig.put(JSON_DISPLAY_NAME, mText);
-        rootConfig.put(JSON_VALUE_KEY, mField);
+
+        if (null != mText) {
+            rootConfig.put(JSON_DISPLAY_NAME, mText);
+        }
+        if (null != mTextSize) {
+            rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
+        }
+        if (null != mField) {
+            rootConfig.put(JSON_VALUE_KEY, mField);
+        }
+
         return rootConfig;
     }
 
@@ -243,8 +269,16 @@ public class SimplePolygonStyle
         super.fromJSON(jsonObject);
         mWidth = (float) jsonObject.optDouble(JSON_WIDTH_KEY, 3);
         mFill = jsonObject.optBoolean(JSON_FILL_KEY, true);
-        mText = jsonObject.optString(JSON_DISPLAY_NAME);
-        mField = jsonObject.optString(JSON_VALUE_KEY);
+
+        if (jsonObject.has(JSON_DISPLAY_NAME)) {
+            mText = jsonObject.getString(JSON_DISPLAY_NAME);
+        }
+        if (jsonObject.has(JSON_TEXT_SIZE_KEY)) {
+            mTextSize = (float) jsonObject.getDouble(JSON_TEXT_SIZE_KEY);
+        }
+        if (jsonObject.has(JSON_VALUE_KEY)) {
+            mField = jsonObject.getString(JSON_VALUE_KEY);
+        }
     }
 
 

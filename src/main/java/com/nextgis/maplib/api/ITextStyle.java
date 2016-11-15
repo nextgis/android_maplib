@@ -22,8 +22,6 @@
 package com.nextgis.maplib.api;
 
 public interface ITextStyle {
-    String DEFAULT_TEXT = "Text";
-
     void setField(String field);
 
     String getField();

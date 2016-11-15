@@ -53,12 +53,12 @@ public class SimpleMarkerStyle
     public final static int MarkerEditStyleCircle = 7;
     public final static int MarkerStyleCrossedBox = 8;
 
-    protected int   mType;
-    protected float mSize;
-    protected float mWidth;
-    protected int   mOutColor;
-    protected Paint mOutPaint;
-    protected Paint mFillPaint;
+    protected int    mType;
+    protected float  mSize;
+    protected float  mWidth;
+    protected int    mOutColor;
+    protected Paint  mOutPaint;
+    protected Paint  mFillPaint;
     protected String mField;
     protected String mText;
 
@@ -88,6 +88,21 @@ public class SimpleMarkerStyle
     }
 
 
+    @Override
+    public SimpleMarkerStyle clone()
+            throws CloneNotSupportedException
+    {
+        SimpleMarkerStyle obj = (SimpleMarkerStyle) super.clone();
+        obj.mType = mType;
+        obj.mSize = mSize;
+        obj.mWidth = mWidth;
+        obj.mOutColor = mOutColor;
+        obj.mText = mText;
+        obj.mField = mField;
+        return obj;
+    }
+
+
     protected void initPaints() {
         mFillPaint = new Paint();
         mFillPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -101,21 +116,6 @@ public class SimpleMarkerStyle
     protected void setPaintsColors() {
         mFillPaint.setColor(mColor);
         mOutPaint.setColor(mOutColor);
-    }
-
-
-    @Override
-    public SimpleMarkerStyle clone()
-            throws CloneNotSupportedException
-    {
-        SimpleMarkerStyle obj = (SimpleMarkerStyle) super.clone();
-        obj.mType = mType;
-        obj.mSize = mSize;
-        obj.mWidth = mWidth;
-        obj.mOutColor = mOutColor;
-        obj.mField = mField;
-        obj.mText = mText;
-        return obj;
     }
 
 
@@ -415,8 +415,14 @@ public class SimpleMarkerStyle
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_SIZE_KEY, mSize);
         rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
-        rootConfig.put(JSON_DISPLAY_NAME, mText);
-        rootConfig.put(JSON_VALUE_KEY, mField);
+
+        if (null != mText) {
+            rootConfig.put(JSON_DISPLAY_NAME, mText);
+        }
+        if (null != mField) {
+            rootConfig.put(JSON_VALUE_KEY, mField);
+        }
+
         return rootConfig;
     }
 
@@ -430,8 +436,14 @@ public class SimpleMarkerStyle
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
         mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
-        mText = jsonObject.optString(JSON_DISPLAY_NAME);
-        mField = jsonObject.optString(JSON_VALUE_KEY);
+
+        if (jsonObject.has(JSON_DISPLAY_NAME)) {
+            mText = jsonObject.getString(JSON_DISPLAY_NAME);
+        }
+        if (jsonObject.has(JSON_VALUE_KEY)) {
+            mField = jsonObject.getString(JSON_VALUE_KEY);
+        }
+
         setPaintsColors();
     }
 }

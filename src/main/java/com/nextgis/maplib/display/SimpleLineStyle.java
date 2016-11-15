@@ -49,12 +49,12 @@ public class SimpleLineStyle
     public final static int LineStyleDash        = 2;
     public final static int LineStyleEdgingSolid = 3;
 
-    protected int   mType;
-    protected float mWidth;
-    protected int   mOutColor;
+    protected int       mType;
+    protected float     mWidth;
+    protected int       mOutColor;
     protected Paint.Cap mStrokeCap;
-    protected String mField;
-    protected String mText;
+    protected String    mField;
+    protected String    mText;
 
 
     public SimpleLineStyle()
@@ -89,6 +89,8 @@ public class SimpleLineStyle
         obj.mWidth = mWidth;
         obj.mOutColor = mOutColor;
         obj.mStrokeCap = mStrokeCap;
+        obj.mText = mText;
+        obj.mField = mField;
         return obj;
     }
 
@@ -407,8 +409,14 @@ public class SimpleLineStyle
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
-        rootConfig.put(JSON_DISPLAY_NAME, mText);
-        rootConfig.put(JSON_VALUE_KEY, mField);
+
+        if (null != mText) {
+            rootConfig.put(JSON_DISPLAY_NAME, mText);
+        }
+        if (null != mField) {
+            rootConfig.put(JSON_VALUE_KEY, mField);
+        }
+
         return rootConfig;
     }
 
@@ -421,7 +429,13 @@ public class SimpleLineStyle
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
-        mText = jsonObject.optString(JSON_DISPLAY_NAME);
-        mField = jsonObject.optString(JSON_VALUE_KEY);
+
+        if (jsonObject.has(JSON_DISPLAY_NAME)) {
+            mText = jsonObject.getString(JSON_DISPLAY_NAME);
+        }
+        if (jsonObject.has(JSON_VALUE_KEY)) {
+            mField = jsonObject.getString(JSON_VALUE_KEY);
+        }
+
     }
 }
