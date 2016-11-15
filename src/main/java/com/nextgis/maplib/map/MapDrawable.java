@@ -327,21 +327,30 @@ public class MapDrawable
     @Override
     public float getMaxZoom()
     {
-        if (mDisplay != null) {
-            return mDisplay.getMaxZoomLevel();
+        float mapMax = super.getMaxZoom();
+        if (null != mDisplay) {
+            float displayMax = mDisplay.getMaxZoomLevel();
+            if (displayMax < mapMax) {
+                return displayMax;
+            }
         }
-        return DEFAULT_MAX_ZOOM;
+        return mapMax;
     }
 
 
     @Override
     public float getMinZoom()
     {
-        if (mDisplay != null) {
-            return mDisplay.getMinZoomLevel();
+        float mapMin = super.getMinZoom();
+        if (null != mDisplay) {
+            float displayMin = mDisplay.getMinZoomLevel();
+            if (displayMin > mapMin) {
+                return displayMin;
+            }
         }
-        return 0;
+        return mapMin;
     }
+
 
     @Override
     public void setMaxZoom(float maxZoom)
