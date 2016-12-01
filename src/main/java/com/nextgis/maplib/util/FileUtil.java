@@ -63,7 +63,16 @@ public class FileUtil
             String sData)
             throws IOException
     {
-        FileOutputStream os = new FileOutputStream(filePath, false);
+        writeToFile(filePath, sData, false);
+    }
+
+    public static void writeToFile(
+            File filePath,
+            String sData,
+            boolean append)
+            throws IOException
+    {
+        FileOutputStream os = new FileOutputStream(filePath, append);
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(os);
         outputStreamWriter.write(sData);
         outputStreamWriter.close();
