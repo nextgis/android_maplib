@@ -53,6 +53,22 @@ import com.nextgis.maplib.map.MapBase;
  *     </pre>
  * </ul>
  * <p>
+ * Also add https://jitpack.io/ to build.gradle file:
+ * <pre>
+ *    <code>
+ *       allprojects {
+ *         repositories {
+ *           jcenter()
+ *           maven { url "https://jitpack.io" }
+ *         }
+ *       }
+ *       dependencies {
+ *         compile 'com.github.User:Repo:Tag'
+ *       }
+ *    </code>
+ * </pre>
+ * </p>
+ * <p>
  * Note: Expected that project was created via Android studio new project wizard.
  * </p>
  * @author Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
