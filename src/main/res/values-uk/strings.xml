@@ -53,6 +53,7 @@
     <string name="processed">Оброблено</string>
     <string name="of">з</string>
     <string name="rebuild_cache">Перебудувати кеш</string>
+    <string name="clear_cache">Очистить кэш</string>
     <string name="general">Общее</string>
     <string name="fields">Поля</string>
     <string name="style">Стиль</string>
