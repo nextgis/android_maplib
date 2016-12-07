@@ -31,7 +31,7 @@ public interface IStyleRule
     /**
      * Set style parameters
      * @param style New style
-     * @param featureId The feature identificator to set style
+     * @param featureId The feature identifier to set style
      */
     void setStyleParams(
             Style style,
