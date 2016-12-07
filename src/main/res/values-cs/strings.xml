@@ -41,6 +41,9 @@
     <string name="unit_day">den</string>
     <string name="unit_month">měsíc</string>
     <string name="unit_year">rok</string>
+    <string name="unit_billion">M</string>
+    <string name="unit_million">B</string>
+    <string name="unit_thousand">K</string>
     <string name="warning_remove_field">Pole \'%s\' je zakázané, pole bude odstraněné</string>
     <string name="warning_replace_field">Název obsahuje zakázané znaky, byl změněn na \'%s\'</string>
     <string name="tracks">Moje trasy</string>
