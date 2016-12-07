@@ -2589,7 +2589,7 @@ public class VectorLayer
                         if (progressor.isCanceled()) {
                             break;
                         }
-                        progressor.setValue(counter++);
+                        progressor.setValue(++counter);
                         progressor.setMessage(
                                 mContext.getString(R.string.process_features) + ": " + counter);
                     }
