@@ -22,8 +22,11 @@
 
 package com.nextgis.maplib.util;
 
+import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.util.DisplayMetrics;
 
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
@@ -89,7 +92,7 @@ public class MapUtil {
         return GeoConstants.MERCATOR_MAX * 2 / sizeOneDimensionPixels;
     }
 
-    public static long getTileCount(GeoEnvelope bounds, double zoom, int tmsType) {
+    public static long getTileCount(AsyncTask task, GeoEnvelope bounds, double zoom, int tmsType) {
         int decimalZoom = (int) zoom;
         int tilesInMapOneDimension = 1 << decimalZoom;
 
@@ -117,6 +120,9 @@ public class MapUtil {
         long total = 0;
         int realY;
         for (int x = begX; x < endX; x++) {
+            if (task != null && task.isCancelled())
+                return total;
+
             for (int y = begY; y < endY; y++) {
                 realY = y;
                 if (tmsType == GeoConstants.TMSTYPE_OSM)
@@ -256,4 +262,12 @@ public class MapUtil {
         return sb.toString();
     }
 
+    public static double getScaleInCm(Activity activity, int zoom) {
+        DisplayMetrics dm = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        double ppcm = dm.density * dm.xdpi / 2.54; // get px per cm on display
+        ppcm = 256 / ppcm; // get cm on display per 256 px tile
+        ppcm = 40075160 / ppcm; // get real m per cm on display
+        return ppcm / Math.pow(2, zoom); // take zoom in count
+    }
 }
