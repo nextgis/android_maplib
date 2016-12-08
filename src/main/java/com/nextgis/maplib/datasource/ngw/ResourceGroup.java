@@ -36,59 +36,63 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
+public class ResourceGroup extends Resource {
+    private List<Resource> mChildren;
+    private boolean mChildrenLoaded;
 
-public class ResourceGroup
-        extends Resource
-{
-    protected List<Resource> mChildren;
-    protected boolean        mChildrenLoaded;
-
-
-    public ResourceGroup(
-            long remoteId,
-            Connection connection)
-    {
+    ResourceGroup(long remoteId, Connection connection) {
         super(remoteId, connection);
         mChildren = new ArrayList<>();
         mChildrenLoaded = false;
     }
 
-
-    public ResourceGroup(
-            JSONObject json,
-            Connection connection)
-    {
+    private ResourceGroup(JSONObject json, Connection connection) {
         super(json, connection);
         mChildren = new ArrayList<>();
         mChildrenLoaded = false;
     }
 
-
-    public void loadChildren()
-    {
-        if (mChildrenLoaded) {
+    public void loadChildren() {
+        if (mChildrenLoaded)
             return;
-        }
+
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
             String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
-            if(MapUtil.isParsable(sResponse))
+            if (MapUtil.isParsable(sResponse))
                 return;
+
             JSONArray children = new JSONArray(sResponse);
-            for (int i = 0; i < children.length(); i++) {
+            for (int i = 0; i < children.length(); i++)
                 addResource(children.getJSONObject(i));
-            }
+
+            Collections.sort(mChildren, new Comparator<Resource>() {
+                @Override
+                public int compare(Resource left, Resource right) {
+                    return left.getName().compareToIgnoreCase(right.getName());
+                }
+            });
+
+            Collections.sort(mChildren, new Comparator<Resource>() {
+                @Override
+                public int compare(Resource left, Resource right) {
+                    int b1 = left.getType() == Connection.NGWResourceTypeResourceGroup ? 1 : 0;
+                    int b2 = right.getType() == Connection.NGWResourceTypeResourceGroup ? 1 : 0;
+                    return b2 - b1;
+                }
+            });
+
             mChildrenLoaded = true;
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
     }
 
-
-    protected void addResource(JSONObject data)
-    {
+    private void addResource(JSONObject data) {
         int type = getType(data);
         Resource resource = null;
         switch (type) {
@@ -96,9 +100,8 @@ public class ResourceGroup
                 resource = new ResourceGroup(data, mConnection);
                 break;
             case Connection.NGWResourceTypePostgisLayer:
-                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3) {
+                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
                     break;
-                }
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
@@ -124,9 +127,7 @@ public class ResourceGroup
         }
     }
 
-
-    protected int getType(JSONObject data)
-    {
+    protected int getType(JSONObject data) {
         try {
             String sType = data.getJSONObject("resource").getString("cls");
             return mConnection.getType(sType);
@@ -135,130 +136,105 @@ public class ResourceGroup
         }
     }
 
-
     @Override
-    public void writeToParcel(
-            Parcel parcel,
-            int i)
-    {
+    public void writeToParcel(Parcel parcel, int i) {
         super.writeToParcel(parcel, i);
         parcel.writeByte(mChildrenLoaded ? (byte) 1 : (byte) 0);
         parcel.writeInt(mChildren.size());
+
         for (Resource resource : mChildren) {
             parcel.writeInt(resource.getType());
             parcel.writeParcelable(resource, i);
         }
     }
 
-
     public static final Parcelable.Creator<ResourceGroup> CREATOR =
-            new Parcelable.Creator<ResourceGroup>()
-            {
-                public ResourceGroup createFromParcel(Parcel in)
-                {
+            new Parcelable.Creator<ResourceGroup>() {
+                public ResourceGroup createFromParcel(Parcel in) {
                     return new ResourceGroup(in);
                 }
 
-
-                public ResourceGroup[] newArray(int size)
-                {
+                public ResourceGroup[] newArray(int size) {
                     return new ResourceGroup[size];
                 }
             };
 
-
-    protected ResourceGroup(
-            Parcel in)
-    {
+    private ResourceGroup(Parcel in) {
         super(in);
         mChildrenLoaded = in.readByte() == 1;
-        int count = in.readInt();
         mChildren = new ArrayList<>();
+        int count = in.readInt();
+
         for (int i = 0; i < count; i++) {
             int type = in.readInt();
             switch (type) {
                 case Connection.NGWResourceTypeResourceGroup:
-                    ResourceGroup resourceGroup =
-                            in.readParcelable(ResourceGroup.class.getClassLoader());
+                    ResourceGroup resourceGroup = in.readParcelable(ResourceGroup.class.getClassLoader());
                     resourceGroup.setParent(this);
                     mChildren.add(resourceGroup);
                     break;
                 case Connection.NGWResourceTypePostgisLayer:
-                    if (mConnection.getNgwVersionMajor() < Constants.NGW_v3) {
+                    if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
                         break;
-                    }
                 case Connection.NGWResourceTypeRasterLayer:
                 case Connection.NGWResourceTypeVectorLayer:
                 case Connection.NGWResourceTypeWMSClient:
-                    LayerWithStyles layer =
-                            in.readParcelable(LayerWithStyles.class.getClassLoader());
+                    LayerWithStyles layer = in.readParcelable(LayerWithStyles.class.getClassLoader());
                     layer.setParent(this);
                     mChildren.add(layer);
                     break;
                 case Connection.NGWResourceTypeLookupTable:
-                    ResourceWithoutChildren resourceWoChildren =
-                            in.readParcelable(ResourceWithoutChildren.class.getClassLoader());
+                    ResourceWithoutChildren resourceWoChildren = in.readParcelable(ResourceWithoutChildren.class.getClassLoader());
                     resourceWoChildren.setParent(this);
                     mChildren.add(resourceWoChildren);
                 case Connection.NGWResourceTypeWebMap:
                     WebMap webMap = in.readParcelable(WebMap.class.getClassLoader());
                     webMap.setParent(this);
-                    mChildren.add(webMap); // TODO?
+                    mChildren.add(webMap);
                     break;
             }
         }
     }
 
-
     @Override
-    public void setConnection(Connection connection)
-    {
+    public void setConnection(Connection connection) {
         super.setConnection(connection);
-        for (Resource resource : mChildren) {
+        for (Resource resource : mChildren)
             resource.setConnection(connection);
-        }
     }
 
-
     @Override
-    public INGWResource getResourceById(int id)
-    {
+    public INGWResource getResourceById(int id) {
         INGWResource ret = super.getResourceById(id);
-        if (null != ret) {
+        if (null != ret)
             return ret;
-        }
+
         for (Resource resource : mChildren) {
             ret = resource.getResourceById(id);
-            if (null != ret) {
+            if (null != ret)
                 return ret;
-            }
         }
+
         return super.getResourceById(id);
     }
 
-
     @Override
-    public int getChildrenCount()
-    {
-        if (null == mChildren) {
+    public int getChildrenCount() {
+        if (null == mChildren)
             return 0;
-        }
+
         return mChildren.size();
     }
 
-
     @Override
-    public INGWResource getChild(int i)
-    {
-        if (null == mChildren) {
+    public INGWResource getChild(int i) {
+        if (null == mChildren)
             return null;
-        }
+
         return mChildren.get(i);
     }
 
-
-    public boolean isChildrenLoaded()
-    {
+    public boolean isChildrenLoaded() {
         return mChildrenLoaded;
     }
 
