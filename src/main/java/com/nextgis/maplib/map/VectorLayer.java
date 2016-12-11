@@ -638,7 +638,7 @@ public class VectorLayer
             GeoPoint pt,
             double tolerance)
     {
-        double halfTolerance = tolerance * 0.85;
+        double halfTolerance = tolerance * 0.3; // 0.85?
         GeoEnvelope envelope = new GeoEnvelope(pt.getX() - halfTolerance, pt.getX() + halfTolerance,
                 pt.getY() - halfTolerance, pt.getY() + halfTolerance);
         return !mCache.search(envelope).isEmpty();
