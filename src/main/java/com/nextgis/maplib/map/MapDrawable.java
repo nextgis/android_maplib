@@ -40,7 +40,6 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
-import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 
 
 public class MapDrawable
