@@ -81,7 +81,6 @@ import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 
-import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -2934,7 +2933,7 @@ public class VectorLayer
     }
 
 
-    public void deleteAllFeatures(@Nullable IProgressor progressor)
+    public void deleteAllFeatures(IProgressor progressor)
     {
         String layerPathName = mPath.getName();
         List<Long> ids = query(null);
