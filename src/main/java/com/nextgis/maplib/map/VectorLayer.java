@@ -81,6 +81,7 @@ import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -2928,6 +2929,35 @@ public class VectorLayer
             uri = uri.buildUpon()
                     .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
                     .build();
+            delete(uri, null, null);
+        }
+    }
+
+
+    public void deleteAllFeatures(@Nullable IProgressor progressor)
+    {
+        String layerPathName = mPath.getName();
+        List<Long> ids = query(null);
+        if (progressor != null)
+            progressor.setMax(ids.size());
+        int c = 0;
+
+        for (Long id : ids) {
+            if (progressor != null) {
+                progressor.setValue(c++);
+
+                if (progressor.isCanceled())
+                    break;
+            }
+
+            // delete all feature's attaches
+            Uri uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + id + "/" + URI_ATTACH);
+            uri = uri.buildUpon().appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString()).build();
+            delete(uri, null, null);
+
+            // delete feature
+            uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + id);
+            uri = uri.buildUpon().appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString()).build();
             delete(uri, null, null);
         }
     }
