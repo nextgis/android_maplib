@@ -72,7 +72,7 @@ public abstract class TMSLayer
     {
         super(context, path);
 
-        mCacheSizeMult = 0;
+        mCacheSizeMult = 2;
         mRenderer = new TMSRenderer(this);
     }
 

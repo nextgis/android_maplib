@@ -107,11 +107,16 @@ public class NGWVectorLayer
     protected static final String JSON_NGWLAYER_TYPE_KEY     = "ngw_layer_type";
     protected static final String JSON_SERVERWHERE_KEY       = "server_where";
     protected static final String JSON_TRACKED_KEY           = "tracked";
+    protected static final String JSON_SYNC_DIRECTION_KEY    = "sync_direction";
 
     protected static final int TYPE_CHANGES_TABLE     = 125;
     protected static final int TYPE_CHANGES_FEATURE   = 126;
     protected static final int TYPE_CHANGES_ATTACH    = 127;
     protected static final int TYPE_CHANGES_ATTACH_ID = 128;
+
+    protected static final int DIRECTION_TO = 1;
+    protected static final int DIRECTION_FROM = 2;
+    protected static final int DIRECTION_BOTH = 3;
 
     protected static boolean mIsAddedToUriMatcher = false;
 
@@ -127,7 +132,7 @@ public class NGWVectorLayer
     protected int    mCRS = GeoConstants.CRS_WEB_MERCATOR;
     protected String mServerWhere;
     protected boolean mTracked;
-    //protected int mSyncDirection; //1 - to server only, 2 - from server only, 3 - both directions
+    protected int mSyncDirection = DIRECTION_BOTH; //1 - to server only, 2 - from server only, 3 - both directions
     //check where to sync on GSM/WI-FI for data/attachments
 
 
@@ -237,6 +242,7 @@ public class NGWVectorLayer
         rootConfig.put(JSON_SERVERWHERE_KEY, mServerWhere);
         rootConfig.put(JSON_TRACKED_KEY, mTracked);
         rootConfig.put(GeoConstants.GEOJSON_CRS, mCRS);
+        rootConfig.put(JSON_SYNC_DIRECTION_KEY, mSyncDirection);
 
         return rootConfig;
     }
@@ -263,6 +269,7 @@ public class NGWVectorLayer
         mSyncType = jsonObject.optInt(JSON_SYNC_TYPE_KEY, Constants.SYNC_NONE);
         mNGWLayerType = jsonObject.optInt(JSON_NGWLAYER_TYPE_KEY, Constants.LAYERTYPE_NGW_VECTOR);
         mServerWhere = jsonObject.optString(JSON_SERVERWHERE_KEY);
+        mSyncDirection = jsonObject.optInt(JSON_SYNC_DIRECTION_KEY, DIRECTION_BOTH);
     }
 
 
@@ -645,24 +652,41 @@ public class NGWVectorLayer
         }
 
         // 2. get remote changes
-        if (!getChangesFromServer(authority, syncResult)) {
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "Get remote changes failed");
+        if (isRemoteGetAllowed())
+            if (!getChangesFromServer(authority, syncResult)) {
+                if (Constants.DEBUG_MODE) {
+                    Log.d(Constants.TAG, "Get remote changes failed");
+                }
             }
-        }
 
         if (isRemoteReadOnly()) {
             return;
         }
 
         // 3. send current changes
-        if (!sendLocalChanges(syncResult)) {
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "Set local changes failed");
+        if (isRemoteSendAllowed())
+            if (!sendLocalChanges(syncResult)) {
+                if (Constants.DEBUG_MODE) {
+                    Log.d(Constants.TAG, "Set local changes failed");
+                }
             }
-        }
     }
 
+    private boolean isRemoteGetAllowed() {
+        return (mSyncDirection & DIRECTION_FROM) != 0;
+    }
+
+    private boolean isRemoteSendAllowed() {
+        return (mSyncDirection & DIRECTION_TO) != 0;
+    }
+
+    public int getSyncDirection() {
+        return mSyncDirection;
+    }
+
+    public void setSyncDirection(int direction) {
+        mSyncDirection = direction;
+    }
 
     public boolean sendLocalChanges(SyncResult syncResult)
     {

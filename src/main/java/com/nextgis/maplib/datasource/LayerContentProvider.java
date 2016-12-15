@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.map.Layer;
+import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
 import com.nextgis.maplib.map.TrackLayer;
 import com.nextgis.maplib.map.VectorLayer;
@@ -49,19 +50,26 @@ public class LayerContentProvider
     public boolean onCreate()
     {
 //        mMap = (MapContentProviderHelper) MapBase.getInstance();
-        if (getContext() instanceof IGISApplication) {
+        /*if (getContext() instanceof IGISApplication) {
             IGISApplication app = (IGISApplication) getContext();
             mMap = (MapContentProviderHelper) app.getMap();
             return null != mMap;
         }
         return false;
+        */
+
+        return true;
     }
 
 
     protected Layer getLayerByUri(Uri uri)
     {
-        if(null == mMap)
+        if(null == mMap) {
+            mMap = (MapContentProviderHelper) MapBase.getInstance();
+        }
+        if(null == mMap) {
             return null;
+        }
         String path = uri.getPathSegments().get(0);
         return MapContentProviderHelper.getVectorLayerByPath(mMap, path);
     }

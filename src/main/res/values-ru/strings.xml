@@ -40,6 +40,9 @@
     <string name="unit_day">день</string>
     <string name="unit_month">мес</string>
     <string name="unit_year">год</string>
+    <string name="unit_billion">млн</string>
+    <string name="unit_million">млрд</string>
+    <string name="unit_thousand">тыс</string>
     <string name="warning_remove_field">Поле \'%s\' запрещено, поле удалено</string>
     <string name="warning_replace_field">Имя содержит запрещенные символы, новое имя \'%s\'</string>
     <string name="tracks">Мои треки</string>
@@ -53,6 +56,7 @@
     <string name="processed">Обработано</string>
     <string name="of">из</string>
     <string name="rebuild_cache">Перестроить кэш</string>
+    <string name="clear_cache">Очистить кэш</string>
     <string name="general">Общее</string>
     <string name="fields">Поля</string>
     <string name="style">Стиль</string>

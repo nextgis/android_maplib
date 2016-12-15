@@ -638,7 +638,7 @@ public class VectorLayer
             GeoPoint pt,
             double tolerance)
     {
-        double halfTolerance = tolerance * 0.85;
+        double halfTolerance = tolerance * 0.3; // 0.85?
         GeoEnvelope envelope = new GeoEnvelope(pt.getX() - halfTolerance, pt.getX() + halfTolerance,
                 pt.getY() - halfTolerance, pt.getY() + halfTolerance);
         return !mCache.search(envelope).isEmpty();
@@ -2589,7 +2589,7 @@ public class VectorLayer
                         if (progressor.isCanceled()) {
                             break;
                         }
-                        progressor.setValue(counter++);
+                        progressor.setValue(++counter);
                         progressor.setMessage(
                                 mContext.getString(R.string.process_features) + ": " + counter);
                     }
@@ -2928,6 +2928,35 @@ public class VectorLayer
             uri = uri.buildUpon()
                     .appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString())
                     .build();
+            delete(uri, null, null);
+        }
+    }
+
+
+    public void deleteAllFeatures(IProgressor progressor)
+    {
+        String layerPathName = mPath.getName();
+        List<Long> ids = query(null);
+        if (progressor != null)
+            progressor.setMax(ids.size());
+        int c = 0;
+
+        for (Long id : ids) {
+            if (progressor != null) {
+                progressor.setValue(c++);
+
+                if (progressor.isCanceled())
+                    break;
+            }
+
+            // delete all feature's attaches
+            Uri uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + id + "/" + URI_ATTACH);
+            uri = uri.buildUpon().appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString()).build();
+            delete(uri, null, null);
+
+            // delete feature
+            uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + id);
+            uri = uri.buildUpon().appendQueryParameter(URI_PARAMETER_TEMP, Boolean.FALSE.toString()).build();
             delete(uri, null, null);
         }
     }

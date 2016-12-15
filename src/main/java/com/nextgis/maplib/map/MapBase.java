@@ -40,7 +40,7 @@ public class MapBase
     protected int mNewId;
     protected static MapBase mInstance = null;
     protected String mFileName;
-
+    private boolean mDirty;
 
     public MapBase(
             Context context,
@@ -149,5 +149,13 @@ public class MapBase
     public void clearLayers() {
         super.clearLayers();
         mNewId = 0;
+    }
+
+    public void setDirty(boolean dirty) {
+        mDirty = dirty;
+    }
+
+    public boolean isDirty() {
+        return mDirty;
     }
 }

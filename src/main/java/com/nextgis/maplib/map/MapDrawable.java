@@ -40,7 +40,6 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
-import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 
 
 public class MapDrawable
@@ -167,22 +166,23 @@ public class MapDrawable
     }
 
     @Override
-    public void zoomToExtent(GeoEnvelope envelope){
-        if(envelope.isInit()) {
+    public void zoomToExtent(GeoEnvelope envelope) {
+        zoomToExtent(envelope, getMaxZoom());
+    }
+
+    public void zoomToExtent(GeoEnvelope envelope, float maxZoom) {
+        if (envelope.isInit()) {
             double size = GeoConstants.MERCATOR_MAX * 2;
-            double scale = Math.min(envelope.width() / size,
-                    envelope.height() / size);
+            double scale = Math.min(envelope.width() / size, envelope.height() / size);
             double zoom = MapUtil.lg(1 / scale);
             if (zoom < getMinZoom())
                 zoom = getMinZoom();
-            if (zoom > getMaxZoom())
-                zoom = getMaxZoom();
-
+            if (zoom > maxZoom)
+                zoom = maxZoom;
 
             setZoomAndCenter((float) zoom, envelope.getCenter());
         }
     }
-
 
     @Override
     public GeoPoint getMapCenter()

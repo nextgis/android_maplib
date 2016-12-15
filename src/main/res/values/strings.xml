@@ -41,6 +41,9 @@
     <string name="unit_day">day</string>
     <string name="unit_month">month</string>
     <string name="unit_year">year</string>
+    <string name="unit_billion">M</string>
+    <string name="unit_million">B</string>
+    <string name="unit_thousand">K</string>
     <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
     <string name="warning_replace_field">Name contains forbidden chars, renamed to \'%s\'</string>
     <string name="tracks">My tracks</string>
@@ -54,6 +57,7 @@
     <string name="processed">Processed</string>
     <string name="of">of</string>
     <string name="rebuild_cache">Rebuild cache</string>
+    <string name="clear_cache">Clear cache</string>
     <string name="general">General</string>
     <string name="fields">Fields</string>
     <string name="style">Style</string>

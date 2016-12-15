@@ -42,21 +42,24 @@ public class NGWWebMapLayer extends NGWRasterLayer {
         super(context, path);
         mChildren = new ArrayList<>();
         mLayerType = Constants.LAYERTYPE_NGW_WEBMAP;
-        setTileMaxAge(Constants.ONE_SECOND * 5); // TODO clear cache on updateURL()?
+        setTileMaxAge(Constants.ONE_DAY / 2); // TODO move to settings
+        mExtentReceived = true;
     }
 
     public void setChildren(List<WebMapChild> children) {
         mChildren = children;
     }
 
-    public void updateURL() {
+    public String updateURL() {
         ArrayList<Long> visibleIds = new ArrayList<>();
         for (WebMapChild child : mChildren)
             if (child.isVisible())
                 visibleIds.add(child.getId());
 
         String server = getURL().replaceAll("/api/component/render/.*", "");
-        setURL(NGWUtil.getTMSUrl(server, visibleIds.toArray(new Long[visibleIds.size()])));
+        server = NGWUtil.getTMSUrl(server, visibleIds.toArray(new Long[visibleIds.size()]));
+        setURL(server);
+        return server;
     }
 
     @Override

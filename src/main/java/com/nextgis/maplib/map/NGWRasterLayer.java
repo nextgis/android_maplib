@@ -27,14 +27,12 @@ import android.accounts.Account;
 import android.content.Context;
 import android.content.SyncResult;
 import android.graphics.Bitmap;
-import android.os.Handler;
 import android.util.Log;
 import android.util.Pair;
 
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.Geo;
-import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.AccountUtil;
 import com.nextgis.maplib.util.Constants;
@@ -48,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static com.nextgis.maplib.util.Constants.JSON_EXTENT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_MAX_LAT_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_MAX_LON_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_MIN_LAT_KEY;
@@ -55,35 +54,27 @@ import static com.nextgis.maplib.util.Constants.JSON_MIN_LON_KEY;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_RASTER;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
-public class NGWRasterLayer
-        extends RemoteTMSLayer
-        implements INGWLayer
-{
-    protected String mAccountName;
-    protected String mCacheLogin;
-    protected String mCachePassword;
-    protected long        mRemoteId;
-    protected boolean mExtentReceived = false;
+public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
+    private String mAccountName;
+    private String mCacheLogin;
+    private String mCachePassword;
+    private long mRemoteId;
+    boolean mExtentReceived = false;
 
-    protected final static short  MAX_THREAD_COUNT = 8;
-    protected static final String JSON_ACCOUNT_KEY = "account";
+    private final static short MAX_THREAD_COUNT = 8;
+    private static final String JSON_ACCOUNT_KEY = "account";
 
-
-    public NGWRasterLayer(
-            Context context,
-            File path)
-    {
+    public NGWRasterLayer(Context context, File path) {
         super(context, path);
         mLayerType = LAYERTYPE_NGW_RASTER;
     }
 
-
     @Override
-    public JSONObject toJSON()
-            throws JSONException
-    {
+    public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = super.toJSON();
+        rootConfig.put(JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
+
         if (mExtents.isInit()) {
             rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
             rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
@@ -93,33 +84,28 @@ public class NGWRasterLayer
         return rootConfig;
     }
 
-
     @Override
-    public void fromJSON(JSONObject jsonObject)
-            throws JSONException
-    {
+    public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
+        mRemoteId = jsonObject.optInt(JSON_ID_KEY);
+
         mExtents.setMaxX(jsonObject.optDouble(Constants.JSON_BBOX_MAXX_KEY, MERCATOR_MAX));
         mExtents.setMinX(jsonObject.optDouble(Constants.JSON_BBOX_MINX_KEY, -MERCATOR_MAX));
         mExtents.setMaxY(jsonObject.optDouble(Constants.JSON_BBOX_MAXY_KEY, MERCATOR_MAX));
         mExtents.setMinY(jsonObject.optDouble(Constants.JSON_BBOX_MINY_KEY, -MERCATOR_MAX));
     }
 
-
-    public void setAccountCacheData()
-    {
+    public void setAccountCacheData() {
         IGISApplication app = (IGISApplication) mContext.getApplicationContext();
         Account account = app.getAccount(mAccountName);
 
         if (null != account) {
             mCacheLogin = app.getAccountLogin(account);
             mCachePassword = app.getAccountPassword(account);
-            if(Constants.DEBUG_MODE){
+            if (Constants.DEBUG_MODE)
                 Log.d(Constants.TAG, "Get account. User: " + mCacheLogin);
-            }
-        }
-        else if(Constants.DEBUG_MODE){
+        } else if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "Failed to get account for name: " + mAccountName);
         }
     }
@@ -140,64 +126,48 @@ public class NGWRasterLayer
     }
 
     @Override
-    public long getRemoteId()
-    {
+    public long getRemoteId() {
         return mRemoteId;
     }
 
     @Override
-    public void setRemoteId(long remoteId)
-    {
+    public void setRemoteId(long remoteId) {
         mRemoteId = remoteId;
     }
 
-
     @Override
-    public int getMaxThreadCount()
-    {
+    public int getMaxThreadCount() {
         return MAX_THREAD_COUNT;
     }
 
-
     @Override
-    public String getAccountName()
-    {
+    public String getAccountName() {
         return mAccountName;
     }
 
-
     @Override
-    public void setAccountName(String accountName)
-    {
+    public void setAccountName(String accountName) {
         mAccountName = accountName;
         setAccountCacheData();
     }
 
-
     @Override
-    public String getLogin()
-    {
+    public String getLogin() {
         return mCacheLogin;
     }
 
-
     @Override
-    public void setLogin(String login)
-    {
+    public void setLogin(String login) {
         throw new AssertionError("NGWRasterLayer.setLogin() can not be used");
     }
 
-
     @Override
-    public String getPassword()
-    {
+    public String getPassword() {
         return mCachePassword;
     }
 
-
     @Override
-    public void setPassword(String password)
-    {
+    public void setPassword(String password) {
         throw new AssertionError("NGWRasterLayer.setPassword() can not be used");
     }
 
@@ -218,6 +188,10 @@ public class NGWRasterLayer
             } catch (IOException | JSONException | IllegalStateException ignored) { }
         }
 
-        return super.getBitmap(tile);
+        if (mExtents.isInit())
+            if (mExtents.intersects(tile.getEnvelope()))
+                return super.getBitmap(tile);
+
+        return null;
     }
 }

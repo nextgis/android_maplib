@@ -41,6 +41,9 @@
     <string name="unit_day">den</string>
     <string name="unit_month">měsíc</string>
     <string name="unit_year">rok</string>
+    <string name="unit_billion">M</string>
+    <string name="unit_million">B</string>
+    <string name="unit_thousand">K</string>
     <string name="warning_remove_field">Pole \'%s\' je zakázané, pole bude odstraněné</string>
     <string name="warning_replace_field">Název obsahuje zakázané znaky, byl změněn na \'%s\'</string>
     <string name="tracks">Moje trasy</string>
@@ -54,6 +57,7 @@
     <string name="processed">Zpracované</string>
     <string name="of">z</string>
     <string name="rebuild_cache">Obnovit mezipaměť</string>
+    <string name="clear_cache">Clear cache</string>
     <string name="general">Obecné</string>
     <string name="fields">Pole</string>
     <string name="style">Styl</string>
