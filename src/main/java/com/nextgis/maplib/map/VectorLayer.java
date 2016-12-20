@@ -3187,25 +3187,27 @@ public class VectorLayer
                 FileUtil.writeToFile(getFileName(), rootConfig.toString());
                 MapBase map = MapDrawable.getInstance();
                 map.load();
-                new Sync(mAuthority, (NGWVectorLayer) map.getLayerById(getId())).execute();
+                new Sync().execute();
             } catch (IOException | JSONException ignored) { }
         }
     }
 
     class Sync extends AsyncTask<Void, Void, Void> {
-        protected NGWVectorLayer mLayer;
-        protected String mAuthority;
-
-        public Sync(String authority, NGWVectorLayer layer) {
-            mAuthority = authority;
-            mLayer = layer;
-        }
-
         protected Void doInBackground(Void... params) {
             try {
-                FeatureChanges.initialize(mLayer.getChangeTableName());
-                Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, mLayer.getAccountName());
-                mLayer.sync(mAuthority, ver, new SyncResult());
+                NGWVectorLayer layer = (NGWVectorLayer) MapDrawable.getInstance().getLayerByPathName(getPath().getName());
+                FeatureChanges.initialize(layer.getChangeTableName());
+                List<Long> ids = query(null);
+                for (Long id : ids) {
+                    Feature feature = getFeatureWithAttaches(id);
+                    layer.addChange(feature.getId(), CHANGE_OPERATION_NEW);
+                    Map<String, AttachItem> attaches = feature.getAttachments();
+                    for (AttachItem attach : attaches.values())
+                        layer.addChange(feature.getId(), Long.parseLong(attach.getAttachId()), CHANGE_OPERATION_NEW);
+                }
+
+                Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, layer.getAccountName());
+                layer.sync(mAuthority, ver, new SyncResult());
             } catch (Exception ignored) { }
 
             return null;
