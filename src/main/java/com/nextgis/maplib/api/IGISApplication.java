@@ -159,4 +159,9 @@ public interface IGISApplication
      * Show settings Activity or nothing
      */
     void showSettings(String setting);
+
+    /**
+     * Send target event to analytics
+     */
+    void sendEvent(String category, String action, String label);
 }
