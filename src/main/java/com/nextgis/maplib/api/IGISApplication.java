@@ -164,4 +164,9 @@ public interface IGISApplication
      * Send target event to analytics
      */
     void sendEvent(String category, String action, String label);
+
+    /**
+     * Send screen hit to analytics
+     */
+    void sendScreen(String name);
 }
