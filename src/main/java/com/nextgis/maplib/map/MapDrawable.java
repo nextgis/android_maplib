@@ -160,6 +160,7 @@ public class MapDrawable
                 newZoom = mDisplay.getMaxZoomLevel();
             }
 
+            newZoom = Math.round(newZoom);
             mDisplay.setZoomAndCenter(newZoom, center);
             onExtentChanged((int) newZoom, center);
         }
