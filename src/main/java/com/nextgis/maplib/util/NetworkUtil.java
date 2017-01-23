@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -370,6 +370,8 @@ public class NetworkUtil
 
         int code = Integer.parseInt(responseCode);
         switch (code) {
+            case -401:
+                return context.getString(R.string.error_auth);
             case -1:
                 return context.getString(R.string.error_network_unavailable);
             case 0:
