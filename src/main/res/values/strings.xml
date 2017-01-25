@@ -5,7 +5,7 @@
   ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2012-2017 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -22,7 +22,6 @@
   -->
 
 <resources>
-    <string name="app_name">Map Library</string>
     <string name="error_crs_unsupported">Unsupported spatial reference</string>
     <string name="error_empty_dataset">Dataset is empty</string>
     <string name="error_network_unavailable">Network is unavailable</string>
