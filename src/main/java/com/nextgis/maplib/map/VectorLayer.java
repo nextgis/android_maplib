@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -2081,7 +2081,7 @@ public class VectorLayer
     public List<Field> getFields()
     {
         if (null == mFields) {
-            return null;
+            return new ArrayList<>();
         }
         return new LinkedList<>(mFields.values());
     }
