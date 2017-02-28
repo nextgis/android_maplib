@@ -1,0 +1,88 @@
+<!--
+  ~ Project:  NextGIS Mobile
+  ~ Purpose:  Mobile GIS for Android.
+  ~ Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+  ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
+  ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
+  ~ ******************************************************************************
+  ~ Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Lesser Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Lesser Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Lesser Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="error_crs_unsupported">Unsupported spatial reference</string>
+    <string name="error_empty_dataset">Dataset is empty</string>
+    <string name="error_network_unavailable">Network is unavailable</string>
+    <string name="error_download_data">Download data failed</string>
+    <string name="N">N</string>
+    <string name="S">S</string>
+    <string name="E">E</string>
+    <string name="W">W</string>
+    <string name="unit_meter">m</string>
+    <string name="unit_square_meter">m²</string>
+    <string name="unit_kilometer">km</string>
+    <string name="unit_square_kilometer">km²</string>
+    <string name="unit_second">s</string>
+    <string name="unit_min">min</string>
+    <string name="unit_hour">h</string>
+    <string name="unit_day">day</string>
+    <string name="unit_month">month</string>
+    <string name="unit_year">year</string>
+    <string name="unit_billion">M</string>
+    <string name="unit_million">B</string>
+    <string name="unit_thousand">K</string>
+    <string name="warning_remove_field">The field \'%s\' is forbidden, field is removed</string>
+    <string name="warning_replace_field">Name contains forbidden chars, renamed to \'%s\'</string>
+    <string name="tracks">My tracks</string>
+    <string name="create_features">Create features</string>
+    <string name="parse_features">Parse features</string>
+    <string name="message_loading">Loading…</string>
+    <string name="error_layer_create">Create layer failed</string>
+    <string name="start_fill_layer">Processing data for…</string>
+    <string name="message_opening">Opening…</string>
+    <string name="process_features">Processed features</string>
+    <string name="processed">Processed</string>
+    <string name="of">of</string>
+    <string name="rebuild_cache">Rebuild cache</string>
+    <string name="clear_cache">Clear cache</string>
+    <string name="general">General</string>
+    <string name="fields">Fields</string>
+    <string name="style">Style</string>
+    <string name="cache">Cache</string>
+    <string name="field_name">Field name</string>
+    <string name="field_type">Field type</string>
+    <string name="field_type_string">String</string>
+    <string name="field_type_int">Integer</string>
+    <string name="field_type_real">Real</string>
+    <string name="field_type_datetime">Date &amp; Time</string>
+    <string name="field_type_date">Date</string>
+    <string name="field_type_time">Time</string>
+    <string name="synchronization">Synchronization</string>
+    <string name="sync_started">Sync started</string>
+    <string name="sync_progress">Sync in progress</string>
+    <string name="sync_canceled">Sync canceled</string>
+    <string name="sync_error">Sync error</string>
+    <string name="sync_finished">Sync finished</string>
+    <string name="error_auth">Account authentication problem</string>
+    <string name="sync_error_parse">NextGIS Web server error</string>
+    <string name="sync_error_conflict">Conflicts found</string>
+    <string name="text">Text</string>
+    <string name="error_connect_failed">Connect failed</string>
+    <string name="error_401">Authorization required</string>
+    <string name="error_403">Forbidden</string>
+    <string name="error_404">Resource not found</string>
+    <string name="error_500">Internal server error</string>
+    <string name="sync_error_io">Unexpected error</string>
+</resources>
