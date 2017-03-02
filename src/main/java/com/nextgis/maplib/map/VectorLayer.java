@@ -2078,6 +2078,11 @@ public class VectorLayer
     }
 
 
+    public boolean isFieldsInitialized() {
+        return mFields != null;
+    }
+
+
     public List<Field> getFields()
     {
         if (null == mFields) {
