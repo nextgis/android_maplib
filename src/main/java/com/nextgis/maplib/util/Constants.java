@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -181,10 +181,12 @@ public interface Constants
     /**
      * File type
      */
-    int FILETYPE_FOLDER  = 1 << 0;
-    int FILETYPE_ZIP     = 1 << 1;
-    int FILETYPE_GEOJSON = 1 << 2;
-    int FILETYPE_FB      = 1 << 3;
+    int FILETYPE_PARENT  = 1 << 0;
+    int FILETYPE_FOLDER  = 1 << 1;
+    int FILETYPE_ZIP     = 1 << 2;
+    int FILETYPE_GEOJSON = 1 << 3;
+    int FILETYPE_FB      = 1 << 4;
+    int FILETYPE_UNKNOWN = 1 << 31;
 
     /**
      * time constants
