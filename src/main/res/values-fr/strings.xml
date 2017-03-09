@@ -24,7 +24,7 @@
 <resources>
     <string name="error_crs_unsupported">Référence spatiale non supportée</string>
     <string name="error_empty_dataset">Le jeu de donnée est vide</string>
-    <string name="error_network_unavailable">Le réseau n'est pas disponible</string>
+    <string name="error_network_unavailable">Le réseau n\'est pas disponible</string>
     <string name="error_download_data">Le télécharement des données a échoué</string>
     <string name="N">N</string>
     <string name="S">S</string>
@@ -75,7 +75,7 @@
     <string name="sync_canceled">Synchronisation annulé</string>
     <string name="sync_error">Erreur de synchronisation</string>
     <string name="sync_finished">Synchronisation terminé</string>
-    <string name="error_auth">Problème d'authentification sur le compte</string>
+    <string name="error_auth">Problème d\'authentification sur le compte</string>
     <string name="sync_error_parse">Erreur du serveur NextGIS Web</string>
     <string name="sync_error_conflict">Conflits identifiés</string>
     <string name="text">Texte</string>
