@@ -200,7 +200,7 @@ public class SyncAdapter
         final AccountManager accountManager = AccountManager.get(context);
         Log.d(TAG, "SyncAdapter: AccountManager.get(" + context + ")");
 
-        for (Account account : accountManager.getAccountsByType(Constants.NGW_ACCOUNT_TYPE)) {
+        for (Account account : accountManager.getAccountsByType(application.getAccountsType())) {
             ContentResolver.addPeriodicSync(account, application.getAuthority(), extras, pollFrequency);
         }
     }
