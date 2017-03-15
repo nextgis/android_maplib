@@ -365,7 +365,7 @@ public class NGWVectorLayer
 
         // get layer description
         JSONObject geoJSONObject;
-        String data = NetworkUtil.get(getResourceMetaUrl(accountData), accountData.login, accountData.password);
+        String data = NetworkUtil.get(getResourceMetaUrl(accountData), accountData.login, accountData.password, false);
         try {
             geoJSONObject = new JSONObject(data);
         } catch (JSONException e) {
@@ -407,7 +407,7 @@ public class NGWVectorLayer
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             //get layer data
-            data = NetworkUtil.get(sURL, accountData.login, accountData.password);
+            data = NetworkUtil.get(sURL, accountData.login, accountData.password, false);
             if (MapUtil.isParsable(data)) {
                 throw new NGException(NetworkUtil.getError(mContext, data));
             }
@@ -868,7 +868,7 @@ public class NGWVectorLayer
             putData.put("description", attach.getDescription());
 
             String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId;
-            String data = NetworkUtil.put(url, putData.toString(), accountData.login, accountData.password);
+            String data = NetworkUtil.put(url, putData.toString(), accountData.login, accountData.password, false);
 
             if (MapUtil.isParsable(data)) {
                 log(syncResult, data);
@@ -905,10 +905,11 @@ public class NGWVectorLayer
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
-            if (!NetworkUtil.delete(
+            String data = NetworkUtil.delete(
                     NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId)
-                            + attachId, accountData.login, accountData.password)) {
+                            + attachId, accountData.login, accountData.password, false);
 
+            if (MapUtil.isParsable(data)) {
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -952,7 +953,7 @@ public class NGWVectorLayer
 
             // upload file
             String url = NGWUtil.getFileUploadUrl(accountData.url);
-            String data = NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login, accountData.password);
+            String data = NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login, accountData.password, false);
             if (MapUtil.isParsable(data)) {
                 log(syncResult, data);
                 return false;
@@ -988,7 +989,7 @@ public class NGWVectorLayer
 
             // update record in NGW
             url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId);
-            data = NetworkUtil.post(url, postload, accountData.login, accountData.password);
+            data = NetworkUtil.post(url, postload, accountData.login, accountData.password, false);
             if (MapUtil.isParsable(data)) {
                 log(syncResult, data);
                 return false;
@@ -1462,7 +1463,7 @@ public class NGWVectorLayer
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             String data;
             try {
-                data = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login, accountData.password);
+                data = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login, accountData.password, false);
             } catch (IOException e) {
                 log(e, "getFeatures(): getFeaturesUrl exception (sdk < 11)");
                 syncResult.stats.numIoExceptions++;
@@ -1613,7 +1614,7 @@ public class NGWVectorLayer
                 }
 
                 // post to NGW
-                String data = NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId), payload, accountData.login, accountData.password);
+                String data = NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId), payload, accountData.login, accountData.password, false);
                 if (MapUtil.isParsable(data)) {
                     log(syncResult, data);
                     return false;
@@ -1666,9 +1667,11 @@ public class NGWVectorLayer
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
-            if (!NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
-                    accountData.login, accountData.password)) {
+            String data =
+                    NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
+                            accountData.login, accountData.password, false);
 
+            if (MapUtil.isParsable(data)) {
                 syncResult.stats.numIoExceptions++;
                 return false;
             }
@@ -1721,7 +1724,7 @@ public class NGWVectorLayer
 
                 // change on server
                 String url = NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId);
-                String data = NetworkUtil.put(url, payload, accountData.login, accountData.password);
+                String data = NetworkUtil.put(url, payload, accountData.login, accountData.password, false);
                 if (MapUtil.isParsable(data)) {
                     log(syncResult, data);
                     return false;

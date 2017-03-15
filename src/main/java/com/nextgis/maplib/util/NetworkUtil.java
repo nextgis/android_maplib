@@ -189,7 +189,8 @@ public class NetworkUtil
     public static String get(
             String targetURL,
             String username,
-            String password)
+            String password,
+            boolean readErrorResponseBody)
             throws IOException {
         final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
         if (null == conn) {
@@ -202,7 +203,10 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " + responseCode);
-            return responseCode + "";
+            if (readErrorResponseBody)
+                return responseToString(conn.getErrorStream());
+            else
+                return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
@@ -213,7 +217,8 @@ public class NetworkUtil
             String targetURL,
             String payload,
             String username,
-            String password)
+            String password,
+            boolean readErrorResponseBody)
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
@@ -238,34 +243,41 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " + responseCode);
-            return responseCode + "";
+            if (readErrorResponseBody)
+                return responseToString(conn.getErrorStream());
+            else
+                return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
     }
 
 
-    public static boolean delete(
+    public static String delete(
             String targetURL,
             String username,
-            String password)
+            String password,
+            boolean readErrorResponseBody)
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("DELETE", targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return false;
+            return "0";
         }
 
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " + responseCode);
-            return false;
+            if (readErrorResponseBody)
+                return responseToString(conn.getErrorStream());
+            else
+                return responseCode + "";
         }
 
-        return true;
+        return responseToString(conn.getInputStream());
     }
 
 
@@ -273,7 +285,8 @@ public class NetworkUtil
             String targetURL,
             String payload,
             String username,
-            String password)
+            String password,
+            boolean readErrorResponseBody)
             throws IOException
     {
         final HttpURLConnection conn = getHttpConnection("PUT", targetURL, username, password);
@@ -298,7 +311,10 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " + responseCode);
-            return responseCode + "";
+            if (readErrorResponseBody)
+                return responseToString(conn.getErrorStream());
+            else
+                return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());
@@ -311,7 +327,8 @@ public class NetworkUtil
             File file,
             String fileMime,
             String username,
-            String password)
+            String password,
+            boolean readErrorResponseBody)
             throws IOException
     {
         final String lineEnd = "\r\n";
@@ -358,7 +375,10 @@ public class NetworkUtil
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " + responseCode);
-            return responseCode + "";
+            if (readErrorResponseBody)
+                return responseToString(conn.getErrorStream());
+            else
+                return responseCode + "";
         }
 
         return responseToString(conn.getInputStream());

@@ -131,7 +131,7 @@ public class LayerWithStyles
         mStyles = new ArrayList<>();
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
             if(MapUtil.isParsable(sResponse))
                 return;
             JSONArray children = new JSONArray(sResponse);
@@ -202,7 +202,7 @@ public class LayerWithStyles
         try {
             mExtent = new GeoEnvelope();
             String url = NGWUtil.getExtent(mConnection.getURL(), mRemoteId);
-            String result = NetworkUtil.get(url, mConnection.getLogin(), mConnection.getPassword());
+            String result = NetworkUtil.get(url, mConnection.getLogin(), mConnection.getPassword(), false);
             if (MapUtil.isParsable(result))
                 return;
             JSONObject extent = new JSONObject(result).getJSONObject(JSON_EXTENT_KEY);

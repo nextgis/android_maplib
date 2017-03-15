@@ -178,7 +178,7 @@ public class Connection
         mSupportedTypes.clear();
         try {
             String sURL = mURL + "/resource/schema";
-            String sResponse = NetworkUtil.get(sURL, getLogin(), getPassword());
+            String sResponse = NetworkUtil.get(sURL, getLogin(), getPassword(), false);
             if(MapUtil.isParsable(sResponse))
                 return;
             JSONObject schema = new JSONObject(sResponse);

@@ -178,7 +178,7 @@ public class NGWUtil
             String password)
             throws IOException, JSONException, NumberFormatException
     {
-        String verData = NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password);
+        String verData = NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password, false);
         if (!MapUtil.isParsable(verData)) {
             JSONObject verJSONObject = new JSONObject(verData);
             String fullVer = verJSONObject.getString("nextgisweb");
@@ -708,7 +708,7 @@ public class NGWUtil
             payload.put(NGWKEY_DISPLAY_NAME, displayName == null ? login : displayName);
             payload.put(NGWKEY_DESCRIPTION, description);
 
-            String result = NetworkUtil.post(server, payload.toString(), null, null);
+            String result = NetworkUtil.post(server, payload.toString(), null, null, false);
             return !MapUtil.isParsable(result) && new JSONObject(result).has(JSON_ID_KEY);
         } catch (JSONException | IOException e) {
             e.printStackTrace();
@@ -767,7 +767,7 @@ public class NGWUtil
         String result;
         try {
             AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, connection.getName());
-            result = NetworkUtil.post(getBaseUrl(accountData.url), json.toString(), accountData.login, accountData.password);
+            result = NetworkUtil.post(getBaseUrl(accountData.url), json.toString(), accountData.login, accountData.password, false);
         } catch (IOException e) {
             e.printStackTrace();
             result = "500";

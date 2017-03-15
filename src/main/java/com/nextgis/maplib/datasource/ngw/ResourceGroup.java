@@ -62,7 +62,7 @@ public class ResourceGroup extends Resource {
 
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword());
+            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
             if (MapUtil.isParsable(sResponse))
                 return;
 

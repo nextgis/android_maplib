@@ -176,7 +176,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
             String result = "";
             try {
                 AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, getAccountName());
-                result = NetworkUtil.get(NGWUtil.getExtent(accountData.url, mRemoteId), getLogin(), getPassword());
+                result = NetworkUtil.get(NGWUtil.getExtent(accountData.url, mRemoteId), getLogin(), getPassword(), false);
                 JSONObject extent = new JSONObject(result).getJSONObject(JSON_EXTENT_KEY);
                 double x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MAX_LON_KEY));
                 double y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MAX_LAT_KEY));

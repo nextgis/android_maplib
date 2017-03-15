@@ -233,7 +233,7 @@ public class NGWLookupTable extends Table
         }
 
         Log.d(Constants.TAG, "download layer " + getName());
-        String data = NetworkUtil.get(NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword);
+        String data = NetworkUtil.get(NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword, false);
         if (MapUtil.isParsable(data)) {
             throw new NGException(NetworkUtil.getError(mContext, data));
         }
