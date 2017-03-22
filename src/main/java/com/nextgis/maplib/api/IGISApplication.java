@@ -27,6 +27,7 @@ import android.accounts.Account;
 import android.accounts.AccountManagerFuture;
 
 import com.nextgis.maplib.location.GpsEventSource;
+import com.nextgis.maplib.map.LayerFactory;
 import com.nextgis.maplib.map.MapBase;
 
 
@@ -174,4 +175,9 @@ public interface IGISApplication
      * Get accounts authenticator type
      */
     String getAccountsType();
+
+    /**
+     * Get LayerFactory
+     */
+    LayerFactory getLayerFactory();
 }
