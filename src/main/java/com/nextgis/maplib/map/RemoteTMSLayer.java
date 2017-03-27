@@ -290,7 +290,7 @@ public class RemoteTMSLayer
     }
 
 
-    protected String getURLSubdomain()
+    public String getURLSubdomain()
     {
         String result = mURL;
 
