@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -41,10 +41,10 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ResourceGroup extends Resource {
-    private List<Resource> mChildren;
-    private boolean mChildrenLoaded;
+    protected List<Resource> mChildren;
+    protected boolean mChildrenLoaded;
 
-    ResourceGroup(long remoteId, Connection connection) {
+    public ResourceGroup(long remoteId, Connection connection) {
         super(remoteId, connection);
         mChildren = new ArrayList<>();
         mChildrenLoaded = false;
@@ -92,7 +92,7 @@ public class ResourceGroup extends Resource {
         }
     }
 
-    private void addResource(JSONObject data) {
+    protected void addResource(JSONObject data) {
         int type = getType(data);
         Resource resource = null;
         switch (type) {
