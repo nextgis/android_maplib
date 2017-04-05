@@ -437,7 +437,7 @@ public class NGWUtil
 
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private static void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields)
+    public static void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields)
             throws IOException, IllegalStateException, NumberFormatException
     {
         reader.beginObject();
