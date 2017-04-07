@@ -37,6 +37,7 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.AccountUtil;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.HttpResponse;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -173,11 +174,14 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
     @Override
     public Bitmap getBitmap(TileItem tile) {
         if (!mExtentReceived) {
-            String result = "";
+            HttpResponse result = null;
             try {
                 AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, getAccountName());
                 result = NetworkUtil.get(NGWUtil.getExtent(accountData.url, mRemoteId), getLogin(), getPassword(), false);
-                JSONObject extent = new JSONObject(result).getJSONObject(JSON_EXTENT_KEY);
+                if (!result.isOk()) {
+                    throw new IllegalStateException("");
+                }
+                JSONObject extent = new JSONObject(result.getResponseBody()).getJSONObject(JSON_EXTENT_KEY);
                 double x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MAX_LON_KEY));
                 double y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MAX_LAT_KEY));
                 mExtents.setMax(x, y);
@@ -186,7 +190,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
                 mExtents.setMin(x, y);
                 mExtentReceived = true;
             } catch (IOException | JSONException | IllegalStateException ignored) {
-                if (result.equals("404"))
+                if (result != null && result.getResponseCode() == 404)
                     mExtentReceived = true;
             }
         }

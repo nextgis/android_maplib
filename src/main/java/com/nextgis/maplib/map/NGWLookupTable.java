@@ -33,7 +33,7 @@ import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.MapUtil;
+import com.nextgis.maplib.util.HttpResponse;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -233,11 +233,13 @@ public class NGWLookupTable extends Table
         }
 
         Log.d(Constants.TAG, "download layer " + getName());
-        String data = NetworkUtil.get(NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin, mCachePassword, false);
-        if (MapUtil.isParsable(data)) {
-            throw new NGException(NetworkUtil.getError(mContext, data));
+        HttpResponse response =
+                NetworkUtil.get(NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin,
+                        mCachePassword, false);
+        if (!response.isOk()) {
+            throw new NGException(NetworkUtil.getError(mContext, response.getResponseCode()));
         }
-        JSONObject geoJSONObject = new JSONObject(data);
+        JSONObject geoJSONObject = new JSONObject(response.getResponseBody());
         JSONObject lookupTable = geoJSONObject.getJSONObject("lookup_table");
         JSONObject itemsObject = lookupTable.getJSONObject("items");
         for (Iterator<String> iter = itemsObject.keys(); iter.hasNext(); ) {

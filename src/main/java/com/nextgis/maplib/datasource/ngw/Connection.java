@@ -28,8 +28,7 @@ import android.os.Parcelable;
 
 import android.util.Pair;
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.MapUtil;
-import com.nextgis.maplib.util.NGException;
+import com.nextgis.maplib.util.HttpResponse;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -178,10 +177,10 @@ public class Connection
         mSupportedTypes.clear();
         try {
             String sURL = mURL + "/resource/schema";
-            String sResponse = NetworkUtil.get(sURL, getLogin(), getPassword(), false);
-            if(MapUtil.isParsable(sResponse))
+            HttpResponse response = NetworkUtil.get(sURL, getLogin(), getPassword(), false);
+            if (!response.isOk())
                 return;
-            JSONObject schema = new JSONObject(sResponse);
+            JSONObject schema = new JSONObject(response.getResponseBody());
             JSONObject resources = schema.getJSONObject("resources");
             if (null != resources) {
                 Iterator<String> keys = resources.keys();

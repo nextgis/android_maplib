@@ -60,6 +60,16 @@ public class NetworkUtil
     public final static int TIMEOUT_CONNECTION = 10000;
     public final static int TIMEOUT_SOCKET = 240000; // 180 sec
 
+    public final static int ERROR_AUTH                = -401;
+    public final static int ERROR_NETWORK_UNAVAILABLE = -1;
+    public final static int ERROR_CONNECT_FAILED      = 0;
+    public final static int ERROR_DOWNLOAD_DATA       = 1;
+
+    public final static String HTTP_GET    = "GET";
+    public final static String HTTP_POST   = "POST";
+    public final static String HTTP_PUT    = "PUT";
+    public final static String HTTP_DELETE = "DELETE";
+
 
     public NetworkUtil(Context context)
     {
@@ -143,17 +153,19 @@ public class NetworkUtil
         return null;
     }
 
-    protected static String responseToString(final InputStream is) throws IOException {
-        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
-        byte[] bytesReceived = "1".getBytes();
-
-        if (is != null) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            FileUtil.copyStream(is, baos, buffer, Constants.IO_BUFFER_SIZE);
-            bytesReceived = baos.toByteArray();
-            baos.close();
-            is.close();
+    protected static String responseToString(final InputStream is)
+            throws IOException
+    {
+        if (is == null) {
+            return null;
         }
+
+        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        FileUtil.copyStream(is, baos, buffer, Constants.IO_BUFFER_SIZE);
+        byte[] bytesReceived = baos.toByteArray();
+        baos.close();
+        is.close();
 
         return new String(bytesReceived);
     }
@@ -185,35 +197,58 @@ public class NetworkUtil
         outputStream.close();
     }
 
+    protected static HttpResponse getHttpResponse(
+            HttpURLConnection conn,
+            boolean readErrorResponseBody)
+            throws IOException
+    {
+        String method = conn.getRequestMethod();
+        int code = conn.getResponseCode();
+        String message = conn.getResponseMessage();
+        HttpResponse response = new HttpResponse(code, message);
 
-    public static String get(
+        if (!(code == HttpURLConnection.HTTP_OK
+                || (code == HttpURLConnection.HTTP_CREATED && method.equals(HTTP_POST)))) {
+            if (Constants.DEBUG_MODE) {
+                String url = conn.getURL().toExternalForm();
+                if ("Keep-Alive".equals(conn.getRequestProperty("Connection")))
+                    method = "postFile(), targetURL";
+                Log.d(TAG, "Problem execute " + method + ": " + url + " HTTP response: " + code);
+            }
+            if (readErrorResponseBody)
+                response.setResponseBody(responseToString(conn.getErrorStream()));
+            return response;
+        }
+
+        String body = responseToString(conn.getInputStream());
+        if (null == body) {
+            response.setResponseCode(ERROR_DOWNLOAD_DATA);
+            response.setResponseMessage(null);
+            return response;
+        }
+
+        response.setResponseBody(body);
+        response.setOk(true);
+        return response;
+    }
+
+    public static HttpResponse get(
             String targetURL,
             String username,
             String password,
             boolean readErrorResponseBody)
             throws IOException {
-        final HttpURLConnection conn = getHttpConnection("GET", targetURL, username, password);
+        final HttpURLConnection conn = getHttpConnection(HTTP_GET, targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return "0";
+            return new HttpResponse(ERROR_CONNECT_FAILED);
         }
-
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute get: " + targetURL + " HTTP response: " + responseCode);
-            if (readErrorResponseBody)
-                return responseToString(conn.getErrorStream());
-            else
-                return responseCode + "";
-        }
-
-        return responseToString(conn.getInputStream());
+        return getHttpResponse(conn, readErrorResponseBody);
     }
 
 
-    public static String post(
+    public static HttpResponse post(
             String targetURL,
             String payload,
             String username,
@@ -221,11 +256,11 @@ public class NetworkUtil
             boolean readErrorResponseBody)
             throws IOException
     {
-        final HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
+        final HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return "0";
+            return new HttpResponse(ERROR_CONNECT_FAILED);
         }
         conn.setRequestProperty("Content-type", "application/json");
         // Allow Outputs
@@ -239,49 +274,27 @@ public class NetworkUtil
         writer.close();
         os.close();
 
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute post: " + targetURL + " HTTP response: " + responseCode);
-            if (readErrorResponseBody)
-                return responseToString(conn.getErrorStream());
-            else
-                return responseCode + "";
-        }
-
-        return responseToString(conn.getInputStream());
+        return getHttpResponse(conn, readErrorResponseBody);
     }
 
-
-    public static String delete(
+    public static HttpResponse delete(
             String targetURL,
             String username,
             String password,
             boolean readErrorResponseBody)
             throws IOException
     {
-        final HttpURLConnection conn = getHttpConnection("DELETE", targetURL, username, password);
+        final HttpURLConnection conn = getHttpConnection(HTTP_DELETE, targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return "0";
+            return new HttpResponse(ERROR_CONNECT_FAILED);
         }
-
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute delete: " + targetURL + " HTTP response: " + responseCode);
-            if (readErrorResponseBody)
-                return responseToString(conn.getErrorStream());
-            else
-                return responseCode + "";
-        }
-
-        return responseToString(conn.getInputStream());
+        return getHttpResponse(conn, readErrorResponseBody);
     }
 
 
-    public static String put(
+    public static HttpResponse put(
             String targetURL,
             String payload,
             String username,
@@ -289,11 +302,11 @@ public class NetworkUtil
             boolean readErrorResponseBody)
             throws IOException
     {
-        final HttpURLConnection conn = getHttpConnection("PUT", targetURL, username, password);
+        final HttpURLConnection conn = getHttpConnection(HTTP_PUT, targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return "0";
+            return new HttpResponse(ERROR_CONNECT_FAILED);
         }
         conn.setRequestProperty("Content-type", "application/json");
         // Allow Outputs
@@ -307,21 +320,11 @@ public class NetworkUtil
         writer.close();
         os.close();
 
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute put: " + targetURL + " HTTP response: " + responseCode);
-            if (readErrorResponseBody)
-                return responseToString(conn.getErrorStream());
-            else
-                return responseCode + "";
-        }
-
-        return responseToString(conn.getInputStream());
+        return getHttpResponse(conn, readErrorResponseBody);
     }
 
 
-    public static String postFile(
+    public static HttpResponse postFile(
             String targetURL,
             String fileName,
             File file,
@@ -339,11 +342,11 @@ public class NetworkUtil
         FileInputStream fileInputStream = new FileInputStream(file);
         // open a URL connection to the Servlet
 
-        HttpURLConnection conn = getHttpConnection("POST", targetURL, username, password);
+        HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return "0";
+            return new HttpResponse(ERROR_CONNECT_FAILED);
         }
         conn.setRequestProperty("Connection", "Keep-Alive");
         conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
@@ -371,32 +374,21 @@ public class NetworkUtil
         dos.flush();
         dos.close();
 
-        int responseCode = conn.getResponseCode();
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem postFile(), targetURL: " + targetURL + " HTTP response: " + responseCode);
-            if (readErrorResponseBody)
-                return responseToString(conn.getErrorStream());
-            else
-                return responseCode + "";
-        }
-
-        return responseToString(conn.getInputStream());
+        return getHttpResponse(conn, readErrorResponseBody);
     }
 
-    public static String getError(Context context, String responseCode) {
-        if (!MapUtil.isParsable(responseCode))
-            return null;
-
-        int code = Integer.parseInt(responseCode);
-        switch (code) {
-            case -401:
+    public static String getError(
+            Context context,
+            int responseCode)
+    {
+        switch (responseCode) {
+            case ERROR_AUTH:
                 return context.getString(R.string.error_auth);
-            case -1:
+            case ERROR_NETWORK_UNAVAILABLE:
                 return context.getString(R.string.error_network_unavailable);
-            case 0:
+            case ERROR_CONNECT_FAILED:
                 return context.getString(R.string.error_connect_failed);
-            case 1:
+            case ERROR_DOWNLOAD_DATA:
                 return context.getString(R.string.error_download_data);
             case HttpURLConnection.HTTP_UNAUTHORIZED:
                 return context.getString(R.string.error_401);

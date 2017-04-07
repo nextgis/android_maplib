@@ -178,9 +178,10 @@ public class NGWUtil
             String password)
             throws IOException, JSONException, NumberFormatException
     {
-        String verData = NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password, false);
-        if (!MapUtil.isParsable(verData)) {
-            JSONObject verJSONObject = new JSONObject(verData);
+        HttpResponse response =
+                NetworkUtil.get(NGWUtil.getNgwVersionUrl(url), login, password, false);
+        if (response.isOk()) {
+            JSONObject verJSONObject = new JSONObject(response.getResponseBody());
             String fullVer = verJSONObject.getString("nextgisweb");
             String[] verParts = fullVer.split("\\.");
 
@@ -708,8 +709,9 @@ public class NGWUtil
             payload.put(NGWKEY_DISPLAY_NAME, displayName == null ? login : displayName);
             payload.put(NGWKEY_DESCRIPTION, description);
 
-            String result = NetworkUtil.post(server, payload.toString(), null, null, false);
-            return !MapUtil.isParsable(result) && new JSONObject(result).has(JSON_ID_KEY);
+            HttpResponse response =
+                    NetworkUtil.post(server, payload.toString(), null, null, false);
+            return response.isOk() && new JSONObject(response.getResponseBody()).has(JSON_ID_KEY);
         } catch (JSONException | IOException e) {
             e.printStackTrace();
         }
@@ -763,23 +765,34 @@ public class NGWUtil
         return bIsFill;
     }
 
-    public static String createNewResource(Context context, Connection connection, JSONObject json) {
-        String result;
+    public static HttpResponse createNewResource(
+            Context context,
+            Connection connection,
+            JSONObject json)
+    {
+        HttpResponse result;
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, connection.getName());
-            result = NetworkUtil.post(getBaseUrl(accountData.url), json.toString(), accountData.login, accountData.password, false);
+            AccountUtil.AccountData accountData =
+                    AccountUtil.getAccountData(context, connection.getName());
+            result = NetworkUtil.post(getBaseUrl(accountData.url), json.toString(),
+                    accountData.login, accountData.password, false);
         } catch (IOException e) {
             e.printStackTrace();
-            result = "500";
+            result = new HttpResponse(500);
         } catch (IllegalStateException e) {
             e.printStackTrace();
-            result = "401";
+            result = new HttpResponse(401);
         }
 
         return result;
     }
 
-    public static String createNewGroup(Context context, Connection connection, long parentId, String name) {
+    public static HttpResponse createNewGroup(
+            Context context,
+            Connection connection,
+            long parentId,
+            String name)
+    {
         JSONObject payload = new JSONObject();
         try {
             JSONObject resource = new JSONObject();
@@ -791,13 +804,17 @@ public class NGWUtil
             payload.put(JSON_RESOURCE_KEY, resource);
         } catch (JSONException e) {
             e.printStackTrace();
-            return "500";
+            return new HttpResponse(500);
         }
 
         return createNewResource(context, connection, payload);
     }
 
-    public static String createNewLayer(Connection connection, VectorLayer layer, long parentId) {
+    public static HttpResponse createNewLayer(
+            Connection connection,
+            VectorLayer layer,
+            long parentId)
+    {
         JSONObject payload = new JSONObject();
         try {
             JSONObject resource = new JSONObject();
@@ -812,7 +829,8 @@ public class NGWUtil
             JSONObject srs = new JSONObject();
             srs.put(JSON_ID_KEY, GeoConstants.CRS_WEB_MERCATOR);
             vectorLayer.put(NGWKEY_SRS, srs);
-            vectorLayer.put(NGWKEY_GEOMETRY_TYPE, GeoGeometryFactory.typeToString(layer.getGeometryType()));
+            vectorLayer.put(
+                    NGWKEY_GEOMETRY_TYPE, GeoGeometryFactory.typeToString(layer.getGeometryType()));
             JSONArray fields = new JSONArray();
             for (Field field : layer.getFields()) {
                 JSONObject current = new JSONObject();
@@ -825,7 +843,7 @@ public class NGWUtil
             payload.put(NGWKEY_VECTOR_LAYER, vectorLayer);
         } catch (JSONException e) {
             e.printStackTrace();
-            return "500";
+            return new HttpResponse(500);
         }
 
         return createNewResource(layer.getContext(), connection, payload);

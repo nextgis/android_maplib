@@ -23,12 +23,10 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
-import android.content.Context;
 import android.os.Parcel;
 
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.MapUtil;
-import com.nextgis.maplib.util.NGException;
+import com.nextgis.maplib.util.HttpResponse;
 import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONException;
@@ -101,10 +99,11 @@ public abstract class Resource
     {
         try {
             String sURL = mConnection.getURL() + "/api/resource/" + mRemoteId + "/permission";
-            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
-            if(MapUtil.isParsable(sResponse))
+            HttpResponse response =
+                    NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
+            if (!response.isOk())
                 return;
-            mPermissions = new JSONObject(sResponse);
+            mPermissions = new JSONObject(response.getResponseBody());
             if (!mPermissions.has(Constants.JSON_RESOURCE_KEY))
                 mPermissions = null;
         } catch (IOException | JSONException e) {

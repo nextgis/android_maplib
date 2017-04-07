@@ -27,7 +27,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.nextgis.maplib.util.Constants;
-import com.nextgis.maplib.util.MapUtil;
+import com.nextgis.maplib.util.HttpResponse;
 import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONArray;
@@ -62,11 +62,12 @@ public class ResourceGroup extends Resource {
 
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
-            if (MapUtil.isParsable(sResponse))
+            HttpResponse response =
+                    NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
+            if (!response.isOk())
                 return;
 
-            JSONArray children = new JSONArray(sResponse);
+            JSONArray children = new JSONArray(response.getResponseBody());
             for (int i = 0; i < children.length(); i++)
                 addResource(children.getJSONObject(i));
 

@@ -28,7 +28,7 @@ import android.os.Parcelable;
 
 import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.GeoEnvelope;
-import com.nextgis.maplib.util.MapUtil;
+import com.nextgis.maplib.util.HttpResponse;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -131,10 +131,11 @@ public class LayerWithStyles
         mStyles = new ArrayList<>();
         try {
             String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
-            String sResponse = NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
-            if(MapUtil.isParsable(sResponse))
+            HttpResponse response =
+                    NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
+            if (!response.isOk())
                 return;
-            JSONArray children = new JSONArray(sResponse);
+            JSONArray children = new JSONArray(response.getResponseBody());
             for (int i = 0; i < children.length(); i++) {
                 //Only store style id
                 //To get more style properties need to create style class extended from Resource
@@ -202,10 +203,12 @@ public class LayerWithStyles
         try {
             mExtent = new GeoEnvelope();
             String url = NGWUtil.getExtent(mConnection.getURL(), mRemoteId);
-            String result = NetworkUtil.get(url, mConnection.getLogin(), mConnection.getPassword(), false);
-            if (MapUtil.isParsable(result))
+            HttpResponse response =
+                    NetworkUtil.get(url, mConnection.getLogin(), mConnection.getPassword(), false);
+            if (!response.isOk())
                 return;
-            JSONObject extent = new JSONObject(result).getJSONObject(JSON_EXTENT_KEY);
+            JSONObject extent =
+                    new JSONObject(response.getResponseBody()).getJSONObject(JSON_EXTENT_KEY);
             double x = Geo.wgs84ToMercatorSphereX(extent.getDouble(JSON_MAX_LON_KEY));
             double y = Geo.wgs84ToMercatorSphereY(extent.getDouble(JSON_MAX_LAT_KEY));
             mExtent.setMax(x, y);
