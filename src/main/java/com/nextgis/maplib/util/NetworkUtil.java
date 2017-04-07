@@ -153,7 +153,7 @@ public class NetworkUtil
         return null;
     }
 
-    protected static String responseToString(final InputStream is)
+    public static String responseToString(final InputStream is)
             throws IOException
     {
         if (is == null) {
