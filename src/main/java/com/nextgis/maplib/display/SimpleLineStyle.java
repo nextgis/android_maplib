@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -20,8 +20,10 @@
  * You should have received a copy of the GNU Lesser Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package com.nextgis.maplib.display;
 
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
@@ -32,73 +34,56 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoMultiLineString;
 import com.nextgis.maplib.datasource.GeoPoint;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
 
-import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
+import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_TYPE_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_VALUE_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 
-
-public class SimpleLineStyle
-        extends Style implements ITextStyle
-{
-    public final static int LineStyleSolid       = 1;
-    public final static int LineStyleDash        = 2;
+public class SimpleLineStyle extends Style implements ITextStyle {
+    public final static int LineStyleSolid = 1;
+    public final static int LineStyleDash = 2;
     public final static int LineStyleEdgingSolid = 3;
 
-    protected int       mType;
-    protected float     mWidth;
-    protected int       mOutColor;
+    protected int mType;
+    protected float mWidth;
     protected Paint.Cap mStrokeCap;
-    protected String    mField;
-    protected String    mText;
+    protected String mField;
+    protected String mText;
 
-
-    public SimpleLineStyle()
-    {
+    public SimpleLineStyle() {
         super();
-
-
         mWidth = 3;
         mStrokeCap = Paint.Cap.BUTT;
     }
 
-
-    public SimpleLineStyle(
-            int fillColor,
-            int outColor,
-            int type)
-    {
-        super(fillColor);
+    public SimpleLineStyle(int fillColor, int outColor, int type) {
+        super(fillColor, outColor);
         mType = type;
-        mOutColor = outColor;
         mWidth = 3;
         mStrokeCap = Paint.Cap.BUTT;
     }
-
 
     @Override
-    public SimpleLineStyle clone()
-            throws CloneNotSupportedException
-    {
+    public SimpleLineStyle clone() throws CloneNotSupportedException {
         SimpleLineStyle obj = (SimpleLineStyle) super.clone();
         obj.mType = mType;
         obj.mWidth = mWidth;
-        obj.mOutColor = mOutColor;
         obj.mStrokeCap = mStrokeCap;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
     }
 
-
-    public void onDraw(
-            GeoLineString lineString,
-            GISDisplay display)
-    {
+    public void onDraw(GeoLineString lineString, GISDisplay display) {
         if (null == lineString) {
             return;
         }
@@ -121,7 +106,6 @@ public class SimpleLineStyle
 
         drawText(scaledWidth, mainPath, display);
     }
-
 
     protected void drawText(float scaledWidth, Path mainPath, GISDisplay display) {
         if (TextUtils.isEmpty(mText) || mainPath == null)
@@ -175,10 +159,9 @@ public class SimpleLineStyle
     }
 
     @Override
-    public void onDraw(
-            GeoGeometry geoGeometry,
-            GISDisplay display)
-    {
+    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
+        mColor = Color.argb(mInnerAlpha, Color.red(mColor), Color.green(mColor), Color.blue(mColor));
+        mOutColor = Color.argb(mOuterAlpha, Color.red(mOutColor), Color.green(mOutColor), Color.blue(mOutColor));
 
         switch (geoGeometry.getType()) {
             case GTLineString:
@@ -196,15 +179,9 @@ public class SimpleLineStyle
             //        "The input geometry type is not support by this style");
         }
 
-
     }
 
-
-    protected Path drawSolidLine(
-            float scaledWidth,
-            GeoLineString lineString,
-            GISDisplay display)
-    {
+    protected Path drawSolidLine(float scaledWidth, GeoLineString lineString, GISDisplay display) {
         Paint paint = new Paint();
         paint.setColor(mColor);
         paint.setAntiAlias(true);
@@ -228,12 +205,7 @@ public class SimpleLineStyle
         return path;
     }
 
-
-    protected Path drawDashLine(
-            float scaledWidth,
-            GeoLineString lineString,
-            GISDisplay display)
-    {
+    protected Path drawDashLine(float scaledWidth, GeoLineString lineString, GISDisplay display) {
         Paint paint = new Paint();
         paint.setColor(mColor);
         paint.setAntiAlias(true);
@@ -302,11 +274,7 @@ public class SimpleLineStyle
         return mainPath;
     }
 
-
-    protected Path drawSolidEdgingLine(
-            float scaledWidth, GeoLineString lineString,
-            GISDisplay display)
-    {
+    protected Path drawSolidEdgingLine(float scaledWidth, GeoLineString lineString, GISDisplay display) {
         Paint mainPaint = new Paint();
         mainPaint.setColor(mColor);
         mainPaint.setAntiAlias(true);
@@ -336,79 +304,47 @@ public class SimpleLineStyle
         return path;
     }
 
-
-    public int getType()
-    {
+    public int getType() {
         return mType;
     }
 
-
-    public void setType(int type)
-    {
+    public void setType(int type) {
         mType = type;
     }
 
-
-    public float getWidth()
-    {
+    public float getWidth() {
         return mWidth;
     }
 
-
-    public void setWidth(float width)
-    {
+    public void setWidth(float width) {
         mWidth = width;
     }
 
-
-    public int getOutColor()
-    {
-        return mOutColor;
-    }
-
-
-    public void setOutColor(int outColor)
-    {
-        mOutColor = outColor;
-    }
-
-
-    public String getField()
-    {
+    public String getField() {
         return mField;
     }
 
-
-    public void setField(String field)
-    {
+    public void setField(String field) {
         mField = field;
     }
 
-
-    public String getText()
-    {
+    public String getText() {
         return mText;
     }
 
-
-    public void setText(String text)
-    {
+    public void setText(String text) {
         if (!TextUtils.isEmpty(text))
             mText = text;
         else
             mText = null;
     }
 
-
     @Override
-    public JSONObject toJSON()
-            throws JSONException
-    {
+    public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_NAME_KEY, "SimpleLineStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
-        rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -420,15 +356,11 @@ public class SimpleLineStyle
         return rootConfig;
     }
 
-
     @Override
-    public void fromJSON(JSONObject jsonObject)
-            throws JSONException
-    {
+    public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
-        mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);
@@ -436,6 +368,5 @@ public class SimpleLineStyle
         if (jsonObject.has(JSON_VALUE_KEY)) {
             mField = jsonObject.getString(JSON_VALUE_KEY);
         }
-
     }
 }

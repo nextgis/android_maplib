@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -35,6 +35,7 @@ import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -44,37 +45,29 @@ import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
-
-public class SimplePolygonStyle
-        extends Style implements ITextStyle
-{
-    protected float   mWidth;
+public class SimplePolygonStyle extends Style implements ITextStyle {
+    protected float mWidth;
     protected boolean mFill;
     protected String mField;
     protected String mText;
-    protected Float  mTextSize;
+    protected Float mTextSize;
 
     protected static final String JSON_FILL_KEY = "fill";
 
-
-    public SimplePolygonStyle()
-    {
+    public SimplePolygonStyle() {
         super();
     }
 
-
-    public SimplePolygonStyle(int color)
-    {
-        super(color);
+    public SimplePolygonStyle(int color, int outColor) {
+        super(color, outColor);
+        mOuterAlpha = 128;
+        mInnerAlpha = 64;
         mWidth = 3;
         mFill = true;
     }
 
-
     @Override
-    public SimplePolygonStyle clone()
-            throws CloneNotSupportedException
-    {
+    public SimplePolygonStyle clone() throws CloneNotSupportedException {
         SimplePolygonStyle obj = (SimplePolygonStyle) super.clone();
         obj.mWidth = mWidth;
         obj.mFill = mFill;
@@ -84,38 +77,25 @@ public class SimplePolygonStyle
         return obj;
     }
 
-
-    public boolean isFill()
-    {
+    public boolean isFill() {
         return mFill;
     }
 
-
-    public void setFill(boolean fill)
-    {
+    public void setFill(boolean fill) {
         mFill = fill;
     }
 
-
-    public float getWidth()
-    {
+    public float getWidth() {
         return mWidth;
     }
 
-
-    public void setWidth(float width)
-    {
+    public void setWidth(float width) {
         mWidth = width;
     }
 
-
     @Override
-    public void onDraw(
-            GeoGeometry geoGeometry,
-            GISDisplay display)
-    {
-        Float scaledTextSize =
-                (null == mTextSize) ? null : (float) (mTextSize / display.getScale());
+    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
+        Float scaledTextSize = (null == mTextSize) ? null : (float) (mTextSize / display.getScale());
         GeoPoint center = geoGeometry.getEnvelope().getCenter();
         switch (geoGeometry.getType()) {
             case GTPolygon:
@@ -136,12 +116,7 @@ public class SimplePolygonStyle
         }
     }
 
-
-    protected void drawText(
-            Float scaledTextSize,
-            GeoPoint center,
-            GISDisplay display)
-    {
+    protected void drawText(Float scaledTextSize, GeoPoint center, GISDisplay display) {
         if (TextUtils.isEmpty(mText) || null == scaledTextSize) { return; }
 
         Paint textPaint = new Paint();
@@ -173,15 +148,11 @@ public class SimplePolygonStyle
         display.drawPath(textPath, textPaint);
     }
 
-
-    public void drawPolygon(
-            GeoPolygon polygon,
-            GISDisplay display)
-    {
+    public void drawPolygon(GeoPolygon polygon, GISDisplay display) {
         float scaledWidth = (float) (mWidth / display.getScale());
 
         Paint lnPaint = new Paint();
-        lnPaint.setColor(mColor);
+        lnPaint.setColor(mOutColor);
         lnPaint.setStrokeWidth(scaledWidth);
         lnPaint.setStrokeCap(Paint.Cap.ROUND);
         lnPaint.setAntiAlias(true);
@@ -189,60 +160,46 @@ public class SimplePolygonStyle
         Path polygonPath = getPath(polygon);
 
         lnPaint.setStyle(Paint.Style.STROKE);
-        lnPaint.setAlpha(128);
+        lnPaint.setAlpha(mOuterAlpha);
         display.drawPath(polygonPath, lnPaint);
 
         if (mFill) {
             lnPaint.setStyle(Paint.Style.FILL);
-            lnPaint.setAlpha(64);
+            lnPaint.setColor(mColor);
+            lnPaint.setAlpha(mInnerAlpha);
             display.drawPath(polygonPath, lnPaint);
         }
     }
 
-
-    public String getField()
-    {
+    public String getField() {
         return mField;
     }
 
-
-    public void setField(String field)
-    {
+    public void setField(String field) {
         mField = field;
     }
 
-
-    public String getText()
-    {
+    public String getText() {
         return mText;
     }
 
-
-    public void setText(String text)
-    {
+    public void setText(String text) {
         if (!TextUtils.isEmpty(text))
             mText = text;
         else
             mText = null;
     }
 
-
-    public Float getTextSize()
-    {
+    public Float getTextSize() {
         return mTextSize;
     }
 
-
-    public void setTextSize(Float textSize)
-    {
+    public void setTextSize(Float textSize) {
         mTextSize = textSize;
     }
 
-
     @Override
-    public JSONObject toJSON()
-            throws JSONException
-    {
+    public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_FILL_KEY, mFill);
@@ -261,11 +218,8 @@ public class SimplePolygonStyle
         return rootConfig;
     }
 
-
     @Override
-    public void fromJSON(JSONObject jsonObject)
-            throws JSONException
-    {
+    public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         mWidth = (float) jsonObject.optDouble(JSON_WIDTH_KEY, 3);
         mFill = jsonObject.optBoolean(JSON_FILL_KEY, true);
@@ -281,9 +235,7 @@ public class SimplePolygonStyle
         }
     }
 
-
-    protected Path getPath(GeoPolygon polygon)
-    {
+    protected Path getPath(GeoPolygon polygon) {
         List<GeoPoint> points = polygon.getOuterRing().getPoints();
         Path polygonPath = new Path();
         appendPath(polygonPath, points);
@@ -298,11 +250,7 @@ public class SimplePolygonStyle
         return polygonPath;
     }
 
-
-    protected void appendPath(
-            Path polygonPath,
-            List<GeoPoint> points)
-    {
+    protected void appendPath(Path polygonPath, List<GeoPoint> points) {
         float x0, y0;
 
         if (points.size() > 0) {

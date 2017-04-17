@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -20,6 +20,7 @@
  * You should have received a copy of the GNU Lesser Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package com.nextgis.maplib.display;
 
 import android.graphics.Color;
@@ -33,6 +34,7 @@ import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoPoint;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,68 +42,50 @@ import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 
-
-public class SimpleMarkerStyle
-        extends Style implements ITextStyle
-{
-    public final static int MarkerStylePoint      = 1;
-    public final static int MarkerStyleCircle     = 2;
-    public final static int MarkerStyleDiamond    = 3;
-    public final static int MarkerStyleCross      = 4;
-    public final static int MarkerStyleTriangle   = 5;
-    public final static int MarkerStyleBox        = 6;
+public class SimpleMarkerStyle extends Style implements ITextStyle {
+    public final static int MarkerStylePoint = 1;
+    public final static int MarkerStyleCircle = 2;
+    public final static int MarkerStyleDiamond = 3;
+    public final static int MarkerStyleCross = 4;
+    public final static int MarkerStyleTriangle = 5;
+    public final static int MarkerStyleBox = 6;
     public final static int MarkerEditStyleCircle = 7;
     public final static int MarkerStyleCrossedBox = 8;
 
-    protected int    mType;
-    protected float  mSize;
-    protected float  mWidth;
-    protected int    mOutColor;
-    protected Paint  mOutPaint;
-    protected Paint  mFillPaint;
+    protected int mType;
+    protected float mSize;
+    protected float mWidth;
+    protected Paint mOutPaint;
+    protected Paint mFillPaint;
     protected String mField;
     protected String mText;
 
-
-    public SimpleMarkerStyle()
-    {
+    public SimpleMarkerStyle() {
         super();
         initPaints();
     }
 
-
-    public SimpleMarkerStyle(
-            int fillColor,
-            int outColor,
-            float size,
-            int type)
-    {
-        super(fillColor);
+    public SimpleMarkerStyle(int fillColor, int outColor, float size, int type) {
+        super(fillColor, outColor);
 
         mType = type;
         mSize = size;
-        mOutColor = outColor;
         mWidth = 1;
 
         initPaints();
         setPaintsColors();
     }
 
-
     @Override
-    public SimpleMarkerStyle clone()
-            throws CloneNotSupportedException
-    {
+    public SimpleMarkerStyle clone() throws CloneNotSupportedException {
         SimpleMarkerStyle obj = (SimpleMarkerStyle) super.clone();
         obj.mType = mType;
         obj.mSize = mSize;
         obj.mWidth = mWidth;
-        obj.mOutColor = mOutColor;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
     }
-
 
     protected void initPaints() {
         mFillPaint = new Paint();
@@ -112,21 +96,18 @@ public class SimpleMarkerStyle
         mOutPaint.setAntiAlias(true);
     }
 
-
     protected void setPaintsColors() {
         mFillPaint.setColor(mColor);
         mOutPaint.setColor(mOutColor);
     }
 
-
-    protected void onDraw(
-            GeoPoint pt,
-            GISDisplay display)
-    {
+    protected void onDraw(GeoPoint pt, GISDisplay display) {
         if (null == pt) {
             return;
         }
 
+        mColor = Color.argb(mInnerAlpha, Color.red(mColor), Color.green(mColor), Color.blue(mColor));
+        mOutColor = Color.argb(mOuterAlpha, Color.red(mOutColor), Color.green(mOutColor), Color.blue(mOutColor));
         mFillPaint.setColor(mColor);
         mOutPaint.setColor(mOutColor);
         float scaledSize = (float) (mSize / display.getScale());
@@ -135,27 +116,21 @@ public class SimpleMarkerStyle
             case MarkerStylePoint:
                 drawPointMarker(scaledSize, pt, display);
                 break;
-
             case MarkerStyleCircle:
                 drawCircleMarker(scaledSize, width, pt, display);
                 break;
-
             case MarkerStyleDiamond:
                 drawDiamondMarker(scaledSize, width, pt, display);
                 break;
-
             case MarkerStyleCross:
                 drawCrossMarker(scaledSize, width, pt, display);
                 break;
-
             case MarkerStyleTriangle:
                 drawTriangleMarker(scaledSize, width, pt, display);
                 break;
-
             case MarkerStyleBox:
                 drawBoxMarker(scaledSize, width, pt, display);
                 break;
-
             case MarkerStyleCrossedBox:
                 drawCrossedBoxMarker(scaledSize, width, pt, display);
                 break;
@@ -163,7 +138,6 @@ public class SimpleMarkerStyle
 
         drawText(scaledSize - width, pt, display);
     }
-
 
     protected void drawText(float inner, GeoPoint pt, GISDisplay display) {
         if (TextUtils.isEmpty(mText))
@@ -203,12 +177,8 @@ public class SimpleMarkerStyle
         display.drawPath(textPath, textPaint);
     }
 
-
     @Override
-    public void onDraw(
-            GeoGeometry geoGeometry,
-            GISDisplay display)
-    {
+    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
         switch (geoGeometry.getType()) {
             case GTPoint:
                 GeoPoint pt = (GeoPoint) geoGeometry;
@@ -226,23 +196,14 @@ public class SimpleMarkerStyle
         }
     }
 
-
-    protected void drawPointMarker(
-            float scaledSize,
-            GeoPoint pt,
-            GISDisplay display)
-    {
+    protected void drawPointMarker(float scaledSize, GeoPoint pt, GISDisplay display) {
         mOutPaint.setColor(mColor);
         mOutPaint.setStrokeWidth(scaledSize);
         display.drawPoint((float) pt.getX(), (float) pt.getY(), mOutPaint);
         mOutPaint.setColor(mOutColor);
     }
 
-
-    protected void drawCircleMarker(
-            float scaledSize, float width,
-            GeoPoint pt, GISDisplay display)
-    {
+    protected void drawCircleMarker(float scaledSize, float width, GeoPoint pt, GISDisplay display) {
         if (scaledSize < 2) {
             mOutPaint.setColor(mColor);
             mOutPaint.setStrokeWidth(scaledSize);
@@ -257,11 +218,7 @@ public class SimpleMarkerStyle
         }
     }
 
-
-    protected void drawDiamondMarker(
-            float scaledSize, float width,
-            GeoPoint pt, GISDisplay display)
-    {
+    protected void drawDiamondMarker(float scaledSize, float width, GeoPoint pt, GISDisplay display) {
         Path path = new Path();
         path.moveTo((float) pt.getX() + scaledSize, (float) pt.getY());
         path.lineTo((float) pt.getX(), (float) pt.getY() + scaledSize);
@@ -272,11 +229,7 @@ public class SimpleMarkerStyle
         drawPath(width, path, display);
     }
 
-
-    protected void drawTriangleMarker(
-            float scaledSize, float width,
-            GeoPoint pt, GISDisplay display)
-    {
+    protected void drawTriangleMarker(float scaledSize, float width, GeoPoint pt, GISDisplay display) {
         Path path = new Path();
         path.moveTo((float) pt.getX() + scaledSize, (float) pt.getY() - scaledSize);
         path.lineTo((float) pt.getX(), (float) pt.getY() + scaledSize);
@@ -286,90 +239,52 @@ public class SimpleMarkerStyle
         drawPath(width, path, display);
     }
 
-
     protected void drawPath(float width, Path path, GISDisplay display) {
         display.drawPath(path, mFillPaint);
         mOutPaint.setStrokeWidth(width);
         display.drawPath(path, mOutPaint);
     }
 
-
-    protected void drawBoxMarker(
-            float scaledSize, float width,
-            GeoPoint pt, GISDisplay display)
-    {
+    protected void drawBoxMarker(float scaledSize, float width, GeoPoint pt, GISDisplay display) {
         display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mFillPaint);
         mOutPaint.setStrokeWidth(width);
         display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
     }
 
-
-    protected void drawCrossMarker(
-            float scaledSize, float width,
-            GeoPoint pt, GISDisplay display)
-    {
+    protected void drawCrossMarker(float scaledSize, float width, GeoPoint pt, GISDisplay display) {
         mOutPaint.setStrokeWidth(width);
         display.drawCross((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
     }
 
-
-    protected void drawCrossedBoxMarker(
-            float scaledSize, float width,
-            GeoPoint pt, GISDisplay display)
-    {
+    protected void drawCrossedBoxMarker(float scaledSize, float width, GeoPoint pt, GISDisplay display) {
         display.drawBox((float) pt.getX(), (float) pt.getY(), scaledSize, mFillPaint);
         mOutPaint.setStrokeWidth(width);
         display.drawCrossedBox((float) pt.getX(), (float) pt.getY(), scaledSize, mOutPaint);
     }
 
-
-    public int getType()
-    {
+    public int getType() {
         return mType;
     }
 
-
-    public void setType(int type)
-    {
+    public void setType(int type) {
         mType = type;
     }
 
-
-    public float getSize()
-    {
+    public float getSize() {
         return mSize;
     }
 
-
-    public void setSize(float size)
-    {
+    public void setSize(float size) {
         mSize = size;
     }
 
-
-    public float getWidth()
-    {
+    public float getWidth() {
         return mWidth;
     }
 
-
-    public void setWidth(float width)
-    {
+    public void setWidth(float width) {
         mWidth = width;
     }
-
-
-    public int getOutlineColor()
-    {
-        return mOutColor;
-    }
-
-
-    public void setOutlineColor(int outColor) {
-        mOutColor = outColor;
-        setPaintsColors();
-    }
-
 
     @Override
     public void setColor(int color) {
@@ -377,44 +292,32 @@ public class SimpleMarkerStyle
         setPaintsColors();
     }
 
-
-    public String getField()
-    {
+    public String getField() {
         return mField;
     }
 
-
-    public void setField(String field)
-    {
+    public void setField(String field) {
         mField = field;
     }
 
-
-    public String getText()
-    {
+    public String getText() {
         return mText;
     }
 
-
-    public void setText(String text)
-    {
+    public void setText(String text) {
         if (!TextUtils.isEmpty(text))
             mText = text;
         else
             mText = null;
     }
 
-
     @Override
-    public JSONObject toJSON()
-            throws JSONException
-    {
+    public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_NAME_KEY, "SimpleMarkerStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_SIZE_KEY, mSize);
-        rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -426,16 +329,12 @@ public class SimpleMarkerStyle
         return rootConfig;
     }
 
-
     @Override
-    public void fromJSON(JSONObject jsonObject)
-            throws JSONException
-    {
+    public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
-        mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);

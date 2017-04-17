@@ -127,6 +127,8 @@ public interface Constants
     String JSON_WIDTH_KEY         = "width";
     String JSON_COLOR_KEY         = "color";
     String JSON_OUTCOLOR_KEY      = "out_color";
+    String JSON_ALPHA_KEY         = "alpha";
+    String JSON_OUTALPHA_KEY      = "out_alpha";
     String JSON_CHANGES_KEY       = "changes";
     String JSON_VALUE_KEY         = "value";
     String JSON_SIZE_KEY          = "size";

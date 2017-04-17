@@ -3,7 +3,7 @@
  * Purpose:  Mobile GIS for Android.
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2016-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -89,7 +89,7 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
                 SimpleMarkerStyle markerStyle = (SimpleMarkerStyle) style;
                 SimpleMarkerStyle ruleStyle = (SimpleMarkerStyle) rule;
                 markerStyle.setColor(ruleStyle.getColor());
-                markerStyle.setOutlineColor(ruleStyle.getOutlineColor());
+                markerStyle.setOutColor(ruleStyle.getOutColor());
                 markerStyle.setType(ruleStyle.getType());
                 markerStyle.setSize(ruleStyle.getSize());
                 markerStyle.setWidth(ruleStyle.getWidth());

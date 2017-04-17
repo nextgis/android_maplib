@@ -721,7 +721,7 @@ public class VectorLayer
 
             case GTPolygon:
             case GTMultiPolygon:
-                return new SimplePolygonStyle(Color.MAGENTA);
+                return new SimplePolygonStyle(Color.MAGENTA, Color.MAGENTA);
 
             default:
                 throw new Exception("Unknown geometry type: " + mGeometryType);

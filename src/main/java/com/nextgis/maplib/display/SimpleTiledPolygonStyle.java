@@ -1,7 +1,31 @@
+/*
+ * Project:  NextGIS Mobile
+ * Purpose:  Mobile GIS for Android.
+ * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Author:   NikitaFeodonit, nfeodonit@yandex.com
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
+ * *****************************************************************************
+ * Copyright (c) 2015-2017 NextGIS, info@nextgis.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package com.nextgis.maplib.display;
 
 import android.graphics.Paint;
 import android.graphics.Path;
+
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoMultiLineString;
@@ -9,6 +33,7 @@ import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -18,73 +43,53 @@ import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 import static com.nextgis.maplib.util.GeoConstants.*;
 
-
 /**
  * Style to draw tiled polygons
  */
-public class SimpleTiledPolygonStyle
-        extends Style
-{
-    protected float   mWidth;
+public class SimpleTiledPolygonStyle extends Style {
+    protected float mWidth;
     protected boolean mFill;
 
     protected String JSON_FILL_KEY = "fill";
 
-
-    public SimpleTiledPolygonStyle()
-    {
+    public SimpleTiledPolygonStyle() {
         super();
     }
 
-
-    public SimpleTiledPolygonStyle(int color)
-    {
-        super(color);
+    public SimpleTiledPolygonStyle(int color, int outColor) {
+        super(color, outColor);
         mWidth = 3;
         mFill = true;
+        mOuterAlpha = 128;
+        mInnerAlpha = 64;
     }
 
-
     @Override
-    public SimpleTiledPolygonStyle clone()
-            throws CloneNotSupportedException
-    {
+    public SimpleTiledPolygonStyle clone() throws CloneNotSupportedException {
         SimpleTiledPolygonStyle obj = (SimpleTiledPolygonStyle) super.clone();
         obj.mWidth = mWidth;
         obj.mFill = mFill;
         return obj;
     }
 
-
-    public boolean isFill()
-    {
+    public boolean isFill() {
         return mFill;
     }
 
-
-    public void setFill(boolean fill)
-    {
+    public void setFill(boolean fill) {
         mFill = fill;
     }
 
-
-    public float getWidth()
-    {
+    public float getWidth() {
         return mWidth;
     }
 
-
-    public void setWidth(float width)
-    {
+    public void setWidth(float width) {
         mWidth = width;
     }
 
-
     @Override
-    public void onDraw(
-            GeoGeometry geoGeometry,
-            GISDisplay display)
-    {
+    public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
         switch (geoGeometry.getType()) {
             case GTPolygon:
                 drawPolygon((GeoPolygon) geoGeometry, display);
@@ -117,11 +122,7 @@ public class SimpleTiledPolygonStyle
         }
     }
 
-
-    public void drawPolygon(
-            GeoPolygon polygon,
-            GISDisplay display)
-    {
+    public void drawPolygon(GeoPolygon polygon, GISDisplay display) {
         Paint lnPaint = new Paint();
         lnPaint.setColor(mColor);
         lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
@@ -131,38 +132,32 @@ public class SimpleTiledPolygonStyle
         Path polygonPath = getPath(polygon);
 
         lnPaint.setStyle(Paint.Style.STROKE);
-        lnPaint.setAlpha(128);
+        lnPaint.setAlpha(mOuterAlpha);
         display.drawPath(polygonPath, lnPaint);
 
         if (mFill) {
             lnPaint.setStyle(Paint.Style.FILL);
-            lnPaint.setAlpha(64);
+            lnPaint.setAlpha(mInnerAlpha);
             lnPaint.setStrokeWidth(0);
             display.drawPath(polygonPath, lnPaint);
         }
     }
 
-
-    protected void drawPoint(
-            GeoPoint pt,
-            GISDisplay display)
-    {
+    protected void drawPoint(GeoPoint pt, GISDisplay display) {
         float radius = (float) (mWidth * 2 / display.getScale());
 
         final Paint fillPaint = new Paint();
         fillPaint.setColor(mColor);
+        fillPaint.setAlpha(mOuterAlpha);
         fillPaint.setStrokeCap(Paint.Cap.ROUND);
 
         display.drawCircle((float) pt.getX(), (float) pt.getY(), radius, fillPaint);
     }
 
-
-    protected void drawLineString(
-            GeoLineString line,
-            GISDisplay display)
-    {
+    protected void drawLineString(GeoLineString line, GISDisplay display) {
         final Paint lnPaint = new Paint();
         lnPaint.setColor(mColor);
+        lnPaint.setAlpha(mOuterAlpha);
         lnPaint.setStrokeWidth((float) (mWidth / display.getScale()));
         lnPaint.setStrokeCap(Paint.Cap.ROUND);
         lnPaint.setAntiAlias(true);
@@ -170,15 +165,11 @@ public class SimpleTiledPolygonStyle
         final Path linePath = getPath(line);
 
         lnPaint.setStyle(Paint.Style.STROKE);
-        lnPaint.setAlpha(128);
         display.drawPath(linePath, lnPaint);
     }
 
-
     @Override
-    public JSONObject toJSON()
-            throws JSONException
-    {
+    public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_FILL_KEY, mFill);
@@ -186,11 +177,8 @@ public class SimpleTiledPolygonStyle
         return rootConfig;
     }
 
-
     @Override
-    public void fromJSON(JSONObject jsonObject)
-            throws JSONException
-    {
+    public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         if (jsonObject.has(JSON_WIDTH_KEY)) {
             mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
@@ -200,9 +188,7 @@ public class SimpleTiledPolygonStyle
         }
     }
 
-
-    protected Path getPath(GeoLineString lineString)
-    {
+    protected Path getPath(GeoLineString lineString) {
         List<GeoPoint> points = lineString.getPoints();
         Path path = new Path();
         float x0, y0;
@@ -223,9 +209,7 @@ public class SimpleTiledPolygonStyle
         return path;
     }
 
-
-    protected Path getPath(GeoPolygon polygon)
-    {
+    protected Path getPath(GeoPolygon polygon) {
         List<GeoPoint> points = polygon.getOuterRing().getPoints();
         Path polygonPath = new Path();
         appendPath(polygonPath, points);
@@ -240,11 +224,7 @@ public class SimpleTiledPolygonStyle
         return polygonPath;
     }
 
-
-    protected void appendPath(
-            Path polygonPath,
-            List<GeoPoint> points)
-    {
+    protected void appendPath(Path polygonPath, List<GeoPoint> points) {
         float x0, y0;
 
         if (points.size() > 0) {
