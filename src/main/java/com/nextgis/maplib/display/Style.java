@@ -33,19 +33,22 @@ import static com.nextgis.maplib.util.Constants.JSON_ALPHA_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_COLOR_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_OUTALPHA_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_OUTCOLOR_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 
 public abstract class Style implements IJSONStore, Cloneable {
+    protected float mWidth;
     protected int mColor;
     protected int mOutColor;
     protected int mOuterAlpha = 255;
     protected int mInnerAlpha = 255;
 
     public Style() {
-
+        mWidth = 3;
     }
 
     public Style clone() throws CloneNotSupportedException {
         Style obj = (Style) super.clone();
+        obj.mWidth = mWidth;
         obj.mColor = mColor;
         obj.mOutColor = mOutColor;
         obj.mInnerAlpha = mInnerAlpha;
@@ -69,7 +72,16 @@ public abstract class Style implements IJSONStore, Cloneable {
         mOutColor = outColor;
     }
 
+    public float getWidth() {
+        return mWidth;
+    }
+
+    public void setWidth(float width) {
+        mWidth = width;
+    }
+
     public Style(final int color, int outColor) {
+        this();
         mColor = color;
         mOutColor = outColor;
     }
@@ -79,6 +91,7 @@ public abstract class Style implements IJSONStore, Cloneable {
     @Override
     public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = new JSONObject();
+        rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_COLOR_KEY, mColor);
         rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
         rootConfig.put(JSON_ALPHA_KEY, mInnerAlpha);
@@ -88,10 +101,11 @@ public abstract class Style implements IJSONStore, Cloneable {
 
     @Override
     public void fromJSON(JSONObject jsonObject) throws JSONException {
+        mWidth = (float) jsonObject.optDouble(JSON_WIDTH_KEY, 3);
         mColor = jsonObject.getInt(JSON_COLOR_KEY);
-        mOutColor = jsonObject.getInt(JSON_OUTCOLOR_KEY);
-        mInnerAlpha = jsonObject.getInt(JSON_ALPHA_KEY);
-        mOuterAlpha = jsonObject.getInt(JSON_OUTALPHA_KEY);
+        mOutColor = jsonObject.optInt(JSON_OUTCOLOR_KEY, mColor);
+        mInnerAlpha = jsonObject.optInt(JSON_ALPHA_KEY, 255);
+        mOuterAlpha = jsonObject.optInt(JSON_OUTALPHA_KEY, 255);
     }
 
     public int getAlpha() {

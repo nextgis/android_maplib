@@ -44,7 +44,6 @@ import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_TYPE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_VALUE_KEY;
-import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 
@@ -54,21 +53,18 @@ public class SimpleLineStyle extends Style implements ITextStyle {
     public final static int LineStyleEdgingSolid = 3;
 
     protected int mType;
-    protected float mWidth;
     protected Paint.Cap mStrokeCap;
     protected String mField;
     protected String mText;
 
     public SimpleLineStyle() {
         super();
-        mWidth = 3;
         mStrokeCap = Paint.Cap.BUTT;
     }
 
     public SimpleLineStyle(int fillColor, int outColor, int type) {
         super(fillColor, outColor);
         mType = type;
-        mWidth = 3;
         mStrokeCap = Paint.Cap.BUTT;
     }
 
@@ -76,7 +72,6 @@ public class SimpleLineStyle extends Style implements ITextStyle {
     public SimpleLineStyle clone() throws CloneNotSupportedException {
         SimpleLineStyle obj = (SimpleLineStyle) super.clone();
         obj.mType = mType;
-        obj.mWidth = mWidth;
         obj.mStrokeCap = mStrokeCap;
         obj.mText = mText;
         obj.mField = mField;
@@ -312,14 +307,6 @@ public class SimpleLineStyle extends Style implements ITextStyle {
         mType = type;
     }
 
-    public float getWidth() {
-        return mWidth;
-    }
-
-    public void setWidth(float width) {
-        mWidth = width;
-    }
-
     public String getField() {
         return mField;
     }
@@ -344,7 +331,6 @@ public class SimpleLineStyle extends Style implements ITextStyle {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_NAME_KEY, "SimpleLineStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
-        rootConfig.put(JSON_WIDTH_KEY, mWidth);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -360,7 +346,6 @@ public class SimpleLineStyle extends Style implements ITextStyle {
     public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
-        mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);

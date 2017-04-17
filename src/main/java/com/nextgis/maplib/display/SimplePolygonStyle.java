@@ -46,7 +46,6 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 
 public class SimplePolygonStyle extends Style implements ITextStyle {
-    protected float mWidth;
     protected boolean mFill;
     protected String mField;
     protected String mText;
@@ -69,7 +68,6 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
     @Override
     public SimplePolygonStyle clone() throws CloneNotSupportedException {
         SimplePolygonStyle obj = (SimplePolygonStyle) super.clone();
-        obj.mWidth = mWidth;
         obj.mFill = mFill;
         obj.mText = mText;
         obj.mTextSize = mTextSize;
@@ -83,14 +81,6 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
 
     public void setFill(boolean fill) {
         mFill = fill;
-    }
-
-    public float getWidth() {
-        return mWidth;
-    }
-
-    public void setWidth(float width) {
-        mWidth = width;
     }
 
     @Override
@@ -201,7 +191,6 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
     @Override
     public JSONObject toJSON() throws JSONException {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_FILL_KEY, mFill);
         rootConfig.put(JSON_NAME_KEY, "SimplePolygonStyle");
 
@@ -221,7 +210,6 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
     @Override
     public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
-        mWidth = (float) jsonObject.optDouble(JSON_WIDTH_KEY, 3);
         mFill = jsonObject.optBoolean(JSON_FILL_KEY, true);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {

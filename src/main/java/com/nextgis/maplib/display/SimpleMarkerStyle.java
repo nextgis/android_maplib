@@ -54,7 +54,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
 
     protected int mType;
     protected float mSize;
-    protected float mWidth;
     protected Paint mOutPaint;
     protected Paint mFillPaint;
     protected String mField;
@@ -81,7 +80,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         SimpleMarkerStyle obj = (SimpleMarkerStyle) super.clone();
         obj.mType = mType;
         obj.mSize = mSize;
-        obj.mWidth = mWidth;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
@@ -278,14 +276,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mSize = size;
     }
 
-    public float getWidth() {
-        return mWidth;
-    }
-
-    public void setWidth(float width) {
-        mWidth = width;
-    }
-
     @Override
     public void setColor(int color) {
         super.setColor(color);
@@ -316,7 +306,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_NAME_KEY, "SimpleMarkerStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
-        rootConfig.put(JSON_WIDTH_KEY, mWidth);
         rootConfig.put(JSON_SIZE_KEY, mSize);
 
         if (null != mText) {
@@ -333,7 +322,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
     public void fromJSON(JSONObject jsonObject) throws JSONException {
         super.fromJSON(jsonObject);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
-        mWidth = (float) jsonObject.getDouble(JSON_WIDTH_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
