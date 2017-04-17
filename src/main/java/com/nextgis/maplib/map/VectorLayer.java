@@ -2178,6 +2178,7 @@ public class VectorLayer
 
             String payload = jsonArray.toString();
             File attachFolder = new File(mPath, featureId);
+            FileUtil.createDir(attachFolder);
             File meta = new File(attachFolder, META);
             try {
                 FileUtil.writeToFile(meta, payload);
