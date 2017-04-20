@@ -1374,10 +1374,14 @@ public class VectorLayer
                         description = contentValues.getAsString(ATTACH_DESCRIPTION);
                     }
 
-                    AttachItem item =
-                            new AttachItem("" + maxId, displayName, mimeType, description);
-                    addAttach(featureId, item);
+                    AttachItem item = new AttachItem("" + maxId, displayName, mimeType, description);
 
+                    if (contentValues.containsKey(ATTACH_SIZE)) {
+                        int size = contentValues.getAsInteger(ATTACH_SIZE);
+                        item.setSize(size);
+                    }
+
+                    addAttach(featureId, item);
                     return maxId;
                 }
             } catch (IOException e) {
@@ -2731,14 +2735,14 @@ public class VectorLayer
     public boolean insertAttachFile(
             long featureId,
             long attachId,
-            File attachFile)
+            InputStream inputStream)
     {
         Uri uri = Uri.parse("content://" + mAuthority + "/" + mPath.getName() +
                 "/" + featureId + "/" + Constants.URI_ATTACH + "/" + attachId);
         try {
             OutputStream attachOutStream = mContext.getContentResolver().openOutputStream(uri);
             if (attachOutStream != null) {
-                FileUtil.copy(new FileInputStream(attachFile), attachOutStream);
+                FileUtil.copy(inputStream, attachOutStream);
                 attachOutStream.close();
             }
 
@@ -2856,6 +2860,22 @@ public class VectorLayer
     }
 
 
+    public int updateAttach(Feature feature, AttachItem attachItem) {
+        String layerPathName = mPath.getName();
+        long featureIdL = feature.getId();
+        long attachIdL = Long.parseLong(attachItem.getAttachId());
+        Uri uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + featureIdL + "/" + Constants.URI_ATTACH + "/" + attachIdL);
+        return update(uri, attachItem.getContentValues(false), null, null);
+    }
+
+
+    public int updateFeature(Feature feature) {
+        String layerPathName = mPath.getName();
+        Uri uri = Uri.parse("content://" + mAuthority + "/" + layerPathName + "/" + feature.getId());
+        return update(uri, feature.getContentValues(false), null, null);
+    }
+
+
     public int updateFeatureWithAttachesWithFlags(Feature feature)
     {
         int res = updateFeatureWithFlags(feature);
@@ -2868,6 +2888,19 @@ public class VectorLayer
                 res += updateAttachWithFlags(feature, attachItem);
             }
         }
+
+        return res;
+    }
+
+
+    public int updateFeatureWithAttaches(Feature feature) {
+        int res = updateFeature(feature);
+        long featureIdL = feature.getId();
+
+        Map<String, AttachItem> attaches = getAttachMap("" + featureIdL);
+        if (null != attaches)
+            for (AttachItem attachItem : attaches.values())
+                res += updateAttach(feature, attachItem);
 
         return res;
     }
