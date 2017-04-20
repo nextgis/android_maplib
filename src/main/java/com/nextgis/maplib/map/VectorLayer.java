@@ -1979,6 +1979,10 @@ public class VectorLayer
                         item.setMimetype(values.getAsString(ATTACH_MIME_TYPE));
                         isItemChanged = true;
                     }
+                    if (values.containsKey(ATTACH_SIZE)) {
+                        item.setSize(values.getAsInteger(ATTACH_SIZE));
+                        isItemChanged = true;
+                    }
                     if (isItemChanged) {
                         // saveAttach() MUST be before setNewAttachId()
                         saveAttach(featureId, attaches);
