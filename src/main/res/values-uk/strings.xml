@@ -84,4 +84,7 @@
     <string name="sync_error_conflict">Виявлено конфлікти</string>
     <string name="sync_error_io">Невідома помилка</string>
     <string name="sync_error_parse">Помилка сервера NetGIS Web</string>
+    <string name="self_intersection">Виявлено самоперетин</string>
+    <string name="ring_outside">Одна з дірок за межами полігону</string>
+    <string name="rings_intersection">Пересічення дірок</string>
 </resources>

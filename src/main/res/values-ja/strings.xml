@@ -83,4 +83,7 @@
     <string name="error_404">Resource not found</string>
     <string name="error_500">Internal server error</string>
     <string name="sync_error_io">Unexpected error</string>
+    <string name="self_intersection">自己交差が検出されました</string>
+    <string name="ring_outside">外部リングの外側に穴の一部があります</string>
+    <string name="rings_intersection">穴の交差</string>
 </resources>

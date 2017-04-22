@@ -83,4 +83,7 @@
     <string name="error_404">Resource not found</string>
     <string name="error_500">Internal server error</string>
     <string name="sync_error_io">Unexpected error</string>
+    <string name="self_intersection">स्व चौराहे का पता लगाने</string>
+    <string name="ring_outside">बाहरी रिंग के बाहर छेद में से एक</string>
+    <string name="rings_intersection">छेद चौराहे</string>
 </resources>

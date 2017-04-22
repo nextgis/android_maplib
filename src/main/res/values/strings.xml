@@ -85,4 +85,7 @@
     <string name="error_404">Resource not found</string>
     <string name="error_500">Internal server error</string>
     <string name="sync_error_io">Unexpected error</string>
+    <string name="self_intersection">Self intersection detected</string>
+    <string name="ring_outside">One of the holes outside of the outer ring</string>
+    <string name="rings_intersection">Holes intersection</string>
 </resources>

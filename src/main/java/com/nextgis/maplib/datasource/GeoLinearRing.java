@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -77,12 +77,21 @@ public class GeoLinearRing
         return first.equals(last);
     }
 
+    @Override
+    public boolean isValid() {
+        for (GeoPoint point : mPoints)
+            if (!point.isValid())
+                return false;
+
+        return isClosed();
+    }
+
     public GeoPoint getCentroid(){
         return getCentroidOfFiniteSetOfPoints();
     }
 
     /**
-     * @see https://en.wikipedia.org/wiki/Centroid#Of_a_finite_set_of_points
+     * @see <a href="https://en.wikipedia.org/wiki/Centroid#Of_a_finite_set_of_points">Wiki: Centroid#Of_a_finite_set_of_points</a>
      * @return Centroid of ring
      */
     protected GeoPoint getCentroidOfFiniteSetOfPoints(){
@@ -104,7 +113,7 @@ public class GeoLinearRing
     }
 
     /**
-     * @see https://en.wikipedia.org/wiki/Centroid#Of_a_finite_set_of_points
+     * @see <a href="https://en.wikipedia.org/wiki/Centroid#Of_a_finite_set_of_points">Wiki: Centroid#Of_a_finite_set_of_points</a>
      * @return Centroid of ring
      */
     protected GeoPoint getCentroidPolygon(){

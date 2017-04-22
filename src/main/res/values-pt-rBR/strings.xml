@@ -84,4 +84,7 @@
     <string name="sync_error_conflict">Conflicts found</string>
     <string name="sync_error_io">Unexpected error</string>
     <string name="sync_error_parse">NextGIS Web server error</string>
+    <string name="self_intersection">Self intersection detected</string>
+    <string name="ring_outside">One of holes outside the outer ring</string>
+    <string name="rings_intersection">Holes intersection</string>
 </resources>

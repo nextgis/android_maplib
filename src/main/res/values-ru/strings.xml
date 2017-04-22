@@ -85,4 +85,7 @@
     <string name="sync_error_conflict">Обнаружены конфликты</string>
     <string name="sync_error_io">Неизвестная ошибка</string>
     <string name="sync_error_parse">Ошибка сервера NetGIS Web</string>
+    <string name="self_intersection">Обнаружено самопересечение</string>
+    <string name="ring_outside">Одна из дырок за границами полигона</string>
+    <string name="rings_intersection">Пересечение дырок</string>
 </resources>

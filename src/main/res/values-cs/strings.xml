@@ -85,4 +85,7 @@
     <string name="sync_error_conflict">Conflicts found</string>
     <string name="sync_error_io">Unexpected error</string>
     <string name="sync_error_parse">NextGIS Web server error</string>
+    <string name="self_intersection">Nalezeno překřížení</string>
+    <string name="ring_outside">Některá díra je mimo původní polygon</string>
+    <string name="rings_intersection">Rřekřížení děr</string>
 </resources>

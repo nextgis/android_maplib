@@ -4,7 +4,7 @@
  * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,13 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.DisplayMetrics;
+import android.widget.Toast;
 
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.datasource.GeoEnvelope;
+import com.nextgis.maplib.datasource.GeoGeometry;
+import com.nextgis.maplib.datasource.GeoMultiPolygon;
+import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.TileItem;
 
 import java.io.File;
@@ -269,5 +274,44 @@ public class MapUtil {
         ppcm = 256 / ppcm; // get cm on display per 256 px tile
         ppcm = 40075160 / ppcm; // get real m per cm on display
         return ppcm / Math.pow(2, zoom); // take zoom in count
+    }
+
+
+    public static boolean isGeometryIntersects(Context context, GeoGeometry geometry) {
+        if (geometry instanceof GeoPolygon) {
+            if (((GeoPolygon) geometry).intersects()) {
+                Toast.makeText(context, R.string.self_intersection, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            if (!((GeoPolygon) geometry).isHolesInside()) {
+                Toast.makeText(context, R.string.ring_outside, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            if (((GeoPolygon) geometry).isHolesIntersect()) {
+                Toast.makeText(context, R.string.rings_intersection, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        }
+
+        if (geometry instanceof GeoMultiPolygon) {
+            if (((GeoMultiPolygon) geometry).isSelfIntersects()) {
+                Toast.makeText(context, R.string.self_intersection, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            if (!((GeoMultiPolygon) geometry).isHolesInside()) {
+                Toast.makeText(context, R.string.ring_outside, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
+            if (((GeoMultiPolygon) geometry).isHolesIntersect()) {
+                Toast.makeText(context, R.string.rings_intersection, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        }
+
+        return false;
     }
 }
