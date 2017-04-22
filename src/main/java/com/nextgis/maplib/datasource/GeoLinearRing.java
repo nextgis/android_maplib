@@ -83,7 +83,7 @@ public class GeoLinearRing
             if (!point.isValid())
                 return false;
 
-        return isClosed();
+        return mPoints.size() > 2;
     }
 
     public GeoPoint getCentroid(){
