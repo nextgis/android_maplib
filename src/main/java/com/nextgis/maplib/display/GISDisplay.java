@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -37,6 +37,7 @@ import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.util.Constants;
 
 import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
 import static com.nextgis.maplib.util.GeoConstants.DEFAULT_MAX_ZOOM;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
@@ -655,7 +656,9 @@ public class GISDisplay
         GeoPoint[] ret = new GeoPoint[points.length / 2];
         int count = 0;
         for (int i = 0; i < points.length - 1; i += 2) {
-            ret[count++] = new GeoPoint(points[i], points[i + 1]);
+            GeoPoint point = new GeoPoint(points[i], points[i + 1]);
+            point.setCRS(CRS_WEB_MERCATOR);
+            ret[count++] = point;
         }
         return ret;
     }
