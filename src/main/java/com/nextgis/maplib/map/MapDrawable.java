@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -267,10 +267,10 @@ public class MapDrawable
     @Override
     public GeoPoint[] screenToMap(float[] points)
     {
-        if (mDisplay != null) {
+        if (mDisplay != null && points != null) {
             return mDisplay.screenToMap(points);
         }
-        return null;
+        return new GeoPoint[]{};
     }
 
     @Override
