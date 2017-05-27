@@ -101,6 +101,8 @@ public class GeoGeometryFactory
                     reader.skipValue();
                 else
                     geometry.setCoordinatesFromJSONStream(reader, crs);
+            } else {
+                reader.skipValue();
             }
         }
         reader.endObject();
