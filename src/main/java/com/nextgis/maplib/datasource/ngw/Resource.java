@@ -118,6 +118,10 @@ public abstract class Resource
         return mName;
     }
 
+    public String getDescription() {
+        return mDescription;
+    }
+
     @Override
     public String getKey() {
         return mKeyName;
