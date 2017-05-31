@@ -159,24 +159,18 @@ public class RemoteTMSLayer
         boolean exist = tilePath.exists();
         //Log.d(TAG, "time diff: " + (System.currentTimeMillis() - tilePath.lastModified()) + " age: " + DEFAULT_TILE_MAX_AGE);
         if (exist) {
-            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-            if (ret != null) {
-                putBitmapToCache(tile.getHash(), ret);
-                if(System.currentTimeMillis() - tilePath.lastModified() > mTileMaxAge) {
-                    if(Constants.DEBUG_MODE)
-                        Log.d(Constants.TAG, "Update old tile " + tile.toString() + " tile date:" + tilePath.lastModified() + " current date:" + System.currentTimeMillis());
-                    // update tile
-                    new Thread(new Runnable() {
-                        public void run() {
-                            downloadTile(tile);
-                        }
-                    }).start();
-                }
-                return ret;
+            if(System.currentTimeMillis() - tilePath.lastModified() > mTileMaxAge) {
+                if(Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG, "Update old tile " + tile.toString() + " tile date:" + tilePath.lastModified() + " current date:" + System.currentTimeMillis());
+                // update tile
+                downloadTile(tile);
             }
+            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+            putBitmapToCache(tile.getHash(), ret);
+            return ret;
         }
 
-        if (System.currentTimeMillis() - mLastCheckTime < DELAY || !mNet.isNetworkAvailable()) { //return tile from cache
+        if (System.currentTimeMillis() - mLastCheckTime < DELAY || !mNet.isNetworkAvailable()) {
             return null;
         }
 
@@ -184,17 +178,11 @@ public class RemoteTMSLayer
         String url = tile.toString(getURLSubdomain());
         if(Constants.DEBUG_MODE)
             Log.d(TAG, "url: " + url);
+
         try {
-
             if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
-                if (exist) //if exist but not reload from internet
-                {
-                    ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-                }
-
                 mLastCheckTime = System.currentTimeMillis();
-                putBitmapToCache(tile.getHash(), ret);
-                return ret;
+                return null;
             }
 
             if(Constants.DEBUG_MODE)
@@ -219,12 +207,6 @@ public class RemoteTMSLayer
             Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         }
 
-        if (exist) //if exist but not reload from internet
-        {
-            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-            putBitmapToCache(tile.getHash(), ret);
-            return ret;
-        }
         return null;
     }
 
