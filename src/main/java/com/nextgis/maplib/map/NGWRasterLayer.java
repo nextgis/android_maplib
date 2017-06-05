@@ -57,14 +57,14 @@ import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_RASTER;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
-    private String mAccountName;
-    private String mCacheLogin;
-    private String mCachePassword;
-    private long mRemoteId;
-    boolean mExtentReceived = false;
+    protected String mAccountName;
+    protected String mCacheLogin;
+    protected String mCachePassword;
+    protected long mRemoteId;
+    protected boolean mExtentReceived = false;
 
-    private final static short MAX_THREAD_COUNT = 8;
-    private static final String JSON_ACCOUNT_KEY = "account";
+    protected final static short MAX_THREAD_COUNT = 8;
+    protected static final String JSON_ACCOUNT_KEY = "account";
 
     public NGWRasterLayer(Context context, File path) {
         super(context, path);
