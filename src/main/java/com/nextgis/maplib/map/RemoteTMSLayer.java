@@ -105,41 +105,78 @@ public class RemoteTMSLayer
                         getMaxThreadCount());
     }
 
-    public void downloadTile(TileItem tile){
+    public boolean downloadTile(TileItem tile, boolean tileExists)
+    {
         if (null == tile) {
-            return;
+            return false;
         }
 
-        // try to get tile from local cache
+        // Try to get tile from local cache.
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
-        if (exist && System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge) {
-            return;
+        if (exist && (System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge)) {
+            return false;
         }
 
         if (!mNet.isNetworkAvailable()) {
-            return;
+            return false;
         }
 
-        // try to get tile from remote
-        String url = tile.toString(getURLSubdomain());
-        Log.d(TAG, "url: " + url);
-        try {
+        if (Constants.DEBUG_MODE && exist) {
+            Log.d(Constants.TAG, "Update old tile " + tile.toString() + " tile date:" + tilePath
+                    .lastModified() + " current date:" + System.currentTimeMillis());
+        }
 
+        // Try to get tile from remote.
+        String url = tile.toString(getURLSubdomain());
+        if (Constants.DEBUG_MODE) {
+            Log.d(TAG, "url: " + url);
+        }
+
+        try {
             if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) {
-                return;
+                if (!tileExists) {
+                    mLastCheckTime = System.currentTimeMillis();
+                }
+                return false;
             }
 
-            FileUtil.createDir(tilePath.getParentFile());
-            OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
-            NetworkUtil.getStream(url, getLogin(), getPassword(), output);
+            if (Constants.DEBUG_MODE) {
+                Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
+            }
+
+            getTileFromStream(url, tilePath);
 
             mAvailable.release();
+            return true;
 
-        } catch (InterruptedException | IOException | RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             e.printStackTrace();
-            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
+            Log.d(
+                    TAG,
+                    "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
+        } catch (InterruptedException e) {
+            if (!tileExists) {
+                mLastCheckTime = System.currentTimeMillis();
+            }
+            e.printStackTrace();
+            Log.d(
+                    TAG,
+                    "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         }
+
+        return false;
+    }
+
+    // For overriding in subclasses.
+    protected void getTileFromStream(
+            String url,
+            File tilePath)
+            throws IOException
+    {
+        FileUtil.createDir(tilePath.getParentFile());
+        OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
+        NetworkUtil.getStream(url, getLogin(), getPassword(), output);
     }
 
     @Override
@@ -154,60 +191,27 @@ public class RemoteTMSLayer
             return ret;
         }
 
-        // try to get tile from local cache
+        // Try to get tile from local cache.
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
         //Log.d(TAG, "time diff: " + (System.currentTimeMillis() - tilePath.lastModified()) + " age: " + DEFAULT_TILE_MAX_AGE);
-        if (exist) {
-            if(System.currentTimeMillis() - tilePath.lastModified() > mTileMaxAge) {
-                if(Constants.DEBUG_MODE)
-                    Log.d(Constants.TAG, "Update old tile " + tile.toString() + " tile date:" + tilePath.lastModified() + " current date:" + System.currentTimeMillis());
-                // update tile
-                downloadTile(tile);
-            }
-            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-            putBitmapToCache(tile.getHash(), ret);
-            return ret;
-        }
 
-        if (System.currentTimeMillis() - mLastCheckTime < DELAY || !mNet.isNetworkAvailable()) {
-            return null;
-        }
-
-        // try to get tile from remote
-        String url = tile.toString(getURLSubdomain());
-        if(Constants.DEBUG_MODE)
-            Log.d(TAG, "url: " + url);
-
-        try {
-            if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) { //.acquire();
-                mLastCheckTime = System.currentTimeMillis();
+        if (!exist) {
+            if (System.currentTimeMillis() - mLastCheckTime < DELAY || !mNet.isNetworkAvailable()) {
                 return null;
             }
-
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
-
-            FileUtil.createDir(tilePath.getParentFile());
-            OutputStream output = new FileOutputStream(tilePath.getAbsolutePath());
-            NetworkUtil.getStream(url, getLogin(), getPassword(), output);
-
-            mAvailable.release();
-
-            ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-            putBitmapToCache(tile.getHash(), ret);
-            return ret;
-
-        } catch (IOException | RuntimeException e) {
-            e.printStackTrace();
-            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
-        } catch (InterruptedException e) {
-            mLastCheckTime = System.currentTimeMillis();
-            e.printStackTrace();
-            Log.d(TAG, "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         }
 
-        return null;
+        // Try to get or update tile from remote.
+        if (!downloadTile(tile, exist)) {
+            if (!exist) {
+                return null;
+            }
+        }
+
+        ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+        putBitmapToCache(tile.getHash(), ret);
+        return ret;
     }
 
 
