@@ -172,6 +172,7 @@ public class RemoteTMSLayer
                     "Problem downloading MapTile, delete the tile file, url: " + url + " Error: "
                             + e.getLocalizedMessage());
             FileUtil.deleteRecursive(tilePath);
+            return false;
         }
 
         return exist;
