@@ -41,6 +41,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -145,7 +146,13 @@ public class RemoteTMSLayer
                 Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
             }
 
-            getTileFromStream(url, tilePath);
+            try {
+                getTileFromStream(url, tilePath);
+            } catch (InterruptedIOException e) {
+                Log.d(TAG, "Thread interrupted, delete the tile file for the url: " + url);
+                FileUtil.deleteRecursive(tilePath);
+                return false;
+            }
 
             mAvailable.release();
             return true;
