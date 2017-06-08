@@ -163,9 +163,6 @@ public class RemoteTMSLayer
                     TAG,
                     "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
         } catch (InterruptedException e) {
-            if (!tileExists) {
-                mLastCheckTime = System.currentTimeMillis();
-            }
             e.printStackTrace();
             Log.d(
                     TAG,
