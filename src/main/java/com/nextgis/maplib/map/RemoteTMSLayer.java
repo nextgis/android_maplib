@@ -116,11 +116,11 @@ public class RemoteTMSLayer
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
         if (exist && (System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge)) {
-            return false;
+            return true;
         }
 
         if (!mNet.isNetworkAvailable()) {
-            return false;
+            return exist;
         }
 
         if (Constants.DEBUG_MODE && exist) {
@@ -139,7 +139,7 @@ public class RemoteTMSLayer
                 if (!tileExists) {
                     mLastCheckTime = System.currentTimeMillis();
                 }
-                return false;
+                return exist;
             }
 
             if (Constants.DEBUG_MODE) {
@@ -169,10 +169,12 @@ public class RemoteTMSLayer
             e.printStackTrace();
             Log.d(
                     TAG,
-                    "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
+                    "Problem downloading MapTile, delete the tile file, url: " + url + " Error: "
+                            + e.getLocalizedMessage());
+            FileUtil.deleteRecursive(tilePath);
         }
 
-        return false;
+        return exist;
     }
 
     // For overriding in subclasses.
