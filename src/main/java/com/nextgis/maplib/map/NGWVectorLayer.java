@@ -392,7 +392,7 @@ public class NGWVectorLayer
 
         String geomTypeString = vectorLayerJSONObject.getString(JSON_GEOMETRY_TYPE_KEY);
         int geomType = GeoGeometryFactory.typeFromString(geomTypeString);
-        JSONObject srs = vectorLayerJSONObject.getJSONObject("srs");
+        JSONObject srs = vectorLayerJSONObject.getJSONObject(NGWUtil.NGWKEY_SRS);
         mCRS = srs.getInt("id");
         if (mCRS != GeoConstants.CRS_WEB_MERCATOR && mCRS != GeoConstants.CRS_WGS84) {
             throw new NGException(getContext().getString(R.string.error_crs_unsupported));
