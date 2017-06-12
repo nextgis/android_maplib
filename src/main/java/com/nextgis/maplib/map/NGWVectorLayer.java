@@ -1451,6 +1451,19 @@ public class NGWVectorLayer
     }
 
 
+    protected HttpURLConnection getHttpConnection(AccountUtil.AccountData accountData) throws IOException {
+        URL url = new URL(getFeaturesUrl(accountData));
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        final String basicAuth = NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
+        if (null != basicAuth) {
+            connection.setRequestProperty("Authorization", basicAuth);
+        }
+
+        return connection;
+    }
+
+
     // read layer contents as string
     protected HashMap<Integer, List<Feature>> getFeatures(SyncResult syncResult, boolean tracked) {
         AccountUtil.AccountData accountData;
@@ -1504,13 +1517,8 @@ public class NGWVectorLayer
             }
         } else {
             try {
-                URL url = new URL(getFeaturesUrl(accountData));
-                Log.d(TAG, "url: " + url.toString());
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                final String basicAuth = NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
-                if (null != basicAuth) {
-                    urlConnection.setRequestProperty("Authorization", basicAuth);
-                }
+                HttpURLConnection urlConnection = getHttpConnection(accountData);
+                Log.d(TAG, "url: " + urlConnection.getURL().toString());
 
                 InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
                 JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
