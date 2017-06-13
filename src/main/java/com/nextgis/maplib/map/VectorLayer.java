@@ -1530,6 +1530,9 @@ public class VectorLayer
             } else {
                 notify = new Intent(Constants.NOTIFY_DELETE);
                 notify.putExtra(FIELD_ID, rowId);
+
+                File attachFolder = new File(mPath, String.valueOf(rowId));
+                FileUtil.deleteRecursive(attachFolder);
             }
             notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
             getContext().sendBroadcast(notify);
