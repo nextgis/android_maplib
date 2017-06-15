@@ -860,16 +860,13 @@ public class NGWVectorLayer
         }
 
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             JSONObject putData = new JSONObject();
             //putData.put(JSON_ID_KEY, attach.getAttachId());
             putData.put(Constants.JSON_NAME_KEY, attach.getDisplayName());
             //putData.put("mime_type", attach.getMimetype());
             putData.put("description", attach.getDescription());
 
-            String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId;
-            HttpResponse response = NetworkUtil.put(url, putData.toString(), accountData.login,
-                    accountData.password, false);
+            HttpResponse response = changeAttachOnServer(featureId, attachId, putData.toString());
 
             if (!response.isOk()) {
                 log(syncResult, response.getResponseCode() + "");
@@ -893,6 +890,14 @@ public class NGWVectorLayer
     }
 
 
+    protected HttpResponse changeAttachOnServer(long featureId, long attachId, String putData) throws IOException {
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+        String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId;
+        return NetworkUtil.put(url, putData, accountData.login,
+                                                accountData.password, false);
+    }
+
+
     private boolean deleteAttachOnServer(
             long featureId,
             long attachId,
@@ -904,11 +909,7 @@ public class NGWVectorLayer
         }
 
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
-            HttpResponse response = NetworkUtil.delete(
-                    NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId)
-                            + attachId, accountData.login, accountData.password, false);
+            HttpResponse response = deleteAttachOnServer(featureId, attachId);
 
             if (!response.isOk()) {
                 syncResult.stats.numIoExceptions++;
@@ -928,6 +929,14 @@ public class NGWVectorLayer
     }
 
 
+    protected HttpResponse deleteAttachOnServer(long featureId, long attachId) throws IOException {
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        return NetworkUtil.delete(NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId)
+                        + attachId, accountData.login, accountData.password, false);
+    }
+
+
     protected boolean sendAttachOnServer(
             long featureId,
             long attachId,
@@ -943,57 +952,20 @@ public class NGWVectorLayer
             return true;
         }
 
-        // fill attach info
-        String fileName = attach.getDisplayName();
-        File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
-        String fileMime = attach.getMimetype();
-
         try {
-            // get account data
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+            HttpResponse response = sendAttachOnServer(featureId, attach);
 
-            // upload file
-            String url = NGWUtil.getFileUploadUrl(accountData.url);
-            HttpResponse response =
-                    NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login,
-                            accountData.password, false);
             if (!response.isOk()) {
                 log(syncResult, response.getResponseCode() + "");
                 return false;
             }
 
-            // get attach info
             JSONObject result = new JSONObject(response.getResponseBody());
-            if (!result.has("upload_meta")) {
-                if (Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " + result.toString());
-                }
-                syncResult.stats.numParseExceptions++;
+            if (!proceedAttach(result, syncResult)) {
                 return false;
             }
 
-            JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
-            if (uploadMetaArray.length() == 0) {
-                if (Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
-                }
-                syncResult.stats.numParseExceptions++;
-                return false;
-            }
-
-            // add attachment to row
-            JSONObject postJsonData = new JSONObject();
-            postJsonData.put("file_upload", uploadMetaArray.get(0));
-            postJsonData.put("description", attach.getDescription());
-            String postload = postJsonData.toString();
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "postload: " + postload);
-            }
-
-            // update record in NGW
-            url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId);
-            response =
-                    NetworkUtil.post(url, postload, accountData.login, accountData.password, false);
+            response = sendFeatureAttachOnServer(result, featureId, attach);
             if (!response.isOk()) {
                 log(syncResult, response.getResponseCode() + "");
                 return false;
@@ -1028,6 +1000,63 @@ public class NGWVectorLayer
         }
     }
 
+
+    protected boolean proceedAttach(JSONObject result, SyncResult syncResult) throws JSONException {
+        // get attach info
+        if (!result.has("upload_meta")) {
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " + result.toString());
+            }
+            syncResult.stats.numParseExceptions++;
+            return false;
+        }
+
+        JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
+        if (uploadMetaArray.length() == 0) {
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
+            }
+            syncResult.stats.numParseExceptions++;
+            return false;
+        }
+
+        return true;
+    }
+
+    protected HttpResponse sendFeatureAttachOnServer(JSONObject result, long featureId, AttachItem attach) throws JSONException, IOException {
+        // add attachment to row
+        JSONObject postJsonData = new JSONObject();
+        JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
+        postJsonData.put("file_upload", uploadMetaArray.get(0));
+        postJsonData.put("description", attach.getDescription());
+        String postload = postJsonData.toString();
+        if (Constants.DEBUG_MODE) {
+            Log.d(Constants.TAG, "postload: " + postload);
+        }
+
+        // get account data
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        // upload file
+        String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId);
+
+        // update record in NGW
+        return NetworkUtil.post(url, postload, accountData.login, accountData.password, false);
+    }
+
+    protected HttpResponse sendAttachOnServer(long featureId, AttachItem attach) throws IOException {
+        // fill attach info
+        String fileName = attach.getDisplayName();
+        File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
+        String fileMime = attach.getMimetype();
+
+        // get account data
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        // upload file
+        String url = NGWUtil.getFileUploadUrl(accountData.url);
+        return NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login, accountData.password, false);
+    }
 
     protected void log(SyncResult syncResult, String code) {
         int responseCode = Integer.parseInt(code);
@@ -1617,8 +1646,6 @@ public class NGWVectorLayer
         }
 
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
             if (cursor.moveToFirst()) {
                 // feature to string
                 String payload = cursorToJson(cursor);
@@ -1627,9 +1654,8 @@ public class NGWVectorLayer
                 }
 
                 // post to NGW
-                HttpResponse response =
-                        NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId),
-                                payload, accountData.login, accountData.password, false);
+                HttpResponse response = addFeatureOnServer(payload);
+
                 if (!response.isOk()) {
                     log(syncResult, response.getResponseCode() + "");
                     return false;
@@ -1670,6 +1696,14 @@ public class NGWVectorLayer
     }
 
 
+    protected HttpResponse addFeatureOnServer(String payload) throws IOException {
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId),
+                         payload, accountData.login, accountData.password, false);
+    }
+
+
     protected boolean deleteFeatureOnServer(
             long featureId,
             SyncResult syncResult)
@@ -1680,11 +1714,7 @@ public class NGWVectorLayer
         }
 
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
-            HttpResponse response =
-                    NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
-                            accountData.login, accountData.password, false);
+            HttpResponse response = deleteFeatureOnServer(featureId);
 
             if (!response.isOk()) {
                 syncResult.stats.numIoExceptions++;
@@ -1701,6 +1731,14 @@ public class NGWVectorLayer
             syncResult.stats.numAuthExceptions++;
             return false;
         }
+    }
+
+
+    protected HttpResponse deleteFeatureOnServer(long featureId) throws IOException {
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        return NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
+                                   accountData.login, accountData.password, false);
     }
 
 
@@ -1728,8 +1766,6 @@ public class NGWVectorLayer
         }
 
         try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
-
             if (cursor.moveToFirst()) {
                 // get payload from cursor
                 String payload = cursorToJson(cursor);
@@ -1738,10 +1774,8 @@ public class NGWVectorLayer
                 }
 
                 // change on server
-                String url = NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId);
-                HttpResponse response =
-                        NetworkUtil.put(url, payload, accountData.login, accountData.password,
-                                false);
+                HttpResponse response = changeFeatureOnServer(featureId, payload);
+
                 if (!response.isOk()) {
                     log(syncResult, response.getResponseCode() + "");
                     return false;
@@ -1767,6 +1801,15 @@ public class NGWVectorLayer
         } finally {
             cursor.close();
         }
+    }
+
+
+    protected HttpResponse changeFeatureOnServer(long featureId, String payload) throws IOException {
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        // change on server
+        String url = NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId);
+        return NetworkUtil.put(url, payload, accountData.login, accountData.password, false);
     }
 
 
