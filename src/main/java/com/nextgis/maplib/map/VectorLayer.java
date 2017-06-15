@@ -1682,32 +1682,31 @@ public class VectorLayer
 
                 //get attach path
                 File attachFile = new File(mPath, featureId + File.separator + attachId);
-                if (attachFile.delete()) {
+                if (attachFile.exists() && !attachFile.delete())
+                    return 0;
 
-                    deleteAttach(featureId, attachId);
+                deleteAttach(featureId, attachId);
 
-                    String fragment = uri.getFragment();
-                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if (bFromNetwork) {
-                        getContext().getContentResolver().notifyChange(uri, null, false);
-                    } else {
+                String fragment = uri.getFragment();
+                boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
+                if (bFromNetwork) {
+                    getContext().getContentResolver().notifyChange(uri, null, false);
+                } else {
 
-                        if (null != tempFlag) {
-                            setAttachTempFlag(featureIdL, attachIdL, false);
-                        }
-
-                        if (null != notSyncFlag) {
-                            setAttachNotSyncFlag(featureIdL, attachIdL, false);
-                        }
-
-                        if (hasNotFlags) {
-                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_DELETE);
-                        }
-                        getContext().getContentResolver().notifyChange(uri, null);
+                    if (null != tempFlag) {
+                        setAttachTempFlag(featureIdL, attachIdL, false);
                     }
-                    return 1;
+
+                    if (null != notSyncFlag) {
+                        setAttachNotSyncFlag(featureIdL, attachIdL, false);
+                    }
+
+                    if (hasNotFlags) {
+                        addChange(featureIdL, attachIdL, CHANGE_OPERATION_DELETE);
+                    }
+                    getContext().getContentResolver().notifyChange(uri, null);
                 }
-                return 0;
+                return 1;
             default:
                 throw new IllegalArgumentException("Wrong URI: " + uri);
         }
