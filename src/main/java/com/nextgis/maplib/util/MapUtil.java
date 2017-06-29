@@ -181,7 +181,13 @@ public class MapUtil {
         double fullBoundsMinX = -GeoConstants.MERCATOR_MAX;
         double fullBoundsMinY = -GeoConstants.MERCATOR_MAX;
         for (int x = begX; x < endX; x++) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
             for (int y = begY; y < endY; y++) {
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
                 realX = x;
                 if (realX < 0) {
                     realX += tilesInMapOneDimension;
