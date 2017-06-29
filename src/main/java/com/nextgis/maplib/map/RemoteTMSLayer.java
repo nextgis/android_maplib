@@ -109,6 +109,9 @@ public class RemoteTMSLayer
     public boolean downloadTile(TileItem tile, boolean tileExists)
     {
         if (null == tile) {
+            //if (Constants.DEBUG_MODE) {
+            //    Log.d(TAG, "downloadTile() return: false, tile == null, p1");
+            //}
             return false;
         }
 
@@ -116,10 +119,16 @@ public class RemoteTMSLayer
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
         if (exist && (System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge)) {
+            //if (Constants.DEBUG_MODE) {
+            //    Log.d(TAG, "downloadTile() return: true, p2, " + tile.toString());
+            //}
             return true;
         }
 
         if (!mNet.isNetworkAvailable()) {
+            //if (Constants.DEBUG_MODE) {
+            //    Log.d(TAG, "downloadTile() return: " + exist + ", p3, " + tile.toString());
+            //}
             return exist;
         }
 
@@ -139,6 +148,9 @@ public class RemoteTMSLayer
                 if (!tileExists) {
                     mLastCheckTime = System.currentTimeMillis();
                 }
+                //if (Constants.DEBUG_MODE) {
+                //    Log.d(TAG, "downloadTile() return: " + exist + ", p4, " + tile.toString());
+                //}
                 return exist;
             }
 
@@ -151,10 +163,16 @@ public class RemoteTMSLayer
             } catch (InterruptedIOException e) {
                 Log.d(TAG, "Thread interrupted, delete the tile file for the url: " + url);
                 FileUtil.deleteRecursive(tilePath);
+                //if (Constants.DEBUG_MODE) {
+                //    Log.d(TAG, "downloadTile() return: false, p5, " + tile.toString());
+                //}
                 return false;
             }
 
             mAvailable.release();
+            //if (Constants.DEBUG_MODE) {
+            //    Log.d(TAG, "downloadTile() return: true, p6, " + tile.toString());
+            //}
             return true;
 
         } catch (IOException | RuntimeException e) {
@@ -169,9 +187,17 @@ public class RemoteTMSLayer
                     "Problem downloading MapTile, delete the tile file, url: " + url + " Error: "
                             + e.getLocalizedMessage());
             FileUtil.deleteRecursive(tilePath);
+            // Preserve interrupt status
+            Thread.currentThread().interrupt();
+            //if (Constants.DEBUG_MODE) {
+            //    Log.d(TAG, "downloadTile() return: false, p7, " + tile.toString());
+            //}
             return false;
         }
 
+        //if (Constants.DEBUG_MODE) {
+        //    Log.d(TAG, "downloadTile() return: " + exist + ", p8, " + tile.toString());
+        //}
         return exist;
     }
 
