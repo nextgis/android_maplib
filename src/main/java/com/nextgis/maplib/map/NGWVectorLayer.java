@@ -1202,7 +1202,6 @@ public class NGWVectorLayer
                                 compareFeature(cursor, authority, remoteFeature, changeTableName);
                                 hasFeature = true;
                             }
-
                             cursor.close();
                         }
 
@@ -1213,8 +1212,12 @@ public class NGWVectorLayer
                 if (changed != null)
                     for (Feature remoteFeature : changed) {
                         Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
-                        compareFeature(cursor, authority, remoteFeature, changeTableName);
-                        cursor.close();
+                        if (cursor != null) {
+                            if (cursor.moveToFirst()) {
+                                compareFeature(cursor, authority, remoteFeature, changeTableName);
+                            }
+                            cursor.close();
+                        }
                     }
 
                 if (deleted != null) {
