@@ -67,7 +67,7 @@ public interface Constants
      * The additional size to off screen drawing from 1 and higher As more than more memory needed
      */
 
-    float OFFSCREEN_EXTRASIZE_RATIO = 1.5f;
+    float OFFSCREEN_EXTRASIZE_RATIO = 1.0f;
     int   DEFAULT_TILE_SIZE         = 256;
 
     /**
