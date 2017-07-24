@@ -229,7 +229,7 @@ public interface Constants
     int    CHANGE_OPERATION_NOT_SYNC = 1 << 5; // 32
 
     int DRAWING_SEPARATE_THREADS = 9;
-    int DRAW_NOTIFY_STEP_PERCENT = 20; // 5%
+    int DRAW_NOTIFY_STEP_PERCENT = 10; // 5%
 
     String[] VECTOR_FORBIDDEN_FIELDS = {
             "ABORT",

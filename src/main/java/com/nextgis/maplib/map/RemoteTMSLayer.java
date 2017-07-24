@@ -71,7 +71,7 @@ public class RemoteTMSLayer
     protected       String       mLogin;
     protected       String       mPassword;
     protected       String       mStartDate, mEndDate;
-    protected       Semaphore    mAvailable;
+//    protected       Semaphore    mAvailable;
     protected long mTileMaxAge;
     protected volatile long mLastCheckTime;
 
@@ -95,23 +95,20 @@ public class RemoteTMSLayer
 
     public synchronized void onPrepare()
     {
-        int diff = getMaxThreadCount() - mAvailable.availablePermits();
-        if (diff > 0) {
-            mAvailable.release(diff);
-        }
-
-        if(Constants.DEBUG_MODE)
-            Log.d(
-                TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
-                        getMaxThreadCount());
+//        int diff = getMaxThreadCount() - mAvailable.availablePermits();
+//        if (diff > 0) {
+//            mAvailable.release(diff);
+//        }
+//
+//        if(Constants.DEBUG_MODE)
+//            Log.d(
+//                TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
+//                        getMaxThreadCount());
     }
 
     public boolean downloadTile(TileItem tile, boolean tileExists)
     {
         if (null == tile) {
-            //if (Constants.DEBUG_MODE) {
-            //    Log.d(TAG, "downloadTile() return: false, tile == null, p1");
-            //}
             return false;
         }
 
@@ -119,16 +116,10 @@ public class RemoteTMSLayer
         File tilePath = new File(mPath, tile.toString("{z}/{x}/{y}" + TILE_EXT));
         boolean exist = tilePath.exists();
         if (exist && (System.currentTimeMillis() - tilePath.lastModified() < mTileMaxAge)) {
-            //if (Constants.DEBUG_MODE) {
-            //    Log.d(TAG, "downloadTile() return: true, p2, " + tile.toString());
-            //}
             return true;
         }
 
         if (!mNet.isNetworkAvailable()) {
-            //if (Constants.DEBUG_MODE) {
-            //    Log.d(TAG, "downloadTile() return: " + exist + ", p3, " + tile.toString());
-            //}
             return exist;
         }
 
@@ -144,35 +135,28 @@ public class RemoteTMSLayer
         }
 
         try {
-            if (!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) {
-                if (!tileExists) {
-                    mLastCheckTime = System.currentTimeMillis();
-                }
-                //if (Constants.DEBUG_MODE) {
-                //    Log.d(TAG, "downloadTile() return: " + exist + ", p4, " + tile.toString());
-                //}
-                return exist;
-            }
-
-            if (Constants.DEBUG_MODE) {
-                Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
-            }
+//            if (false) { //!mAvailable.tryAcquire(DELAY, TimeUnit.MILLISECONDS)) {
+//                if (!tileExists) {
+//                    mLastCheckTime = System.currentTimeMillis();
+//                }
+//                //if (Constants.DEBUG_MODE) {
+//                //    Log.d(TAG, "downloadTile() return: " + exist + ", p4, " + tile.toString());
+//                //}
+//                return exist;
+//            }
+//            if (Constants.DEBUG_MODE) {
+//                Log.d(TAG, "Semaphore left: " + mAvailable.availablePermits());
+//            }
 
             try {
                 getTileFromStream(url, tilePath);
             } catch (InterruptedIOException e) {
                 Log.d(TAG, "Thread interrupted, delete the tile file for the url: " + url);
                 FileUtil.deleteRecursive(tilePath);
-                //if (Constants.DEBUG_MODE) {
-                //    Log.d(TAG, "downloadTile() return: false, p5, " + tile.toString());
-                //}
                 return false;
             }
 
-            mAvailable.release();
-            //if (Constants.DEBUG_MODE) {
-            //    Log.d(TAG, "downloadTile() return: true, p6, " + tile.toString());
-            //}
+//            mAvailable.release();
             return true;
 
         } catch (IOException | RuntimeException e) {
@@ -180,24 +164,19 @@ public class RemoteTMSLayer
             Log.d(
                     TAG,
                     "Problem downloading MapTile: " + url + " Error: " + e.getLocalizedMessage());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            Log.d(
-                    TAG,
-                    "Problem downloading MapTile, delete the tile file, url: " + url + " Error: "
-                            + e.getLocalizedMessage());
-            FileUtil.deleteRecursive(tilePath);
-            // Preserve interrupt status
-            Thread.currentThread().interrupt();
-            //if (Constants.DEBUG_MODE) {
-            //    Log.d(TAG, "downloadTile() return: false, p7, " + tile.toString());
-            //}
-            return false;
         }
+//        catch (InterruptedException e) {
+//            e.printStackTrace();
+//            Log.d(
+//                    TAG,
+//                    "Problem downloading MapTile, delete the tile file, url: " + url + " Error: "
+//                            + e.getLocalizedMessage());
+//            FileUtil.deleteRecursive(tilePath);
+//            // Preserve interrupt status
+//            Thread.currentThread().interrupt();
+//            return false;
+//        }
 
-        //if (Constants.DEBUG_MODE) {
-        //    Log.d(TAG, "downloadTile() return: " + exist + ", p8, " + tile.toString());
-        //}
         return exist;
     }
 
@@ -373,7 +352,7 @@ public class RemoteTMSLayer
             mSubDomainsMask = url.substring(beginSubDomains, endSubDomains + 1);
         }
 
-        mAvailable = new Semaphore(getMaxThreadCount(), true);
+//        mAvailable = new Semaphore(getMaxThreadCount(), true);
     }
 
 
