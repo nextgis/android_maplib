@@ -282,7 +282,7 @@ public class GISDisplay
     }
 
 
-    public synchronized void draw(
+    public void draw(
             Canvas canvas,
             boolean clearBackground)
     {
