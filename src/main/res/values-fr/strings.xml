@@ -26,7 +26,7 @@
     <string name="error_crs_unsupported">Référence spatiale non supportée</string>
     <string name="error_empty_dataset">Le jeu de donnée est vide</string>
     <string name="error_network_unavailable">Le réseau n\'est pas disponible</string>
-    <string name="error_download_data">Le télécharement des données a échoué</string>
+    <string name="error_download_data">Le téléchargement des données a échoué</string>
     <string name="N">N</string>
     <string name="S">S</string>
     <string name="E">E</string>
@@ -39,7 +39,7 @@
     <string name="unit_min">min</string>
     <string name="unit_hour">h</string>
     <string name="unit_day">jour</string>
-    <string name="unit_month">moish</string>
+    <string name="unit_month">mois</string>
     <string name="unit_year">année</string>
     <string name="unit_billion">G</string>
     <string name="unit_million">M</string>
@@ -47,7 +47,7 @@
     <string name="warning_remove_field">Le champ \'%s\' est interdit, le champ est supprimé</string>
     <string name="warning_replace_field">Le nom contient un charactère interdit, il est remplacé par \'%s\'</string>
     <string name="tracks">Mes parcours</string>
-    <string name="create_features">Créé un objet</string>
+    <string name="create_features">Créer un objet</string>
     <string name="parse_features">Extraire les informations</string>
     <string name="message_loading">Chargement…</string>
     <string name="error_layer_create">Echec de la création de couche</string>
@@ -70,12 +70,12 @@
     <string name="field_type_datetime">Date &amp; Heure</string>
     <string name="field_type_date">Date</string>
     <string name="field_type_time">Heure</string>
-    <string name="synchronization">Synchronization</string>
-    <string name="sync_started">Synchronisation commencé</string>
+    <string name="synchronization">Synchronisation</string>
+    <string name="sync_started">Synchronisation commencée</string>
     <string name="sync_progress">Synchronisation en cours</string>
-    <string name="sync_canceled">Synchronisation annulé</string>
+    <string name="sync_canceled">Synchronisation annulée</string>
     <string name="sync_error">Erreur de synchronisation</string>
-    <string name="sync_finished">Synchronisation terminé</string>
+    <string name="sync_finished">Synchronisation terminée</string>
     <string name="error_auth">Problème d\'authentification sur le compte</string>
     <string name="sync_error_parse">Erreur du serveur NextGIS Web</string>
     <string name="sync_error_conflict">Conflits identifiés</string>
@@ -87,6 +87,6 @@
     <string name="error_500">Erreur du serveur</string>
     <string name="sync_error_io">Erreur inattendue</string>
     <string name="self_intersection">Entrecroisement détecté</string>
-    <string name="ring_outside">Un des trou est à l\'extérieur de la limite externe</string>
-    <string name="rings_intersection">Intersection de trous</string>
+    <string name="ring_outside">Un des vide est à l\'extérieur de la limite externe</string>
+    <string name="rings_intersection">Intersection de vide</string>
 </resources>
