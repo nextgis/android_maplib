@@ -1193,39 +1193,9 @@ public class NGWVectorLayer
 
             String changeTableName = getChangeTableName();
             if (mTracked) {
-                if (added != null)
-                    for (Feature remoteFeature : added) {
-                        Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
-                        boolean hasFeature = false;
-                        if (cursor != null) {
-                            if (cursor.moveToFirst()){
-                                compareFeature(cursor, authority, remoteFeature, changeTableName);
-                                hasFeature = true;
-                            }
-                            cursor.close();
-                        }
-
-                        if (!hasFeature)
-                            createNewFeature(remoteFeature, authority);
-                    }
-
-                if (changed != null)
-                    for (Feature remoteFeature : changed) {
-                        Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
-                        if (cursor != null) {
-                            if (cursor.moveToFirst()) {
-                                compareFeature(cursor, authority, remoteFeature, changeTableName);
-                            }
-                            cursor.close();
-                        }
-                    }
-
-                if (deleted != null) {
-                    for (Feature remoteFeature : deleted)
-                        deleteItems.add(remoteFeature.getId());
-
-                    deleteFeatures(deleteItems);
-                }
+                proceedAddedFeatures(added, authority, changeTableName);
+                proceedChangedFeatures(changed, authority, changeTableName);
+                proceedDeletedFeatures(deleted, changeTableName);
             } else {
                 // analyse feature
                 for (Feature remoteFeature : features) {
@@ -1348,8 +1318,54 @@ public class NGWVectorLayer
             return false;
         }
 
-        getPreferences().edit().putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis()).commit();
+        getPreferences().edit().putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis()).apply();
         return true;
+    }
+
+
+    protected void proceedAddedFeatures(List<Feature> added, String authority, String changeTableName) {
+        if (added != null) {
+            for (Feature remoteFeature : added) {
+                Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
+                boolean hasFeature = false;
+                if (cursor != null) {
+                    if (cursor.moveToFirst()) {
+                        compareFeature(cursor, authority, remoteFeature, changeTableName);
+                        hasFeature = true;
+                    }
+                    cursor.close();
+                }
+
+                if (!hasFeature)
+                    createNewFeature(remoteFeature, authority);
+            }
+        }
+    }
+
+
+    protected void proceedChangedFeatures(List<Feature> changed, String authority, String changeTableName) {
+        if (changed != null) {
+            for (Feature remoteFeature : changed) {
+                Cursor cursor = query(null, Constants.FIELD_ID + " = " + remoteFeature.getId(), null, null, null);
+                if (cursor != null) {
+                    if (cursor.moveToFirst()) {
+                        compareFeature(cursor, authority, remoteFeature, changeTableName);
+                    }
+                    cursor.close();
+                }
+            }
+        }
+    }
+
+
+    protected void proceedDeletedFeatures(List<Feature> deleted, String changeTableName) {
+        List<Long> deleteItems = new ArrayList<>();
+        if (deleted != null) {
+            for (Feature remoteFeature : deleted)
+                deleteItems.add(remoteFeature.getId());
+
+            deleteFeatures(deleteItems);
+        }
     }
 
 
