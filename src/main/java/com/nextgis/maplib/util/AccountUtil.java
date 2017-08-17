@@ -29,30 +29,52 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncInfo;
 import android.os.Build;
+import android.util.Base64;
+
 import com.nextgis.maplib.api.IGISApplication;
 
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.X509EncodedKeySpec;
 
-public class AccountUtil
-{
-    public static boolean isSyncActive(
-            Account account,
-            String authority)
-    {
+public class AccountUtil {
+    public static boolean verifySignature(String data, String signature) {
+        try {
+            // add public key
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            String key = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzbmnrTLjTLxqCnIqXgIJ\n" +
+                    "jebXVOn4oV++8z5VsBkQwK+svDkGK/UcJ4YjXUuPqyiZwauHGy1wizGCgVIRcPNM\n" +
+                    "I0n9W6797NMFaC1G6Rp04ISv7DAu0GIZ75uDxE/HHDAH48V4PqQeXMp01Uf4ttti\n" +
+                    "XfErPKGio7+SL3GloEqtqGbGDj6Yx4DQwWyIi6VvmMsbXKmdMm4ErczWFDFHIxpV\n" +
+                    "ln/VfX43r/YOFxqt26M7eTpaBIvAU6/yWkIsvidMNL/FekQVTiRCl/exPgioDGrf\n" +
+                    "06z5a0sd3NDbS++GMCJstcKxkzk5KLQljAJ85Jciiuy2vv14WU621ves8S9cMISO\n" + "HwIDAQAB";
+            byte[] keyBytes = Base64.decode(key.getBytes("UTF-8"), Base64.DEFAULT);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+            PublicKey publicKey = keyFactory.generatePublic(spec);
+
+            // verify signature
+            Signature signCheck = Signature.getInstance("SHA256withRSA");
+            signCheck.initVerify(publicKey);
+            signCheck.update(data.getBytes("UTF-8"));
+            byte[] sigBytes = Base64.decode(signature, Base64.DEFAULT);
+            return signCheck.verify(sigBytes);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean isSyncActive(Account account, String authority) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             return isSyncActiveHoneycomb(account, authority);
         } else {
             SyncInfo currentSync = ContentResolver.getCurrentSync();
-            return currentSync != null && currentSync.account.equals(account) &&
-                   currentSync.authority.equals(authority);
+            return currentSync != null && currentSync.account.equals(account) && currentSync.authority.equals(authority);
         }
     }
 
-
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static boolean isSyncActiveHoneycomb(
-            Account account,
-            String authority)
-    {
+    public static boolean isSyncActiveHoneycomb(Account account, String authority) {
         for (SyncInfo syncInfo : ContentResolver.getCurrentSyncs()) {
             if (syncInfo.account.equals(account) && syncInfo.authority.equals(authority)) {
                 return true;
@@ -61,11 +83,7 @@ public class AccountUtil
         return false;
     }
 
-
-    public static AccountData getAccountData(
-            Context context,
-            String accountName) throws IllegalStateException
-    {
+    public static AccountData getAccountData(Context context, String accountName) throws IllegalStateException {
         IGISApplication app = (IGISApplication) context.getApplicationContext();
         Account account = app.getAccount(accountName);
 
@@ -82,9 +100,7 @@ public class AccountUtil
         return accountData;
     }
 
-
-    public static class AccountData
-    {
+    public static class AccountData {
         public String url;
         public String login;
         public String password;

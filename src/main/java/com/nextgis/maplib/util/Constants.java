@@ -32,6 +32,7 @@ public interface Constants
 {
     String  TAG                = "nextgismobile";
     String  PREFERENCES        = "nextgismobile";
+    String  SUPPORT            = "support.bin";
     int     MODE_MULTI_PROCESS = 0x4;
     int     NOT_FOUND          = -1;
     boolean DEBUG_MODE         = true;
@@ -137,10 +138,15 @@ public interface Constants
     String JSON_RESOURCE_KEY      = "resource";
     String JSON_MESSAGE_KEY       = "message";
     String JSON_EXTENT_KEY        = "extent";
-    String JSON_MIN_LAT_KEY        = "minLat";
-    String JSON_MAX_LAT_KEY        = "maxLat";
-    String JSON_MIN_LON_KEY        = "minLon";
-    String JSON_MAX_LON_KEY        = "maxLon";
+    String JSON_MIN_LAT_KEY       = "minLat";
+    String JSON_MAX_LAT_KEY       = "maxLat";
+    String JSON_MIN_LON_KEY       = "minLon";
+    String JSON_MAX_LON_KEY       = "maxLon";
+    String JSON_SUPPORTED_KEY     = "supported";
+    String JSON_START_DATE_KEY    = "start_date";
+    String JSON_END_DATE_KEY      = "end_date";
+    String JSON_USER_ID_KEY       = "nextgis_guid";
+    String JSON_SIGNATURE_KEY     = "sign";
 
     /**
      * database fields
