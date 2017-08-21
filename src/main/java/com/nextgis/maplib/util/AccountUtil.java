@@ -33,13 +33,49 @@ import android.util.Base64;
 
 import com.nextgis.maplib.api.IGISApplication;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 
+import static com.nextgis.maplib.util.Constants.JSON_END_DATE_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_SIGNATURE_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_START_DATE_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_SUPPORTED_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_USER_ID_KEY;
+import static com.nextgis.maplib.util.Constants.SUPPORT;
+
 public class AccountUtil {
-    public static boolean verifySignature(String data, String signature) {
+    public static boolean isProUser(Context context) {
+        File support = context.getExternalFilesDir(null);
+        if (support == null)
+            support = new File(context.getFilesDir(), SUPPORT);
+        else
+            support = new File(support, SUPPORT);
+
+        try {
+            String jsonString = FileUtil.readFromFile(support);
+            JSONObject json = new JSONObject(jsonString);
+            if (json.optBoolean(JSON_SUPPORTED_KEY)) {
+                final String id = json.getString(JSON_USER_ID_KEY);
+                final String start = json.getString(JSON_START_DATE_KEY);
+                final String end = json.getString(JSON_END_DATE_KEY);
+                final String data = id + start + end + "true";
+                final String signature = json.getString(JSON_SIGNATURE_KEY);
+
+                return verifySignature(data, signature);
+            }
+        } catch (JSONException | IOException ignored) { }
+
+        return false;
+    }
+
+    private static boolean verifySignature(String data, String signature) {
         try {
             // add public key
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
