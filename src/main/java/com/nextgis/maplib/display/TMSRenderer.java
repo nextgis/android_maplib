@@ -237,8 +237,8 @@ public class TMSRenderer
 
         // FIXME more than 1 pool size causing strange behaviour on 6.0 -> tiles do not render from some threads, exception appears:
         // Fatal signal 11 (SIGSEGV), code 1, fault addr 0xX in tid X (pool-X-thread-X)
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-//            coreCount = 1;
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.M)
+            coreCount = 1;
         // SOLUTION: Add syncronized in drawing raster
 
         //synchronized (lock) {
