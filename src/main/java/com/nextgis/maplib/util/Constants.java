@@ -77,7 +77,7 @@ public interface Constants
     int DEFAULT_DRAW_THREAD_PRIORITY       = android.os.Process.THREAD_PRIORITY_DEFAULT + 11;
     int DEFAULT_DOWNLOAD_THREAD_PRIORITY   = android.os.Process.THREAD_PRIORITY_BACKGROUND + 3;
     int DEFAULT_LOAD_LAYER_THREAD_PRIORITY = Thread.MIN_PRIORITY;
-    int DEFAULT_EXECUTION_DELAY            = 450;
+    int DEFAULT_EXECUTION_DELAY            = 650;
 
     /**
      * tune line string and linear ring simplifier
@@ -235,7 +235,8 @@ public interface Constants
     int    CHANGE_OPERATION_NOT_SYNC = 1 << 5; // 32
 
     int DRAWING_SEPARATE_THREADS = 9;
-    int DRAW_NOTIFY_STEP_PERCENT = 10; // 5%
+    int DRAW_NOTIFY_STEP_PERCENT = 10;
+    int DRAW_FINISH_ID = -22;
 
     String[] VECTOR_FORBIDDEN_FIELDS = {
             "ABORT",

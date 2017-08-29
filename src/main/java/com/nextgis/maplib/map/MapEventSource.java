@@ -62,7 +62,7 @@ public class MapEventSource
 
     protected Map<Integer, Long> mLastMessages;
     //skip event timeout ms
-    public static final int SKIP_TIMEOUT = 250;
+    public static final int SKIP_TIMEOUT = 450;
 
     public MapEventSource(
             Context context,

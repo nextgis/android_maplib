@@ -39,6 +39,7 @@ import java.io.File;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 
+import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 
 
@@ -303,9 +304,12 @@ public class MapDrawable
             protected void done()
             {
                 super.done();
-                //if (!isCancelled()) {
+                if (!isCancelled()) {
+                    onDrawFinished(DRAW_FINISH_ID, 1.0f);
+                }
+                else {
                     onDrawFinished(MapDrawable.this.getId(), 1.0f);
-                //}
+                }
             }
         };
 
