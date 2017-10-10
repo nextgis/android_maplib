@@ -35,7 +35,7 @@ public interface Constants
     String  SUPPORT            = "support.bin";
     int     MODE_MULTI_PROCESS = 0x4;
     int     NOT_FOUND          = -1;
-    boolean DEBUG_MODE         = true;
+    boolean DEBUG_MODE         = false;
 
     int NGW_v3 = 3;
 
