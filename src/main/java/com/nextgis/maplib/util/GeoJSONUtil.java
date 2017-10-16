@@ -4,7 +4,7 @@
  * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -47,12 +47,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+
+import static com.nextgis.maplib.util.GeoConstants.FTDate;
+import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
+import static com.nextgis.maplib.util.GeoConstants.FTTime;
 
 /**
  * Class to store features to Vector layer
@@ -348,6 +354,32 @@ public class GeoJSONUtil {
             }
 
         return value;
+    }
+
+    public static String formatDateTime(long millis, int type) {
+        String result = millis + "";
+        SimpleDateFormat sdf = null;
+
+        switch (type) {
+            case FTDate:
+                sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                break;
+            case FTTime:
+                sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                break;
+            case FTDateTime:
+                sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                break;
+        }
+
+        if (sdf != null)
+            try {
+                result = sdf.format(new Date(millis));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        return result;
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
