@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -101,7 +102,7 @@ public class NGWLookupTable extends Table
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
-        mData = new HashMap<>();
+        mData = new LinkedHashMap<>();
 
         super.fromJSON(jsonObject);
         setAccountName(jsonObject.getString(JSON_ACCOUNT_KEY));
@@ -219,7 +220,7 @@ public class NGWLookupTable extends Table
 
     public void fillFromNGW(IProgressor progressor) throws JSONException, NGException, IOException {
         if(null == mData)
-            mData = new HashMap<>();
+            mData = new LinkedHashMap<>();
         fillFromNGW(mData, progressor);
     }
 
