@@ -27,6 +27,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
@@ -38,6 +39,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class MapEventSource
@@ -297,14 +300,24 @@ public class MapEventSource
 
                 Long lastTime = mLastMessages.get(resultData.getInt(BUNDLE_TYPE_KEY));
                 if(lastTime != null && System.currentTimeMillis() - lastTime < SKIP_TIMEOUT){
-                    if(EVENT_onLayerDrawFinished != resultData.getInt(BUNDLE_TYPE_KEY)) {
+                    boolean filter = !(EVENT_onExtentChanged == resultData.getInt(BUNDLE_TYPE_KEY) ||
+                            EVENT_onLayerDrawFinished == resultData.getInt(BUNDLE_TYPE_KEY));
+                    if(filter) {
+                        if(Constants.DEBUG_MODE) {
+                            Log.d(TAG, "handleMessage: skip event: " + resultData.getInt(BUNDLE_TYPE_KEY));
+                        }
                         return;
                     }
-                    else{
-                        if(resultData.getFloat(BUNDLE_DONE_KEY) < 1){
-                            return;
-                        }
-                    }
+//                    else{
+//                        if(resultData.getFloat(BUNDLE_DONE_KEY) < 1){
+//
+//                            if(Constants.DEBUG_MODE) {
+//                                Log.d(TAG, "handleMessage: skip event: " + resultData.getInt(BUNDLE_TYPE_KEY));
+//                            }
+//
+//                            return;
+//                        }
+//                    }
                 }
                 mLastMessages.put(resultData.getInt(BUNDLE_TYPE_KEY), System.currentTimeMillis());
 
