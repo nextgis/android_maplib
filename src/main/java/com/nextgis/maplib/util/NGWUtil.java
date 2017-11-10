@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
 import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
@@ -101,11 +102,17 @@ public class NGWUtil
      */
 
     public static String getConnectionCookie(
-            String sUrl,
+            AtomicReference<String> reference,
             String login,
             String password)
             throws IOException
     {
+        String sUrl = reference.get();
+        if (!sUrl.startsWith("http")) {
+            sUrl = "http://" + sUrl;
+            reference.set(sUrl);
+        }
+
         sUrl += "/login";
         String sPayload = "login=" + login + "&password=" + password;
         final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
@@ -139,7 +146,12 @@ public class NGWUtil
             }
         }
 
-        return null;
+        if (!sUrl.startsWith("https")) {
+            sUrl = sUrl.replace("http", "https").replace("/login", "");
+            reference.set(sUrl);
+        }
+
+        return getConnectionCookie(reference, login, password);
     }
 
 

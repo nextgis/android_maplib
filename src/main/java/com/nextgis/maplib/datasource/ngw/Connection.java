@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -39,7 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Connection
         implements INGWResource
@@ -114,7 +114,8 @@ public class Connection
     public boolean connect()
     {
         try {
-            mCookie = NGWUtil.getConnectionCookie(mURL, mLogin, mPassword);
+            AtomicReference<String> reference = new AtomicReference<>(mURL);
+            mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword);
             if(null == mCookie) {
                 return false;
             }
