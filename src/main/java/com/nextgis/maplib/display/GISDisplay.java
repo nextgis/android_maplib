@@ -100,12 +100,12 @@ public class GISDisplay
     }
 
 
-    public void setSize(
+    public boolean setSize(
             int w,
             int h)
     {
         if ((mWidth == w && mHeight == h) || w < 1 || h < 1) {
-            return;
+            return false;
         }
         mMainBitmap = null;
         mMainCanvas = null;
@@ -154,6 +154,8 @@ public class GISDisplay
 
         //default zoom and center
         setZoomAndCenter(mZoomLevel, mCenter);
+
+        return true;
     }
 
 

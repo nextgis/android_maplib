@@ -1168,9 +1168,12 @@ public class NGWVectorLayer
             changed = tracked.get(1);
             deleted = tracked.get(2);
             features = new ArrayList<>();
-            features.addAll(added);
-            features.addAll(changed);
-            features.addAll(deleted);
+            if(null != added)
+                features.addAll(added);
+            if(null != changed)
+                features.addAll(changed);
+            if(null != deleted)
+                features.addAll(deleted);
 
             if (Constants.DEBUG_MODE) {
                 Log.d(TAG, "Layer " + mName + " is tracked for history");

@@ -124,8 +124,8 @@ public class MapDrawable
         super.setViewSize(w, h);
 
         if (mDisplay != null) {
-            mDisplay.setSize(w, h);
-            onExtentChanged((int) mDisplay.getZoomLevel(), mDisplay.getCenter());
+            if(mDisplay.setSize(w, h))
+                onExtentChanged((int) mDisplay.getZoomLevel(), mDisplay.getCenter());
         }
     }
 
