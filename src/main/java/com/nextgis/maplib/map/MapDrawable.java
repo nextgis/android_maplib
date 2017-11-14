@@ -277,8 +277,12 @@ public class MapDrawable
     @Override
     public void runDraw(final GISDisplay display)
     {
-        cancelDraw();
+        try {
+            cancelDraw();
+        }
+        catch (Exception e) {
 
+        }
         onLayerDrawStarted();
 
         if (null != display && mDisplay != display) {
