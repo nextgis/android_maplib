@@ -252,14 +252,14 @@ public class GeometryRTree implements IGeometryCache {
      *         envelope.
      */
     @Override
-    public List<IGeometryCacheItem> search(GeoEnvelope extent){
+    public synchronized List<IGeometryCacheItem> search(GeoEnvelope extent){
         LinkedList<IGeometryCacheItem> results = new LinkedList<>();
         search(extent, root, results);
         return results;
     }
 
     @Override
-    public List<IGeometryCacheItem> getAll() {
+    public synchronized List<IGeometryCacheItem> getAll() {
         LinkedList<IGeometryCacheItem> result = new LinkedList<>();
         getAll(root, result);
         return result;
