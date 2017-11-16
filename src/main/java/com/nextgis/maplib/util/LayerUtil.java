@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -61,6 +61,19 @@ public class LayerUtil {
 
         if(result.equals(Constants.FIELD_ID))
             return "_fixed_id";
+
+        return result;
+    }
+
+    public static String normalizeLayerName(String layerName) {
+        char [] forbiddenChars = {':', '<', '>', '*', '?', '/', '\\', '"', '|'};
+        String result = layerName;
+
+        if (result.charAt(layerName.length() - 1) == '.')
+            result += "_";
+
+        for (char testChar : forbiddenChars)
+            result = result.replace(testChar, '_');
 
         return result;
     }
