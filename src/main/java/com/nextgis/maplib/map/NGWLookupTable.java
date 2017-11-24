@@ -156,7 +156,10 @@ public class NGWLookupTable extends Table
             fillFromNGW(remoteData, null);
         } catch (IOException | NGException | JSONException e) {
             e.printStackTrace();
-            Log.d(Constants.TAG, e.getLocalizedMessage());
+            String locMsg = e.getLocalizedMessage();
+            if(locMsg != null) {
+                Log.d(Constants.TAG, locMsg);
+            }
             syncResult.stats.numParseExceptions++;
             return;
         }
