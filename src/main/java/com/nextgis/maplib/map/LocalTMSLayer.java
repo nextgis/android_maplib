@@ -67,7 +67,7 @@ public class LocalTMSLayer
     protected Map<Integer, TileCacheLevelDescItem> mLimits;
 
 
-    protected LocalTMSLayer(
+    public LocalTMSLayer(
             Context context,
             File path)
     {

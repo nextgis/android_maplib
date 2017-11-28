@@ -119,6 +119,10 @@ public abstract class TMSLayer
         return null;
     }
 
+    public void clearCache() {
+        if (mBitmapCache != null)
+            mBitmapCache.clear();
+    }
 
     @Override
     public JSONObject toJSON()
