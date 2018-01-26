@@ -260,4 +260,11 @@ public class NGWLookupTable extends Table
     public Map<String, String> getData() {
         return mData;
     }
+
+    public void setData(Map<String, String> data) {
+        mData = new LinkedHashMap<>();
+        if (data != null) {
+            mData.putAll(data);
+        }
+    }
 }

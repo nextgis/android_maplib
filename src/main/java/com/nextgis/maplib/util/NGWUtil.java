@@ -41,6 +41,7 @@ import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.INGWResource;
 import com.nextgis.maplib.datasource.ngw.Resource;
 import com.nextgis.maplib.datasource.ngw.ResourceGroup;
+import com.nextgis.maplib.map.NGWLookupTable;
 import com.nextgis.maplib.map.VectorLayer;
 
 import org.json.JSONArray;
@@ -95,6 +96,9 @@ public class NGWUtil
     public static String NGWKEY_PARENT          = "parent";
     public static String NGWKEY_GEOMETRY_TYPE   = "geometry_type";
     public static String NGWKEY_DATATYPE        = "datatype";
+    public static String NGWKEY_LOOKUP_TABLE    = "lookup_table";
+    public static String NGWKEY_RESMETA         = "resmeta";
+    public static String NGWKEY_ITEMS           = "items";
 
 
     /**
@@ -803,7 +807,8 @@ public class NGWUtil
             Context context,
             Connection connection,
             long parentId,
-            String name)
+            String name,
+            String keyName)
     {
         JSONObject payload = new JSONObject();
         try {
@@ -813,6 +818,9 @@ public class NGWUtil
             id.put(JSON_ID_KEY, parentId);
             resource.put(NGWKEY_PARENT, id);
             resource.put(NGWKEY_DISPLAY_NAME, name);
+            if (keyName != null) {
+                resource.put(NGWKEY_KEYNAME, keyName);
+            }
             payload.put(JSON_RESOURCE_KEY, resource);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -825,7 +833,8 @@ public class NGWUtil
     public static HttpResponse createNewLayer(
             Connection connection,
             VectorLayer layer,
-            long parentId)
+            long parentId,
+            String keyName)
     {
         JSONObject payload = new JSONObject();
         try {
@@ -835,6 +844,9 @@ public class NGWUtil
             id.put(JSON_ID_KEY, parentId);
             resource.put(NGWKEY_PARENT, id);
             resource.put(JSON_DISPLAY_NAME, layer.getName());
+            if (keyName != null) {
+                resource.put(NGWKEY_KEYNAME, keyName);
+            }
             payload.put(JSON_RESOURCE_KEY, resource);
 
             JSONObject vectorLayer = new JSONObject();
@@ -859,5 +871,46 @@ public class NGWUtil
         }
 
         return createNewResource(layer.getContext(), connection, payload);
+    }
+
+    public static HttpResponse createNewLookupTable(
+            Connection connection,
+            NGWLookupTable table,
+            long parentId,
+            String keyName)
+    {
+        JSONObject payload = new JSONObject();
+        try {
+            JSONObject resource = new JSONObject();
+            resource.put(NGWKEY_CLS, NGWKEY_LOOKUP_TABLE);
+            JSONObject id = new JSONObject();
+            id.put(JSON_ID_KEY, parentId);
+            resource.put(NGWKEY_PARENT, id);
+            resource.put(JSON_DISPLAY_NAME, table.getName());
+            if (keyName != null) {
+                resource.put(NGWKEY_KEYNAME, keyName);
+            }
+            payload.put(JSON_RESOURCE_KEY, resource);
+
+            JSONObject itemsResmeta = new JSONObject();
+            itemsResmeta.put(NGWKEY_ITEMS, new JSONObject());
+            payload.put(NGWKEY_RESMETA, itemsResmeta);
+
+            JSONObject jsonData = new JSONObject();
+            Map<String, String> data = table.getData();
+            if (data != null) {
+                for (Map.Entry<String, String> entry : data.entrySet()) {
+                    jsonData.put(entry.getKey(), entry.getValue());
+                }
+            }
+            JSONObject items = new JSONObject();
+            items.put(NGWKEY_ITEMS, jsonData);
+            payload.put(NGWKEY_LOOKUP_TABLE, items);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return new HttpResponse(500);
+        }
+
+        return createNewResource(table.getContext(), connection, payload);
     }
 }
