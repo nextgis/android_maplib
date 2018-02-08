@@ -53,7 +53,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
     public final static int MarkerStyleCrossedBox = 8;
 
     protected int mType;
-    protected float mSize;
+    protected float mSize, mTextSize = 3;
     protected Paint mOutPaint;
     protected Paint mFillPaint;
     protected String mField;
@@ -80,6 +80,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         SimpleMarkerStyle obj = (SimpleMarkerStyle) super.clone();
         obj.mType = mType;
         obj.mSize = mSize;
+        obj.mTextSize = mTextSize;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
@@ -134,10 +135,11 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
                 break;
         }
 
-        drawText(scaledSize - width, pt, display);
+//        drawText(scaledSize - width, pt, display);
+        drawText(scaledSize, mTextSize, pt, display);
     }
 
-    protected void drawText(float inner, GeoPoint pt, GISDisplay display) {
+    protected void drawText(float radius, float size, GeoPoint pt, GISDisplay display) {
         if (TextUtils.isEmpty(mText))
             return;
 
@@ -148,8 +150,8 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         textPaint.setStrokeCap(Paint.Cap.ROUND);
 
         float gap = (float) (1 / display.getScale());
-        float innerRadius = inner - gap;
-        float textSize = 2 * innerRadius; // initial text size
+        float innerRadius = radius - gap;
+        float textSize = size * innerRadius; // initial text size
 
         Rect textRect = new Rect();
         textPaint.setTextSize(textSize);
@@ -157,19 +159,19 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
 
         float halfW = textRect.width() / 2;
         float halfH = textRect.height() / 2;
-        float outerTextRadius = (float) Math.sqrt(halfH * halfH + halfW * halfW);
-        float textScale = innerRadius / outerTextRadius;
+//        float outerTextRadius = (float) Math.sqrt(halfH * halfH + halfW * halfW);
+//        float textScale = innerRadius / outerTextRadius;
 
         float textX = (float) (pt.getX() - halfW);
         float textY = (float) (pt.getY() + halfH);
 
         Path textPath = new Path();
-        textPaint.getTextPath(mText, 0, mText.length(), textX, textY, textPath);
+        textPaint.getTextPath(mText, 0, mText.length(), textX, textY - halfH * 2 - halfH * .25f, textPath);
         textPath.close();
 
         Matrix matrix = new Matrix();
         matrix.reset();
-        matrix.setScale(textScale, -textScale, (float) pt.getX(), (float) pt.getY());
+        matrix.setScale(1, -1, (float) pt.getX(), (float) pt.getY());
         textPath.transform(matrix);
 
         display.drawPath(textPath, textPaint);
@@ -276,6 +278,14 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mSize = size;
     }
 
+    public float getTextSize() {
+        return mTextSize;
+    }
+
+    public void setTextSize(float size) {
+        mTextSize = size;
+    }
+
     @Override
     public void setColor(int color) {
         super.setColor(color);
@@ -307,6 +317,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         rootConfig.put(JSON_NAME_KEY, "SimpleMarkerStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_SIZE_KEY, mSize);
+        rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -323,6 +334,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         super.fromJSON(jsonObject);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
+        mTextSize = (float) jsonObject.getDouble(JSON_TEXT_SIZE_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);
