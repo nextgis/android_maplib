@@ -210,7 +210,7 @@ public class LocalTMSLayer
 
             }
 
-            if(zoomLevel.getName().equals(Constants.CONFIG)){
+            if(zoomLevel.getName().equals(Constants.CONFIG) || !zoomLevel.isDirectory()){
                 continue;
             }
 
