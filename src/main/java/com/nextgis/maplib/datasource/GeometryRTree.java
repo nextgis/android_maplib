@@ -218,9 +218,11 @@ public class GeometryRTree implements IGeometryCache {
     public IGeometryCacheItem getItem(long featureId, Node n) {
         if (n.mLeaf){
             for (Node e : n.mChildren){
-                Entry entry = (Entry)e;
-                if (entry.getFeatureId() == featureId){
-                    return entry;
+                if (e instanceof Entry) {
+                    Entry entry = (Entry)e;
+                    if (entry.getFeatureId() == featureId){
+                        return entry;
+                    }
                 }
             }
         }
