@@ -135,6 +135,7 @@ public interface Constants
     String JSON_SIZE_KEY          = "size";
     String JSON_TEXT_SIZE_KEY     = "text_size";
     String JSON_TEXT_ALIGN_KEY    = "text_alignment";
+    String JSON_TEXT_COLOR_KEY    = "text_color";
     String JSON_DISPLAY_NAME      = "display_name";
     String JSON_RESOURCE_KEY      = "resource";
     String JSON_MESSAGE_KEY       = "message";

@@ -28,7 +28,6 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.text.TextUtils;
 
 import com.nextgis.maplib.api.ITextStyle;
@@ -79,6 +78,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
     protected String mField;
     protected String mText;
     protected int mTextAlignment;
+    protected int mTextColor = Color.BLACK;
 
     public SimpleMarkerStyle() {
         super();
@@ -103,6 +103,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         obj.mSize = mSize;
         obj.mTextSize = mTextSize;
         obj.mTextAlignment = mTextAlignment;
+        obj.mTextColor = mTextColor;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
@@ -166,7 +167,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
             return;
 
         Paint textPaint = new Paint();
-        textPaint.setColor(Color.BLACK);
+        textPaint.setColor(mTextColor);
         textPaint.setAntiAlias(true);
         textPaint.setStyle(Paint.Style.FILL);
         textPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -185,7 +186,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
 //        float outerTextRadius = (float) Math.sqrt(halfH * halfH + halfW * halfW);
 //        float textScale = innerRadius / outerTextRadius;
 
-        float textX = (float) (pt.getX() - halfW + radius / 2);
+        float textX = (float) (pt.getX() - halfW - radius / 2);
         float textY = (float) (pt.getY() + halfH - radius / 2);
 
         switch (mTextAlignment) {
@@ -347,6 +348,14 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mTextAlignment = alignment;
     }
 
+    public int getTextColor() {
+        return mTextColor;
+    }
+
+    public void setTextColor(int color) {
+        mTextColor = color;
+    }
+
     @Override
     public void setColor(int color) {
         super.setColor(color);
@@ -380,6 +389,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         rootConfig.put(JSON_SIZE_KEY, mSize);
         rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
         rootConfig.put(JSON_TEXT_ALIGN_KEY, mTextAlignment);
+        rootConfig.put(JSON_TEXT_COLOR_KEY, mTextColor);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -398,6 +408,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
         mTextSize = (float) jsonObject.getDouble(JSON_TEXT_SIZE_KEY);
         mTextAlignment = jsonObject.getInt(JSON_TEXT_ALIGN_KEY);
+        mTextColor = jsonObject.getInt(JSON_TEXT_COLOR_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);
