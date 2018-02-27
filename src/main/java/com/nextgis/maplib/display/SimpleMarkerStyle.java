@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -28,6 +28,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 
 import com.nextgis.maplib.api.ITextStyle;
@@ -37,6 +38,9 @@ import com.nextgis.maplib.datasource.GeoPoint;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
@@ -52,12 +56,29 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
     public final static int MarkerEditStyleCircle = 7;
     public final static int MarkerStyleCrossedBox = 8;
 
+    public final static float SIZE_SMALL = 3;
+    public final static float SIZE_MEDIUM = 6;
+    public final static float SIZE_BIG = 10;
+    public final static ArrayList<Float> SIZES = new ArrayList<>(Arrays.asList(new Float[]{SIZE_SMALL, SIZE_MEDIUM, SIZE_BIG}));
+
+    public final static int ALIGN_TOP = 0;
+    public final static int ALIGN_TOP_RIGHT = 1;
+    public final static int ALIGN_RIGHT = 2;
+    public final static int ALIGN_BOTTOM_RIGHT = 3;
+    public final static int ALIGN_BOTTOM = 4;
+    public final static int ALIGN_BOTTOM_LEFT = 5;
+    public final static int ALIGN_LEFT = 6;
+    public final static int ALIGN_TOP_LEFT = 7;
+    public final static ArrayList<Integer> ALIGNMENTS = new ArrayList<>(Arrays.asList(
+            new Integer[]{ALIGN_TOP, ALIGN_TOP_RIGHT, ALIGN_RIGHT, ALIGN_BOTTOM_RIGHT, ALIGN_BOTTOM, ALIGN_BOTTOM_LEFT, ALIGN_LEFT, ALIGN_TOP_LEFT}));
+
     protected int mType;
     protected float mSize, mTextSize = 3;
     protected Paint mOutPaint;
     protected Paint mFillPaint;
     protected String mField;
     protected String mText;
+    protected int mTextAlignment;
 
     public SimpleMarkerStyle() {
         super();
@@ -81,6 +102,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         obj.mType = mType;
         obj.mSize = mSize;
         obj.mTextSize = mTextSize;
+        obj.mTextAlignment = mTextAlignment;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
@@ -154,19 +176,50 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         float textSize = size * innerRadius; // initial text size
 
         Rect textRect = new Rect();
-        textPaint.setTextSize(textSize);
+        textPaint.setTextSize(size);
         textPaint.getTextBounds(mText, 0, mText.length(), textRect);
+        textPaint.setTextSize(textSize);
 
-        float halfW = textRect.width() / 2;
-        float halfH = textRect.height() / 2;
+        float halfW = textRect.width() * innerRadius / 2;
+        float halfH = textRect.height() * innerRadius / 2;
 //        float outerTextRadius = (float) Math.sqrt(halfH * halfH + halfW * halfW);
 //        float textScale = innerRadius / outerTextRadius;
 
-        float textX = (float) (pt.getX() - halfW);
-        float textY = (float) (pt.getY() + halfH);
+        float textX = (float) (pt.getX() - halfW + radius / 2);
+        float textY = (float) (pt.getY() + halfH - radius / 2);
 
+        switch (mTextAlignment) {
+            case ALIGN_TOP:
+                textY = textY - halfH * 2;
+                break;
+            case ALIGN_TOP_RIGHT:
+                textX = textX + halfW * 2 - halfW * .5f;
+                textY = textY - halfH * 2;
+                break;
+            case ALIGN_RIGHT:
+                textX = textX + halfW * 2 - halfW * 0.25f;
+                break;
+            case ALIGN_BOTTOM_RIGHT:
+                textX = textX + halfW * 2 - halfW * .5f;
+                textY = textY + halfH * 2;
+                break;
+            case ALIGN_BOTTOM:
+                textY = textY + halfH * 2;
+                break;
+            case ALIGN_BOTTOM_LEFT:
+                textX = textX - halfW * 2 + halfW * .5f;
+                textY = textY + halfH * 2;
+                break;
+            case ALIGN_LEFT:
+                textX = textX - halfW * 2 + halfW * 0.25f;
+                break;
+            case ALIGN_TOP_LEFT:
+                textX = textX - halfW * 2 + halfW * .5f;
+                textY = textY - halfH * 2;
+                break;
+        }
         Path textPath = new Path();
-        textPaint.getTextPath(mText, 0, mText.length(), textX, textY - halfH * 2 - halfH * .25f, textPath);
+        textPaint.getTextPath(mText, 0, mText.length(), textX, textY, textPath);
         textPath.close();
 
         Matrix matrix = new Matrix();
@@ -286,6 +339,14 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mTextSize = size;
     }
 
+    public int getTextAlignment() {
+        return mTextAlignment;
+    }
+
+    public void setTextAlignment(int alignment) {
+        mTextAlignment = alignment;
+    }
+
     @Override
     public void setColor(int color) {
         super.setColor(color);
@@ -318,6 +379,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_SIZE_KEY, mSize);
         rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
+        rootConfig.put(JSON_TEXT_ALIGN_KEY, mTextAlignment);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -335,6 +397,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
         mTextSize = (float) jsonObject.getDouble(JSON_TEXT_SIZE_KEY);
+        mTextAlignment = jsonObject.getInt(JSON_TEXT_ALIGN_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);

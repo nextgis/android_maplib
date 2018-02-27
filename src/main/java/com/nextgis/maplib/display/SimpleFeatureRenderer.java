@@ -298,6 +298,7 @@ public class SimpleFeatureRenderer
         AtomicReference<Style> reference = new AtomicReference<>();
         fromJSON(jsonObject, reference);
         mStyle = reference.get();
+
     }
 
     public static void fromJSON(JSONObject jsonObject, AtomicReference<Style> style) throws JSONException {

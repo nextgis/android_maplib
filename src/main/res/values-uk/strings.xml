@@ -74,7 +74,7 @@
     <string name="sync_canceled">Синхронізацію скасовано</string>
     <string name="sync_error">Помилка синхронізації</string>
     <string name="sync_finished">Синхронізацію заверешено</string>
-    <string name="text">Текст</string>
+    <string name="text">Подпись</string>
     <string name="error_connect_failed">Помилка підключення</string>
     <string name="error_403">Бракує прав</string>
     <string name="error_404">Ресурс не знайдено</string>

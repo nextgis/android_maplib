@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -134,6 +134,7 @@ public interface Constants
     String JSON_VALUE_KEY         = "value";
     String JSON_SIZE_KEY          = "size";
     String JSON_TEXT_SIZE_KEY     = "text_size";
+    String JSON_TEXT_ALIGN_KEY    = "text_alignment";
     String JSON_DISPLAY_NAME      = "display_name";
     String JSON_RESOURCE_KEY      = "resource";
     String JSON_MESSAGE_KEY       = "message";
