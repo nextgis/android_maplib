@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -53,7 +53,7 @@ public class MapContentProviderHelper
     protected DatabaseHelper mDatabaseHelper;
 
     protected static final String DBNAME           = "layers";
-    protected static final int    DATABASE_VERSION = 3;
+    protected static final int    DATABASE_VERSION = 4;
 
 
     public MapContentProviderHelper(
@@ -130,6 +130,12 @@ public class MapContentProviderHelper
 
                 data.close();
             }
+        }
+
+        if (oldVersion <= 3 && tableExists) {
+            sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKPOINTS + " add column " + TrackLayer.FIELD_SENT + " integer not null default 1;");
+            sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKPOINTS + " add column " + TrackLayer.FIELD_ACCURACY + " real;");
+            sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKPOINTS + " add column " + TrackLayer.FIELD_SPEED + " real;");
         }
     }
 

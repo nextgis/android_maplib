@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -70,6 +70,9 @@ public class TrackLayer
     public static final String FIELD_SAT       = "sat";
     public static final String FIELD_TIMESTAMP = "time";
     public static final String FIELD_SESSION   = "session";
+    public static final String FIELD_SENT      = "sent";
+    public static final String FIELD_SPEED     = "speed";
+    public static final String FIELD_ACCURACY  = "accuracy";
 
     static final String DB_CREATE_TRACKS      =
             "CREATE TABLE IF NOT EXISTS " + TABLE_TRACKS + " (" +
@@ -86,7 +89,10 @@ public class TrackLayer
             FIELD_ELE + " REAL, " +
             FIELD_FIX + " TEXT, " +
             FIELD_SAT + " INTEGER, " +
+            FIELD_SPEED + " REAL, " +
+            FIELD_ACCURACY + " REAL, " +
             FIELD_TIMESTAMP + " INTEGER NOT NULL, " +
+            FIELD_SENT + " INTEGER NOT NULL, " +
             FIELD_SESSION + " INTEGER NOT NULL, FOREIGN KEY(" + FIELD_SESSION + ") REFERENCES " +
             TABLE_TRACKS + "(" + FIELD_ID + "));";
 
@@ -438,6 +444,7 @@ public class TrackLayer
     {
         mSQLiteDatabase = mMap.getDatabase(false);
         int updated;
+        String table = TABLE_TRACKS;
 
         switch (mUriMatcher.match(uri)) {
             case TYPE_SINGLE_TRACK:
@@ -453,12 +460,14 @@ public class TrackLayer
 //                notifyLayerChanged();
                 break;
             case TYPE_TRACKPOINTS:
-                throw new IllegalArgumentException("Trackpoints can't be updated");
+                table = TABLE_TRACKPOINTS;
+                break;
+//                throw new IllegalArgumentException("Trackpoints can't be updated");
             default:
                 throw new IllegalArgumentException("Wrong tracks URI: " + uri);
         }
 
-        updated = mSQLiteDatabase.update(TABLE_TRACKS, values, selection, selectionArgs);
+        updated = mSQLiteDatabase.update(table, values, selection, selectionArgs);
 
         if (updated > 0) {
             reloadTracks(UPDATE);

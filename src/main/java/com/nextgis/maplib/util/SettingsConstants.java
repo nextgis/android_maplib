@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -37,4 +37,5 @@ public interface SettingsConstants
     String KEY_PREF_TRACKS_MIN_DISTANCE     = "tracks_min_distance";
     String KEY_PREF_TRACKS_SOURCE           = "tracks_location_source";
     String KEY_PREF_TRACK_RESTORE           = "track_restore";
+    String KEY_PREF_TRACK_SEND              = "track_send";
 }
