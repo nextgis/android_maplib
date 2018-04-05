@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -80,6 +80,7 @@ import com.nextgis.maplib.util.LayerUtil;
 import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
+import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -350,9 +351,10 @@ public class VectorLayer
             throws IOException, JSONException, NGException, SQLiteException
     {
         InputStream inputStream, is;
-        if (android.util.Patterns.WEB_URL.matcher(uri.toString()).matches()) {
-            inputStream = new URL(uri.toString()).openStream();
-            is = new URL(uri.toString()).openStream();
+        String url = uri.toString();
+        if (NetworkUtil.isValidUri(url)) {
+            inputStream = new URL(url).openStream();
+            is = new URL(url).openStream();
         } else {
             inputStream = mContext.getContentResolver().openInputStream(uri);
             is = mContext.getContentResolver().openInputStream(uri);

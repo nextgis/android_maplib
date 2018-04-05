@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -45,12 +45,20 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
 
 public class NetworkUtil
 {
+    private static final String IP_ADDRESS = "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
+            + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
+            + "[0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}"
+            + "|[1-9][0-9]|[0-9]))";
+    public static final String URL_PATTERN = "^(?i)((ftp|https?)://)?(([\\da-z\\.-]+)\\.([a-z\\.]{2,6})|" + IP_ADDRESS + ")(/\\S*)?$";
+
     protected final ConnectivityManager mConnectionManager;
     protected final TelephonyManager    mTelephonyManager;
     protected       long                mLastCheckTime;
@@ -140,9 +148,13 @@ public class NetworkUtil
         conn.setReadTimeout(TIMEOUT_SOCKET);
         conn.setRequestProperty("Accept", "*/*");
 
-        String query = Uri.parse(targetURL).getQuery();
-        String path = targetURL.replace("?" + query, "");
-        return android.util.Patterns.WEB_URL.matcher(path).matches() ? conn : null;
+        return isValidUri(targetURL) ? conn : null;
+    }
+
+    public static boolean isValidUri(String url) {
+        Pattern pattern = Pattern.compile(URL_PATTERN);
+        Matcher match = pattern.matcher(url);
+        return match.matches();
     }
 
     public static String getHTTPBaseAuth(String username, String password){
