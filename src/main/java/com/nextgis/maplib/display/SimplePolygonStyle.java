@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -49,7 +49,7 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
     protected boolean mFill;
     protected String mField;
     protected String mText;
-    protected Float mTextSize;
+    protected Float mTextSize = 12f;
 
     protected static final String JSON_FILL_KEY = "fill";
 
@@ -85,7 +85,8 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
 
     @Override
     public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
-        Float scaledTextSize = (null == mTextSize) ? null : (float) (mTextSize / display.getScale());
+        Float textSize = (null == mTextSize) ? null : 12f;
+        float scaledTextSize = (float) (mTextSize * (mWidth / display.getScale()));
         GeoPoint center = geoGeometry.getEnvelope().getCenter();
         switch (geoGeometry.getType()) {
             case GTPolygon:
@@ -216,7 +217,7 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);
         }
         if (jsonObject.has(JSON_TEXT_SIZE_KEY)) {
-            mTextSize = (float) jsonObject.getDouble(JSON_TEXT_SIZE_KEY);
+            mTextSize = (float) jsonObject.optDouble(JSON_TEXT_SIZE_KEY, 12);
         }
         if (jsonObject.has(JSON_VALUE_KEY)) {
             mField = jsonObject.getString(JSON_VALUE_KEY);
