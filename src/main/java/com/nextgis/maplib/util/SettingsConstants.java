@@ -33,6 +33,7 @@ public interface SettingsConstants
     String KEY_PREF_LOCATION_MIN_DISTANCE   = "location_min_distance";
     String KEY_PREF_LOCATION_ACCURATE_COUNT = "accurate_max_count";
     String KEY_PREF_LOCATION_ACCURATE_TIME  = "accurate_max_time";
+    String KEY_PREF_LOCATION_ACCURATE_CE    = "accurate_ce";
     String KEY_PREF_TRACKS_MIN_TIME         = "tracks_min_time";
     String KEY_PREF_TRACKS_MIN_DISTANCE     = "tracks_min_distance";
     String KEY_PREF_TRACKS_SOURCE           = "tracks_location_source";
