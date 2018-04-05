@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -96,44 +96,29 @@ public class Connection
         mSupportedTypes = new ArrayList<>();
     }
 
-    public boolean connect(boolean guest){
-        if(guest){
-            mIsConnected = true;
+    public boolean connect(boolean guest) {
+        setNgwVersion();
+        fillCapabilities();
 
-            fillCapabilities();
+        mRootResource = new ResourceGroup(0, this);
+        mRootResource.setParent(this);
 
-            mRootResource = new ResourceGroup(0, this);
-            mRootResource.setParent(this);
-            return true;
-        }
-        else {
-            return connect();
-        }
-    }
-
-    public boolean connect()
-    {
-        try {
-            AtomicReference<String> reference = new AtomicReference<>(mURL);
-            mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword);
-            if(null == mCookie) {
+        if (!guest) {
+            try {
+                AtomicReference<String> reference = new AtomicReference<>(mURL);
+                mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword);
+                if (null == mCookie) {
+                    return false;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
                 return false;
             }
-
-            mIsConnected = true;
-
-            setNgwVersion();
-            fillCapabilities();
-
-            mRootResource = new ResourceGroup(0, this);
-            mRootResource.setParent(this);
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
         }
-    }
 
+        mIsConnected = true;
+        return true;
+    }
 
     protected void setNgwVersion()
     {
