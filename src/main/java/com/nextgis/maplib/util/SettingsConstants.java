@@ -39,4 +39,5 @@ public interface SettingsConstants
     String KEY_PREF_TRACKS_SOURCE           = "tracks_location_source";
     String KEY_PREF_TRACK_RESTORE           = "track_restore";
     String KEY_PREF_TRACK_SEND              = "track_send";
+    String KEY_PREF_UNITS                   = "preferred_units";
 }

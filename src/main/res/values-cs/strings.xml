@@ -5,7 +5,7 @@
   ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2012-2018 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -88,4 +88,8 @@
     <string name="self_intersection">Nalezeno překřížení</string>
     <string name="ring_outside">Některá díra je mimo původní polygon</string>
     <string name="rings_intersection">Rřekřížení děr</string>
+    <string name="unit_mile">ml</string>
+    <string name="unit_foot">ft</string>
+    <string name="unit_square_mile">ml²</string>
+    <string name="unit_square_foot">ft²</string>
 </resources>

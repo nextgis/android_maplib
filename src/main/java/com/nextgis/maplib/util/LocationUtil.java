@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 
+import static android.content.Context.MODE_MULTI_PROCESS;
 
 public class LocationUtil
 {
@@ -119,25 +120,45 @@ public class LocationUtil
 
 
     public static String formatLength(Context context, double length, int precision) {
-        int div = 1, unit = R.string.unit_meter;
-        if (length >= 1000) {
-            div *= 1000;
-            unit = R.string.unit_kilometer;
+        SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
+        boolean metric = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric").equals("metric");
+        int unit = metric ? R.string.unit_meter : R.string.unit_foot;
+        if (metric) {
+            if (length >= 1000) {
+                length /= 1000;
+                unit = R.string.unit_kilometer;
+            }
+        } else {
+            length /= 0.3048;
+            if (length >= 5280) {
+                length /= 5280;
+                unit = R.string.unit_mile;
+            }
         }
 
         String format = precision > 0 ? "%." + precision + "f" : "%.0f";
-        return String.format(format + " %s", length / div, context.getString(unit));
+        return String.format(format + " %s", length, context.getString(unit));
     }
 
 
     public static String formatArea(Context context, double length) {
-        int div = 1, unit = R.string.unit_square_meter;
-        if (length >= 1000000) {
-            div *= 1000000;
-            unit = R.string.unit_square_kilometer;
+        SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
+        boolean metric = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric").equals("metric");
+        int unit = metric ? R.string.unit_square_meter : R.string.unit_square_foot;
+        if (metric) {
+            if (length >= 1000000) {
+                length /= 1000000;
+                unit = R.string.unit_square_kilometer;
+            }
+        } else {
+            length /= Math.pow(0.3048, 2);
+            if (length >= 27878398.8) {
+                length /= 27878398.8;
+                unit = R.string.unit_square_mile;
+            }
         }
 
-        return String.format("%.3f %s", length / div, context.getString(unit));
+        return String.format("%.3f %s", length, context.getString(unit));
     }
 
 
@@ -210,7 +231,7 @@ public class LocationUtil
                                : SettingsConstants.KEY_PREF_LOCATION_SOURCE;
 
         SharedPreferences sharedPreferences = context.getSharedPreferences(
-                context.getPackageName() + "_preferences", Constants.MODE_MULTI_PROCESS);
+                context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
         int providers = Integer.parseInt(sharedPreferences.getString(preferenceKey, "3"));
 
         return 0 != (providers & currentProvider);

@@ -3,7 +3,7 @@
   ~ Purpose:  Mobile GIS for Android.
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2017 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2017-2018 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -86,4 +86,8 @@
     <string name="self_intersection">स्व चौराहे का पता लगाने</string>
     <string name="ring_outside">बाहरी रिंग के बाहर छेद में से एक</string>
     <string name="rings_intersection">छेद चौराहे</string>
+    <string name="unit_mile">ml</string>
+    <string name="unit_foot">ft</string>
+    <string name="unit_square_mile">ml²</string>
+    <string name="unit_square_foot">ft²</string>
 </resources>

@@ -4,7 +4,7 @@
   ~ Author:   Maxim Dubinin, maxim.dubinin@nextgis.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2016-2017 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2016-2018 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -87,4 +87,8 @@
     <string name="self_intersection">Self intersection detected</string>
     <string name="ring_outside">One of holes outside the outer ring</string>
     <string name="rings_intersection">Holes intersection</string>
+    <string name="unit_mile">ml</string>
+    <string name="unit_foot">ft</string>
+    <string name="unit_square_mile">ml²</string>
+    <string name="unit_square_foot">ft²</string>
 </resources>

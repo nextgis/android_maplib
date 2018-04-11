@@ -87,4 +87,8 @@
     <string name="self_intersection">Виявлено самоперетин</string>
     <string name="ring_outside">Одна з дірок за межами полігону</string>
     <string name="rings_intersection">Пересічення дірок</string>
+    <string name="unit_mile">ml</string>
+    <string name="unit_foot">ft</string>
+    <string name="unit_square_mile">ml²</string>
+    <string name="unit_square_foot">ft²</string>
 </resources>
