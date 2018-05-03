@@ -36,6 +36,7 @@ import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.NGException;
+import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,6 +44,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -235,15 +237,19 @@ public abstract class TMSLayer
     }
 
     protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
-        InputStream inputStream = mContext.getContentResolver().openInputStream(uri);
-        if (inputStream == null) {
+        InputStream inputStream;
+        String url = uri.toString();
+        if (NetworkUtil.isValidUri(url))
+            inputStream = new URL(url).openStream();
+        else
+            inputStream = mContext.getContentResolver().openInputStream(uri);
+
+        if (inputStream == null)
             throw new NGException(mContext.getString(R.string.error_download_data));
-        }
 
         int streamSize = inputStream.available();
-        if(null != progressor){
+        if (null != progressor)
             progressor.setMax(streamSize);
-        }
 
         int increment = 0;
         byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
@@ -254,7 +260,7 @@ public abstract class TMSLayer
             FileUtil.unzipEntry(zis, ze, buffer, mPath);
             increment += ze.getCompressedSize();
             zis.closeEntry();
-            if(null != progressor){
+            if (null != progressor) {
                 if(progressor.isCanceled())
                     return;
                 progressor.setValue(increment);
