@@ -176,6 +176,7 @@ public class VectorLayer
 {
     protected static final String JSON_GEOMETRY_TYPE_KEY = "geometry_type";
     protected static final String JSON_FIELDS_KEY        = "fields";
+    protected static final String JSON_EDITABLE_KEY      = "is_editable";
 
     protected static final String CONTENT_ATTACH_TYPE = "vnd.android.cursor.dir/*";
     protected static final String NO_SYNC             = "no_sync";
@@ -212,6 +213,8 @@ public class VectorLayer
     protected int     mGeometryType;
     protected long    mUniqId;
     protected boolean mIsLocked;
+
+    protected boolean mIsEditable;
 
     /**
      * The geometry cache for fast querying and drawing
@@ -805,6 +808,7 @@ public class VectorLayer
     {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_GEOMETRY_TYPE_KEY, mGeometryType);
+        rootConfig.put(JSON_EDITABLE_KEY, mIsEditable);
 
         if (null != mFields) {
             JSONArray fields = new JSONArray();
@@ -841,6 +845,7 @@ public class VectorLayer
     {
         super.fromJSON(jsonObject);
         mGeometryType = jsonObject.getInt(JSON_GEOMETRY_TYPE_KEY);
+        mIsEditable = jsonObject.optBoolean(JSON_EDITABLE_KEY, true);
 
         if (jsonObject.has(JSON_FIELDS_KEY)) {
             mFields = new HashMap<>();
@@ -2089,6 +2094,13 @@ public class VectorLayer
         return mGeometryType;
     }
 
+    public boolean isEditable() {
+        return mIsEditable;
+    }
+
+    public void setIsEditable(boolean isEditable) {
+        mIsEditable = isEditable;
+    }
 
     public boolean isFieldsInitialized() {
         return mFields != null;
