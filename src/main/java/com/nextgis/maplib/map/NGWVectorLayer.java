@@ -83,6 +83,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
+import static com.nextgis.maplib.datasource.ngw.Connection.NGWResourceTypePostgisLayer;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_TEMP;
 import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_ID;
@@ -384,7 +385,7 @@ public class NGWVectorLayer
             mNGWLayerType = Connection.NGWResourceTypeVectorLayer;
         } else if (mNgwVersionMajor >= Constants.NGW_v3 && geoJSONObject.has("postgis_layer")) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
-            mNGWLayerType = Connection.NGWResourceTypePostgisLayer;
+            mNGWLayerType = NGWResourceTypePostgisLayer;
         }
         if (null == vectorLayerJSONObject) {
             throw new NGException(getContext().getString(R.string.error_download_data));
@@ -2040,7 +2041,7 @@ public class NGWVectorLayer
      */
     public boolean isRemoteReadOnly()
     {
-        return !(mNGWLayerType == Connection.NGWResourceTypeVectorLayer);
+        return !(mNGWLayerType == Connection.NGWResourceTypeVectorLayer || mNGWLayerType == NGWResourceTypePostgisLayer);
     }
 
 
