@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -827,7 +827,9 @@ public class NGWVectorLayer
 
             // check records count changing
             if (changesCount != FeatureChanges.getChangeCount(changeTableName)) {
-                mCache.save(new File(mPath, RTREE));
+//                mCache.save(new File(mPath, RTREE));  // useless due to save in notifyUpdate
+//                if (DEBUG_MODE)
+//                    Log.d(Constants.TAG, "mCache: saving sendLocalChanges");
                 //notify to reload changes
                 getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
             }

@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -483,7 +483,7 @@ public class Feature
         }
 
         //compare geometry
-        Log.d(TAG, "compare geometry");
+        Log.d(TAG, "Feature id:" + mId + " compare geometry");
         if (null == mGeometry) {
             return null == f.getGeometry();
         }

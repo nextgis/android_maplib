@@ -109,6 +109,7 @@ import java.util.regex.Pattern;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_CHANGED;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_DELETE;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_NEW;
+import static com.nextgis.maplib.util.Constants.DEBUG_MODE;
 import static com.nextgis.maplib.util.Constants.FIELD_GEOM;
 import static com.nextgis.maplib.util.Constants.FIELD_ID;
 import static com.nextgis.maplib.util.Constants.JSON_NAME_KEY;
@@ -833,6 +834,8 @@ public class VectorLayer
 
         if (!mIsCacheRebuilding) {
             mCache.save(new File(mPath, RTREE));
+            if (DEBUG_MODE)
+                Log.d(Constants.TAG, "mCache: saving toJSON");
         }
 
         return rootConfig;
@@ -2389,6 +2392,8 @@ public class VectorLayer
         boolean needSave = false;
         if (oldRowId != Constants.NOT_FOUND) {
             mCache.changeId(oldRowId, rowId);
+            if (DEBUG_MODE)
+                Log.d(Constants.TAG, "mCache: changing id from " + oldRowId + " to " + rowId);
             needSave = true;
         }
 
@@ -2396,6 +2401,8 @@ public class VectorLayer
         if (null != geom && !attributesOnly) {
             mCache.removeItem(rowId);
             cacheGeometryEnvelope(rowId, geom);
+            if (DEBUG_MODE)
+                Log.d(Constants.TAG, "mCache: removing item " + oldRowId + " and caching env");
             needSave = true;
         }
 
