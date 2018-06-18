@@ -750,7 +750,7 @@ public class VectorLayer
     }
 
 
-    protected void setRenderer(JSONObject jsonObject)
+    public void setRenderer(JSONObject jsonObject)
             throws JSONException
     {
         String renderName = "";
