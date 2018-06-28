@@ -29,8 +29,8 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 26
-        versionCode 37
-        versionName '2.5.7.1'
+        versionCode 38
+        versionName '2.5.7.2'
     }
     productFlavors {
     }
