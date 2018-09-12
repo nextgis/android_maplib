@@ -1,0 +1,3 @@
+[submodule "maplib/src/main/ngstore"]
+	path = maplib/src/main/ngstore
+	url = git@github.com:nextgis/nextgis_datastore.git
