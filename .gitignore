@@ -1,10 +1,13 @@
-# Android studio
-.idea/
-.gradle/
-build/
-local.properties
-captures/
 *.iml
+.gradle
+/local.properties
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
 *.iws
 *.ipr
 
