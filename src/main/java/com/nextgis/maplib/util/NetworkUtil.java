@@ -56,8 +56,8 @@ public class NetworkUtil
     private static final String IP_ADDRESS = "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
             + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
             + "[0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}"
-            + "|[1-9][0-9]|[0-9]))";
-    public static final String URL_PATTERN = "^(?i)((ftp|https?)://)?(([\\da-z\\.-]+)\\.([a-z\\.]{2,6})|" + IP_ADDRESS + ")(/\\S*)?$";
+            + "|[1-9][0-9]|[0-9]))(:[0-9]{1,5})?";
+    public static final String URL_PATTERN = "^(?i)((ftp|https?)://)?(([\\da-z.-]+)\\.([a-z.]{2,6})|" + IP_ADDRESS + ")(:[0-9]{1,5})?(/\\S*)?$";
 
     protected final ConnectivityManager mConnectionManager;
     protected final TelephonyManager    mTelephonyManager;
