@@ -39,6 +39,7 @@ import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.TrackRenderer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
+import com.nextgis.maplib.util.MapUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -282,6 +283,10 @@ public class TrackLayer
     }
 
 
+    public static String getSelection(int size) {
+        return TrackLayer.FIELD_ID + " IN (" + MapUtil.makePlaceholders(size) + ")";
+    }
+
     public int getColor(long id) {
         return getColor(mContext, mContentUriTracks, id);
     }
@@ -413,8 +418,10 @@ public class TrackLayer
 
         switch (mUriMatcher.match(uri)) {
             case TYPE_TRACKS:
-                String trackpointsSel = selection.replace(FIELD_ID, FIELD_SESSION);
-                mSQLiteDatabase.delete(TABLE_TRACKPOINTS, trackpointsSel, selectionArgs);
+                if (selection != null) {
+                    String trackpointsSel = selection.replace(FIELD_ID, FIELD_SESSION);
+                    mSQLiteDatabase.delete(TABLE_TRACKPOINTS, trackpointsSel, selectionArgs);
+                }
                 break;
             case TYPE_SINGLE_TRACK:
             case TYPE_TRACKPOINTS:
