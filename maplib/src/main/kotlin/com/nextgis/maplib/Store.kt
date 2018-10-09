@@ -43,11 +43,11 @@ class MemoryStore(copyFrom: Object): Object(copyFrom)  {
      * @param options: Any other create option if form of key-value dictionary.
      * @return FeatureClass class instance or null.
      */
-    fun createFeatureClass(name: String, geometryType: Geometry.GeometryType, epsg: Int,
+    fun createFeatureClass(name: String, geometryType: Geometry.Type, epsg: Int,
                            fields: List<Field>, options: Map<String, String>) : FeatureClass? {
         val fullOptions : MutableMap<String, String> = options.toMutableMap()
         fullOptions["GEOMETRY_TYPE"] = Geometry.typeToName(geometryType)
-        fullOptions["TYPE"] = Object.ObjectType.FC_MEM.toString()
+        fullOptions["TYPE"] = Type.FC_MEM.toString()
         fullOptions["EPSG"] = epsg.toString()
         fullOptions["FIELD_COUNT"] = fields.size.toString()
         for((index, field) in fields.withIndex()) {
@@ -91,11 +91,11 @@ class Store(copyFrom: Object): Object(copyFrom) {
      * @param options: Any other create option if form of key-value dictionary.
      * @return FeatureClass class instance or null.
      */
-    fun createFeatureClass(name: String, geometryType: Geometry.GeometryType, fields: List<Field>,
-    options: Map<String, String>) : FeatureClass? {
+    fun createFeatureClass(name: String, geometryType: Geometry.Type, fields: List<Field>,
+                           options: Map<String, String>) : FeatureClass? {
         val fullOptions = options.toMutableMap()
         fullOptions["GEOMETRY_TYPE"] = Geometry.typeToName(geometryType)
-        fullOptions["TYPE"] = ObjectType.FC_GPKG.toString()
+        fullOptions["TYPE"] = Type.FC_GPKG.toString()
         fullOptions["FIELD_COUNT"] = fields.size.toString()
         for((index, field) in fields.withIndex()) {
             fullOptions["FIELD_${index}_TYPE"] = Field.fieldTypeToName(field.type)
@@ -126,7 +126,7 @@ class Store(copyFrom: Object): Object(copyFrom) {
      */
     fun createTable(name: String, fields: List<Field>, options: Map<String, String>) : Table? {
         val fullOptions = options.toMutableMap()
-        fullOptions["TYPE"] = ObjectType.TABLE_GPKG.toString()
+        fullOptions["TYPE"] = Type.TABLE_GPKG.toString()
         fullOptions["FIELD_COUNT"] = fields.size.toString()
         for((index, field) in fields.withIndex()) {
             fullOptions["FIELD_${index}_TYPE"] = Field.fieldTypeToName(field.type)
@@ -382,13 +382,13 @@ open class Table(copyFrom: Object): Object(copyFrom) {
      * @param name: Field name.
      * @return Pair with index and type. If field is not exists the index will be negative and field type will be UNKNOWN
      */
-    fun fieldIndexAndType(name: String) : Pair<Int, Field.FieldType> {
+    fun fieldIndexAndType(name: String) : Pair<Int, Field.Type> {
         for((count, field) in fields.withIndex()) {
             if( field.name == name) {
                 return Pair(count, field.type)
             }
         }
-        return Pair(-1, Field.FieldType.UNKNOWN)
+        return Pair(-1, Field.Type.UNKNOWN)
     }
 
     /**
@@ -417,7 +417,7 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
      * Geometry type of feature class.
      */
-    val geometryType: Geometry.GeometryType = Geometry.GeometryType.from(API.featureClassGeometryTypeInt(handle))
+    val geometryType: Geometry.Type = Geometry.Type.from(API.featureClassGeometryTypeInt(handle))
 
     /**
      * Create vector overviews to speedup drawing. This is a synchronous method.
@@ -501,15 +501,15 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
 /**
  * FeatureClass/Table filed class.
  */
-class Field(val name: String, val alias: String, val type: FieldType, val defaultValue: String? = null) {
+class Field(val name: String, val alias: String, val type: Type, val defaultValue: String? = null) {
 
     constructor(name: String, alias: String, nativeType: Int, defaultValue: String? = null) :
-            this(name, alias, FieldType.from(nativeType), defaultValue)
+            this(name, alias, Type.from(nativeType), defaultValue)
 
     /**
      * Field type enum.
      */
-    enum class FieldType(val code: Int) {
+    enum class Type(val code: Int) {
         UNKNOWN(-1),    /**< Unknown type. */
         INTEGER(0),     /**< Integer type. */
         REAL(2),        /**< Real type. */
@@ -517,7 +517,7 @@ class Field(val name: String, val alias: String, val type: FieldType, val defaul
         DATE(11);       /**< Date/time type. */
 
         companion object {
-            fun from(value: Int): FieldType {
+            fun from(value: Int): Type {
                 for (code in values()) {
                     if (code.code == value) {
                         return code
@@ -535,12 +535,12 @@ class Field(val name: String, val alias: String, val type: FieldType, val defaul
          * @param fieldType: Field type.
          * @return Name string.
          */
-        fun fieldTypeToName(fieldType: FieldType) : String {
+        fun fieldTypeToName(fieldType: Type) : String {
             return when(fieldType) {
-                FieldType.INTEGER -> "INTEGER"
-                FieldType.REAL -> "REAL"
-                FieldType.STRING -> "STRING"
-                FieldType.DATE -> "DATE_TIME"
+                Type.INTEGER -> "INTEGER"
+                Type.REAL -> "REAL"
+                Type.STRING -> "STRING"
+                Type.DATE -> "DATE_TIME"
                 else -> { "STRING" }
             }
         }

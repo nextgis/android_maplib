@@ -24,7 +24,7 @@ package com.nextgis.maplib
 import kotlin.math.max
 import kotlin.math.min
 
-data class Point(val x: Double, val y: Double)
+data class Point(var x: Double = 0.0, var y: Double = 0.0)
 
 /**
  * @class Coordinate transformation class. Helps to transform from one spatial reference to another.
@@ -173,7 +173,7 @@ open class Geometry(val handle : Long) {
     /**
      * @enum Geometry type.
      */
-    enum class GeometryType(val code: Int) {
+    enum class Type(val code: Int) {
         NONE(0),            /**< No geometry. */
         POINT(1),           /**< Point. */
         LINESTRING(2),      /**< Linestring. */
@@ -183,7 +183,7 @@ open class Geometry(val handle : Long) {
         MULTIPOLYGON(6);    /**< Multipolygon. */
 
         companion object {
-            fun from(value: Int): GeometryType {
+            fun from(value: Int): Type {
                 for (code in values()) {
                     if (code.code == value) {
                         return code
@@ -202,15 +202,15 @@ open class Geometry(val handle : Long) {
          * @param geometryType: Geometry type.
          * @return Geometry type name string.
          */
-        fun typeToName(geometryType: GeometryType) : String {
+        fun typeToName(geometryType: Type) : String {
             return when(geometryType) {
-                GeometryType.NONE -> "NONE"
-                GeometryType.POINT -> "POINT"
-                GeometryType.LINESTRING -> "LINESTRING"
-                GeometryType.POLYGON -> "POLYGON"
-                GeometryType.MULTIPOINT -> "MULTIPOINT"
-                GeometryType.MULTILINESTRING -> "MULTILINESTRING"
-                GeometryType.MULTIPOLYGON -> "MULTIPOLYGON"
+                Type.NONE -> "NONE"
+                Type.POINT -> "POINT"
+                Type.LINESTRING -> "LINESTRING"
+                Type.POLYGON -> "POLYGON"
+                Type.MULTIPOINT -> "MULTIPOINT"
+                Type.MULTILINESTRING -> "MULTILINESTRING"
+                Type.MULTIPOLYGON -> "MULTIPOLYGON"
             }
         }
 
@@ -243,7 +243,7 @@ open class Geometry(val handle : Long) {
     /**
      * Geometry type.
      */
-    val type: GeometryType get() = GeometryType.from(API.geometryGetTypeInt(handle))
+    val type: Type get() = Type.from(API.geometryGetTypeInt(handle))
 
     private fun finalize() {
         API.geometryFreeInt(handle)

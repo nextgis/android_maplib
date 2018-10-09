@@ -103,12 +103,12 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Json object name.
      */
-    val name: String  get() = API.jsonObjectNameInt(handle)
+    val name: String get() = API.jsonObjectNameInt(handle)
 
     /**
      * Json object type.
      */
-    val type: JsonObjectType  get() = JsonObjectType.from(API.jsonObjectTypeInt(handle))
+    val type: JsonObjectType get() = JsonObjectType.from(API.jsonObjectTypeInt(handle))
 
     /**
      * Get string from json object.
@@ -244,7 +244,7 @@ open class JsonObject(val handle: Long = 0) {
      *
      * @return True on success.
      */
-    fun setString(value: String, key: String) : Boolean {
+    fun setString(key: String, value: String) : Boolean {
         return API.jsonObjectSetStringForKeyInt(handle, key, value)
     }
 
@@ -256,7 +256,7 @@ open class JsonObject(val handle: Long = 0) {
      *
      * @return True on success.
      */
-    fun setDouble(value: Double, key: String) : Boolean {
+    fun setDouble(key: String, value: Double) : Boolean {
         return API.jsonObjectSetDoubleForKeyInt(handle, key, value)
     }
 
@@ -268,7 +268,7 @@ open class JsonObject(val handle: Long = 0) {
      *
      * @return True on success.
      */
-    fun setInteger(value: Int, key: String) : Boolean {
+    fun setInteger(key: String, value: Int) : Boolean {
         return API.jsonObjectSetIntegerForKeyInt(handle, key, value)
     }
 
@@ -280,7 +280,7 @@ open class JsonObject(val handle: Long = 0) {
      *
      * @return True on success.
      */
-    fun setLong(value: Long, key: String) : Boolean {
+    fun setLong(key: String, value: Long) : Boolean {
         return API.jsonObjectSetLongForKeyInt(handle, key, value)
     }
 
@@ -292,7 +292,7 @@ open class JsonObject(val handle: Long = 0) {
      *
      * @return True on success.
      */
-    fun setBoolean(value: Boolean, key: String) : Boolean {
+    fun setBoolean(key: String, value: Boolean) : Boolean {
         return API.jsonObjectSetBoolForKeyInt(handle, key, value)
     }
 
@@ -301,13 +301,13 @@ open class JsonObject(val handle: Long = 0) {
      *
      * @return Array of children.
      */
-    fun children() : List<JsonObject> {
+    fun children() : Array<JsonObject> {
         val out: MutableList<JsonObject> = mutableListOf()
         val ids = API.jsonObjectChildrenInt(handle)
         for(id in ids) {
             out.add(JsonObject(id))
         }
-        return out
+        return out.toTypedArray()
     }
 
     /**

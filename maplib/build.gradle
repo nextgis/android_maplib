@@ -22,7 +22,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
-
+apply plugin: 'org.jetbrains.dokka-android'
 
 def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
 def gdalFiles = [ "compdcs.csv", "coordinate_axis.csv", "cubewerx_extra.wkt", "datum_shift.csv",
@@ -30,8 +30,9 @@ def gdalFiles = [ "compdcs.csv", "coordinate_axis.csv", "cubewerx_extra.wkt", "d
                   "esri_Wisconsin_extra.wkt", "esri_epsg.wkt", "esri_extra.wkt", "gcs.csv",
                   "gcs.override.csv", "gdal_datum.csv", "gdalvrt.xsd", "geoccs.csv",
                   "gml_registry.xml", "gmlasconf.xml", "gmlasconf.xsd", "gt_datum.csv",
-                  "gt_ellips.csv", "ogrvrt.xsd", "prime_meridian.csv", "projop_wparm.csv",
-                  "stateplane.csv", "unit_of_measure.csv", "vertcs.override.csv" ]
+                  "gt_ellips.csv", "ogrvrt.xsd", "pcs.csv", "pcs.oveeride.csv", "prime_meridian.csv",
+                  "projop_wparm.csv", "stateplane.csv", "unit_of_measure.csv", "vertcs.csv",
+                  "vertcs.override.csv" ]
 def buildConfig = android.defaultPublishConfig.toString()
 def buildConfigUpper = buildConfig.substring(0, 1).toUpperCase() +
         buildConfig.substring(1, buildConfig.length())
@@ -46,13 +47,37 @@ if (!certPem.exists()) {
     new URL("https://curl.haxx.se/ca/cacert.pem").withInputStream{ i -> certPem.withOutputStream{ it << i }}
 }
 
+ext {
+    bintrayRepo = 'MapLib'
+    bintrayName = 'com.nextgis.maplib'
+
+    publishedGroupId = 'com.nextgis.maplib'
+    libraryName = 'maplib'
+    artifact = 'maplib'
+
+    libraryDescription = 'The base map library for Android geo applications.'
+
+    siteUrl = 'https://github.com/nextgis/android_maplib'
+    gitUrl = 'https://github.com/nextgis/android_maplib.git'
+
+    libraryVersion = '3.0.0'
+
+    developerId = 'bishopgis'
+    developerName = 'Dmitry Baryshnikov'
+    developerEmail = 'dmitry.baryshnikov@nextgis.com'
+
+    licenseName = 'GNU LESSER GENERAL PUBLIC LICENSE, Version 3.0'
+    licenseUrl = 'https://www.gnu.org/licenses/lgpl-3.0.txt'
+    allLicenses = ["LGPL-3.0"]
+}
+
 android {
-    compileSdkVersion 26
+    compileSdkVersion 27
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 26
         versionCode 1
-        versionName "1.0"
+        versionName '3.0'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters = androidAbis
@@ -94,6 +119,11 @@ android {
         androidTest.java.srcDirs += 'src/androidTest/kotlin'
     }
 
+    dokka {
+        outputFormat = 'javadoc'
+        outputDirectory = "$buildDir/docs/javadoc"
+//        sourceDirs = files('src/main/kotlin')
+    }
 }
 
 task copyGdalFiles(type: Copy) {
@@ -125,3 +155,8 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
+
+// add it to the bottom of the file
+
+apply from: 'installv1.gradle'
+apply from: 'bintrayv1.gradle'

@@ -80,13 +80,14 @@ object API {
     private var isInit = false
     private var catalog: Catalog? = null
     private var cacheDir: String = ""
-    private var notifyFunctions: MutableList<NotifyFunction> = mutableListOf()
-    private var progressFunctions: MutableMap<Int, ProgressFunction> = mutableMapOf()
+    private var notifyFunctions = mutableListOf<NotifyFunction>()
+    private var progressFunctions = mutableMapOf<Int, ProgressFunction>()
+    private var drawingProgressFuncId = 0
 
     private var mapsDir: Object? = null
     private var geodataDir: Object? = null
-    private var authArray: MutableList<Auth> = mutableListOf()
-//    private var mapViewArray: Set<MapView>
+    private var authArray = mutableListOf<Auth>()
+    private val mapViewArray = mutableSetOf<MapView>()
 
     // Use to load the 'ngstore' library on application startup.
     init {
@@ -122,19 +123,6 @@ object API {
     }
 
     fun init(context: Context) {
-
-        val url = "http://www.google.com/"
-        val obj = URL(url)
-
-        with(obj.openConnection() as HttpURLConnection) {
-            // optional default is GET
-            requestMethod = "GET"
-
-
-            println("\nSending 'GET' request to URL : $url")
-            println("Response Code : $responseCode")
-        }
-
         // Prevent multiple launches
         if (isInit) {
             return
@@ -316,6 +304,37 @@ object API {
     }
 
     /**
+     * Get map by name
+     *
+     * @param name: map file name. If map file name extension is not set it will append.
+     * @return MapDocument class instance or null
+     */
+    fun getMap(name: String) : MapDocument? {
+        if(mapsDir == null) {
+            printError("Maps dir undefined. Cannot find map.")
+            return null
+        }
+
+        val mapPath = mapsDir!!.path + Catalog.separator + name + MapDocument.ext
+        var mapId = mapOpenInt(mapPath)
+        if(mapId == -1) {
+            printWarning("Map $mapPath is not exists. Create it")
+            mapId = mapCreateInt(name, "default map", 3857,
+                    -20037508.34, -20037508.34,
+                    20037508.34, 20037508.34)
+            if(mapId == -1) {
+                printError("Map $name create failed")
+                return null
+            }
+        }
+        else {
+            printMessage("Get map with ID: $mapId")
+        }
+
+        return MapDocument(mapId, mapPath)
+    }
+
+    /**
      * Get NextGIS store catalog object. The NextGIS store is geopackage file with some additions needed for library.
      *
      * @param name: File name. If file name extension is not set it will append.
@@ -338,7 +357,7 @@ object API {
         if(store == null) {
             printWarning("Store $storePath is not exists. Create it.")
             val options = mutableMapOf(
-                "TYPE" to Object.ObjectType.CONTAINER_NGS.toString(),
+                "TYPE" to Object.Type.CONTAINER_NGS.toString(),
                 "CREATE_UNIQUE" to "OFF"
             )
             store = geodataDir?.create(newName, options)
@@ -379,43 +398,45 @@ object API {
 //        return catalog?.childByPath(Constants.docDirCatalogPath)
 //    }
 
-//    func addMapView(_ view: MapView) {
-//        mapViewArray.insert(view)
-//    }
-//
-//    func removeMapView(_ view: MapView) {
-//        mapViewArray.remove(view)
-//    }
+    internal fun addMapView(view: MapView) {
+        mapViewArray.add(view)
+    }
+
+    internal fun removeMapView(view: MapView) {
+        mapViewArray.remove(view)
+    }
 
     private fun onMapViewNotify(url: String, code: ChangeCode) {
-//        if url.hasPrefix(Constants.tmpDirCatalogPath) {
-//            return
-//        }
-//
-//        let path = url.components(separatedBy: "#")
-//
-//        printMessage("onMapViewNotify: \(path)")
-//
-//        if path.count == 2 && code == CC_CREATE_FEATURE { // NOTE: We dont know the last feature envelope so for change/delete - update all view
-//            let fid = Int64(path[1])
-//            if let object = getCatalog().childByPath(path: path[0]) {
-//                if let fc = Object.forceChildTo(featureClass: object) {
-//                if let feautre = fc.getFeature(index: fid!) {
-//                let env = feautre.geometry?.envelope ??
-//                Envelope(minX: -0.5, minY: -0.5, maxX: 0.5, maxY: 0.5)
-//                for view in mapViewArray {
-//                    view.invalidate(envelope: env)
-//                    view.scheduleDraw(drawState: .PRESERVED)
-//                }
-//            }
-//            }
-//            }
-//        }
-//        else {
-//            for view in mapViewArray {
-//                view.scheduleDraw(drawState: .REFILL)
-//            }
-//        }
+        if(url.startsWith(Constants.tmpDirCatalogPath)) {
+            return
+        }
+
+        val path = url.split("#")
+
+        printMessage("onMapViewNotify: $path")
+
+        if(path.size == 2 && code == ChangeCode.CREATE_FEATURE) { // NOTE: We don't know the last feature envelope so for change/delete - update all view
+            val fid = path[1].toLong()
+            val objPath = getCatalog()?.childByPath(path[0])
+            if(objPath != null) {
+                val fc = Object.forceChildToFeatureClass(objPath)
+                if(fc != null) {
+                    val feature = fc.getFeature(fid)
+                    if(feature != null) {
+                        val env = feature.geometry?.envelope ?: Envelope(-0.5, -0.5, 0.5, 0.5)
+                        for(view in mapViewArray) {
+                            view.invalidate(env)
+                            view.scheduleDraw(MapDocument.DrawState.PRESERVED)
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            for(view in mapViewArray) {
+                view.scheduleDraw(MapDocument.DrawState.REFILL)
+            }
+        }
     }
 
     fun addNotifyFunction(code: ChangeCode, callback: (uri: String, code: ChangeCode) -> Unit) {
@@ -499,7 +520,7 @@ object API {
         return res
     }
 
-    internal fun URLUploadFile(path: String, url: String, options: Array<String>,
+    internal fun URLUploadFileInt(path: String, url: String, options: Array<String>,
                                callback: ((status: StatusCode, complete: Double,
                                                  message: String) -> Boolean)? = null) : RequestResultJsonInt {
         if(null != callback) {
@@ -514,7 +535,7 @@ object API {
         return res
     }
 
-    internal fun URLAuthGetMap(uri: String) : Map<String, String> {
+    internal fun URLAuthGetMapInt(uri: String) : Map<String, String> {
         val properties = API.URLAuthGet(uri)
         val out: MutableMap<String, String> = mutableMapOf()
         for(property in properties) {
@@ -526,14 +547,14 @@ object API {
         return out
     }
 
-    internal fun URLRequest(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResult = URLRequest(type, url, toArrayOfCStrings(options))
+    internal fun URLRequestInt(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResult = URLRequest(type, url, toArrayOfCStrings(options))
 
-    internal fun URLRequestJson(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResultJson {
+    internal fun URLRequestJsonInt(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResultJson {
         val result = API.URLRequestJson(type, url, toArrayOfCStrings(options))
         return RequestResultJson(result.status, JsonObject(result.value))
     }
 
-    internal fun URLRequestRaw(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResultRaw = URLRequestRaw(type, url, toArrayOfCStrings(options))
+    internal fun URLRequestRawInt(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResultRaw = URLRequestRaw(type, url, toArrayOfCStrings(options))
 
 
     internal fun jsonDocumentCreateInt() : Long = jsonDocumentCreate()
@@ -650,6 +671,127 @@ object API {
     internal fun featureAttachmentUpdateInt(feature: Long, aid: Long, name: String,
                                   description: String, logEdits: Boolean) : Boolean = featureAttachmentUpdate(feature, aid, name, description, logEdits)
     internal fun storeFeatureSetAttachmentRemoteIdInt(feature: Long, aid: Long, rid: Long) = storeFeatureSetAttachmentRemoteId(feature, aid, rid)
+
+    internal fun mapCreateInt(name: String, description: String, EPSG: Int, minX: Double,
+                                   minY: Double, maxX: Double, maxY: Double) : Int = mapCreate(name, description, EPSG, minX, minY, maxX, maxY)
+    internal fun mapOpenInt(path: String) : Int = mapOpen(path)
+    internal fun mapSaveInt(mapId: Int, path: String) : Boolean = mapSave(mapId, path)
+    internal fun mapCloseInt(mapId: Int) : Boolean = mapClose(mapId)
+    internal fun mapLayerCountInt(mapId: Int) : Int = mapLayerCount(mapId)
+    internal fun mapCreateLayerInt(mapId: Int, name: String, path: String) : Int = mapCreateLayer(mapId, name, path)
+    internal fun mapLayerGetInt(mapId: Int, layerId: Int) : Long = mapLayerGet(mapId, layerId)
+    internal fun mapLayerDeleteInt(mapId: Int, layer: Long) : Boolean = mapLayerDelete(mapId, layer)
+    internal fun mapLayerReorderInt(mapId: Int, beforeLayer: Long, movedLayer: Long) : Boolean = mapLayerReorder(mapId, beforeLayer, movedLayer)
+    internal fun mapSetSizeInt(mapId: Int, width: Int, height: Int, YAxisInverted: Boolean) : Boolean = mapSetSize(mapId, width, height, YAxisInverted)
+    internal fun mapDrawInt(mapId: Int, state: MapDocument.DrawState, callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)) : Boolean {
+
+        if(drawingProgressFuncId != callback.hashCode()) {
+            progressFunctions.remove(drawingProgressFuncId)
+            drawingProgressFuncId = callback.hashCode()
+            progressFunctions[drawingProgressFuncId] = ProgressFunction(callback)
+
+        }
+
+        return mapDraw(mapId, state.code, drawingProgressFuncId)
+    }
+    internal fun mapInvalidateInt(mapId: Int, envelope: Envelope) : Boolean = mapInvalidate(mapId, envelope.minX, envelope.minY, envelope.maxX, envelope.maxY)
+    internal fun mapSetBackgroundColorInt(mapId: Int, color: RGBA) : Boolean = mapSetBackgroundColor(mapId, color.R, color.G, color.B, color.A)
+    internal fun mapGetBackgroundColorInt(mapId: Int) : RGBA = mapGetBackgroundColor(mapId)
+    internal fun mapSetCenterInt(mapId: Int, x: Double, y: Double) : Boolean = mapSetCenter(mapId, x, y)
+    internal fun mapGetCenterInt(mapId: Int) : Point = mapGetCenter(mapId)
+    internal fun mapGetCoordinateInt(mapId: Int, x: Double, y: Double) : Point = mapGetCoordinate(mapId, x, y)
+    internal fun mapGetDistanceInt(mapId: Int, w: Double, h: Double) : Point = mapGetDistance(mapId, w, h)
+    internal fun mapSetRotateInt(mapId: Int, dir: Int, rotate: Double) : Boolean = mapSetRotate(mapId, dir, rotate)
+    internal fun mapGetRotateInt(mapId: Int, dir: Int) : Double = mapGetRotate(mapId, dir)
+    internal fun mapSetScaleInt(mapId: Int, scale: Double) : Boolean = mapSetScale(mapId, scale)
+    internal fun mapGetScaleInt(mapId: Int) : Double = mapGetScale(mapId)
+
+    internal fun mapSetOptionsInt(mapId: Int, options: Map<String, String>) : Boolean = mapSetOptions(mapId, toArrayOfCStrings(options))
+    internal fun mapSetExtentLimitsInt(mapId: Int, minX: Double, minY: Double,
+                                            maxX: Double, maxY: Double) : Boolean = mapSetExtentLimits(mapId, minX, minY, maxX, maxY)
+    internal fun mapGetExtentInt(mapId: Int, EPSG: Int) : Envelope = mapGetExtent(mapId, EPSG)
+    internal fun mapSetExtentInt(mapId: Int, extent: Envelope) : Boolean = mapSetExtent(mapId, extent.minX, extent.minY, extent.maxX, extent.maxY)
+
+    internal fun mapGetSelectionStyleInt(mapId: Int, styleType: Int) : Long = mapGetSelectionStyle(mapId, styleType)
+    internal fun mapSetSelectionsStyleInt(mapId: Int, styleType: Int, style: Long) : Boolean = mapSetSelectionsStyle(mapId, styleType, style)
+    internal fun mapGetSelectionStyleNameInt(mapId: Int, styleType: Int) : String = mapGetSelectionStyleName(mapId, styleType)
+    internal fun mapSetSelectionStyleNameInt(mapId: Int, styleType: Int, name: String) : Boolean = mapSetSelectionStyleName(mapId, styleType, name)
+    internal fun mapIconSetAddInt(mapId: Int, name: String, path: String, ownByMap: Boolean) : Boolean = mapIconSetAdd(mapId, name, path, ownByMap)
+    internal fun mapIconSetRemoveInt(mapId: Int, name: String) : Boolean = mapIconSetRemove(mapId, name)
+    internal fun mapIconSetExistsInt(mapId: Int, name: String) : Boolean = mapIconSetExists(mapId, name)
+
+    /**
+     * Layer functions
+     */
+
+    internal fun layerGetNameInt(layer: Long) : String = layerGetName(layer)
+    internal fun layerSetNameInt(layer: Long, name: String) : Boolean = layerSetName(layer, name)
+    internal fun layerGetVisibleInt(layer: Long) : Boolean = layerGetVisible(layer)
+    internal fun layerSetVisibleInt(layer: Long, visible: Boolean) : Boolean = layerSetVisible(layer, visible)
+    internal fun layerGetDataSourceInt(layer: Long) : Long = layerGetDataSource(layer)
+    internal fun layerGetStyleInt(layer: Long) : Long = layerGetStyle(layer)
+    internal fun layerSetStyleInt(layer: Long, style: Long) : Boolean = layerSetStyle(layer, style)
+    internal fun layerGetStyleNameInt(layer: Long) : String = layerGetStyleName(layer)
+    internal fun layerSetStyleNameInt(layer: Long, name: String) : Boolean = layerSetStyleName(layer, name)
+    internal fun layerSetSelectionIdsInt(layer: Long, ids: LongArray) : Boolean = layerSetSelectionIds(layer, ids)
+    internal fun layerSetHideIdsInt(layer: Long, ids: LongArray) : Boolean = layerSetHideIds(layer, ids)
+
+    /**
+     * Overlay functions
+     */
+    internal fun overlaySetVisibleInt(mapId: Int, typeMask: Int, visible: Boolean) : Boolean = overlaySetVisible(mapId, typeMask, visible)
+    internal fun overlayGetVisibleInt(mapId: Int, type: Int) : Boolean = overlayGetVisible(mapId, type)
+    internal fun overlaySetOptionsInt(mapId: Int, type: Int, options: Array<String>) : Boolean = overlaySetOptions(mapId, type, options)
+    internal fun overlayGetOptionsInt(mapId: Int, type: Int) : Map<String, String> {
+        val options = overlayGetOptions(mapId, type)
+        val out: MutableMap<String, String> = mutableMapOf()
+        for(option in options) {
+            val parts = option.split("=")
+            if(parts.size > 1) {
+                out[parts[0]] = parts[1]
+            }
+        }
+        return out
+    }
+
+    /* Edit */
+    internal fun editOverlayTouchInt(mapId: Int, x: Double, y: Double, type: Int) : TouchResult = editOverlayTouch(mapId, x, y, type)
+    internal fun editOverlayUndoInt(mapId: Int) : Boolean = editOverlayUndo(mapId)
+    internal fun editOverlayRedoInt(mapId: Int) : Boolean = editOverlayRedo(mapId)
+    internal fun editOverlayCanUndoInt(mapId: Int) : Boolean = editOverlayCanUndo(mapId)
+    internal fun editOverlayCanRedoInt(mapId: Int) : Boolean = editOverlayCanRedo(mapId)
+    internal fun editOverlaySaveInt(mapId: Int) : Long = editOverlaySave(mapId)
+    internal fun editOverlayCancelInt(mapId: Int) : Boolean = editOverlayCancel(mapId)
+    internal fun editOverlayCreateGeometryInLayerInt(mapId: Int, layer: Long, empty: Boolean) : Boolean = editOverlayCreateGeometryInLayer(mapId, layer, empty)
+    internal fun editOverlayCreateGeometryInt(mapId: Int, type: Int) : Boolean = editOverlayCreateGeometry(mapId, type)
+    internal fun editOverlayEditGeometryInt(mapId: Int, layer: Long, feateureId: Long) : Boolean = editOverlayEditGeometry(mapId, layer, feateureId)
+    internal fun editOverlayDeleteGeometryInt(mapId: Int) : Boolean = editOverlayDeleteGeometry(mapId)
+    internal fun editOverlayAddPointInt(mapId: Int) : Boolean = editOverlayAddPoint(mapId)
+    internal fun editOverlayAddVertexInt(mapId: Int, x: Double, y: Double, z: Double) : Boolean = editOverlayAddVertex(mapId, x, y, z)
+    internal fun editOverlayDeletePointInt(mapId: Int) : Int = editOverlayDeletePoint(mapId)
+    internal fun editOverlayAddHoleInt(mapId: Int) : Boolean = editOverlayAddHole(mapId)
+    internal fun editOverlayDeleteHoleInt(mapId: Int) : Int = editOverlayDeleteHole(mapId)
+    internal fun editOverlayAddGeometryPartInt(mapId: Int) : Boolean = editOverlayAddGeometryPart(mapId)
+    internal fun editOverlayDeleteGeometryPartInt(mapId: Int) : Int = editOverlayDeleteGeometryPart(mapId)
+    internal fun editOverlayGetGeometryInt(mapId: Int) : Long = editOverlayGetGeometry(mapId)
+    internal fun editOverlaySetStyleInt(mapId: Int, type: Int, style: Long) : Boolean = editOverlaySetStyle(mapId, type, style)
+    internal fun editOverlaySetStyleNameInt(mapId: Int, type: Int, name: String) : Boolean = editOverlaySetStyleName(mapId, type, name)
+    internal fun editOverlayGetStyleInt(mapId: Int, type: Int) : Long = editOverlayGetStyle(mapId, type)
+    internal fun editOverlaySetWalkingModeInt(mapId: Int, enable: Boolean) = editOverlaySetWalkingMode(mapId, enable)
+    internal fun editOverlayGetWalkingModeInt(mapId: Int) : Boolean = editOverlayGetWalkingMode(mapId)
+
+    /* Location */
+    internal fun locationOverlayUpdateInt(mapId: Int, x: Double, y: Double, z: Double,
+                                               direction: Float, accuracy: Float) : Boolean = locationOverlayUpdate(mapId, x, y, z, direction, accuracy)
+    internal fun locationOverlaySetStyleInt(mapId: Int, style: Long) : Boolean = locationOverlaySetStyle(mapId, style)
+    internal fun locationOverlaySetStyleNameInt(mapId: Int, name: String) : Boolean = locationOverlaySetStyleName(mapId, name)
+    internal fun locationOverlayGetStyleInt(mapId: Int) : Long = locationOverlayGetStyle(mapId)
+
+    /**
+     * QMS
+     */
+    internal fun QMSQueryInt(options: Map<String, String>) : Array<QMSItemInt> = QMSQuery(toArrayOfCStrings(options))
+    internal fun QMSQueryPropertiesInt(id: Int) : QMSItemPropertiesInt = QMSQueryProperties(id)
 
     /**
      * A native method that is implemented by the 'ngstore' native library,
@@ -822,4 +964,110 @@ object API {
      * Raster
      */
     private external fun rasterCacheArea(handle: Long, options: Array<String>, callbackId: Int) : Boolean
+
+    /**
+     * Map functions
+     */
+    private external fun mapCreate(name: String, description: String, EPSG: Int, minX: Double,
+                                   minY: Double, maxX: Double, maxY: Double) : Int
+    private external fun mapOpen(path: String) : Int
+    private external fun mapSave(mapId: Int, path: String) : Boolean
+    private external fun mapClose(mapId: Int) : Boolean
+    private external fun mapLayerCount(mapId: Int) : Int
+    private external fun mapCreateLayer(mapId: Int, name: String, path: String) : Int
+    private external fun mapLayerGet(mapId: Int, layerId: Int) : Long
+    private external fun mapLayerDelete(mapId: Int, layer: Long) : Boolean
+    private external fun mapLayerReorder(mapId: Int, beforeLayer: Long, movedLayer: Long) : Boolean
+    private external fun mapSetSize(mapId: Int, width: Int, height: Int, YAxisInverted: Boolean) : Boolean
+    private external fun mapDraw(mapId: Int, state: Int, callbackId: Int) : Boolean
+    private external fun mapInvalidate(mapId: Int, minX : Double, minY : Double,
+                                       maxX : Double, maxY : Double) : Boolean
+    private external fun mapSetBackgroundColor(mapId: Int, R: Int, G: Int, B: Int, A: Int) : Boolean
+    private external fun mapGetBackgroundColor(mapId: Int) : RGBA
+    private external fun mapSetCenter(mapId: Int, x: Double, y: Double) : Boolean
+    private external fun mapGetCenter(mapId: Int) : Point
+    private external fun mapGetCoordinate(mapId: Int, x: Double, y: Double) : Point
+    private external fun mapGetDistance(mapId: Int, w: Double, h: Double) : Point
+    private external fun mapSetRotate(mapId: Int, dir: Int, rotate: Double) : Boolean
+    private external fun mapGetRotate(mapId: Int, dir: Int) : Double
+    private external fun mapSetScale(mapId: Int, scale: Double) : Boolean
+    private external fun mapGetScale(mapId: Int) : Double
+
+    private external fun mapSetOptions(mapId: Int, options: Array<String>) : Boolean
+    private external fun mapSetExtentLimits(mapId: Int, minX: Double, minY: Double,
+                                            maxX: Double, maxY: Double) : Boolean
+    private external fun mapGetExtent(mapId: Int, EPSG: Int) : Envelope
+    private external fun mapSetExtent(mapId: Int, minX : Double, minY : Double,
+                                      maxX : Double, maxY : Double) : Boolean
+
+    private external fun mapGetSelectionStyle(mapId: Int, styleType: Int) : Long
+    private external fun mapSetSelectionsStyle(mapId: Int, styleType: Int, style: Long) : Boolean
+    private external fun mapGetSelectionStyleName(mapId: Int, styleType: Int) : String
+    private external fun mapSetSelectionStyleName(mapId: Int, styleType: Int, name: String) : Boolean
+    private external fun mapIconSetAdd(mapId: Int, name: String, path: String, ownByMap: Boolean) : Boolean
+    private external fun mapIconSetRemove(mapId: Int, name: String) : Boolean
+    private external fun mapIconSetExists(mapId: Int, name: String) : Boolean
+
+    /**
+     * Layer functions
+     */
+    private external fun layerGetName(layer: Long) : String
+    private external fun layerSetName(layer: Long, name: String) : Boolean
+    private external fun layerGetVisible(layer: Long) : Boolean
+    private external fun layerSetVisible(layer: Long, visible: Boolean) : Boolean
+    private external fun layerGetDataSource(layer: Long) : Long
+    private external fun layerGetStyle(layer: Long) : Long
+    private external fun layerSetStyle(layer: Long, style: Long) : Boolean
+    private external fun layerGetStyleName(layer: Long) : String
+    private external fun layerSetStyleName(layer: Long, name: String) : Boolean
+    private external fun layerSetSelectionIds(layer: Long, ids: LongArray) : Boolean
+    private external fun layerSetHideIds(layer: Long, ids: LongArray) : Boolean
+
+    /**
+     * Overlay functions
+     */
+
+    private external fun overlaySetVisible(mapId: Int, typeMask: Int, visible: Boolean) : Boolean
+    private external fun overlayGetVisible(mapId: Int, type: Int) : Boolean
+    private external fun overlaySetOptions(mapId: Int, type: Int, options: Array<String>) : Boolean
+    private external fun overlayGetOptions(mapId: Int, type: Int) : Array<String>
+
+    /* Edit */
+    private external fun editOverlayTouch(mapId: Int, x: Double, y: Double, type: Int) : TouchResult
+    private external fun editOverlayUndo(mapId: Int) : Boolean
+    private external fun editOverlayRedo(mapId: Int) : Boolean
+    private external fun editOverlayCanUndo(mapId: Int) : Boolean
+    private external fun editOverlayCanRedo(mapId: Int) : Boolean
+    private external fun editOverlaySave(mapId: Int) : Long
+    private external fun editOverlayCancel(mapId: Int) : Boolean
+    private external fun editOverlayCreateGeometryInLayer(mapId: Int, layer: Long, empty: Boolean) : Boolean
+    private external fun editOverlayCreateGeometry(mapId: Int, type: Int) : Boolean
+    private external fun editOverlayEditGeometry(mapId: Int, layer: Long, featureId: Long) : Boolean
+    private external fun editOverlayDeleteGeometry(mapId: Int) : Boolean
+    private external fun editOverlayAddPoint(mapId: Int) : Boolean
+    private external fun editOverlayAddVertex(mapId: Int, x: Double, y: Double, z: Double) : Boolean
+    private external fun editOverlayDeletePoint(mapId: Int) : Int
+    private external fun editOverlayAddHole(mapId: Int) : Boolean
+    private external fun editOverlayDeleteHole(mapId: Int) : Int
+    private external fun editOverlayAddGeometryPart(mapId: Int) : Boolean
+    private external fun editOverlayDeleteGeometryPart(mapId: Int) : Int
+    private external fun editOverlayGetGeometry(mapId: Int) : Long
+    private external fun editOverlaySetStyle(mapId: Int, type: Int, style: Long) : Boolean
+    private external fun editOverlaySetStyleName(mapId: Int, type: Int, name: String) : Boolean
+    private external fun editOverlayGetStyle(mapId: Int, type: Int) : Long
+    private external fun editOverlaySetWalkingMode(mapId: Int, enable: Boolean)
+    private external fun editOverlayGetWalkingMode(mapId: Int) : Boolean
+
+    /* Location */
+    private external fun locationOverlayUpdate(mapId: Int, x: Double, y: Double, z: Double,
+                                               direction: Float, accuracy: Float) : Boolean
+    private external fun locationOverlaySetStyle(mapId: Int, style: Long) : Boolean
+    private external fun locationOverlaySetStyleName(mapId: Int, name: String) : Boolean
+    private external fun locationOverlayGetStyle(mapId: Int) : Long
+
+    /**
+     * QMS
+     */
+    private external fun QMSQuery(options: Array<String>) : Array<QMSItemInt>
+    private external fun QMSQueryProperties(id: Int) : QMSItemPropertiesInt
 }

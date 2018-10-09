@@ -32,7 +32,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     constructor(handle: Long) : this(API.catalogObjectNameInt(handle), API.catalogObjectTypeInt(handle),
             "", handle)
 
-    enum class ObjectType(val code: Int) {
+    enum class Type(val code: Int) {
         UNKNOWN(0),
         ROOT(51) ,          // CAT_CONTAINER_ROOT
         FOLDER(53),         // CAT_CONTAINER_DIR
@@ -46,6 +46,17 @@ open class Object(val name: String, val type: Int, val path: String, internal va
 
         override fun toString(): String {
             return code.toString()
+        }
+
+        companion object {
+            fun from(value: Int): Type {
+                for (code in values()) {
+                    if (code.code == value) {
+                        return code
+                    }
+                }
+                return UNKNOWN
+            }
         }
     }
 
@@ -94,7 +105,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      *
      * @return Array of catalog object class instances.
      */
-    fun children() : List<Object> {
+    fun children() : Array<Object> {
         val out: MutableList<Object> = mutableListOf()
         val queryResult = API.catalogObjectQueryInt(handle, 0)
 
@@ -110,7 +121,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
             out.add(Object(catalogItem.name, catalogItem.type,
                     prefix + catalogItem.name, catalogItem.handle))
         }
-        return out
+        return out.toTypedArray()
     }
 
     /**
@@ -140,7 +151,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      *
      * @param name: New object name.
      * @param options: Dictionary describing new catalog objec. The keys are created object dependent. The mandatory key is:
-     *        - TYPE - this is string value of type ObjectType
+     *        - TYPE - this is string value of type Type
      * @return Created catalog object instance or null.
      */
     fun create(name: String, options: Map<String, String> = mapOf()) : Object? {
@@ -167,7 +178,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     fun createTMS(name: String, url: String, epsg: Int, z_min: Int, z_max: Int, fullExtent: Envelope,
                   limitExtent: Envelope, cacheExpires: Int, options: Map<String, String> = mapOf()) : Object? {
         val createOptions = mutableMapOf(
-            "TYPE" to ObjectType.RASTER_TMS.toString(),
+            "TYPE" to Type.RASTER_TMS.toString(),
             "CREATE_UNIQUE" to "OFF",
             "url" to url,
             "epsg" to epsg.toString(),
@@ -196,7 +207,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      */
     fun createDirectory(name: String) : Object? {
         val options = mapOf(
-                "TYPE" to ObjectType.FOLDER.toString(),
+                "TYPE" to Type.FOLDER.toString(),
                 "CREATE_UNIQUE" to "OFF"
         )
         return create(name, options)
@@ -231,7 +242,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * @param callback: Callback function. May be null
      * @return True on success.
      */
-    fun copy(asType: ObjectType, inDestination: Object, move: Boolean,
+    fun copy(asType: Type, inDestination: Object, move: Boolean,
              withOptions: Map<String, String> = mapOf(),
              callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)? = null) : Boolean {
 
@@ -252,7 +263,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type: Type to check.
          * @return True if this type belongs to table types.
          */
-        private fun isTable(type: Int) : Boolean {
+        internal fun isTable(type: Int) : Boolean {
             return type in 1500..1999
         }
 
@@ -262,7 +273,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type: Type to check.
          * @return True if this type belongs to raster types.
          */
-        private fun isRaster(type: Int) : Boolean {
+        internal fun isRaster(type: Int) : Boolean {
             return type in 1000..1499
         }
 
@@ -272,7 +283,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type: Type to check.
          * @return True if this type belongs to featureclass types.
          */
-        private fun isFeatureClass(type: Int) : Boolean {
+        internal fun isFeatureClass(type: Int) : Boolean {
             return type in 500..999
         }
 
@@ -282,7 +293,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type: Type to check.
          * @return True if this type belongs to container types.
          */
-        private fun isContainer(type: Int) : Boolean {
+        internal fun isContainer(type: Int) : Boolean {
             return type in 50..499
         }
 
@@ -332,7 +343,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @return MemoryStore class instance or null.
          */
         fun forceChildToMemoryStore(memoryStore: Object) : MemoryStore? {
-            if( memoryStore.type == ObjectType.CONTAINER_MEM.code ) {
+            if( memoryStore.type == Type.CONTAINER_MEM.code ) {
                 return MemoryStore(memoryStore)
             }
             return null
@@ -340,7 +351,10 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     }
 }
 
-class Catalog(handle: Long) : Object("Catalog", ObjectType.ROOT.code, "ngc://", handle) {
+/**
+ * @class Catalog is root object of virtual file system tree.
+ */
+class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle) {
 
     companion object {
         const val separator = "/"

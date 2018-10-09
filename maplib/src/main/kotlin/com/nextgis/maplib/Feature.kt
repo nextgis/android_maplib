@@ -181,7 +181,7 @@ class Feature(val handle: Long, val table: Table) {
         val fc: FeatureClass? = table as? FeatureClass
         if (fc != null) {
             when(fc.geometryType) {
-                Geometry.GeometryType.POINT -> return GeoPoint(API.featureCreateGeometryInt(handle))
+                Geometry.Type.POINT -> return GeoPoint(API.featureCreateGeometryInt(handle))
                 else -> Geometry(API.featureCreateGeometryInt(handle))
             }
         }

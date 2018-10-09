@@ -21,10 +21,75 @@
 
 package com.nextgis.maplib
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Build
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+
+/**
+ * Convert Color int to hex string.
+ *
+ * @param color: Color in integer representation.
+ * @return Hex string.
+ */
+fun colorToHexString(color: Int) : String {
+    return "#" + Integer.toHexString(color)
+}
+
+private const val DELTA_MINUTES: Long = 1000 * 60 * 2 // Two minutes
+
+/** Determines whether one Location reading is better than the current Location fix
+ * @param location The new Location that you want to evaluate
+ * @param currentBestLocation The current Location fix, to which you want to compare the new one
+ */
+fun isBetterLocation(location: Location, currentBestLocation: Location?): Boolean {
+    if (currentBestLocation == null) {
+        // A new location is always better than no location
+        return true
+    }
+
+    // Check whether the new location fix is newer or older
+    val timeDelta: Long = location.time - currentBestLocation.time
+    val isSignificantlyNewer: Boolean = timeDelta > DELTA_MINUTES
+    val isSignificantlyOlder:Boolean = timeDelta < -DELTA_MINUTES
+
+    when {
+        // If it's been more than delta minutes since the current location, use the new location
+        // because the user has likely moved
+        isSignificantlyNewer -> return true
+        // If the new location is more than two minutes older, it must be worse
+        isSignificantlyOlder -> return false
+    }
+
+    // Check whether the new location fix is more or less accurate
+    val isNewer: Boolean = timeDelta > 0L
+    val accuracyDelta: Float = location.accuracy - currentBestLocation.accuracy
+    val isLessAccurate: Boolean = accuracyDelta > 0f
+    val isMoreAccurate: Boolean = accuracyDelta < 0f
+    val isSignificantlyLessAccurate: Boolean = accuracyDelta > 200f
+
+    // Check if the old and new location are from the same provider
+    val isFromSameProvider: Boolean = location.provider == currentBestLocation.provider
+
+    // Determine location quality using a combination of timeliness and accuracy
+    return when {
+        isMoreAccurate -> true
+        isNewer && !isLessAccurate -> true
+        isNewer && !isSignificantlyLessAccurate && isFromSameProvider -> true
+        else -> false
+    }
+}
+
+internal fun checkPermission(context: Context, permission: String) : Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    }
+    return true // In lower version permissions granted during install
+}
 
 internal fun toArrayOfCStrings(values: Map<String,String>?) : Array<String> {
 
@@ -69,7 +134,7 @@ internal fun copyFrom(inStream: InputStream, outFile: File) {
 object Constants {
     const val tag = "com.nextgis.maplib"
     const val debugMode = true
-    const val refreshTime = 0.35
+    const val refreshTime = 350L
     const val bigValue = 10000000.0
     const val bufferSize = 1024
 
@@ -82,6 +147,6 @@ object Constants {
         const val minPanPix: Double = 4.0
     }
 
-//    const val tmpDirCatalogPath = "ngc://Local connections/Home/tmp"
+    const val tmpDirCatalogPath = "ngc://Local connections/Home/tmp"
 //    const val docDirCatalogPath = "ngc://Local connections/Home/Documents"
 }

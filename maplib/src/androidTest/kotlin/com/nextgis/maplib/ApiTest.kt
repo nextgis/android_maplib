@@ -39,6 +39,14 @@ class ApiTest {
         API.init(appContext)
         assertNotEquals(API.version(), 0)
         assertNotEquals(API.versionString(), "")
+        assertNotEquals(API.versionString("gdal"), "")
+        assertNotEquals(API.versionString("geos"), "")
+        assertNotEquals(API.versionString("proj"), "")
+        assertNotEquals(API.versionString("sqlite"), "")
+        assertNotEquals(API.versionString("png"), "")
+        assertNotEquals(API.versionString("jpeg"), "")
+        assertNotEquals(API.versionString("tiff"), "")
+        assertNotEquals(API.versionString("geotiff"), "")
 
         // Check asset files copying
         val certFile = File(appContext.filesDir, "data/certs/cert.pem")
@@ -159,7 +167,7 @@ class ApiTest {
                 "NEW_NAME" to "trees"
         )
 
-        val createResult = testGeojsonObj?.copy(Object.ObjectType.FC_GPKG, store!!, true, copyOptions) ?: false
+        val createResult = testGeojsonObj?.copy(Object.Type.FC_GPKG, store!!, true, copyOptions) ?: false
         if(!createResult) {
             printError(API.lastError())
         }
@@ -167,7 +175,7 @@ class ApiTest {
 
         val treesFC = Object.forceChildToFeatureClass(store?.child("trees")!!)
         assertTrue(treesFC != null)
-        assertEquals(treesFC?.geometryType, Geometry.GeometryType.POINT)
+        assertEquals(treesFC?.geometryType, Geometry.Type.POINT)
 
         // Get feature
         val feature = treesFC?.nextFeature()
@@ -200,5 +208,26 @@ class ApiTest {
         val attId = newFeature.addAttachment("test.png", "test picture",
                 testPng.absolutePath,true)
         assertTrue(attId != -1L)
+    }
+
+    @Test
+    fun coordinateTransform() {
+        val appContext = InstrumentationRegistry.getTargetContext()
+        API.init(appContext)
+
+        val coordTransform = CoordinateTransformation.new(4326, 3857)
+        var point = Point(37.616667, 55.75)
+        var transformPoint = coordTransform.transform(point)
+        val transformPointControl1 = Point(4187468.2157801385, 7508807.851301952)
+
+        printMessage("X1: ${transformPoint.x}, Y1: ${transformPoint.y}")
+        assertTrue(transformPoint == transformPointControl1)
+
+        point = Point(-0.1275, 51.507222)
+        transformPoint = coordTransform.transform(point)
+
+        val transformPointControl2 = Point(-14193.235076142382, 6711510.640113423)
+        printMessage("X2: ${transformPoint.x}, Y2: ${transformPoint.y}")
+        assertTrue(transformPoint == transformPointControl2)
     }
 }

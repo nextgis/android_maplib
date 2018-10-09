@@ -66,7 +66,7 @@ object Request {
      * @return structure with return status code and String data.
      */
     fun get(url: String, options: Map<String, String> = mapOf()) : RequestResult {
-        return API.URLRequest(RequestType.GET.code, url, options)
+        return API.URLRequestInt(RequestType.GET.code, url, options)
     }
 
     /**
@@ -80,7 +80,7 @@ object Request {
      * @return structure with return status code and String data.
      */
     fun delete(url: String, options: Map<String, String> = mapOf()) : RequestResult {
-        return API.URLRequest(RequestType.DELETE.code, url, options)
+        return API.URLRequestInt(RequestType.DELETE.code, url, options)
     }
 
     /**
@@ -96,7 +96,7 @@ object Request {
     fun post(url: String, payload: String, options: Map<String, String> = mapOf()) : RequestResult {
         val fullOptions: MutableMap<String, String> = options.toMutableMap()
         fullOptions["POSTFIELDS"] = payload
-        return API.URLRequest(RequestType.POST.code, url, options)
+        return API.URLRequestInt(RequestType.POST.code, url, options)
     }
 
     /**
@@ -112,7 +112,7 @@ object Request {
     fun put(url: String, payload: String, options: Map<String, String> = mapOf()) : RequestResult {
         val fullOptions: MutableMap<String, String> = options.toMutableMap()
         fullOptions["POSTFIELDS"] = payload
-        return API.URLRequest(RequestType.POST.code, url, options)
+        return API.URLRequestInt(RequestType.POST.code, url, options)
     }
 
     /**
@@ -125,7 +125,7 @@ object Request {
      * @return structure with return status code and json data.
      */
     fun getJson(url: String, options: Map<String, String> = mapOf()) : RequestResultJson {
-        return API.URLRequestJson(RequestType.GET.code, url, options)
+        return API.URLRequestJsonInt(RequestType.GET.code, url, options)
     }
 
     /**
@@ -141,7 +141,7 @@ object Request {
     fun postJson(url: String, payload: String, options: Map<String, String> = mapOf()) : RequestResultJson {
         val fullOptions: MutableMap<String, String> = options.toMutableMap()
         fullOptions["POSTFIELDS"] = payload
-        return API.URLRequestJson(RequestType.POST.code, url, options)
+        return API.URLRequestJsonInt(RequestType.POST.code, url, options)
     }
 
     /**
@@ -152,7 +152,7 @@ object Request {
      * @return structure with return status code and raw data.
      */
     fun getRaw(url: String, options: Map<String, String> = mapOf()) : RequestResultRaw {
-        return API.URLRequestRaw(RequestType.GET.code, url, options)
+        return API.URLRequestRawInt(RequestType.GET.code, url, options)
     }
 
     /**
@@ -167,7 +167,7 @@ object Request {
      */
     fun upload(filePath: String, url: String, options: Map<String, String> = mapOf(),
                callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)? = null) : RequestResultJson {
-        val result = API.URLUploadFile(filePath, url, toArrayOfCStrings(options), callback)
+        val result = API.URLUploadFileInt(filePath, url, toArrayOfCStrings(options), callback)
         return RequestResultJson(result.status, JsonObject(result.value))
     }
 }
