@@ -24,13 +24,13 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.2'
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 27
-        versionCode 41
-        versionName '2.5.7.5'
+        targetSdkVersion 28
+        versionCode 43
+        versionName '2.5.7.7'
     }
     productFlavors {
     }
