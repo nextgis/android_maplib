@@ -24,7 +24,12 @@ package com.nextgis.maplib
 internal data class CatalogObjectInfo(val name: String, val type: Int, val handle: Long)
 
 /**
- * @class Catalog object class. This is base class for all catalog objects.
+ * Catalog object class. This is base class for all catalog objects.
+ *
+ * @property name Object name
+ * @property type Object type
+ * @property path Object path
+ * @property handle Object handle for C API
  */
 open class Object(val name: String, val type: Int, val path: String, internal val handle: Long) {
 
@@ -32,6 +37,9 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     constructor(handle: Long) : this(API.catalogObjectNameInt(handle), API.catalogObjectTypeInt(handle),
             "", handle)
 
+    /**
+     * Catalog object types
+     */
     enum class Type(val code: Int) {
         UNKNOWN(0),
         ROOT(51) ,          // CAT_CONTAINER_ROOT
@@ -63,7 +71,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Get catalog object properties.
      *
-     * @param forDomain: Parameters domain
+     * @param forDomain Parameters domain
      * @return Dictionary of key-value.
      */
     fun getProperties(forDomain: String = "") : Map<String, String> {
@@ -81,9 +89,9 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Set catalog object property.
      *
-     * @param name: Key name.
-     * @param value: Key value.
-     * @param domain: Domain name.
+     * @param name Key name.
+     * @param value Key value.
+     * @param domain Domain name.
      * @return True on success.
      */
     fun setProperty(name: String, value: String, domain: String) : Boolean {
@@ -93,7 +101,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Compare current catalog object with other.
      *
-     * @param otherObject: Catalog object to compare.
+     * @param otherObject Catalog object to compare.
      * @return True if equal.
      */
     fun isSame(otherObject: Object) : Boolean {
@@ -127,7 +135,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Get child by name.
      *
-     * @param name: Catalog object child name.
+     * @param name Catalog object child name.
      * @return Catalog object child instance or null.
      */
     fun child(name: String) : Object? {
@@ -149,7 +157,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Create new catalog object.
      *
-     * @param name: New object name.
+     * @param name New object name.
      * @param options: Dictionary describing new catalog objec. The keys are created object dependent. The mandatory key is:
      *        - TYPE - this is string value of type Type
      * @return Created catalog object instance or null.
@@ -164,15 +172,15 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Create TMS datasource
      *
-     * @param name: TMS connection name
-     * @param url: TMS url. {x}, {y} and {z} must be present in url string
-     * @param epsg: EPSG code of TMS
-     * @param z_min: Minimum zoom. Default is 0
-     * @param z_max: Maximum zoom. Default is 18
-     * @param fullExtent: Full extent of TMS datasource. Depends on tile schema and projection
-     * @param limitExtent: Data extent. Maybe equal or less of fullExtent
-     * @param cacheExpires: Time in seconds to remove cahced tiles
-     * @param options: Addtional options as key: value array
+     * @param name TMS connection name
+     * @param url TMS url. {x}, {y} and {z} must be present in url string
+     * @param epsg EPSG code of TMS
+     * @param z_min Minimum zoom. Default is 0
+     * @param z_max Maximum zoom. Default is 18
+     * @param fullExtent Full extent of TMS datasource. Depends on tile schema and projection
+     * @param limitExtent Data extent. Maybe equal or less of fullExtent
+     * @param cacheExpires Time in seconds to remove cahced tiles
+     * @param options Additional options as key: value array
      * @return Catalog object or null
      */
     fun createTMS(name: String, url: String, epsg: Int, z_min: Int, z_max: Int, fullExtent: Envelope,
@@ -202,7 +210,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Create new directory.
      *
-     * @param name: Directory name.
+     * @param name Directory name.
      * @return Created directory or null.
      */
     fun createDirectory(name: String) : Object? {
@@ -225,7 +233,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Delete catalog object with name.
      *
-     * @param name: Object name to delete.
+     * @param name Object name to delete.
      * @return True on success.
      */
     fun delete(name: String) : Boolean {
@@ -235,11 +243,11 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Copy current catalog object to destination object.
      *
-     * @param asType: Output catalog object type.
-     * @param inDestination: Destination catalog object.
-     * @param move: Move object. This object will be deleted.
-     * @param withOptions: Key-value dictionary. This will affect how the copy will be performed.
-     * @param callback: Callback function. May be null
+     * @param asType Output catalog object type.
+     * @param inDestination Destination catalog object.
+     * @param move Move object. This object will be deleted.
+     * @param withOptions Key-value dictionary. This will affect how the copy will be performed.
+     * @param callback Callback function. May be null
      * @return True on success.
      */
     fun copy(asType: Type, inDestination: Object, move: Boolean,
@@ -260,7 +268,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Check if type is non spatial table.
          *
-         * @param type: Type to check.
+         * @param type Type to check.
          * @return True if this type belongs to table types.
          */
         internal fun isTable(type: Int) : Boolean {
@@ -270,7 +278,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Check if type is raster.
          *
-         * @param type: Type to check.
+         * @param type Type to check.
          * @return True if this type belongs to raster types.
          */
         internal fun isRaster(type: Int) : Boolean {
@@ -280,7 +288,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Check if type is featureclass.
          *
-         * @param type: Type to check.
+         * @param type Type to check.
          * @return True if this type belongs to featureclass types.
          */
         internal fun isFeatureClass(type: Int) : Boolean {
@@ -290,7 +298,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Check if type is container (catalog object which can hold other objects).
          *
-         * @param type: Type to check.
+         * @param type Type to check.
          * @return True if this type belongs to container types.
          */
         internal fun isContainer(type: Int) : Boolean {
@@ -300,7 +308,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Force catalog object instance to table.
          *
-         * @param table: Catalog object instance.
+         * @param table Catalog object instance.
          * @return Table class instance or null.
          */
         fun forceChildToTable(table: Object) : Table? {
@@ -313,7 +321,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Force catalog object instance to featureclass.
          *
-         * @param featureClass: Catalog object instance.
+         * @param featureClass Catalog object instance.
          * @return FeatureClass class instance or null.
          */
         fun forceChildToFeatureClass(featureClass: Object) : FeatureClass? {
@@ -326,7 +334,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Force catalog object instance to raster.
          *
-         * @param raster: Catalog object instance.
+         * @param raster Catalog object instance.
          * @return Raster class instance or null.
          */
         fun forceChildToRaster(raster: Object) : Raster? {
@@ -339,7 +347,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         /**
          * Force catalog object instance to memory store.
          *
-         * @param memoryStore: Catalog object instance.
+         * @param memoryStore Catalog object instance.
          * @return MemoryStore class instance or null.
          */
         fun forceChildToMemoryStore(memoryStore: Object) : MemoryStore? {
@@ -352,7 +360,9 @@ open class Object(val name: String, val type: Int, val path: String, internal va
 }
 
 /**
- * @class Catalog is root object of virtual file system tree.
+ * Catalog is root object of virtual file system tree.
+ *
+ * @property handle Object handle for C API
  */
 class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle) {
 
@@ -376,7 +386,7 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
     /**
      * Get catalog child by file system path.
      *
-     * @param path: File system path.
+     * @param path File system path.
      * @return Catalog object class instance or nil.
      */
     fun childByPath(path: String) : Object? {

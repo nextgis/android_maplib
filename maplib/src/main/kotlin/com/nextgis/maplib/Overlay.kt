@@ -23,15 +23,23 @@ package com.nextgis.maplib
 
 import java.lang.ref.WeakReference
 
+/**
+ * Touch result class
+ *
+ * @property pointId Point identifier.
+ * @property isHole Is point belongs to hole or not.
+ */
 data class TouchResult(val pointId: Int, val isHole: Boolean)
 
 /**
- * @class Overlay. Map overlay to draw different features (for example, current position, edit features, etc.)
+ * Overlay. Map overlay to draw different features (for example, current position, edit features, etc.)
+ *
+ * @property type Overlay type.
  */
 open class Overlay(mapPtr: MapDocument, val type: Overlay.Type, protected val map: WeakReference<MapDocument> = WeakReference(mapPtr)) {
 
     /**
-     * @enum Type. Map overlay types.
+     * Map overlay types.
      */
     enum class Type(val code: Int) {
         UNKNOWN(0),     /**< UNKNOWN: unknown overlay type. */
@@ -74,7 +82,7 @@ open class Overlay(mapPtr: MapDocument, val type: Overlay.Type, protected val ma
 
 
 /**
- * @class LocationOverlay. Overlay showing current position
+ * LocationOverlay. Overlay showing current position
  */
 class LocationOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.LOCATION) {
 
@@ -90,7 +98,7 @@ class LocationOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.LOCATION) {
     /**
      * Set overlay style name.
      *
-     * @param name: Overlay style name. The supported names depend on overlay type.
+     * @param name Overlay style name. The supported names depend on overlay type.
      * @return True on success.
      */
     fun setStyle(name: String) : Boolean {
@@ -113,7 +121,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     var editLayer: Layer? = null
 
     /**
-     * @enum DeleteResultType. Edit operation result type.
+     * Edit operation result type.
      */
     enum class DeleteResultType(val code: Int) {
         FAILED(1),              /**< Delete operation failed */
@@ -135,7 +143,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     }
 
     /**
-     * @enum EditStyleType. Edit style type.
+     * Edit style type.
      */
     enum class EditStyleType(val code: Int) {
         POINT(0), LINE(1), FILL(2), CROSS(3)
@@ -214,7 +222,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Set edit overlay point feature style.
      *
-     * @param name: Style name.
+     * @param name Style name.
      * @return True on success.
      */
     fun setPointStyle(name: String) : Boolean {
@@ -224,7 +232,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Set edit overlay line feature style.
      *
-     * @param name: Style name.
+     * @param name Style name.
      * @return True on success.
      */
     fun setLineStyle(name: String) : Boolean {
@@ -234,7 +242,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Set edit overlay polygon feature style.
      *
-     * @param name: Style name.
+     * @param name Style name.
      * @return True on success.
      */
     fun setFillStyle(name: String) : Boolean {
@@ -244,7 +252,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Set edit overlay cross style.
      *
-     * @param name: Style name.
+     * @param name Style name.
      * @return True on success.
      */
     fun setCrossStyle(name: String) : Boolean {
@@ -313,7 +321,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
      * Create new geometry and start editing. If the layer datasource is point - te point at the center
      * of screen will be created, if line - line with two points, if polygon - polygon with three points.
      *
-     * @param layer: Layer in which to create new geometry. The feature will be created in layer datasource.
+     * @param layer Layer in which to create new geometry. The feature will be created in layer datasource.
      * @return True on success.
      */
     fun createNewGeometry(layer: Layer) : Boolean {
@@ -324,7 +332,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Create new geometry and start editing. The geometry will be empty. This is for edit by walk editing.
      *
-     * @param layer: Layer in which to create new geometry. The feature will be created in layer datasource.
+     * @param layer Layer in which to create new geometry. The feature will be created in layer datasource.
      * @return True on success.
      */
     fun createNewEmptyGeometry(layer: Layer) : Boolean {
@@ -335,7 +343,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Create new geometry and start editing.
      *
-     * @param type: Geometry type.
+     * @param type Geometry type.
      * @return True on success.
      */
     fun createNewGeometryOfType(type: Geometry.Type) : Boolean {
@@ -346,7 +354,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Start editing geometry from feature.
      *
-     * @param feature: Feature to edit geometry.
+     * @param feature Feature to edit geometry.
      * @return True on success.
      */
     fun editGeometry(feature: Feature) : Boolean {
@@ -388,7 +396,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Add point to geometry. Make sense only for line or polygon ring.
      *
-     * @param coordinates: Point coordinates.
+     * @param coordinates Point coordinates.
      * @return True on success.
      */
     fun addGeometryPoint(coordinates: Point) : Boolean {
@@ -431,6 +439,9 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
         return EditOverlay.DeleteResultType.from(API.editOverlayDeleteHoleInt(map.get()!!.id))
     }
 
+    /**
+     * Map touch type
+     */
     enum class MapTouchType {
         ON_DOWN,
         ON_MOVE,
@@ -441,8 +452,8 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Touch down event in edit overlay.
      *
-     * @param x screen coordinate.
-     * @param y screen coordinate.
+     * @param x X screen coordinate.
+     * @param y Y screen coordinate.
      * @return TouchResult with selected point identifier and is this point belongs to hole.
      */
     fun touchDown(x: Float, y: Float) : TouchResult {
@@ -452,8 +463,8 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Touch up event in edit overlay.
      *
-     * @param x screen coordinate.
-     * @param y screen coordinate.
+     * @param x X screen coordinate.
+     * @param y Y screen coordinate.
      * @return TouchResult with selected point identifier and is this point belongs to hole.
      */
     fun touchUp(x: Float, y: Float) : TouchResult {
@@ -463,8 +474,8 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Touch move event in edit overlay.
      *
-     * @param x screen coordinate.
-     * @param y screen coordinate.
+     * @param x X screen coordinate.
+     * @param y Y screen coordinate.
      * @return TouchResult with selected point identifier and is this point belongs to hole.
      */
     fun touchMove(x: Float, y: Double) : TouchResult {
@@ -474,8 +485,8 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     /**
      * Touch single event in edit overlay. For example down and up.
      *
-     * @param x screen coordinate.
-     * @param y screen coordinate.
+     * @param x X screen coordinate.
+     * @param y Y screen coordinate.
      * @return TouchResult with selected point identifier and is this point belongs to hole.
      */
     fun singleTouch(x: Float, y: Float) : TouchResult {

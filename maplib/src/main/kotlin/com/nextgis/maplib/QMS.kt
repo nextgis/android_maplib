@@ -24,6 +24,18 @@ package com.nextgis.maplib
 internal data class QMSItemInt(val id: Int, val name: String, val description: String, val type: Int,
                    val iconUrl: String, val status: Int, val extent: Envelope, val total: Int)
 
+/**
+ * QuickMapServices item.
+ *
+ * @property id Item identifier.
+ * @property name Item name.
+ * @property description Item description.
+ * @property type Item type.
+ * @property iconUrl Item icon URL.
+ * @property status Item availability status.
+ * @property extent Item extent.
+ * @property total Total items in request.
+ */
 data class QMSItem(val id: Int, val name: String, val description: String, val type: Object.Type,
                       val iconUrl: String, val status: StatusCode, val extent: Envelope, val total: Int) {
     internal constructor(internalItem: QMSItemInt) : this(internalItem.id, internalItem.name,
@@ -36,6 +48,22 @@ internal data class QMSItemPropertiesInt(val id: Int, val status: Int, val url: 
                                       val z_min: Int, val z_max: Int, val iconUrl: String,
                                       val extent: Envelope, val yOriginTop: Boolean)
 
+/**
+ * QuickMapServices item properties.
+ *
+ * @property id Item identifier.
+ * @property status Item availability status.
+ * @property url Item URL.
+ * @property name Item name.
+ * @property description Item description.
+ * @property type Item type.
+ * @property EPSG EPSG code.
+ * @property z_min Minimum zoom value.
+ * @property z_max Maximum zoom value.
+ * @property iconUrl Item icon URL.
+ * @property extent Item extent.
+ * @property yOriginTop Y axis orientation.
+ */
 data class QMSItemProperties(val id: Int, val status: StatusCode, val url: String, val name: String,
                              val description: String, val type: Object.Type, val EPSG: Int,
                              val z_min: Int, val z_max: Int, val iconUrl: String, val extent: Envelope,
@@ -48,14 +76,14 @@ data class QMSItemProperties(val id: Int, val status: StatusCode, val url: Strin
 }
 
 /**
- * @object QMS - QuickMapServices singleton
+ * QMS - QuickMapServices singleton
  */
 object QMS {
 
     /**
      * Query QuickMapServices service for items
      *
-     * @param options: Key - value map of options/filters. All keys are optional. Available keys are:
+     * @param options Key - value map of options/filters. All keys are optional. Available keys are:
      *  type - services type. May be tms, wms, wfs, geojson
      *  epsg - services spatial reference EPSG code
      *  cumulative_status - services status. May be works, problematic, failed
@@ -81,7 +109,7 @@ object QMS {
     /**
      * Query item properties by identifier
      *
-     * @param id: identifier to request properties
+     * @param id identifier to request properties
      * @return QMSItemProperties class instance
      */
     fun queryItemProperties(id: Int) : QMSItemProperties {

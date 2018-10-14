@@ -24,10 +24,23 @@ package com.nextgis.maplib
 import java.util.*
 
 /**
- * @struct DateComponents
+ * Date components class to transform from separate values of year, month, day, hour, minute and second to date.
+ *
+ * @property year Year value
+ * @property month Month value
+ * @property day Day value
+ * @property hour Hour value
+ * @property minute Minute value
+ * @property second Second value
+ * @property gmtOffset Time zone offset value
  */
 data class DateComponents(val year: Int, val month: Int, val day: Int, val hour: Int,
                           val minute: Int, val second: Int, val gmtOffset: Int) {
+    /**
+     * Transform to date class.
+     *
+     * @return Date class instance.
+     */
     fun toDate() : Date {
         val calendar = Calendar.getInstance()
         calendar.set(year, month, day, hour, minute, second)
@@ -37,7 +50,10 @@ data class DateComponents(val year: Int, val month: Int, val day: Int, val hour:
 }
 
 /**
- * @class Feature or row
+ * Feature or row.
+ *
+ * @property handle Feature handle for C API.
+ * @property table Table the feature belongs to.
  */
 class Feature(val handle: Long, val table: Table) {
 
@@ -79,7 +95,7 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Check if field set.
      *
-     * @param index: Field index.
+     * @param index Field index.
      * @return True if field set.
      */
     fun isFieldSet(index: Int) : Boolean {
@@ -89,7 +105,7 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Get field integer value.
      *
-     * @param index: Field index.
+     * @param index Field index.
      * @return Field value.
      */
     fun getFieldAsInteger(index: Int) : Int {
@@ -99,7 +115,7 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Get field double value.
      *
-     * @param index: Field index.
+     * @param index Field index.
      * @return Field value.
      */
     fun getFieldAsDouble(index: Int) : Double {
@@ -109,7 +125,7 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Get field string value.
      *
-     * @param index: Field index.
+     * @param index Field index.
      * @return Field value.
      */
     fun getFieldAsString(index: Int) : String {
@@ -119,7 +135,7 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Get field value.
      *
-     * @param index: Field index.
+     * @param index Field index.
      * @return Field value.
      */
     fun getFieldAsDateTime(index: Int) : Date {
@@ -129,8 +145,8 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Set field value.
      *
-     * @param index: Field index.
-     * @param Value to set.
+     * @param index Field index.
+     * @param value Value to set.
      */
     fun setField(index: Int, value: String) {
         API.featureSetFieldStringInt(handle, index, value)
@@ -139,8 +155,8 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Set field value.
      *
-     * @param index: Field index.
-     * @param Value to set.
+     * @param index Field index.
+     * @param value Value to set.
      */
     fun setField(index: Int, value: Double) {
         API.featureSetFieldDoubleInt(handle, index, value)
@@ -149,8 +165,8 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Set field value.
      *
-     * @param index: Field index.
-     * @param Value to set.
+     * @param index Field index.
+     * @param value Value to set.
      */
     fun setField(index: Int, value: Int) {
         API.featureSetFieldIntegerInt(handle, index, value)
@@ -159,8 +175,8 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Set field value.
      *
-     * @param index: Field index.
-     * @param Value to set.
+     * @param index Field index.
+     * @param value Value to set.
      */
     fun setField(index: Int, value: Date) {
         val calendar = Calendar.getInstance()
@@ -191,7 +207,7 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Get attachment.
      *
-     * @param aid: Attachment identifier.
+     * @param aid Attachment identifier.
      * @return Attachment class instance or null.
      */
     fun getAttachment(aid: Long) : Attachment? {
@@ -216,12 +232,12 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Add new attachment.
      *
-     * @param name: Name.
-     * @param description: Description text.
-     * @param path: File system path.
-     * @param move: If true the attachment file will be
-     * @param remoteId: Remote identifier.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param name Name.
+     * @param description Description text.
+     * @param path File system path.
+     * @param move If true the attachment file will be
+     * @param remoteId Remote identifier.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return New attachment identifier.
      */
     fun addAttachment(name: String, description: String, path: String, move: Boolean,
@@ -238,8 +254,8 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Delete attachment.
      *
-     * @param aid: Attachment identifier.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param aid Attachment identifier.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun deleteAttachment(aid: Long, logEdits: Boolean = true) : Boolean {
@@ -249,8 +265,8 @@ class Feature(val handle: Long, val table: Table) {
     /**
      * Delete attachment.
      *
-     * @param attachment: Attachment class instance.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param attachment Attachment class instance.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun deleteAttachment(attachment: Attachment, logEdits: Boolean = true) : Boolean {
@@ -268,7 +284,14 @@ class Feature(val handle: Long, val table: Table) {
 }
 
 /**
- * Attachment class. File added to the feature/row
+ * Attachment class. A file added to the feature/row
+ *
+ * @property handle Handle of attachment or 0 for new one.
+ * @property id Attachment id.
+ * @property name Attachment name.
+ * @property description Attachment description.
+ * @property path Attachment file path in file system.
+ * @property size Attachment file size.
  */
 class Attachment(val handle: Long = 0, val id: Long, val name: String, val description: String,
                  val path: String, val size: Long, private var remoteIdVal: Long) {
@@ -299,9 +322,9 @@ class Attachment(val handle: Long = 0, val id: Long, val name: String, val descr
     /**
      * Update attachment. Only name and description can be updated. To change attchment file, just delete attachment and create new one.
      *
-     * @param name: New attachment name.
-     * @param description: New attachment description.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param name New attachment name.
+     * @param description New attachment description.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun update(name: String, description: String, logEdits: Boolean = true) : Boolean {

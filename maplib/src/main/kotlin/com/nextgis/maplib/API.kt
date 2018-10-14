@@ -27,6 +27,9 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
+/**
+ * Operation status codes enumeration.
+ */
 enum class StatusCode(val code: Int) {
     UNKNOWN(0),
     CONTINUE(100),           /**< Continue */
@@ -70,11 +73,15 @@ enum class StatusCode(val code: Int) {
 }
 
 private data class NotifyFunction(val callback : (uri: String, code: ChangeCode) -> Unit, val code: Int)
+
 /**
  * If return false, execution stops
  */
 private data class ProgressFunction(val callback: (status: StatusCode, complete: Double, message: String) -> Boolean)
 
+/**
+ * Singlton object. Entry point for library interaction.
+ */
 object API {
 
     private var isInit = false
@@ -89,7 +96,9 @@ object API {
     private var authArray = mutableListOf<Auth>()
     private val mapViewArray = mutableSetOf<MapView>()
 
-    // Use to load the 'ngstore' library on application startup.
+    /**
+     * Use to load the 'ngstore' library on application startup.
+     */
     init {
         System.loadLibrary("ngstore")
     }
@@ -122,6 +131,11 @@ object API {
         return 1
     }
 
+    /**
+     * Initialize library. Should be executed as soon as posible.
+     *
+     * @param context Context of executed object.
+     */
     fun init(context: Context) {
         // Prevent multiple launches
         if (isInit) {
@@ -216,60 +230,62 @@ object API {
     }
 
     /**
-     * Returns library version as number
+     * Returns library version as number.
      *
-     * @param component May be self, gdal, sqlite, tiff, jpeg, png, jsonc, proj, geotiff, expat, iconv, zlib, openssl
+     * @param component Component value may be one of the following: self, gdal, sqlite, tiff, jpeg, png, jsonc, proj, geotiff, expat, iconv, zlib, openssl.
      *
-     * @return version number
+     * @return version number.
      */
     fun version(component: String = ""): Int {
         return getVersion(component)
     }
 
     /**
-     * Returns library version as string
+     * Returns library version as string.
      *
-     * @param component May be self, gdal, sqlite, tiff, jpeg, png, jsonc, proj, geotiff, expat, iconv, zlib, openssl
+     * @param component Component value may be one of the following: self, gdal, sqlite, tiff, jpeg, png, jsonc, proj, geotiff, expat, iconv, zlib, openssl.
      *
-     * @return version string
+     * @return version string.
      */
     fun versionString(component: String = ""): String {
         return getVersionString(component)
     }
 
     /**
-     * Returns last error message
+     * Returns last error message.
      *
-     * @return message string
+     * @return message string.
      */
     fun lastError() : String {
         return getLastErrorMessage()
     }
 
     /**
-     * Get library property
+     * Get library property.
      *
-     * @param key: key value
-     * @param value: default value if not exists
+     * @param key Key value.
+     * @param value Default value if not exists.
      *
-     * @return property value corespondent to key
+     * @return property value corespondent to key.
      */
     fun getProperty(key: String, defaultValue: String) : String {
         return settingsGetString(key, defaultValue)
     }
 
     /**
-     * Set library property
+     * Set library property.
      *
-     * @param key: key value
-     * @param value: value to set
+     * @param key Key value.
+     * @param value Value to set.
      */
     fun setProperty(key: String, value: String) {
         settingsSetString(key, value)
     }
 
     /**
-     * Add authorization to use in HTTP requests and automatically update access tokens if needed
+     * Add authorization to use in HTTP requests and automatically update access tokens if needed.
+     *
+     * @param auth Authorization class instance.
      */
     fun addAuth(auth: Auth) : Boolean {
         if(URLAuthAdd(auth.getURL(), toArrayOfCStrings(auth.options()))) {
@@ -281,6 +297,8 @@ object API {
 
     /**
      * Remove authorization
+     *
+     * @param auth Authorization class instance to remove.
      */
     fun removeAuth(auth: Auth) {
         if(URLAuthDelete(auth.getURL())) {
@@ -297,17 +315,17 @@ object API {
     /**
      * Get catalog class instance. The catalog object is singleton.
      *
-     * @return Catalog class instance
+     * @return Catalog class instance.
      */
     fun getCatalog() : Catalog? {
         return catalog
     }
 
     /**
-     * Get map by name
+     * Get map by name.
      *
-     * @param name: map file name. If map file name extension is not set it will append.
-     * @return MapDocument class instance or null
+     * @param name Map file name. If map file name extension is not set it will append.
+     * @return MapDocument class instance or null.
      */
     fun getMap(name: String) : MapDocument? {
         if(mapsDir == null) {
@@ -317,12 +335,12 @@ object API {
 
         val mapPath = mapsDir!!.path + Catalog.separator + name + MapDocument.ext
         var mapId = mapOpenInt(mapPath)
-        if(mapId == -1) {
+        if(!isMapIdValid(mapId)) {
             printWarning("Map $mapPath is not exists. Create it")
             mapId = mapCreateInt(name, "default map", 3857,
                     -20037508.34, -20037508.34,
                     20037508.34, 20037508.34)
-            if(mapId == -1) {
+            if(!isMapIdValid(mapId)) {
                 printError("Map $name create failed")
                 return null
             }
@@ -337,9 +355,9 @@ object API {
     /**
      * Get NextGIS store catalog object. The NextGIS store is geopackage file with some additions needed for library.
      *
-     * @param name: File name. If file name extension is not set it will append.
+     * @param name File name. If file name extension is not set it will append.
      *
-     * @return Catalog object instance or null
+     * @return Catalog object instance or null.
      */
     fun getStore(name: String) : Store? {
         if (geodataDir == null) {
@@ -374,7 +392,7 @@ object API {
     /**
      * Get library data directory. Directory to store various data include maps, files, etc.
      *
-     * @return Catalog object instance or null
+     * @return Catalog object instance or null.
      */
     fun getDataDirectory() : Object? {
         return geodataDir
@@ -383,7 +401,7 @@ object API {
     /**
      * Get library temp directory.
      *
-     * @return Catalog object instance or null
+     * @return Catalog object instance or null.
      */
     fun getTmpDirectory() : Object? {
         return catalog?.childByPath(catalogPathFromSystem(cacheDir)) //(Constants.tmpDirCatalogPath)
@@ -439,6 +457,12 @@ object API {
         }
     }
 
+    /**
+     * Add function executed on various events.
+     *
+     * @param code Event codes or combination on which callback will execute.
+     * @param callback Function to execute.
+     */
     fun addNotifyFunction(code: ChangeCode, callback: (uri: String, code: ChangeCode) -> Unit) {
         val function = NotifyFunction(callback, code.code)
         if (notifyFunctions.indexOf(function) == -1) {
@@ -446,6 +470,11 @@ object API {
         }
     }
 
+    /**
+     * Remove fuction from notify functions list.
+     *
+     * @param callback Function to remove.
+     */
     fun removeNotifyFunction(callback: (uri: String, code: ChangeCode) -> Unit) {
         for ((index, function) in notifyFunctions.withIndex()) {
             if (function.callback == callback) {
@@ -585,7 +614,7 @@ object API {
     internal fun jsonObjectSetLongForKeyInt(handle: Long, name: String, value: Long) : Boolean = jsonObjectSetLongForKey(handle, name, value)
     internal fun jsonObjectSetBoolForKeyInt(handle: Long, name: String, value: Boolean) : Boolean = jsonObjectSetBoolForKey(handle, name, value)
 
-    /**
+    /*
      * Catalog
      */
     internal fun catalogObjectGetInt(path: String): Long = catalogObjectGet(path)
@@ -602,7 +631,7 @@ object API {
     internal fun catalogObjectSetPropertyInt(handle: Long, name: String, value: String, domain: String): Boolean = catalogObjectSetProperty(handle, name, value, domain)
     internal fun catalogObjectRefreshInt(handle: Long) = catalogObjectRefresh(handle)
 
-    /**
+    /*
      * Geometry
      */
     internal fun geometryFreeInt(handle: Long) = geometryFree(handle)
@@ -614,14 +643,14 @@ object API {
     internal fun geometryToJsonInt(handle: Long) : String = geometryToJson(handle)
     internal fun geometryGetEnvelopeInt(handle: Long) : Envelope = geometryGetEnvelope(handle)
 
-    /**
+    /*
      * Coordinate transformation
      */
     internal fun coordinateTransformationCreateInt(fromEPSG: Int, toEPSG: Int): Long = coordinateTransformationCreate(fromEPSG, toEPSG)
     internal fun coordinateTransformationFreeInt(handle: Long) = coordinateTransformationFree(handle)
     internal fun coordinateTransformationDoInt(handle: Long, x: Double, y: Double): Point = coordinateTransformationDo(handle, x, y)
 
-    /**
+    /*
      * Feature class
      */
     internal fun datasetOpenInt(handle: Long, openFlags: Int, openOptions: Array<String> = emptyArray()) : Boolean = datasetOpen(handle, openFlags, openOptions)
@@ -677,6 +706,7 @@ object API {
     internal fun mapOpenInt(path: String) : Int = mapOpen(path)
     internal fun mapSaveInt(mapId: Int, path: String) : Boolean = mapSave(mapId, path)
     internal fun mapCloseInt(mapId: Int) : Boolean = mapClose(mapId)
+    internal fun mapReopenInt(mapId: Int, path: String) : Boolean = mapReopen(mapId, path)
     internal fun mapLayerCountInt(mapId: Int) : Int = mapLayerCount(mapId)
     internal fun mapCreateLayerInt(mapId: Int, name: String, path: String) : Int = mapCreateLayer(mapId, name, path)
     internal fun mapLayerGetInt(mapId: Int, layerId: Int) : Long = mapLayerGet(mapId, layerId)
@@ -684,16 +714,15 @@ object API {
     internal fun mapLayerReorderInt(mapId: Int, beforeLayer: Long, movedLayer: Long) : Boolean = mapLayerReorder(mapId, beforeLayer, movedLayer)
     internal fun mapSetSizeInt(mapId: Int, width: Int, height: Int, YAxisInverted: Boolean) : Boolean = mapSetSize(mapId, width, height, YAxisInverted)
     internal fun mapDrawInt(mapId: Int, state: MapDocument.DrawState, callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)) : Boolean {
-
         if(drawingProgressFuncId != callback.hashCode()) {
             progressFunctions.remove(drawingProgressFuncId)
             drawingProgressFuncId = callback.hashCode()
             progressFunctions[drawingProgressFuncId] = ProgressFunction(callback)
-
         }
 
         return mapDraw(mapId, state.code, drawingProgressFuncId)
     }
+    internal fun mapDrawRemoveCallbackInt() { drawingProgressFuncId = 0 }
     internal fun mapInvalidateInt(mapId: Int, envelope: Envelope) : Boolean = mapInvalidate(mapId, envelope.minX, envelope.minY, envelope.maxX, envelope.maxY)
     internal fun mapSetBackgroundColorInt(mapId: Int, color: RGBA) : Boolean = mapSetBackgroundColor(mapId, color.R, color.G, color.B, color.A)
     internal fun mapGetBackgroundColorInt(mapId: Int) : RGBA = mapGetBackgroundColor(mapId)
@@ -720,7 +749,7 @@ object API {
     internal fun mapIconSetRemoveInt(mapId: Int, name: String) : Boolean = mapIconSetRemove(mapId, name)
     internal fun mapIconSetExistsInt(mapId: Int, name: String) : Boolean = mapIconSetExists(mapId, name)
 
-    /**
+    /*
      * Layer functions
      */
 
@@ -736,7 +765,7 @@ object API {
     internal fun layerSetSelectionIdsInt(layer: Long, ids: LongArray) : Boolean = layerSetSelectionIds(layer, ids)
     internal fun layerSetHideIdsInt(layer: Long, ids: LongArray) : Boolean = layerSetHideIds(layer, ids)
 
-    /**
+    /*
      * Overlay functions
      */
     internal fun overlaySetVisibleInt(mapId: Int, typeMask: Int, visible: Boolean) : Boolean = overlaySetVisible(mapId, typeMask, visible)
@@ -787,13 +816,13 @@ object API {
     internal fun locationOverlaySetStyleNameInt(mapId: Int, name: String) : Boolean = locationOverlaySetStyleName(mapId, name)
     internal fun locationOverlayGetStyleInt(mapId: Int) : Long = locationOverlayGetStyle(mapId)
 
-    /**
+    /*
      * QMS
      */
     internal fun QMSQueryInt(options: Map<String, String>) : Array<QMSItemInt> = QMSQuery(toArrayOfCStrings(options))
     internal fun QMSQueryPropertiesInt(id: Int) : QMSItemPropertiesInt = QMSQueryProperties(id)
 
-    /**
+    /*
      * A native method that is implemented by the 'ngstore' native library,
      * which is packaged with this application.
      */
@@ -808,12 +837,12 @@ object API {
      * Free library resources. On this call catalog removes all preloaded tree items.
      * The map storage closes and removes all maps
      *
-     * @param full: If true catalog and map storage will be freed, otherwise only map storage
+     * @param full If full value is true catalog and map storage will be freed, otherwise only map storage
      */
     private external fun freeResources(full: Boolean)
     private external fun init(options: Array<String>): Boolean
 
-    /**
+    /*
      * GDAL
      */
     external fun getCurrentDirectory(): String
@@ -832,11 +861,11 @@ object API {
     private external fun URLAuthDelete(uri: String) : Boolean
 
     /**
-     * Create MD5 hash from text
+     * Create MD5 hash from text.
      *
-     * @param value: text to create MD5 hash
+     * @param value Text to create MD5 hash.
      *
-     * @return MD5 hash string created from text
+     * @return MD5 hash string created from text.
      */
     external fun md5(value: String) : String
     private external fun jsonDocumentCreate() : Long
@@ -868,7 +897,7 @@ object API {
     private external fun jsonObjectSetLongForKey(handle: Long, name: String, value: Long) : Boolean
     private external fun jsonObjectSetBoolForKey(handle: Long, name: String, value: Boolean) : Boolean
 
-    /**
+    /*
      * Catalog
      */
     private external fun catalogPathFromSystem(path: String): String
@@ -887,7 +916,7 @@ object API {
     private external fun catalogObjectRefresh(handle: Long)
 
 
-    /**
+    /*
      * Geometry
      */
     private external fun geometryFree(handle: Long)
@@ -899,14 +928,14 @@ object API {
     private external fun geometryToJson(handle: Long) : String
     private external fun geometryGetEnvelope(handle: Long) : Envelope
 
-    /**
+    /*
      * Coordinate transformation
      */
     private external fun coordinateTransformationCreate(fromEPSG: Int, toEPSG: Int): Long
     private external fun coordinateTransformationFree(handle: Long)
     private external fun coordinateTransformationDo(handle: Long, x: Double, y: Double): Point
 
-    /**
+    /*
      * Feature class
      */
     private external fun datasetOpen(handle: Long, openFlags: Int, openOptions: Array<String> = emptyArray()) : Boolean
@@ -960,12 +989,12 @@ object API {
                                                   description: String, logEdits: Boolean) : Boolean
     private external fun storeFeatureSetAttachmentRemoteId(feature: Long, aid: Long, rid: Long)
 
-    /**
+    /*
      * Raster
      */
     private external fun rasterCacheArea(handle: Long, options: Array<String>, callbackId: Int) : Boolean
 
-    /**
+    /*
      * Map functions
      */
     private external fun mapCreate(name: String, description: String, EPSG: Int, minX: Double,
@@ -973,6 +1002,7 @@ object API {
     private external fun mapOpen(path: String) : Int
     private external fun mapSave(mapId: Int, path: String) : Boolean
     private external fun mapClose(mapId: Int) : Boolean
+    private external fun mapReopen(mapId: Int, path: String) : Boolean
     private external fun mapLayerCount(mapId: Int) : Int
     private external fun mapCreateLayer(mapId: Int, name: String, path: String) : Int
     private external fun mapLayerGet(mapId: Int, layerId: Int) : Long
@@ -1008,7 +1038,7 @@ object API {
     private external fun mapIconSetRemove(mapId: Int, name: String) : Boolean
     private external fun mapIconSetExists(mapId: Int, name: String) : Boolean
 
-    /**
+    /*
      * Layer functions
      */
     private external fun layerGetName(layer: Long) : String
@@ -1023,7 +1053,7 @@ object API {
     private external fun layerSetSelectionIds(layer: Long, ids: LongArray) : Boolean
     private external fun layerSetHideIds(layer: Long, ids: LongArray) : Boolean
 
-    /**
+    /*
      * Overlay functions
      */
 
@@ -1065,7 +1095,7 @@ object API {
     private external fun locationOverlaySetStyleName(mapId: Int, name: String) : Boolean
     private external fun locationOverlayGetStyle(mapId: Int) : Long
 
-    /**
+    /*
      * QMS
      */
     private external fun QMSQuery(options: Array<String>) : Array<QMSItemInt>

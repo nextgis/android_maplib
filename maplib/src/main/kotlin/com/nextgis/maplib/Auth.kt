@@ -22,15 +22,15 @@
 package com.nextgis.maplib
 
 /**
- * @class Class for holding library authentication
+ * Class for holding library authentication
  *
- * @param url: The http request starting from this url will be authenticated.
- * @param clientId: client Id for oAuth2 protocol.
- * @param authServerUrl: Authentication server url. The update request will use this url.
- * @param accessToken: Access token for oAuth2.
- * @param updateToken: Update token for oAuth2.
- * @param expiresIn: The token expires period.
- * @param tokenUpdateFailedCallback: function executes if update failed.
+ * @property url The http request starting from this url will be authenticated.
+ * @property clientId client Id for oAuth2 protocol.
+ * @property authServerUrl Authentication server url. The update request will use this url.
+ * @property accessToken Access token for oAuth2.
+ * @property updateToken Update token for oAuth2.
+ * @property expiresIn The token expires period.
+ * @property tokenUpdateFailedCallback function executes if update failed.
  */
 data class Auth(private val url: String, private val authServerUrl: String,
                 private val accessToken: String, private val updateToken: String,

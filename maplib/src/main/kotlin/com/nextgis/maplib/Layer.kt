@@ -22,7 +22,7 @@
 package com.nextgis.maplib
 
 /**
- * @class Layer
+ * Layer class
  */
 class Layer(internal val handle: Long) {
 
@@ -87,8 +87,8 @@ class Layer(internal val handle: Long) {
     /**
      * Find features in vector layer that intersect envelope
      *
-     * @param envelope: Envelope to test on intersection
-     * @param limit: The return feature limit
+     * @param envelope Envelope to test on intersection
+     * @param limit The return feature limit
      * @return The array of features from datasource in layer
      */
     fun identify(envelope: Envelope, limit: Int = 0) : Array<Feature> {
@@ -117,7 +117,7 @@ class Layer(internal val handle: Long) {
     /**
      * Highlight feature in layer. Change the feature style to selection style. The selection style mast be set in map.
      *
-     * @param features: Features array. If array is empty the current highlighted features will get layer style and drawn not hightailed.
+     * @param features Features array. If array is empty the current highlighted features will get layer style and drawn not hightailed.
      */
     fun select(features: List<Feature> = listOf()) {
         val ids = mutableListOf<Long>()

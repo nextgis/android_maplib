@@ -33,7 +33,7 @@ import java.io.InputStream
 /**
  * Convert Color int to hex string.
  *
- * @param color: Color in integer representation.
+ * @param color Color in integer representation.
  * @return Hex string.
  */
 fun colorToHexString(color: Int) : String {
@@ -131,12 +131,17 @@ internal fun copyFrom(inStream: InputStream, outFile: File) {
     outStream.close()
 }
 
+internal fun isMapIdValid(mapId: Int) : Boolean {
+    return mapId > Constants.notFound && mapId < 128
+}
+
 object Constants {
     const val tag = "com.nextgis.maplib"
     const val debugMode = true
-    const val refreshTime = 350L
+    const val refreshTime = 330L
     const val bigValue = 10000000.0
     const val bufferSize = 1024
+    const val notFound = -1
 
     object Map {
         const val tolerance = 11.0

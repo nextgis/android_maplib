@@ -21,19 +21,39 @@
 
 package com.nextgis.maplib
 
+/**
+ * Request result as string.
+ *
+ * @property status cURL request result status.
+ * @property value String value.
+ */
 data class RequestResult(val status: Int, val value: String)
+
+/**
+ * Request result as json object.
+ *
+ * @property status cURL request result status.
+ * @property value Json object value.
+ */
 data class RequestResultJson(val status: Int, val value: JsonObject)
+
+/**
+ * Request result as raw value.
+ *
+ * @property status cURL request result status.
+ * @property value Raw byte array value.
+ */
 data class RequestResultRaw(val status: Int, val value: ByteArray)
 
 internal data class RequestResultJsonInt(val status: Int, val value: Long)
 
 /**
- * @class Request. HTTP request class.
+ * Request. HTTP request class.
  */
 object Request {
 
     /**
-     * @enum RequestType. Request type.
+     * Request type.
      */
     enum class RequestType(val code: Int) {
         GET(1),     /**< GET request. */
@@ -60,8 +80,8 @@ object Request {
      * </ul>
      * <p>
      *
-     * @param url: URL to execute.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param options the array of key-value pairs - String:String.
      *
      * @return structure with return status code and String data.
      */
@@ -74,8 +94,8 @@ object Request {
      *
      * @see `Request option values`, for a description of the available options.
      *
-     * @param url: URL to execute.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param options the array of key-value pairs - String:String.
      *
      * @return structure with return status code and String data.
      */
@@ -88,9 +108,9 @@ object Request {
      *
      * @see `Request option values`, for a description of the available options.
      *
-     * @param url: URL to execute.
-     * @param payload: Post payload string.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param payload Post payload string.
+     * @param options the array of key-value pairs - String:String.
      * @return structure with return status code and String data.
      */
     fun post(url: String, payload: String, options: Map<String, String> = mapOf()) : RequestResult {
@@ -104,9 +124,9 @@ object Request {
      *
      * @see `Request option values`, for a description of the available options.
      *
-     * @param url: URL to execute.
-     * @param payload: Post payload string.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param payload Post payload string.
+     * @param options the array of key-value pairs - String:String.
      * @return structure with return status code and String data.
      */
     fun put(url: String, payload: String, options: Map<String, String> = mapOf()) : RequestResult {
@@ -120,8 +140,8 @@ object Request {
      *
      * @see `Request option values`, for a description of the available options.
      *
-     * @param url: URL to execute.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param options the array of key-value pairs - String:String.
      * @return structure with return status code and json data.
      */
     fun getJson(url: String, options: Map<String, String> = mapOf()) : RequestResultJson {
@@ -133,9 +153,9 @@ object Request {
      *
      * @see `Request option values`, for a description of the available options.
      *
-     * @param url: URL to execute.
-     * @param payload: Post payload.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param payload Post payload.
+     * @param options the array of key-value pairs - String:String.
      * @return structure with return status code and json data.
      */
     fun postJson(url: String, payload: String, options: Map<String, String> = mapOf()) : RequestResultJson {
@@ -147,8 +167,8 @@ object Request {
     /**
      * Executes get request. Useful for get images.
      *
-     * @param url: URL to execute.
-     * @param options: the array of key-value pairs - String:String.
+     * @param url URL to execute.
+     * @param options the array of key-value pairs - String:String.
      * @return structure with return status code and raw data.
      */
     fun getRaw(url: String, options: Map<String, String> = mapOf()) : RequestResultRaw {
@@ -158,10 +178,10 @@ object Request {
     /**
      * Executes upload request.
      *
-     * @param path: Path to file in file system to upload.
-     * @param url: URL to execute.
-     * @param options: the array of key-value pairs - String:String.
-     * @param callback: callback function to show progress or cancel upload.
+     * @param filePath Path to file in file system to upload.
+     * @param url URL to execute.
+     * @param options the array of key-value pairs - String:String.
+     * @param callback callback function to show progress or cancel upload.
      *
      * @return structure with return status code and json data.
      */

@@ -60,7 +60,7 @@ ext {
     siteUrl = 'https://github.com/nextgis/android_maplib'
     gitUrl = 'https://github.com/nextgis/android_maplib.git'
 
-    libraryVersion = '3.0.0'
+    libraryVersion = '3.0.2'
 
     developerId = 'bishopgis'
     developerName = 'Dmitry Baryshnikov'
@@ -75,7 +75,7 @@ android {
     compileSdkVersion 27
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 26
+        targetSdkVersion 27
         versionCode 1
         versionName '3.0'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"

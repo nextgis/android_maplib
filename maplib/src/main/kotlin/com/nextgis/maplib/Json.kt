@@ -22,7 +22,9 @@
 package com.nextgis.maplib
 
 /**
- * @class Json document class.
+ * Json document class.
+ *
+ * @property handle C API handle.
  */
 class JsonDocument(val handle: Long = API.jsonDocumentCreateInt()) {
 
@@ -34,9 +36,9 @@ class JsonDocument(val handle: Long = API.jsonDocumentCreateInt()) {
     /**
      * Load document from url.
      *
-     * @param url: Url to fetch Json document.
-     * @param options: Options passed to the http request function. See Request.get for details.
-     * @param callback: Callback function to show progress or cancel operation.
+     * @param url Url to fetch Json document.
+     * @param options Options passed to the http request function. See Request.get for details.
+     * @param callback Callback function to show progress or cancel operation.
      *
      * @return True on success.
      */
@@ -62,12 +64,14 @@ class JsonDocument(val handle: Long = API.jsonDocumentCreateInt()) {
 }
 
 /**
- * @class JsonObject class.
+ * JsonObject class.
+ *
+ * @property handle C API handle. For new objects is 0.
  */
 open class JsonObject(val handle: Long = 0) {
 
     /**
-     * @enum Json object type.
+     * Json object type.
      */
     enum class JsonObjectType(val code: Int) {
         NULL(1),    /**< Null object. */
@@ -113,7 +117,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get string from json object.
      *
-     * @param defaultValue: Default string value.
+     * @param defaultValue Default string value.
      *
      * @return string
      */
@@ -124,7 +128,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get double from json object.
      *
-     * @param defaultValue: Default double value.
+     * @param defaultValue Default double value.
      *
      * @return double
      */
@@ -135,7 +139,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get int from json object.
      *
-     * @param defaultValue: Default int value.
+     * @param defaultValue Default int value.
      *
      * @return integer
      */
@@ -146,7 +150,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get long from json object.
      *
-     * @param defaultValue: Default long value.
+     * @param defaultValue Default long value.
      *
      * @return long
      */
@@ -157,7 +161,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get bool from json object.
      *
-     * @param defaultValue: Default bool value.
+     * @param defaultValue Default bool value.
      *
      * @return boolean
      */
@@ -168,7 +172,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get json object from json object.
      *
-     * @param name: Key name.
+     * @param name Key name.
      *
      * @return json object.
      */
@@ -179,8 +183,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get string from json object.
      *
-     * @param key: Key value.
-     * @param defaultValue: Default value.
+     * @param key Key value.
+     * @param defaultValue Default value.
      *
      * @return String value.
      */
@@ -191,8 +195,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get double from json object.
      *
-     * @param key: Key value.
-     * @param defaultValue: Default value.
+     * @param key Key value.
+     * @param defaultValue Default value.
      *
      * @return Double value.
      */
@@ -203,8 +207,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get integer from json object.
      *
-     * @param key: Key value.
-     * @param defaultValue: Default value.
+     * @param key Key value.
+     * @param defaultValue Default value.
      *
      * @return Integer value.
      */
@@ -215,8 +219,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get long from json object.
      *
-     * @param key: Key value.
-     * @param defaultValue: Default value.
+     * @param key Key value.
+     * @param defaultValue Default value.
      *
      * @return Long value.
      */
@@ -227,8 +231,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get bool from json object.
      *
-     * @param key: Key value.
-     * @param defaultValue: Default value.
+     * @param key Key value.
+     * @param defaultValue Default value.
      *
      * @return Boolean value.
      */
@@ -239,8 +243,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Set string value.
      *
-     * @param value: Value to set.
-     * @param key: Key value.
+     * @param value Value to set.
+     * @param key Key value.
      *
      * @return True on success.
      */
@@ -251,8 +255,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Set double value.
      *
-     * @param value: Value to set.
-     * @param key: Key value.
+     * @param value Value to set.
+     * @param key Key value.
      *
      * @return True on success.
      */
@@ -263,8 +267,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Set integer value.
      *
-     * @param value: Value to set.
-     * @param key: Key value.
+     * @param value Value to set.
+     * @param key Key value.
      *
      * @return True on success.
      */
@@ -275,8 +279,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Set long value.
      *
-     * @param value: Value to set.
-     * @param key: Key value.
+     * @param value Value to set.
+     * @param key Key value.
      *
      * @return True on success.
      */
@@ -287,8 +291,8 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Set boolean value.
      *
-     * @param value: Value to set.
-     * @param key: Key value.
+     * @param value Value to set.
+     * @param key Key value.
      *
      * @return True on success.
      */
@@ -313,7 +317,7 @@ open class JsonObject(val handle: Long = 0) {
     /**
      * Get array by name.
      *
-     * @param name: Array object name.
+     * @param name Array object name.
      *
      * @return Json array object.
      */
@@ -335,7 +339,7 @@ class JsonArray(handle: Long = 0) : JsonObject(handle) {
     /**
      * Get item by index. Index mast be between 0 and size.
      *
-     * @param index: Item index.
+     * @param index Item index.
      *
      * @return Json object.
      */

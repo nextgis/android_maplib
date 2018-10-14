@@ -21,10 +21,25 @@
 
 package com.nextgis.maplib
 
+/**
+ * Color representation
+ *
+ * RGBA color
+ *
+ * @property R a red color
+ * @property G a green color
+ * @property B a blue color
+ * @property A an alpha color
+ */
 data class RGBA(val R: Int, val G: Int, val B: Int, val A: Int)
 
 /**
- * @class MapDocument class. The ordered array of layers.
+ * MapDocument class.
+ *
+ * The ordered array of layers.
+ *
+ * @property id map identifier
+ * @property path map file path
  */
 class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API.mapGetBackgroundColorInt(id)) {
 
@@ -118,9 +133,18 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     }
 
     /**
+     * Reopen map.
+     *
+     * @return true if map reopened successfully.
+     */
+    fun reopen() : Boolean {
+        return API.mapReopenInt(id, path)
+    }
+
+    /**
      * Set map background.
      *
-     * @param color: background color
+     * @param color background color
      */
     fun setBackgroundColor(color: RGBA) {
         bkColor = color
@@ -133,8 +157,8 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Set map viewport size. MapView executes this function on resize.
      *
-     * @param width: map width in pixels.
-     * @param height: map height in pixels.
+     * @param width map width in pixels.
+     * @param height map height in pixels.
      */
     fun setSize(width: Int, height: Int) {
         if(!API.mapSetSizeInt(id, width, height, true)) {
@@ -154,8 +178,8 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Add layer to map.
      *
-     * @param name: layer mame.
-     * @param source: layer datasource.
+     * @param name layer mame.
+     * @param source layer datasource.
      * @return Layer class instance or null on error.
      */
     fun addLayer(name: String, source: Object) : Layer? {
@@ -169,7 +193,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Remove layer from map.
      *
-     * @param layer: Layer class instance.
+     * @param layer Layer class instance.
      * @return True if delete succeeded.
      */
     fun deleteLayer(layer: Layer) : Boolean {
@@ -179,7 +203,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Remove layer from map.
      *
-     * @param position: Layer index.
+     * @param position Layer index.
      * @return True if delete succeeded.
      */
     fun deleteLayer(position: Int) : Boolean {
@@ -193,7 +217,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Get map layer.
      *
-     * @param position: Layer index.
+     * @param position Layer index.
      * @return Layer class instance.
      */
     fun getLayer(position: Int) : Layer? {
@@ -207,7 +231,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      *  Set map options.
      *
-     *  @param options: key-value dictionary. The supported keys are:
+     *  @param options key-value dictionary. The supported keys are:
      *      - ZOOM_INCREMENT - Add integer value to zoom level correspondent to scale. May be negative.
      *      - VIEWPORT_REDUCE_FACTOR - Reduce view size on provided value. Make sense to decrease memory usage.
      *  @return True on success
@@ -217,10 +241,10 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Set map extent limits. This limits prevent scroll out of this bounding box.
      *
-     * @param minX: minimum x coordinate.
-     * @param minY: minimum y coordinate.
-     * @param maxX: maximum x coordinate.
-     * @param maxY: maximum y coordinate.
+     * @param minX minimum x coordinate.
+     * @param minY minimum y coordinate.
+     * @param maxX maximum x coordinate.
+     * @param maxY maximum y coordinate.
      * @return True on success
      */
     fun setExtentLimits(minX: Double, minY: Double, maxX: Double, maxY: Double) : Boolean = API.mapSetExtentLimitsInt(id, minX, minY, maxX, maxY)
@@ -228,8 +252,8 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Reorder map layers.
      *
-     * @param before: Before layer class instance will moved layer insert.
-     * @param moved: Layer class instance to move.
+     * @param before Before layer class instance will moved layer insert.
+     * @param moved Layer class instance to move.
      */
     fun reorder(before: Layer?, moved: Layer) {
         val beforeHandle = before?.handle ?: 0
@@ -241,7 +265,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
      *
      * @param x position.
      * @param y position.
-     * @param limit: max count return features.
+     * @param limit max count return features.
      * @return Array of Features.
      */
     fun identify(x: Float, y: Float, limit: Int = 0) : Array<Feature> {
@@ -268,7 +292,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Highlight feature in map layers. Change the feature style to selection style. The selection style mast be set in map.
      *
-     * @param features: Features array. If array is empty the current highlighted features will get layer style and drawn not highlighted.
+     * @param features Features array. If array is empty the current highlighted features will get layer style and drawn not highlighted.
      */
     fun select(features: List<Feature> = listOf()) {
         var env = Envelope()
@@ -303,7 +327,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Get layer by feature belongs the datasource of correspondent layer.
      *
-     * @param feature: Feature belongs the datasource of correspondent layer.
+     * @param feature Feature belongs the datasource of correspondent layer.
      * @return Layer class instance or null.
      */
     fun getLayerForFeature(feature: Feature) : Layer? {
@@ -324,7 +348,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Invalidate part of the map.
      *
-     * @param extent: Extent to invalidate
+     * @param extent Extent to invalidate
      */
     fun invalidate(extent: Envelope) {
         API.mapInvalidateInt(id, extent)
@@ -333,7 +357,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
      /**
      * Get selection style
      *
-     * @param type: Style type
+     * @param type Style type
      * @return Json object with style
      */
     fun selectionStyle(type: SelectionStyleType) : JsonObject {
@@ -343,7 +367,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Get selection style name
      *
-     * @param type: Style type
+     * @param type Style type
      * @return Style name string
      */
     fun selectionStyleName(type: SelectionStyleType) : String {
@@ -353,8 +377,8 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Set selection style
      *
-     * @param style: Json object with style. See Layer.style
-     * @param type: Selection style type
+     * @param style Json object with style. See Layer.style
+     * @param type Selection style type
      * @return True on success.
      */
     fun setSelectionStyle(style: JsonObject, type: SelectionStyleType) : Boolean {
@@ -364,8 +388,8 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Set selection style name
      *
-     * @param name: Style name. See Layer.styleName
-     * @param type: Selection style type
+     * @param name Style name. See Layer.styleName
+     * @param type Selection style type
      * @return True on success.
      */
     fun setSelectionStyleByName(name: String, type: SelectionStyleType) : Boolean {
@@ -375,7 +399,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Get map overlay
      *
-     * @param type: Overlay type.
+     * @param type Overlay type.
      * @return Overlay class instance or null.
      */
     fun getOverlay(type: Overlay.Type) : Overlay? {
@@ -389,9 +413,9 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Add iconset to map. The iconset is square image 256 x 256 or 512 x 512 pixel with icons in it.
      *
-     * @param name: Iconset name.
-     * @param path: Path to image if file system.
-     * @param move: If true the image will be deleted after successfully added to map document.
+     * @param name Iconset name.
+     * @param path Path to image if file system.
+     * @param move If true the image will be deleted after successfully added to map document.
      * @return True on success.
      */
     fun addIconSet(name: String, path: String, move: Boolean) : Boolean {
@@ -401,7 +425,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Remove iconset from map.
      *
-     * @param name: Iconset name.
+     * @param name Iconset name.
      * @return True on success.
      */
     fun removeIconSet(name: String) : Boolean {
@@ -411,7 +435,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Validate iconset exists in map.
      *
-     * @param name: Iconset name.
+     * @param name Iconset name.
      * @return True if exists.
      */
     fun isIconSetExists(name: String) : Boolean {

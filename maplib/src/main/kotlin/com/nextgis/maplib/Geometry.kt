@@ -24,10 +24,16 @@ package com.nextgis.maplib
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * Point class. Holds X and Y coordinates.
+ *
+ * @property x X coordinate.
+ * @property y Y coordinate.
+ */
 data class Point(var x: Double = 0.0, var y: Double = 0.0)
 
 /**
- * @class Coordinate transformation class. Helps to transform from one spatial reference to another.
+ * Coordinate transformation class. Helps to transform from one spatial reference to another.
  */
 class CoordinateTransformation(val handle: Long) {
 
@@ -39,8 +45,8 @@ class CoordinateTransformation(val handle: Long) {
         /**
          * Create new coordinate transformation.
          *
-         * @param fromEPSG: Source EPSG spatial reference code.
-         * @param toEPSG: Destination EPSG spatial reference code.
+         * @param fromEPSG Source EPSG spatial reference code.
+         * @param toEPSG Destination EPSG spatial reference code.
          * @return CoordinateTransformation class instance.
          */
         fun new(fromEPSG: Int, toEPSG: Int) : CoordinateTransformation {
@@ -51,7 +57,7 @@ class CoordinateTransformation(val handle: Long) {
     /**
      * Perform transformation of point from one spatial reference to another.
      *
-     * @param point: Point to transform.
+     * @param point Point to transform.
      * @return Point with new coordinates.
      */
     fun transform(point: Point) : Point {
@@ -60,7 +66,12 @@ class CoordinateTransformation(val handle: Long) {
 }
 
 /**
- * @class Spatial envelope.
+ * Spatial envelope.
+ *
+ * @property minX Minimum X value.
+ * @property maxX Maximum X value.
+ * @property minY Minimum Y value.
+ * @property maxY Maximum X value.
  */
 data class Envelope(var minX: Double = 0.0, var maxX: Double = 0.0, var minY: Double = 0.0,
                     var maxY: Double = 0.0) {
@@ -94,7 +105,7 @@ data class Envelope(var minX: Double = 0.0, var maxX: Double = 0.0, var minY: Do
     /**
      * Merge envelope with other envelope. The result of extent of this and other envelop will be set to this envelope.
      *
-     * @param other: Other envelope.
+     * @param other Other envelope.
      */
     fun merge(other: Envelope) {
         if( isInit() ) {
@@ -114,7 +125,7 @@ data class Envelope(var minX: Double = 0.0, var maxX: Double = 0.0, var minY: Do
     /**
      * Increase envelope by value.
      *
-     * @param byValue: Value to increase width and height of envelope. May be negative for decrease sizes.
+     * @param byValue Value to increase width and height of envelope. May be negative for decrease sizes.
      */
     fun increase(byValue: Double) {
         val deltaWidth = (width * byValue - width) / 2.0
@@ -128,8 +139,8 @@ data class Envelope(var minX: Double = 0.0, var maxX: Double = 0.0, var minY: Do
     /**
      * Transform envelope from one spatial reference to another.
      *
-     * @param fromEPSG: Source spatial reference EPSG code.
-     * @param toEPSG: Destination spatial reference EPSD code.
+     * @param fromEPSG Source spatial reference EPSG code.
+     * @param toEPSG Destination spatial reference EPSD code.
      */
     fun transform(fromEPSG: Int, toEPSG: Int) {
         val newTransform = CoordinateTransformation.new(fromEPSG, toEPSG)
@@ -166,12 +177,14 @@ data class Envelope(var minX: Double = 0.0, var maxX: Double = 0.0, var minY: Do
 }
 
 /**
- * @class Geometry class.
+ * Geometry class.
+ *
+ * @property handle C API handle
  */
 open class Geometry(val handle : Long) {
 
     /**
-     * @enum Geometry type.
+     * Geometry type.
      */
     enum class Type(val code: Int) {
         NONE(0),            /**< No geometry. */
@@ -199,7 +212,7 @@ open class Geometry(val handle : Long) {
         /**
          * Get name from geometry type.
          *
-         * @param geometryType: Geometry type.
+         * @param geometryType Geometry type.
          * @return Geometry type name string.
          */
         fun typeToName(geometryType: Type) : String {
@@ -217,7 +230,7 @@ open class Geometry(val handle : Long) {
         /**
          * Create geometry from json object. The GeoJson geometry part.
          *
-         * @param json: JsonObject class instance.
+         * @param json JsonObject class instance.
          * @return Geometry or null.
          */
         fun createFromJson(json: JsonObject) : Geometry? {
@@ -239,7 +252,6 @@ open class Geometry(val handle : Long) {
      */
     val isEmpty: Boolean get() = API.geometryIsEmptyInt(handle)
 
-    ///
     /**
      * Geometry type.
      */
@@ -252,7 +264,7 @@ open class Geometry(val handle : Long) {
     /**
      * Transform geometry from one spatial reference to another.
      *
-     * @param epsg: Destination spatial reference.
+     * @param epsg Destination spatial reference.
      * @return True on success.
      */
     fun transform(toEPSG: Int) : Boolean {
@@ -262,7 +274,7 @@ open class Geometry(val handle : Long) {
     /**
      * Transform geometry from one spatial reference to another.
      *
-     * @param transformation: CoordinateTransformation class instance.
+     * @param transformation CoordinateTransformation class instance.
      * @return True on success.
      */
     fun transform(transformation: CoordinateTransformation) : Boolean {
@@ -281,17 +293,19 @@ open class Geometry(val handle : Long) {
 
 
 /**
- * @class Geometry point class.
+ * Geometry point class.
+ *
+ * @property handle C API handle
  */
 class GeoPoint(handle: Long) : Geometry(handle) {
 
     /**
      * Set the point location
      *
-     * @param x: input X coordinate
-     * @param y: input Y coordinate
-     * @param z: input Z coordinate
-     * @param m: input M coordinate
+     * @param x input X coordinate
+     * @param y input Y coordinate
+     * @param z input Z coordinate
+     * @param m input M coordinate
      */
     fun setCoordinates(x: Double, y: Double, z: Double = 0.0, m: Double = 0.0) {
         API.geometrySetPointInt(handle, 0, x, y, z, m)
@@ -300,9 +314,9 @@ class GeoPoint(handle: Long) : Geometry(handle) {
     /**
      * Set the point location.
      *
-     * @param point: input raw point struct
-     * @param z: input Z coordinate
-     * @param m: input M coordinate
+     * @param point input raw point struct
+     * @param z input Z coordinate
+     * @param m input M coordinate
      */
     fun setCoordinates(point: Point, z: Double = 0.0, m: Double = 0.0) {
         API.geometrySetPointInt(handle, 0, point.x, point.y, z, m)

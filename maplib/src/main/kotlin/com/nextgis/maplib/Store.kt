@@ -23,6 +23,8 @@ package com.nextgis.maplib
 
 /**
  * In memory spatial data storage. After class instance destruction all data will loose.
+ *
+ * @param copyFrom Origin object to copy properties.
  */
 class MemoryStore(copyFrom: Object): Object(copyFrom)  {
 
@@ -36,11 +38,11 @@ class MemoryStore(copyFrom: Object): Object(copyFrom)  {
     /**
      * Create feature class in storage.
      *
-     * @param name: Feature class name.
-     * @param geometryType: Geometry type.
-     * @param epsg: Spatial reference EPSG code.
-     * @param fields: Feature class fields.
-     * @param options: Any other create option if form of key-value dictionary.
+     * @param name Feature class name.
+     * @param geometryType Geometry type.
+     * @param epsg Spatial reference EPSG code.
+     * @param fields Feature class fields.
+     * @param options Any other create option if form of key-value dictionary.
      * @return FeatureClass class instance or null.
      */
     fun createFeatureClass(name: String, geometryType: Geometry.Type, epsg: Int,
@@ -72,6 +74,8 @@ class MemoryStore(copyFrom: Object): Object(copyFrom)  {
 
 /**
  * Spatial data storage. This is geopackage file with specific additions.
+ *
+ * @param copyFrom Origin object to copy properties.
  */
 class Store(copyFrom: Object): Object(copyFrom) {
 
@@ -85,10 +89,10 @@ class Store(copyFrom: Object): Object(copyFrom) {
     /**
      * Create feature class in storage.
      *
-     * @param name: Feature class name.
-     * @param geometryType: Geometry type.
-     * @param fields: Feature class fields.
-     * @param options: Any other create option if form of key-value dictionary.
+     * @param name Feature class name.
+     * @param geometryType Geometry type.
+     * @param fields Feature class fields.
+     * @param options Any other create option if form of key-value dictionary.
      * @return FeatureClass class instance or null.
      */
     fun createFeatureClass(name: String, geometryType: Geometry.Type, fields: List<Field>,
@@ -119,9 +123,9 @@ class Store(copyFrom: Object): Object(copyFrom) {
     /**
      * Create table in storage.
      *
-     * @param name: Table name.
-     * @param fields: Table fields.
-     * @param options: Any other create option if form of key-value dictionary.
+     * @param name Table name.
+     * @param fields Table fields.
+     * @param options Any other create option if form of key-value dictionary.
      * @return Table class instance or null.
      */
     fun createTable(name: String, fields: List<Field>, options: Map<String, String>) : Table? {
@@ -145,7 +149,7 @@ class Store(copyFrom: Object): Object(copyFrom) {
 }
 
 /**
- * @brief The table, datasource, map and etc. change codes enum
+ * The table, datasource, map and etc. change codes enumerator.
  */
 enum class ChangeCode(val code: Int) {
     NOP(1 shl 0),
@@ -183,6 +187,12 @@ enum class ChangeCode(val code: Int) {
 
 /**
  * Edit operation for logging properties.
+ *
+ * @property fid Edited feature identifier.
+ * @property aid Edited feature attachment identifier.
+ * @property rid Edited feature remote identifier.
+ * @property arid Edited feature attachment remote identifier.
+ * @property operationType Edit operation type.
  */
 data class EditOperation(val fid: Long, val aid: Long, val rid: Long, val arid: Long, val operationType: ChangeCode) {
     constructor(fid: Long, aid: Long, rid: Long, arid: Long, operationTypeCode: Int) :
@@ -191,6 +201,8 @@ data class EditOperation(val fid: Long, val aid: Long, val rid: Long, val arid: 
 
 /**
  * Spatial referenced raster or image.
+ *
+ * @param copyFrom Origin object to copy properties.
  */
 class Raster(copyFrom: Object): Object(copyFrom) {
 
@@ -208,9 +220,9 @@ class Raster(copyFrom: Object): Object(copyFrom) {
     /**
      * Cache tiles for some area for TMS datasource.
      *
-     * @param bbox: Area to cache.
-     * @param zoomLevels: Zoom levels to cache.
-     * @param callback: Callback function which executes periodically indicating progress.
+     * @param bbox Area to cache.
+     * @param zoomLevels Zoom levels to cache.
+     * @param callback Callback function which executes periodically indicating progress.
      * @return True on success.
      */
     fun cacheArea(bbox: Envelope, zoomLevels: List<Int>,
@@ -236,6 +248,8 @@ class Raster(copyFrom: Object): Object(copyFrom) {
 
 /**
  * Non spatial table.
+ *
+ * @param copyFrom Origin object to copy properties.
  */
 open class Table(copyFrom: Object): Object(copyFrom) {
 
@@ -277,8 +291,8 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Insert feature into table.
      *
-     * @param feature: Feature/row to insert.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param feature Feature/row to insert.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun insertFeature(feature: Feature, logEdits: Boolean = true) : Boolean {
@@ -288,8 +302,8 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Update feature/row.
      *
-     * @param feature: Feature/row to update.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param feature Feature/row to update.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun updateFeature(feature: Feature, logEdits: Boolean = true) : Boolean {
@@ -299,8 +313,8 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Delete feature/row.
      *
-     * @param id: Feature/row identifier.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param id Feature/row identifier.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun deleteFeature(id: Long, logEdits: Boolean = true) : Boolean {
@@ -310,8 +324,8 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Delete feature/row.
      *
-     * @param feature: Feature/row to delete.
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param feature Feature/row to delete.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun deleteFeature(feature: Feature, logEdits: Boolean = true) : Boolean {
@@ -321,7 +335,7 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Delete all features/rows in table.
      *
-     * @param logEdits: Log edits in history table. This log can be received using editOperations function.
+     * @param logEdits Log edits in history table. This log can be received using editOperations function.
      * @return True on success.
      */
     fun deleteFeatures(logEdits: Boolean = true) : Boolean {
@@ -351,7 +365,7 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Get feature/row by identifier.
      *
-     * @param index: Feature/row
+     * @param index Feature/row
      * @return Feature class instance or null.
      */
     fun getFeature(index: Long) : Feature? {
@@ -365,7 +379,7 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Get feature/row by remote identifier.
      *
-     * @param id: remote identifier.
+     * @param id remote identifier.
      * @return Feature class instance or null.
      */
     fun getFeatureByRemote(id: Long) : Feature? {
@@ -379,7 +393,7 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Search field index and type by field name.
      *
-     * @param name: Field name.
+     * @param name Field name.
      * @return Pair with index and type. If field is not exists the index will be negative and field type will be UNKNOWN
      */
     fun fieldIndexAndType(name: String) : Pair<Int, Field.Type> {
@@ -403,7 +417,7 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     /**
      * Delete edit operation from log.
      *
-     * @param editOperation: EditOperation to delete.
+     * @param editOperation EditOperation to delete.
      */
     fun delete(editOperation: EditOperation) {
         API.featureClassDeleteEditOperation(handle, editOperation)
@@ -411,7 +425,9 @@ open class Table(copyFrom: Object): Object(copyFrom) {
 }
 
 /**
- * @class Spatial table.
+ * Spatial table.
+ *
+ * @param copyFrom Origin object to copy properties.
  */
 class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
@@ -422,9 +438,9 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
      * Create vector overviews to speedup drawing. This is a synchronous method.
      *
-     * @param force: If true the previous overviews will be deleted.
-     * @param zoomLevels: The list of zoom levels to generate.
-     * @param callback: Callback function to show process and cancel creation if needed.
+     * @param force If true the previous overviews will be deleted.
+     * @param zoomLevels The list of zoom levels to generate.
+     * @param callback Callback function to show process and cancel creation if needed.
      * @return True on success.
      */
     fun createOverviews(force: Boolean, zoomLevels: List<Int>,
@@ -458,7 +474,7 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
      * Set spatial filter.
      *
-     * @param envelope: Features intesect with envelope will be returned via nextFeature.
+     * @param envelope Features intesect with envelope will be returned via nextFeature.
      * @return True on success.
      */
     fun setSpatialFilter(envelope: Envelope) : Boolean {
@@ -469,7 +485,7 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
      * Set spatial filter.
      *
-     * @param geometry: Features intesect with geometry will be returned via nextFeature.
+     * @param geometry Features intesect with geometry will be returned via nextFeature.
      * @return True on success.
      */
     fun setSpatialFilter(geometry: Geometry) : Boolean {
@@ -479,7 +495,7 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
      * Set attribute filter.
      *
-     * @param query: SQL WHERE clause.
+     * @param query SQL WHERE clause.
      * @return True on success.
      */
     fun setAttributeFilter(query: String) : Boolean {
@@ -489,8 +505,8 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     /**
      * Set spatial and attribute filtes.
      *
-     * @param geometry: Features intersect with geometry will return via nextFeature.
-     * @param query: SQL WHERE clause.
+     * @param geometry Features intersect with geometry will return via nextFeature.
+     * @param query SQL WHERE clause.
      * @return True on success.
      */
      fun setFilters(geometry: Geometry, query: String) : Boolean {
@@ -500,6 +516,11 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
 
 /**
  * FeatureClass/Table filed class.
+ *
+ * @property name Field name.
+ * @property alias Field alias.
+ * @property type Field type.
+ * @property defaultValue Field default value.
  */
 class Field(val name: String, val alias: String, val type: Type, val defaultValue: String? = null) {
 
@@ -507,7 +528,7 @@ class Field(val name: String, val alias: String, val type: Type, val defaultValu
             this(name, alias, Type.from(nativeType), defaultValue)
 
     /**
-     * Field type enum.
+     * Field type enumerator.
      */
     enum class Type(val code: Int) {
         UNKNOWN(-1),    /**< Unknown type. */
@@ -532,7 +553,7 @@ class Field(val name: String, val alias: String, val type: Type, val defaultValu
         /**
          * Field type name string.
          *
-         * @param fieldType: Field type.
+         * @param fieldType Field type.
          * @return Name string.
          */
         fun fieldTypeToName(fieldType: Type) : String {

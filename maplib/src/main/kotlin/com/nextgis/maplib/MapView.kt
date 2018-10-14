@@ -34,6 +34,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import java.lang.ref.WeakReference
+import java.util.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
@@ -65,7 +66,7 @@ interface MapViewDelegate {
     fun onMapDraw(percent: Double) {}
 }
 
-private class MapTimerRunnable(private val drawState: MapDocument.DrawState, private val view: MapView, private val viewRef: WeakReference<MapView> = WeakReference(view)) : Runnable {
+private class MapTimerRunnable(private val drawState: MapDocument.DrawState, private val view: MapView, private val viewRef: WeakReference<MapView> = WeakReference(view)) : TimerTask() {
     override fun run() {
         viewRef.get()?.draw(drawState)
     }
@@ -81,17 +82,28 @@ private class MapRenderer(private val mapView: MapView?, private val mapViewRef:
         }
     }
 
-    override fun onSurfaceChanged(p0: GL10?, p1: Int, p2: Int) {
+    override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
+        val mapView = mapViewRef.get()
+        if(mapView != null) {
+            mapView.map?.setSize(width, height)
+            mapView.refresh()
+        }
     }
 
     override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
-        val mapView = mapViewRef.get()
-        if(mapView != null) {
-            mapView.map?.draw(MapDocument.DrawState.NORMAL, mapView::drawingProgressFunc)
-        }
+//        val mapView = mapViewRef.get()
+//        if(mapView != null) {
+//            mapView.map?.draw(MapDocument.DrawState.NORMAL, mapView::drawingProgressFunc)
+//            mapView.drawState = MapDocument.DrawState.PRESERVED
+//        }
     }
 }
 
+/**
+ * @class MapView. Map view with GL rendering.
+ *
+ * MapView holds MapDocument and renders it.
+ */
 open class MapView : GLSurfaceView {
 
     constructor(ctx: Context) : super(ctx)
@@ -99,7 +111,7 @@ open class MapView : GLSurfaceView {
 
     internal var map: MapDocument? = null
     internal var drawState: MapDocument.DrawState = MapDocument.DrawState.PRESERVED
-    private val globalTimer = Handler()
+    private val timer = Timer()
     private var timerRunner: MapTimerRunnable? = null
     private var timerDrawState = MapDocument.DrawState.PRESERVED
     private var gestureDelegate = WeakReference<GestureDelegate>(null)
@@ -302,9 +314,10 @@ open class MapView : GLSurfaceView {
             map?.extent = newExtent
         }
 
-    override fun finalize() {
+    override fun onDetachedFromWindow() {
+        API.mapDrawRemoveCallbackInt()
         API.removeMapView(this)
-        super.finalize()
+        super.onDetachedFromWindow()
     }
 
     /**
@@ -314,30 +327,19 @@ open class MapView : GLSurfaceView {
      */
     fun setMap(map: MapDocument) {
         this.map = map
-        map.setSize(width, height)
-
-        printMessage("Map set size w: $width x h: $height")
+//        map.setSize(width, height)
+//        printMessage("Map set size w: $width x h: $height")
 
         setEGLContextClientVersion(2)
         setEGLConfigChooser(8, 8, 8, 0, 16, 8)
 //        holder.setFormat(PixelFormat.TRANSLUCENT)
-        API.addMapView(this)
+//        API.addMapView(this)
 
-        val renderer = MapRenderer(this)
-        setRenderer(renderer)
+        setRenderer(MapRenderer(this))
         renderMode = RENDERMODE_WHEN_DIRTY
         preserveEGLContextOnPause = true
 
-        requestRender()
-    }
-
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        map?.setSize(w, h)
-
-        printMessage("Map set size w: $w h: $h")
-
-        requestRender()
+        draw(MapDocument.DrawState.NORMAL)
     }
 
     internal fun draw(state: MapDocument.DrawState) {
@@ -362,7 +364,6 @@ open class MapView : GLSurfaceView {
             return true
         }
 
-        printMessage("Drawing fun: $message")
         scheduleDraw(MapDocument.DrawState.PRESERVED)
         mapViewDelegate.get()?.onMapDraw(complete)
         return cancelDraw()
@@ -405,7 +406,7 @@ open class MapView : GLSurfaceView {
     }
 
     /**
-     * Center map at spatial reference coordinates.
+     * Center map at spatial reference coordinates and redraw it.
      *
      * @param coordinate: New center coordinates.
      */
@@ -461,15 +462,14 @@ open class MapView : GLSurfaceView {
      * @param timeInterval: Time interval in seconds.
      */
     fun scheduleDraw(drawState: MapDocument.DrawState, timeInterval: Long = Constants.refreshTime) {
-        if(timerDrawState != drawState) {
-            globalTimer.removeCallbacks(timerRunner)
-            timerRunner = null
-        }
+//        if(timerDrawState != drawState) {
+//            timer.cancel()
+//        }
 
         timerDrawState = drawState
 
         timerRunner = MapTimerRunnable(drawState, this)
-        globalTimer.postDelayed(timerRunner, timeInterval)
+        timer.schedule(timerRunner, timeInterval)
     }
 
     /**
@@ -516,20 +516,6 @@ open class MapView : GLSurfaceView {
         mapViewDelegate = WeakReference(delegate)
     }
 
-/*
-
-    func onPinchGesture(sender: UIPinchGestureRecognizer) {
-        let scale = sender.scale
-
-                map?.zoomIn(Double(scale))
-        draw(.PRESERVED)
-        scheduleDraw(drawState: .NORMAL)
-
-        sender.scale = 1.0
-
-        gestureDelegate?.onPinchGesture(sender: sender)
-    }
-*/
     /**
      * Get current extent in specified spatial reference system by EPSG code.
      *
@@ -539,6 +525,8 @@ open class MapView : GLSurfaceView {
     fun getExtent(srs: Int) : Envelope {
         return map?.getExtent(srs) ?: Envelope()
     }
+
+
 }
 
 /*
