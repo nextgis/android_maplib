@@ -41,7 +41,7 @@ import kotlin.math.abs
 
 
 /**
- * @interface GestureDelegate. Gesture delegate protocol. Correspondent functions will be executed on gesture events.
+ * Gesture delegate protocol. Correspondent functions will be executed on gesture events.
  */
 interface GestureDelegate {
     fun onSingleTap(event: MotionEvent?) {}
@@ -51,7 +51,7 @@ interface GestureDelegate {
 }
 
 /**
- * @interface LocationDelegate. Location delegate protocol. Correspondent functions will be executed on location events.
+ * Location delegate protocol. Correspondent functions will be executed on location events.
  */
 interface LocationDelegate {
     fun onLocationChanged(location: Location) {}
@@ -59,7 +59,7 @@ interface LocationDelegate {
 }
 
 /**
- * @interface MapViewDelegate. Map drawing delegate protocol. Correspondent functions will be executed on map draw events.
+ * Map drawing delegate protocol. Correspondent functions will be executed on map draw events.
  */
 interface MapViewDelegate {
     fun onMapDrawFinished() {}
@@ -77,6 +77,7 @@ private class MapRenderer(private val mapView: MapView?, private val mapViewRef:
     override fun onDrawFrame(p0: GL10?) {
         val mapView = mapViewRef.get()
         if(mapView != null) {
+            printMessage("MapRenderer:onDrawFrame")
             mapView.map?.draw(mapView.drawState, mapView::drawingProgressFunc)
             mapView.drawState = MapDocument.DrawState.PRESERVED
         }
@@ -100,7 +101,7 @@ private class MapRenderer(private val mapView: MapView?, private val mapViewRef:
 }
 
 /**
- * @class MapView. Map view with GL rendering.
+ * Map view with GL rendering.
  *
  * MapView holds MapDocument and renders it.
  */
@@ -323,7 +324,7 @@ open class MapView : GLSurfaceView {
     /**
      * Set map class to view.
      *
-     * @param map: Map class instance.
+     * @param map Map class instance.
      */
     fun setMap(map: MapDocument) {
         this.map = map
@@ -345,6 +346,7 @@ open class MapView : GLSurfaceView {
     internal fun draw(state: MapDocument.DrawState) {
         drawState = state
         if (!freeze) {
+            printMessage("MapView:requestRender")
             requestRender()
         }
     }
@@ -359,6 +361,7 @@ open class MapView : GLSurfaceView {
     }
 
     internal fun drawingProgressFunc(status: StatusCode, complete: Double, message: String) : Boolean {
+        printMessage("MapView:drawingProgressFunc $status - $message")
         if(status == StatusCode.FINISHED) {
             mapViewDelegate.get()?.onMapDrawFinished()
             return true
@@ -372,7 +375,7 @@ open class MapView : GLSurfaceView {
     /**
      * Refresh map.
      *
-     * @param normal: If true just refresh view, otherwise refill all map tiles.
+     * @param normal If true just refresh view, otherwise refill all map tiles.
      */
     fun refresh(normal: Boolean = true) {
         if(normal) {
@@ -386,7 +389,7 @@ open class MapView : GLSurfaceView {
     /**
      * Zoom in.
      *
-     * @param multiply: Multiply factor. Default is 2.
+     * @param multiply Multiply factor. Default is 2.
      */
     fun zoomIn(multiply: Double = 2.0) {
         map?.zoomIn(multiply)
@@ -397,7 +400,7 @@ open class MapView : GLSurfaceView {
     /**
      * Zoom out.
      *
-     * @param multiply: Multiply factor. Default is 2.
+     * @param multiply Multiply factor. Default is 2.
      */
     fun zoomOut(multiply: Double = 2.0) {
         map?.zoomOut(multiply)
@@ -408,7 +411,7 @@ open class MapView : GLSurfaceView {
     /**
      * Center map at spatial reference coordinates and redraw it.
      *
-     * @param coordinate: New center coordinates.
+     * @param coordinate New center coordinates.
      */
     fun centerMap(coordinate: Point) {
         map?.center = coordinate
@@ -431,7 +434,7 @@ open class MapView : GLSurfaceView {
     /**
      * Invalidate part of the map. The refresh function invalidates all visible screen.
      *
-     * @param envelope: Envelope to invalidate.
+     * @param envelope Envelope to invalidate.
      */
     fun invalidate(envelope: Envelope) {
         map?.invalidate(envelope)
@@ -441,8 +444,8 @@ open class MapView : GLSurfaceView {
     /**
      * Pan map to specific screen shift.
      *
-     * @param w: horizontal pixel shift
-     * @param h: vertical pixel shift.
+     * @param w horizontal pixel shift
+     * @param h vertical pixel shift.
      */
     fun pan(w: Double, h: Double) {
         map?.pan(w, h)
@@ -458,16 +461,12 @@ open class MapView : GLSurfaceView {
     /**
      * Schedule map redraw.
      *
-     * @param drawState: Draw state value. See Map.DrawState values.
-     * @param timeInterval: Time interval in seconds.
+     * @param drawState Draw state value. See Map.DrawState values.
+     * @param timeInterval Time interval in seconds.
      */
     fun scheduleDraw(drawState: MapDocument.DrawState, timeInterval: Long = Constants.refreshTime) {
-//        if(timerDrawState != drawState) {
-//            timer.cancel()
-//        }
-
+        printMessage("MapView:scheduleDraw")
         timerDrawState = drawState
-
         timerRunner = MapTimerRunnable(drawState, this)
         timer.schedule(timerRunner, timeInterval)
     }
@@ -475,7 +474,7 @@ open class MapView : GLSurfaceView {
     /**
      * Register gesture delegate function.
      *
-     * @param delegate: delegate function.
+     * @param delegate delegate function.
      */
     fun registerGestureRecognizers(delegate: GestureDelegate) {
 
@@ -501,7 +500,7 @@ open class MapView : GLSurfaceView {
     /**
      * Register location delegate function.
      *
-     * @param delegate: location delegate function.
+     * @param delegate location delegate function.
      */
     fun registerLocation(delegate: LocationDelegate) {
         locationDelegate = WeakReference(delegate)
@@ -510,7 +509,7 @@ open class MapView : GLSurfaceView {
     /**
      * Register map drawing delegate function.
      *
-     * @param delegate: map drawing delegate function.
+     * @param delegate map drawing delegate function.
      */
     fun registerView(delegate: MapViewDelegate) {
         mapViewDelegate = WeakReference(delegate)
@@ -519,7 +518,7 @@ open class MapView : GLSurfaceView {
     /**
      * Get current extent in specified spatial reference system by EPSG code.
      *
-     * @param srs: EPSG code.
+     * @param srs EPSG code.
      * @return Envelope in specified spatial reference system.
      */
     fun getExtent(srs: Int) : Envelope {

@@ -65,7 +65,7 @@ object Request {
     /**
      * Execute get request.
      *
-     * <h1>Request option values.</h1>
+     * <h1><a name="request_options">Request option values.</a></h1>
      * <p>
      * Request options are key-value array. The keys may be:
      * <ul>
@@ -92,7 +92,7 @@ object Request {
     /**
      * Executes delete request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
@@ -106,7 +106,7 @@ object Request {
     /**
      * Executes post request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload string.
@@ -122,7 +122,7 @@ object Request {
     /**
      * Executes put request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload string.
@@ -138,7 +138,7 @@ object Request {
     /**
      * Executes get request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
@@ -151,7 +151,7 @@ object Request {
     /**
      * Executes post request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload.

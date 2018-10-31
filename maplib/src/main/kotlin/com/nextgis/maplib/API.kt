@@ -51,7 +51,7 @@ enum class StatusCode(val code: Int) {
     OPEN_FAILED(409),        /**< Failed to open file, folder or something else */
     INSERT_FAILED(410),      /**< Insert new feature failed */
     UPDATE_FAILED(411),      /**< Update feature failed */
-    INIT_FAILED(412),        /**< Initialise failed */
+    INIT_FAILED(412),        /**< Initialize failed */
     COPY_FAILED(413),        /**< Copy failed */
     MOVE_FAILED(414),        /**< Move failed */
     CLOSE_FAILED(415),       /**< Close failed */
@@ -80,7 +80,7 @@ private data class NotifyFunction(val callback : (uri: String, code: ChangeCode)
 private data class ProgressFunction(val callback: (status: StatusCode, complete: Double, message: String) -> Boolean)
 
 /**
- * Singlton object. Entry point for library interaction.
+ * Singleton object. Entry point for library interaction.
  */
 object API {
 
@@ -132,7 +132,7 @@ object API {
     }
 
     /**
-     * Initialize library. Should be executed as soon as posible.
+     * Initialize library. Should be executed as soon as possible.
      *
      * @param context Context of executed object.
      */
@@ -471,7 +471,7 @@ object API {
     }
 
     /**
-     * Remove fuction from notify functions list.
+     * Remove function from notify functions list.
      *
      * @param callback Function to remove.
      */
@@ -531,7 +531,8 @@ object API {
 
     internal fun featureClassDeleteEditOperation(handle: Long, operation: EditOperation) : Boolean
     {
-        return featureClassDeleteEditOperation(handle, operation.fid, operation.aid, operation.operationType.code, operation.rid, operation.arid)
+        return featureClassDeleteEditOperation(handle, operation.fid, operation.aid,
+                operation.operationType.code, operation.rid, operation.arid)
     }
 
     internal fun jsonDocumentLoadUrl(handle: Long, url: String, options: Array<String>,
@@ -722,7 +723,10 @@ object API {
 
         return mapDraw(mapId, state.code, drawingProgressFuncId)
     }
-    internal fun mapDrawRemoveCallbackInt() { drawingProgressFuncId = 0 }
+    internal fun mapDrawRemoveCallbackInt() {
+        progressFunctions.remove(drawingProgressFuncId)
+        drawingProgressFuncId = 0
+    }
     internal fun mapInvalidateInt(mapId: Int, envelope: Envelope) : Boolean = mapInvalidate(mapId, envelope.minX, envelope.minY, envelope.maxX, envelope.maxY)
     internal fun mapSetBackgroundColorInt(mapId: Int, color: RGBA) : Boolean = mapSetBackgroundColor(mapId, color.R, color.G, color.B, color.A)
     internal fun mapGetBackgroundColorInt(mapId: Int) : RGBA = mapGetBackgroundColor(mapId)
