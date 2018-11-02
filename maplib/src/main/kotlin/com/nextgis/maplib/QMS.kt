@@ -84,17 +84,16 @@ object QMS {
      * Query QuickMapServices service for items
      *
      * @param options Key - value map of options/filters. All keys are optional. Available keys are:
-     *  type - services type. May be tms, wms, wfs, geojson
-     *  epsg - services spatial reference EPSG code
-     *  cumulative_status - services status. May be works, problematic, failed
-     *  search - search string for a specific geoserver
-     *  intersects_extent - only services bounding boxes intersecting provided
+     *  - type: services type. May be tms, wms, wfs, geojson
+     *  - epsg: services spatial reference EPSG code
+     *  - cumulative_status: services status. May be works, problematic, failed
+     *  - search: search string for a specific geoserver
+     *  - intersects_extent: only services bounding boxes intersecting provided
      *                      extents will return. Extent mast be in WKT or EWKT format.
-     *  ordering - an order in which services will return. May be name, -name, id,
+     *  - ordering: an order in which services will return. May be name, -name, id,
      *             -id, created_at, -created_at, updated_at, -updated_at
-     *  limit - return services maximum count. Works together with offset.
-     *  offset - offset from the beginning of the return list. Works together with limit.
-     *
+     *  - limit: return services maximum count. Works together with offset.
+     *  - offset: offset from the beginning of the return list. Works together with limit.
      * @return Array of QMSItem
      */
     fun query(options: Map<String, String> = mapOf()) : Array<QMSItem> {

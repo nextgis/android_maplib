@@ -320,7 +320,7 @@ class Attachment(val handle: Long = 0, val id: Long, val name: String, val descr
     }
 
     /**
-     * Update attachment. Only name and description can be updated. To change attchment file, just delete attachment and create new one.
+     * Update attachment. Only name and description can be updated. To change attachment file, just delete attachment and create new one.
      *
      * @param name New attachment name.
      * @param description New attachment description.

@@ -42,7 +42,9 @@ fun colorToHexString(color: Int) : String {
 
 private const val DELTA_MINUTES: Long = 1000 * 60 * 2 // Two minutes
 
-/** Determines whether one Location reading is better than the current Location fix
+/**
+ * Determines whether one Location reading is better than the current Location fix
+ *
  * @param location The new Location that you want to evaluate
  * @param currentBestLocation The current Location fix, to which you want to compare the new one
  */

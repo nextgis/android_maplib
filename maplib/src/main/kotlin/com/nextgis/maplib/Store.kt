@@ -156,14 +156,14 @@ enum class ChangeCode(val code: Int) {
     CREATE_OBJECT(1 shl 1),
     DELETE_OBJECT(1 shl 2),
     CHANGE_OBJECT(1 shl 3),
-    CREATE_FEATURE(1 shl 4),    /** Create feature/row. */
-    CHANGE_FEATURE(1 shl 5),    /** Change feature/row. */
-    DELETE_FEATURE(1 shl 6),    /** Delete feature/row. */
-    DELETEALL_FEATURES(1 shl 7),/** Delete all features. */
-    CREATE_ATTACHMENT(1 shl 8), /** Create new attachment */
-    CHANGE_ATTACHMENT(1 shl 9), /** Change attachment name and/or description */
-    DELETE_ATTACHMENT(1 shl 10),/** Delete attachment */
-    DELETEALL_ATTACHMENTS(1 shl 11),    /** Delete all attachments */
+    CREATE_FEATURE(1 shl 4),    /**< Create feature/row. */
+    CHANGE_FEATURE(1 shl 5),    /**< Change feature/row. */
+    DELETE_FEATURE(1 shl 6),    /**< Delete feature/row. */
+    DELETEALL_FEATURES(1 shl 7),/**< Delete all features. */
+    CREATE_ATTACHMENT(1 shl 8), /**< Create new attachment */
+    CHANGE_ATTACHMENT(1 shl 9), /**< Change attachment name and/or description */
+    DELETE_ATTACHMENT(1 shl 10),/**< Delete attachment */
+    DELETEALL_ATTACHMENTS(1 shl 11),    /**< Delete all attachments */
     CREATE_MAP(1 shl 12),
     CHANGE_MAP(1 shl 13),
     CREATE_LAYER(1 shl 14),

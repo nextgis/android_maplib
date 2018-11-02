@@ -34,6 +34,12 @@ internal data class CatalogObjectInfo(val name: String, val type: Int, val handl
 open class Object(val name: String, val type: Int, val path: String, internal val handle: Long) {
 
     constructor(copyFrom: Object) : this(copyFrom.name, copyFrom.type, copyFrom.path, copyFrom.handle)
+
+    /**
+     * Third constructor
+     *
+     * @param handle Object handle for C API
+     */
     constructor(handle: Long) : this(API.catalogObjectNameInt(handle), API.catalogObjectTypeInt(handle),
             "", handle)
 
@@ -158,7 +164,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * Create new catalog object.
      *
      * @param name New object name.
-     * @param options: Dictionary describing new catalog objec. The keys are created object dependent. The mandatory key is:
+     * @param options Dictionary describing new catalog object. The keys are created object dependent. The mandatory key is:
      *        - TYPE - this is string value of type Type
      * @return Created catalog object instance or null.
      */
@@ -179,7 +185,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * @param z_max Maximum zoom. Default is 18
      * @param fullExtent Full extent of TMS datasource. Depends on tile schema and projection
      * @param limitExtent Data extent. Maybe equal or less of fullExtent
-     * @param cacheExpires Time in seconds to remove cahced tiles
+     * @param cacheExpires Time in seconds to remove old tiles
      * @param options Additional options as key: value array
      * @return Catalog object or null
      */
@@ -286,10 +292,10 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         }
 
         /**
-         * Check if type is featureclass.
+         * Check if type is FeatureClass.
          *
          * @param type Type to check.
-         * @return True if this type belongs to featureclass types.
+         * @return True if this type belongs to FeatureClass types.
          */
         internal fun isFeatureClass(type: Int) : Boolean {
             return type in 500..999
@@ -319,7 +325,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         }
 
         /**
-         * Force catalog object instance to featureclass.
+         * Force catalog object instance to FeatureClass.
          *
          * @param featureClass Catalog object instance.
          * @return FeatureClass class instance or null.

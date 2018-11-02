@@ -42,12 +42,12 @@ open class Overlay(mapPtr: MapDocument, val type: Overlay.Type, protected val ma
      * Map overlay types.
      */
     enum class Type(val code: Int) {
-        UNKNOWN(0),     /**< UNKNOWN: unknown overlay type. */
-        LOCATION(1),    /**< LOCATION: overlay with current location mark. */
-        TRACK(2),       /**< TRACK: overlay for current tracks. */
-        EDIT(3),        /**< EDIT: overlay for vector geometry editing. */
-        FIGURES(4),     /**< FIGURES: overlay to show geometry primitives. */
-        ALL(5);         /**< ALL: All overlays. */
+        UNKNOWN(0),     /**< Unknown overlay type. */
+        LOCATION(1),    /**< Overlay with current location mark. */
+        TRACK(2),       /**< Overlay for current tracks. */
+        EDIT(3),        /**< Overlay for vector geometry editing. */
+        FIGURES(4),     /**< Overlay to show geometry primitives. */
+        ALL(5);         /**< All overlays. */
 
         companion object {
             fun from(value: Int): Type {
@@ -146,7 +146,10 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
      * Edit style type.
      */
     enum class EditStyleType(val code: Int) {
-        POINT(0), LINE(1), FILL(2), CROSS(3)
+        POINT(0),     /**< Point style */
+        LINE(1),      /**< Line style */
+        FILL(2),      /**< Fill style */
+        CROSS(3)      /**< Cross style */
     }
 
     /**
@@ -318,7 +321,7 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
     }
 
     /**
-     * Create new geometry and start editing. If the layer datasource is point - te point at the center
+     * Create new geometry and start editing. If the layer datasource is point - the point at the center
      * of screen will be created, if line - line with two points, if polygon - polygon with three points.
      *
      * @param layer Layer in which to create new geometry. The feature will be created in layer datasource.
@@ -443,10 +446,10 @@ class EditOverlay(mapPtr: MapDocument) : Overlay(mapPtr, Type.EDIT) {
      * Map touch type
      */
     enum class MapTouchType {
-        ON_DOWN,
-        ON_MOVE,
-        ON_UP,
-        SINGLE
+        ON_DOWN,    /**< Down click/touch */
+        ON_MOVE,    /**< Move */
+        ON_UP,      /**< Up click/touch */
+        SINGLE      /**< Single touch (down an up)*/
     }
 
     /**

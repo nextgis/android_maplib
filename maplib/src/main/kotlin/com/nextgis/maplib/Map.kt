@@ -106,7 +106,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
      */
     enum class DrawState(val code: Int) {
         NORMAL(1),      /**< NORMAL: normal draw. Only new tiles will be filled with data to draw. */
-        REDRAW(2),      /**< REDRAW: all cached data will be drop. Tiles deleted from meory. All tiles in screen will be filled with data to draw. */
+        REDRAW(2),      /**< REDRAW: all cached data will be drop. Tiles deleted from memory. All tiles in screen will be filled with data to draw. */
         REFILL(3),      /**< REFILL: all tiles will be mark need to fill with data to draw. */
         PRESERVED(4),   /**< PRESERVED: just update scree with cached data. */
         NOTHING(5);     /**< NOTHING: no draw operation. */
@@ -178,7 +178,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Add layer to map.
      *
-     * @param name layer mame.
+     * @param name layer name.
      * @param source layer datasource.
      * @return Layer class instance or null on error.
      */

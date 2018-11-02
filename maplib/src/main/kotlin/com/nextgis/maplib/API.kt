@@ -233,7 +233,6 @@ object API {
      * Returns library version as number.
      *
      * @param component Component value may be one of the following: self, gdal, sqlite, tiff, jpeg, png, jsonc, proj, geotiff, expat, iconv, zlib, openssl.
-     *
      * @return version number.
      */
     fun version(component: String = ""): Int {
@@ -244,7 +243,6 @@ object API {
      * Returns library version as string.
      *
      * @param component Component value may be one of the following: self, gdal, sqlite, tiff, jpeg, png, jsonc, proj, geotiff, expat, iconv, zlib, openssl.
-     *
      * @return version string.
      */
     fun versionString(component: String = ""): String {
@@ -356,7 +354,6 @@ object API {
      * Get NextGIS store catalog object. The NextGIS store is geopackage file with some additions needed for library.
      *
      * @param name File name. If file name extension is not set it will append.
-     *
      * @return Catalog object instance or null.
      */
     fun getStore(name: String) : Store? {
@@ -868,7 +865,6 @@ object API {
      * Create MD5 hash from text.
      *
      * @param value Text to create MD5 hash.
-     *
      * @return MD5 hash string created from text.
      */
     external fun md5(value: String) : String
