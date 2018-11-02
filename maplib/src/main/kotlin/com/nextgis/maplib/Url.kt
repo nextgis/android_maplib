@@ -65,24 +65,21 @@ object Request {
     /**
      * Execute get request.
      *
-     * <h1><a name="request_options">Request option values.</a></h1>
-     * <p>
+     * **Request option values.**
+     *
      * Request options are key-value array. The keys may be:
-     * <ul>
-     *     <li>"**CONNECTTIMEOUT**": "val", where val is in seconds (possibly with decimals)
-     *     <li>"**TIMEOUT**": "val", where val is in seconds. This is the maximum delay for the whole request to complete before being aborted
-     *     <li>"**LOW_SPEED_TIME**": "val", where val is in seconds. This is the maximum time where the transfer speed should be below the LOW_SPEED_LIMIT (if not specified 1b/s), before the transfer to be considered too slow and aborted
-     *     <li>"**LOW_SPEED_LIMIT**": "val", where val is in bytes/second. See LOW_SPEED_TIME. Has only effect if LOW_SPEED_TIME is specified too
-     *     <li>"**HEADERS**": "val", where val is an extra header to use when getting a web page For example "Accept: application/x-ogcwkt"
-     *     <li>"**COOKIE**": "val", where val is formatted as COOKIE1=VALUE1; COOKIE2=VALUE2;
-     *     <li>"**MAX_RETRY**": "val", where val is the maximum number of retry attempts if a 502, 503 or 504 HTTP error occurs. Default is 0
-     *     <li>"**RETRY_DELAY**": "val", where val is the number of seconds between retry attempts. Default is 30
-     * </ul>
-     * <p>
+     *
+     * - **CONNECTTIMEOUT: val**, where val is in seconds (possibly with decimals)
+     * - **TIMEOUT: val**, where val is in seconds. This is the maximum delay for the whole request to complete before being aborted
+     * - **LOW_SPEED_TIME: val**, where val is in seconds. This is the maximum time where the transfer speed should be below the LOW_SPEED_LIMIT (if not specified 1b/s), before the transfer to be considered too slow and aborted
+     * - **LOW_SPEED_LIMIT: val**, where val is in bytes/second. See LOW_SPEED_TIME. Has only effect if LOW_SPEED_TIME is specified too
+     * - **HEADERS: val**, where val is an extra header to use when getting a web page For example "Accept: application/x-ogcwkt"
+     * - **COOKIE: val**, where val is formatted as COOKIE1=VALUE1; COOKIE2=VALUE2;
+     * - **MAX_RETRY: val**, where val is the maximum number of retry attempts if a 502, 503 or 504 HTTP error occurs. Default is 0
+     * - **RETRY_DELAY: val**, where val is the number of seconds between retry attempts. Default is 30
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
-     *
      * @return structure with return status code and String data.
      */
     fun get(url: String, options: Map<String, String> = mapOf()) : RequestResult {
@@ -92,11 +89,10 @@ object Request {
     /**
      * Executes delete request.
      *
-     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
+     * @see `Request option values`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
-     *
      * @return structure with return status code and String data.
      */
     fun delete(url: String, options: Map<String, String> = mapOf()) : RequestResult {
@@ -106,7 +102,7 @@ object Request {
     /**
      * Executes post request.
      *
-     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
+     * @see `Request option values`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload string.
@@ -122,7 +118,7 @@ object Request {
     /**
      * Executes put request.
      *
-     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
+     * @see `Request option values`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload string.
@@ -138,7 +134,7 @@ object Request {
     /**
      * Executes get request.
      *
-     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
+     * @see `Request option values`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
@@ -151,7 +147,7 @@ object Request {
     /**
      * Executes post request.
      *
-     * @see <a name="#request_options">Request option values</a>, for a description of the available options.
+     * @see `Request option values`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload.
@@ -182,7 +178,6 @@ object Request {
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
      * @param callback callback function to show progress or cancel upload.
-     *
      * @return structure with return status code and json data.
      */
     fun upload(filePath: String, url: String, options: Map<String, String> = mapOf(),
