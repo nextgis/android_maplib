@@ -105,11 +105,11 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
      *  Map drawing state enum
      */
     enum class DrawState(val code: Int) {
-        NORMAL(1),      /**< NORMAL: normal draw. Only new tiles will be filled with data to draw. */
-        REDRAW(2),      /**< REDRAW: all cached data will be drop. Tiles deleted from memory. All tiles in screen will be filled with data to draw. */
-        REFILL(3),      /**< REFILL: all tiles will be mark need to fill with data to draw. */
-        PRESERVED(4),   /**< PRESERVED: just update scree with cached data. */
-        NOTHING(5);     /**< NOTHING: no draw operation. */
+        NORMAL(1),      /**< Normal draw. Only new tiles will be filled with data to draw. */
+        REDRAW(2),      /**< All cached data will be drop. Tiles deleted from memory. All tiles in screen will be filled with data to draw. */
+        REFILL(3),      /**< All tiles will be mark need to fill with data to draw. */
+        PRESERVED(4),   /**< Just update scree with cached data. */
+        NOTHING(5);     /**< No draw operation. */
 
         companion object {
             fun from(value: Int): DrawState {

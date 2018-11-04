@@ -65,7 +65,9 @@ object Request {
     /**
      * Execute get request.
      *
-     * **Request option values.**
+     * .. _kotlin_request_option_values:
+     *
+     * **Request option values**.
      *
      * Request options are key-value array. The keys may be:
      *
@@ -89,7 +91,7 @@ object Request {
     /**
      * Executes delete request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see :ref:`Request option values <kotlin_request_option_values>`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
@@ -102,7 +104,7 @@ object Request {
     /**
      * Executes post request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see :ref:`Request option values <kotlin_request_option_values>`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload string.
@@ -118,7 +120,7 @@ object Request {
     /**
      * Executes put request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see :ref:`Request option values <kotlin_request_option_values>`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload string.
@@ -134,7 +136,7 @@ object Request {
     /**
      * Executes get request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see :ref:`Request option values <kotlin_request_option_values>`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param options the array of key-value pairs - String:String.
@@ -147,7 +149,7 @@ object Request {
     /**
      * Executes post request.
      *
-     * @see `Request option values`, for a description of the available options.
+     * @see :ref:`Request option values <kotlin_request_option_values>`, for a description of the available options.
      *
      * @param url URL to execute.
      * @param payload Post payload.
