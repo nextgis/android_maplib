@@ -119,8 +119,8 @@ open class MapView : GLSurfaceView {
     private var locationDelegate = WeakReference<LocationDelegate>(null)
     private var mapViewDelegate = WeakReference<MapViewDelegate>(null)
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    private lateinit var gestureDetector: GestureDetector
-    private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private var gestureDetector: GestureDetector? = null
+    private var scaleGestureDetector: ScaleGestureDetector? = null
 
     /** Last known location or null. */
     var currentLocation: Location? = null
@@ -334,7 +334,7 @@ open class MapView : GLSurfaceView {
         setEGLContextClientVersion(2)
         setEGLConfigChooser(8, 8, 8, 0, 16, 8)
 //        holder.setFormat(PixelFormat.TRANSLUCENT)
-//        API.addMapView(this)
+        API.addMapView(this)
 
         setRenderer(MapRenderer(this))
         renderMode = RENDERMODE_WHEN_DIRTY
@@ -479,7 +479,7 @@ open class MapView : GLSurfaceView {
     fun registerGestureRecognizers(delegate: GestureDelegate) {
 
         gestureDetector = GestureDetector(context, gestureListener)
-        gestureDetector.setOnDoubleTapListener(doubleTapListener)
+        gestureDetector?.setOnDoubleTapListener(doubleTapListener)
         scaleGestureDetector = ScaleGestureDetector(context, scaleGestureListener)
 
         gestureDelegate = WeakReference(delegate)
@@ -489,7 +489,7 @@ open class MapView : GLSurfaceView {
         val res = scaleGestureDetector.onTouchEvent(event)
         if(scaleGestureDetector.isInProgress)
             return res
-        return if (gestureDetector.onTouchEvent(event)) {
+        return if (gestureDetector?.onTouchEvent(event) == true) {
             true
         }
         else {
