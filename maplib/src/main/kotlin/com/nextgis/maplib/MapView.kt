@@ -486,8 +486,8 @@ open class MapView : GLSurfaceView {
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        val res = scaleGestureDetector.onTouchEvent(event)
-        if(scaleGestureDetector.isInProgress)
+        val res = scaleGestureDetector?.onTouchEvent(event) == true
+        if(scaleGestureDetector?.isInProgress == true)
             return res
         return if (gestureDetector?.onTouchEvent(event) == true) {
             true

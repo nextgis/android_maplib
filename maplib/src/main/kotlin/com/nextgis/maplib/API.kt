@@ -21,7 +21,10 @@
 
 package com.nextgis.maplib
 
+import android.app.ActivityManager
 import android.content.Context
+import android.content.Context.ACTIVITY_SERVICE
+import android.os.Build
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -95,6 +98,10 @@ object API {
     private var geodataDir: Object? = null
     private var authArray = mutableListOf<Auth>()
     private val mapViewArray = mutableSetOf<MapView>()
+    private val mapDefaultOptions = mutableMapOf(
+            "ZOOM_INCREMENT" to "0", // Add extra to zoom level corresponding to scale
+            "VIEWPORT_REDUCE_FACTOR" to "1.0" // Reduce viewport width and height to decrease memory usage
+    )
 
     /**
      * Use to load the 'ngstore' library on application startup.
@@ -223,6 +230,26 @@ object API {
         geodataDir = Catalog.getOrCreateFolder(ngstoreDir, "geodata")
 
         addNotifyFunction(ChangeCode.ALL, API::notifyFunction)
+
+        // Form default map options
+        val activityManager = context.getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+
+        // For low memory devices we create tiles bigger, so we get less tiles and less memory load
+        var reduceFactor = 1.0
+        val totalRam = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            memoryInfo.totalMem / (1024 * 1024)
+        } else {
+            512
+        }
+
+        if(totalRam < 1024) {
+            reduceFactor = 2.0
+        }
+
+        mapDefaultOptions["VIEWPORT_REDUCE_FACTOR"] = reduceFactor.toString()
+        mapDefaultOptions["ZOOM_INCREMENT"] = "-1"
     }
 
     private fun finalize() {
@@ -347,6 +374,7 @@ object API {
             printMessage("Get map with ID: $mapId")
         }
 
+        mapSetOptionsInt(mapId, mapDefaultOptions)
         return MapDocument(mapId, mapPath)
     }
 
