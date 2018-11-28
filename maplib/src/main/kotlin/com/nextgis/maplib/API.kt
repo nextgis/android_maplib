@@ -28,8 +28,6 @@ import android.graphics.Bitmap
 import android.os.Build
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * Operation status codes enumeration.
@@ -644,6 +642,7 @@ object API {
     /*
      * Catalog
      */
+
     internal fun catalogObjectGetInt(path: String): Long = catalogObjectGet(path)
     internal fun catalogObjectQueryInt(handle: Long, filter: Int) : Array<CatalogObjectInfo> = catalogObjectQuery(handle, filter)
     internal fun catalogObjectQueryMultiFilterInt(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo> = catalogObjectQueryMultiFilter(handle, filters)
@@ -661,6 +660,7 @@ object API {
     /*
      * Geometry
      */
+
     internal fun geometryFreeInt(handle: Long) = geometryFree(handle)
     internal fun geometrySetPointInt(handle: Long, point: Int, x: Double, y: Double, z: Double, m: Double) = geometrySetPoint(handle, point, x, y, z, m)
     internal fun geometryTransformToInt(handle: Long, EPSG: Int) : Boolean = geometryTransformTo(handle, EPSG)
@@ -673,6 +673,7 @@ object API {
     /*
      * Coordinate transformation
      */
+
     internal fun coordinateTransformationCreateInt(fromEPSG: Int, toEPSG: Int): Long = coordinateTransformationCreate(fromEPSG, toEPSG)
     internal fun coordinateTransformationFreeInt(handle: Long) = coordinateTransformationFree(handle)
     internal fun coordinateTransformationDoInt(handle: Long, x: Double, y: Double): Point = coordinateTransformationDo(handle, x, y)
@@ -680,6 +681,7 @@ object API {
     /*
      * Feature class
      */
+
     internal fun datasetOpenInt(handle: Long, openFlags: Int, openOptions: Array<String> = emptyArray()) : Boolean = datasetOpen(handle, openFlags, openOptions)
     internal fun datasetIsOpenedInt(handle: Long) : Boolean = datasetIsOpened(handle)
     internal fun datasetCloseInt(handle: Long) : Boolean = datasetClose(handle)
@@ -798,6 +800,7 @@ object API {
     /*
      * Overlay functions
      */
+
     internal fun overlaySetVisibleInt(mapId: Int, typeMask: Int, visible: Boolean) : Boolean = overlaySetVisible(mapId, typeMask, visible)
     internal fun overlayGetVisibleInt(mapId: Int, type: Int) : Boolean = overlayGetVisible(mapId, type)
     internal fun overlaySetOptionsInt(mapId: Int, type: Int, options: Array<String>) : Boolean = overlaySetOptions(mapId, type, options)
@@ -814,6 +817,7 @@ object API {
     }
 
     /* Edit */
+
     internal fun editOverlayTouchInt(mapId: Int, x: Double, y: Double, type: Int) : TouchResult = editOverlayTouch(mapId, x, y, type)
     internal fun editOverlayUndoInt(mapId: Int) : Boolean = editOverlayUndo(mapId)
     internal fun editOverlayRedoInt(mapId: Int) : Boolean = editOverlayRedo(mapId)
@@ -840,6 +844,7 @@ object API {
     internal fun editOverlayGetWalkingModeInt(mapId: Int) : Boolean = editOverlayGetWalkingMode(mapId)
 
     /* Location */
+
     internal fun locationOverlayUpdateInt(mapId: Int, x: Double, y: Double, z: Double,
                                                direction: Float, accuracy: Float) : Boolean = locationOverlayUpdate(mapId, x, y, z, direction, accuracy)
     internal fun locationOverlaySetStyleInt(mapId: Int, style: Long) : Boolean = locationOverlaySetStyle(mapId, style)
@@ -849,12 +854,14 @@ object API {
     /*
      * QMS
      */
+
     internal fun QMSQueryInt(options: Map<String, String>) : Array<QMSItemInt> = QMSQuery(toArrayOfCStrings(options))
     internal fun QMSQueryPropertiesInt(id: Int) : QMSItemPropertiesInt = QMSQueryProperties(id)
 
     /*
      * Account
      */
+
     internal fun accountFirstNameGetInt() : String {
         return "No name"
     }
@@ -908,15 +915,23 @@ object API {
     private external fun init(options: Array<String>): Boolean
 
     /*
-     * GDAL
+     * GDAL functions
+     */
+
+    /**
+     * Get current directory
+     *
+     * @return Current directory path is operating system.
      */
     external fun getCurrentDirectory(): String
+
     private external fun formFileName(path: String, name: String, extension: String): String
     private external fun free(pointer: Long)
 
-    /**
+    /*
      * Miscellaneous functions
      */
+
     private external fun URLRequest(type: Int, url: String, options: Array<String>) : RequestResult
     private external fun URLRequestJson(type: Int, url: String, options: Array<String>) : RequestResultJsonInt
     private external fun URLRequestRaw(type: Int, url: String, options: Array<String>) : RequestResultRaw
@@ -932,6 +947,7 @@ object API {
      * @return MD5 hash string created from text.
      */
     external fun md5(value: String) : String
+
     private external fun jsonDocumentCreate() : Long
     private external fun jsonDocumentFree(handle: Long)
     private external fun jsonDocumentLoadUrl(handle: Long, url: String, options: Array<String>, callbackId: Int) : Boolean
@@ -964,6 +980,7 @@ object API {
     /*
      * Catalog
      */
+
     private external fun catalogPathFromSystem(path: String): String
     private external fun catalogObjectGet(path: String): Long
     private external fun catalogObjectQuery(handle: Long, filter: Int) : Array<CatalogObjectInfo>
@@ -983,6 +1000,7 @@ object API {
     /*
      * Geometry
      */
+
     private external fun geometryFree(handle: Long)
     private external fun geometrySetPoint(handle: Long, point: Int, x: Double, y: Double, z: Double, m: Double)
     private external fun geometryTransformTo(handle: Long, EPSG: Int) : Boolean
@@ -995,6 +1013,7 @@ object API {
     /*
      * Coordinate transformation
      */
+
     private external fun coordinateTransformationCreate(fromEPSG: Int, toEPSG: Int): Long
     private external fun coordinateTransformationFree(handle: Long)
     private external fun coordinateTransformationDo(handle: Long, x: Double, y: Double): Point
@@ -1002,6 +1021,7 @@ object API {
     /*
      * Feature class
      */
+
     private external fun datasetOpen(handle: Long, openFlags: Int, openOptions: Array<String> = emptyArray()) : Boolean
     private external fun datasetIsOpened(handle: Long) : Boolean
     private external fun datasetClose(handle: Long) : Boolean
@@ -1056,11 +1076,13 @@ object API {
     /*
      * Raster
      */
+
     private external fun rasterCacheArea(handle: Long, options: Array<String>, callbackId: Int) : Boolean
 
     /*
      * Map functions
      */
+
     private external fun mapCreate(name: String, description: String, EPSG: Int, minX: Double,
                                    minY: Double, maxX: Double, maxY: Double) : Int
     private external fun mapOpen(path: String) : Int
@@ -1105,6 +1127,7 @@ object API {
     /*
      * Layer functions
      */
+
     private external fun layerGetName(layer: Long) : String
     private external fun layerSetName(layer: Long, name: String) : Boolean
     private external fun layerGetVisible(layer: Long) : Boolean
@@ -1127,6 +1150,7 @@ object API {
     private external fun overlayGetOptions(mapId: Int, type: Int) : Array<String>
 
     /* Edit */
+
     private external fun editOverlayTouch(mapId: Int, x: Double, y: Double, type: Int) : TouchResult
     private external fun editOverlayUndo(mapId: Int) : Boolean
     private external fun editOverlayRedo(mapId: Int) : Boolean
@@ -1153,6 +1177,7 @@ object API {
     private external fun editOverlayGetWalkingMode(mapId: Int) : Boolean
 
     /* Location */
+
     private external fun locationOverlayUpdate(mapId: Int, x: Double, y: Double, z: Double,
                                                direction: Float, accuracy: Float) : Boolean
     private external fun locationOverlaySetStyle(mapId: Int, style: Long) : Boolean
@@ -1162,6 +1187,7 @@ object API {
     /*
      * QMS
      */
+
     private external fun QMSQuery(options: Array<String>) : Array<QMSItemInt>
     private external fun QMSQueryProperties(id: Int) : QMSItemPropertiesInt
 }
