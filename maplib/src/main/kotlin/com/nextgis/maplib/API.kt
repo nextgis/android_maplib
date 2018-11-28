@@ -24,6 +24,7 @@ package com.nextgis.maplib
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
+import android.graphics.Bitmap
 import android.os.Build
 import java.io.File
 import java.io.IOException
@@ -850,6 +851,41 @@ object API {
      */
     internal fun QMSQueryInt(options: Map<String, String>) : Array<QMSItemInt> = QMSQuery(toArrayOfCStrings(options))
     internal fun QMSQueryPropertiesInt(id: Int) : QMSItemPropertiesInt = QMSQueryProperties(id)
+
+    /*
+     * Account
+     */
+    internal fun accountFirstNameGetInt() : String {
+        return "No name"
+    }
+
+    internal fun accountLastNameGetInt() : String {
+        return "No last name"
+    }
+
+    internal fun accountEmailGetInt() : String {
+        return ""
+    }
+
+    internal fun accountBitmapGetInt() : Bitmap {
+        return Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+    }
+
+    internal fun accountAuthorizedGetInt() : Boolean {
+        return false
+    }
+
+    internal fun accountExitInt() {
+
+    }
+
+    internal fun accountIsFuncAvailableInt(application: String, function: String) : Boolean {
+        return false
+    }
+
+    internal fun accountSupportedGetInt() : Boolean {
+        return false
+    }
 
     /*
      * A native method that is implemented by the 'ngstore' native library,

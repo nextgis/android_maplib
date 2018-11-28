@@ -60,7 +60,7 @@ ext {
     siteUrl = 'https://github.com/nextgis/android_maplib'
     gitUrl = 'https://github.com/nextgis/android_maplib.git'
 
-    libraryVersion = '3.0.3'
+    libraryVersion = '3.0.4'
 
     developerId = 'bishopgis'
     developerName = 'Dmitry Baryshnikov'

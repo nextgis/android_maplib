@@ -85,13 +85,6 @@ data class Auth(private val url: String, private val authServerUrl: String,
      * @return key-value dictionary of options
      */
     fun options() : Map<String, String> {
-        return mapOf(
-            "HTTPAUTH_TYPE" to "bearer",
-            "HTTPAUTH_TOKEN_SERVER" to authServerUrl,
-            "HTTPAUTH_ACCESS_TOKEN" to accessToken,
-            "HTTPAUTH_REFRESH_TOKEN" to updateToken,
-            "HTTPAUTH_EXPIRES_IN" to expiresIn,
-            "HTTPAUTH_CLIENT_ID" to clientId
-        )
+        return API.URLAuthGetMapInt(url)
     }
 }
