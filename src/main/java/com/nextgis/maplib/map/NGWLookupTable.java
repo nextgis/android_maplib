@@ -238,7 +238,7 @@ public class NGWLookupTable extends Table
 
         Log.d(Constants.TAG, "download layer " + getName());
         HttpResponse response =
-                NetworkUtil.get(NGWUtil.getResourceMetaUrl(mCacheUrl, mRemoteId), mCacheLogin,
+                NetworkUtil.get(NGWUtil.getResourceUrl(mCacheUrl, mRemoteId), mCacheLogin,
                         mCachePassword, false);
         if (!response.isOk()) {
             throw new NGException(NetworkUtil.getError(mContext, response.getResponseCode()));

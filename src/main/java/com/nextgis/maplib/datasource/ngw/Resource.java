@@ -27,6 +27,7 @@ import android.os.Parcel;
 
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.HttpResponse;
+import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONException;
@@ -98,7 +99,7 @@ public abstract class Resource
     public void fillPermissions()
     {
         try {
-            String sURL = mConnection.getURL() + "/api/resource/" + mRemoteId + "/permission";
+            String sURL = NGWUtil.getResourceUrl(mConnection.getURL(), mRemoteId) + "/permission";
             HttpResponse response =
                     NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
             if (!response.isOk())

@@ -50,16 +50,20 @@ public class LayerWithStyles
         extends Resource
 {
     private List<Long> mStyles;
+    private List<Long> mForms;
     private GeoEnvelope mExtent;
 
     protected LayerWithStyles(Parcel in)
     {
         super(in);
         mStyles = new ArrayList<>();
+        mForms = new ArrayList<>();
         int count = in.readInt();
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++)
             mStyles.add(in.readLong());
-        }
+        count = in.readInt();
+        for (int i = 0; i < count; i++)
+            mForms.add(in.readLong());
     }
 
 
@@ -109,6 +113,14 @@ public class LayerWithStyles
                 parcel.writeLong(style);
             }
         }
+        if (null == mForms) {
+            parcel.writeInt(0);
+        } else {
+            parcel.writeInt(mForms.size());
+            for (Long form : mForms) {
+                parcel.writeLong(form);
+            }
+        }
     }
 
 
@@ -129,8 +141,9 @@ public class LayerWithStyles
     public void fillStyles()
     {
         mStyles = new ArrayList<>();
+        mForms = new ArrayList<>();
         try {
-            String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
+            String sURL = NGWUtil.getResourceChildrenUrl(mConnection.getURL(), mRemoteId);
             HttpResponse response =
                     NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
             if (!response.isOk())
@@ -152,6 +165,11 @@ public class LayerWithStyles
                         break;
                     }
                 }
+
+                if (JSONResource.optString("cls", "").equals("formbuilder_form")) {
+                    long remoteId = JSONResource.getLong("id");
+                    mForms.add(remoteId);
+                }
             }
         } catch (IOException | JSONException e) {
             e.printStackTrace();
@@ -168,10 +186,28 @@ public class LayerWithStyles
     }
 
 
+    public int getFormCount()
+    {
+        if (null == mForms) {
+            return 0;
+        }
+        return mForms.size();
+    }
+
+
     public Long getStyleId(int i)
     {
         if (mStyles != null && mStyles.size() > 0)
             return mStyles.get(i);
+
+        return mRemoteId;
+    }
+
+
+    public Long getFormId(int i)
+    {
+        if (mForms != null && mForms.size() > 0)
+            return mForms.get(i);
 
         return mRemoteId;
     }
@@ -196,7 +232,7 @@ public class LayerWithStyles
 
     public String getResourceUrl()
     {
-        return mConnection.getURL() + "/resource/" + mRemoteId;
+        return NGWUtil.getResourceUrl(mConnection.getURL(), mRemoteId);
     }
 
     public void fillExtent() {

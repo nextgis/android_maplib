@@ -316,7 +316,7 @@ public class NGWVectorLayer
     // for overriding in the subclasses
     protected String getResourceMetaUrl(AccountUtil.AccountData accountData)
     {
-        return NGWUtil.getResourceMetaUrl(accountData.url, mRemoteId);
+        return NGWUtil.getResourceUrl(accountData.url, mRemoteId);
     }
 
 

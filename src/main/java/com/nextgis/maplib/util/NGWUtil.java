@@ -228,7 +228,7 @@ public class NGWUtil
             String server,
             long remoteId)
     {
-        return getResourceUrl(server, remoteId) + "/geojson/";
+        return getResourceUrl(server, remoteId) + "/geojson";
     }
 
 
@@ -277,29 +277,9 @@ public class NGWUtil
             String server,
             long remoteId)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/resource/" + remoteId;
-    }
-
-
-    /**
-     * The resource metadata (fields, geometry type, SRS, etc.)
-     *
-     * @param server
-     *         URL
-     * @param remoteId
-     *         resource id
-     *
-     * @return URL to resource meta
-     */
-    public static String getResourceMetaUrl(
-            String server,
-            long remoteId)
-    {
         return getBaseUrl(server) + remoteId;
     }
+
 
     /**
      * The resource base url
@@ -309,11 +289,24 @@ public class NGWUtil
      *
      * @return URL to base resource
      */
-    private static String getBaseUrl(String server) {
+    public static String getBaseUrl(String server) {
         if (!server.startsWith("http"))
             server = "http://" + server;
 
         return server + "/api/resource/";
+    }
+
+
+    /**
+     * The resource's children url
+     *
+     * @param server
+     *         URL
+     *
+     * @return URL to base resource
+     */
+    public static String getResourceChildrenUrl(String server, long resourceId) {
+        return getBaseUrl(server) + "?parent=" + resourceId;
     }
 
 
@@ -352,7 +345,7 @@ public class NGWUtil
             String server,
             long remoteId)
     {
-        return getResourceMetaUrl(server, remoteId) + "/feature/";
+        return getResourceUrl(server, remoteId) + "/feature/";
     }
 
 
@@ -369,7 +362,7 @@ public class NGWUtil
 
 
     public static String getExtent(String server, long remoteId) {
-        return getResourceMetaUrl(server, remoteId) + "/extent";
+        return getResourceUrl(server, remoteId) + "/extent";
     }
 
 

@@ -28,6 +28,7 @@ import android.os.Parcelable;
 
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.HttpResponse;
+import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
 
 import org.json.JSONArray;
@@ -61,7 +62,7 @@ public class ResourceGroup extends Resource {
             return;
 
         try {
-            String sURL = mConnection.getURL() + "/resource/" + mRemoteId + "/child/";
+            String sURL = NGWUtil.getResourceChildrenUrl(mConnection.getURL(), mRemoteId);
             HttpResponse response =
                     NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
             if (!response.isOk())
