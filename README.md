@@ -3,6 +3,8 @@ android_maplib
 
 The base map library for geospatial applications for Android.
 
+[![Download](https://api.bintray.com/packages/bishopgis/MapLib/com.nextgis.maplib/images/download.svg)](https://bintray.com/bishopgis/MapLib/com.nextgis.maplib/_latestVersion)
+
 License information:
 -------------
 This library is licensed under GNU LGPL v3 or any later version
