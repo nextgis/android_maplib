@@ -3,7 +3,7 @@
  * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
  *
  * Created by Dmitry Baryshnikov on 06.09.18 21:26.
- * Copyright (c) 2018 NextGIS, info@nextgis.com.
+ * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -93,9 +93,7 @@ class Account(clientId: String, accessToken: String, updateToken: String,
      *
      * @return key-value dictionary of options.
      */
-    fun options() : Map<String, String> {
-        return auth.options()
-    }
+    fun options() : Map<String, String> = auth.options()
 
     /**
      * Check if function indicated by application name and function name is available to this account.
@@ -104,7 +102,21 @@ class Account(clientId: String, accessToken: String, updateToken: String,
      * @param function Function name.
      * @return True if function available or false.
      */
-    fun isFunctionAvailable(application: String, function: String) : Boolean {
-        return API.accountIsFuncAvailableInt(application, function)
-    }
+    fun isFunctionAvailable(application: String, function: String) : Boolean = API.accountIsFuncAvailableInt(application, function)
+
+    /**
+     * Update user information in account class. Method is synchronous and must be started from
+     * separate thread.
+     *
+     * @return True on success.
+     */
+    fun updateInfo() : Boolean = API.accountUpdateInt()
+
+    /**
+     * Update user support information in account class. Method is synchronous and must be started
+     * from separate thread.
+     *
+     * @return True on success.
+     */
+    fun updateSupportInfo() : Boolean = API.accountUpdateSupportInt()
 }

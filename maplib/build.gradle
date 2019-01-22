@@ -3,7 +3,7 @@
  * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
  *
  * Created by Dmitry Baryshnikov on 14.08.18 20:59.
- * Copyright (c) 2018 NextGIS, info@nextgis.com.
+ * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -24,7 +24,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'org.jetbrains.dokka-android'
 
-def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
 def gdalFiles = [ "compdcs.csv", "coordinate_axis.csv", "cubewerx_extra.wkt", "datum_shift.csv",
                   "ecw_cs.wkt", "ellipsoid.csv", "epsg.wkt", "esri_StatePlane_extra.wkt",
                   "esri_Wisconsin_extra.wkt", "esri_epsg.wkt", "esri_extra.wkt", "gcs.csv",
@@ -60,7 +60,7 @@ ext {
     siteUrl = 'https://github.com/nextgis/android_maplib'
     gitUrl = 'https://github.com/nextgis/android_maplib.git'
 
-    libraryVersion = '3.0.4'
+    libraryVersion = '3.1.0'
 
     developerId = 'bishopgis'
     developerName = 'Dmitry Baryshnikov'
@@ -72,12 +72,12 @@ ext {
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 27
-        versionCode 1
-        versionName '3.0'
+        targetSdkVersion 28
+        versionCode 2
+        versionName '3.1'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters = androidAbis
@@ -95,7 +95,6 @@ android {
                         "-DBUILD_SHARED_LIBS=ON",
                         "-DBUILD_STATIC_LIBS=OFF",
                         "-DBUILD_TARGET_PLATFORM=ANDROID"
-                        "-- -j8"
             }
         }
     }
@@ -112,18 +111,17 @@ android {
     }
     productFlavors {
     }
-
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
         test.java.srcDirs += 'src/test/kotlin'
         androidTest.java.srcDirs += 'src/androidTest/kotlin'
     }
-
     dokka {
         outputFormat = 'javadoc'
         outputDirectory = "$buildDir/docs/javadoc"
 //        sourceDirs = files('src/main/kotlin')
     }
+    buildToolsVersion '28.0.3'
 }
 
 task copyGdalFiles(type: Copy) {

@@ -25,6 +25,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import java.io.File
 import java.io.IOException
@@ -601,14 +602,53 @@ object API {
         return out
     }
 
-    internal fun URLRequestInt(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResult = URLRequest(type, url, toArrayOfCStrings(options))
+    internal fun URLRequestInt(type: Int, url: String, options: Map<String, String> = mapOf(),
+                               callback: ((status: StatusCode, complete: Double,
+                                           message: String) -> Boolean)? = null) : RequestResult {
+        if(null != callback) {
+            progressFunctions[callback.hashCode()] = ProgressFunction(callback)
+        }
 
-    internal fun URLRequestJsonInt(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResultJson {
-        val result = API.URLRequestJson(type, url, toArrayOfCStrings(options))
-        return RequestResultJson(result.status, JsonObject(result.value))
+        val res = URLRequest(type, url, toArrayOfCStrings(options), callback?.hashCode() ?: 0)
+
+        if(null != callback) {
+            progressFunctions.remove(callback.hashCode())
+        }
+        return res
     }
 
-    internal fun URLRequestRawInt(type: Int, url: String, options: Map<String, String> = mapOf()) : RequestResultRaw = URLRequestRaw(type, url, toArrayOfCStrings(options))
+    internal fun URLRequestJsonInt(type: Int, url: String, options: Map<String, String> = mapOf(),
+                                   callback: ((status: StatusCode, complete: Double,
+                                               message: String) -> Boolean)? = null) : RequestResultJson {
+        if(null != callback) {
+            progressFunctions[callback.hashCode()] = ProgressFunction(callback)
+        }
+
+        val res = API.URLRequestJson(type, url, toArrayOfCStrings(options), callback?.hashCode() ?: 0)
+
+        if(null != callback) {
+            progressFunctions.remove(callback.hashCode())
+        }
+
+        return RequestResultJson(res.status, JsonObject(res.value))
+    }
+
+    internal fun URLRequestRawInt(type: Int, url: String, options: Map<String, String> = mapOf(),
+                                  callback: ((status: StatusCode, complete: Double,
+                                              message: String) -> Boolean)? = null) : RequestResultRaw {
+
+        if(null != callback) {
+            progressFunctions[callback.hashCode()] = ProgressFunction(callback)
+        }
+
+        val res = URLRequestRaw(type, url, toArrayOfCStrings(options), callback?.hashCode() ?: 0)
+
+        if(null != callback) {
+            progressFunctions.remove(callback.hashCode())
+        }
+
+        return res
+    }
 
 
     internal fun jsonDocumentCreateInt() : Long = jsonDocumentCreate()
@@ -862,37 +902,24 @@ object API {
      * Account
      */
 
-    internal fun accountFirstNameGetInt() : String {
-        return "No name"
-    }
-
-    internal fun accountLastNameGetInt() : String {
-        return "No last name"
-    }
-
-    internal fun accountEmailGetInt() : String {
-        return ""
-    }
+    internal fun accountFirstNameGetInt() : String = accountGetFirstName()
+    internal fun accountLastNameGetInt() : String = accountGetLastName()
+    internal fun accountEmailGetInt() : String = accountGetEmail()
 
     internal fun accountBitmapGetInt() : Bitmap {
-        return Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+        val path = accountBitmapPath()
+        if(path.isEmpty()) {
+            return Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+        }
+        return BitmapFactory.decodeFile(path)
     }
 
-    internal fun accountAuthorizedGetInt() : Boolean {
-        return false
-    }
-
-    internal fun accountExitInt() {
-
-    }
-
-    internal fun accountIsFuncAvailableInt(application: String, function: String) : Boolean {
-        return false
-    }
-
-    internal fun accountSupportedGetInt() : Boolean {
-        return false
-    }
+    internal fun accountAuthorizedGetInt() : Boolean = accountIsAuthorized()
+    internal fun accountExitInt() = accountExit()
+    internal fun accountIsFuncAvailableInt(application: String, function: String) : Boolean = accountIsFuncAvailable(application, function)
+    internal fun accountSupportedGetInt() : Boolean = accountSupported()
+    internal fun accountUpdateInt() : Boolean = accountUpdateUserInfo()
+    internal fun accountUpdateSupportInt() : Boolean = accountUpdateSupportInfo()
 
     /*
      * A native method that is implemented by the 'ngstore' native library,
@@ -932,9 +959,9 @@ object API {
      * Miscellaneous functions
      */
 
-    private external fun URLRequest(type: Int, url: String, options: Array<String>) : RequestResult
-    private external fun URLRequestJson(type: Int, url: String, options: Array<String>) : RequestResultJsonInt
-    private external fun URLRequestRaw(type: Int, url: String, options: Array<String>) : RequestResultRaw
+    private external fun URLRequest(type: Int, url: String, options: Array<String>, callbackId: Int) : RequestResult
+    private external fun URLRequestJson(type: Int, url: String, options: Array<String>, callbackId: Int) : RequestResultJsonInt
+    private external fun URLRequestRaw(type: Int, url: String, options: Array<String>, callbackId: Int) : RequestResultRaw
     private external fun URLUploadFile(path: String, url: String, options: Array<String>, callbackId: Int) : RequestResultJsonInt
     private external fun URLAuthAdd(url: String, options: Array<String>) : Boolean
     private external fun URLAuthGet(uri: String) : Array<String>
@@ -1190,4 +1217,19 @@ object API {
 
     private external fun QMSQuery(options: Array<String>) : Array<QMSItemInt>
     private external fun QMSQueryProperties(id: Int) : QMSItemPropertiesInt
+
+    /*
+     * Account
+     */
+    private external fun accountGetFirstName() : String
+    private external fun accountGetLastName() : String
+    private external fun accountGetEmail() : String
+    private external fun accountBitmapPath() : String
+    private external fun accountIsAuthorized() : Boolean
+    private external fun accountExit()
+    private external fun accountIsFuncAvailable(application: String, function: String) : Boolean
+    private external fun accountSupported() : Boolean
+    private external fun accountUpdateUserInfo() : Boolean
+    private external fun accountUpdateSupportInfo() : Boolean
+
 }
