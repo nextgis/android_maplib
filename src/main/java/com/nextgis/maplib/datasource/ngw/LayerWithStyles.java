@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -138,16 +138,13 @@ public class LayerWithStyles
     }
 
 
-    public void fillStyles()
-    {
-        mStyles = new ArrayList<>();
-        mForms = new ArrayList<>();
+    public static void fillStyles(String url, String user, String pass, Long remoteId, List<Long> styles, List<Long> forms) {
         try {
-            String sURL = NGWUtil.getResourceChildrenUrl(mConnection.getURL(), mRemoteId);
-            HttpResponse response =
-                    NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
+            String sURL = NGWUtil.getResourceChildrenUrl(url, remoteId);
+            HttpResponse response = NetworkUtil.get(sURL, user, pass, false);
             if (!response.isOk())
                 return;
+
             JSONArray children = new JSONArray(response.getResponseBody());
             for (int i = 0; i < children.length(); i++) {
                 //Only store style id
@@ -160,20 +157,30 @@ public class LayerWithStyles
                 JSONArray interfaces = JSONResource.getJSONArray("interfaces");
                 for (int j = 0; j < interfaces.length(); j++) {
                     if (interfaces.getString(j).equals("IRenderableStyle")) {
-                        long remoteId = JSONResource.getLong("id");
-                        mStyles.add(remoteId);
+                        long cRemoteId = JSONResource.getLong("id");
+                        if (styles != null)
+                            styles.add(cRemoteId);
                         break;
                     }
                 }
 
                 if (JSONResource.optString("cls", "").equals("formbuilder_form")) {
-                    long remoteId = JSONResource.getLong("id");
-                    mForms.add(remoteId);
+                    long cRemoteId = JSONResource.getLong("id");
+                    if (forms != null)
+                        forms.add(cRemoteId);
                 }
             }
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public void fillStyles()
+    {
+        mStyles = new ArrayList<>();
+        mForms = new ArrayList<>();
+        fillStyles(mConnection.getURL(), mConnection.getLogin(), mConnection.getPassword(), mRemoteId, mStyles, mForms);
     }
 
 
