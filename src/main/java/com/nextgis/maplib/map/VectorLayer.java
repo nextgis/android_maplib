@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -318,7 +318,7 @@ public class VectorLayer
         }
         tableCreate += Constants.FIELD_GEOM + " BLOB";
         for (Field field : mFields.values()) {
-            tableCreate += ", " + field.getName();
+            tableCreate += ", '" + field.getName() + "'";
             switch (field.getType()) {
                 case FTString:
                     tableCreate += " TEXT";
@@ -598,7 +598,7 @@ public class VectorLayer
 
         mFields.put(field.getName(), field);
 
-        String fieldCreate = "ALTER TABLE " + mPath.getName() + " ADD COLUMN " + field.getName();
+        String fieldCreate = "ALTER TABLE " + mPath.getName() + " ADD COLUMN '" + field.getName() + "'";
 
         switch (field.getType()) {
             case FTString:
