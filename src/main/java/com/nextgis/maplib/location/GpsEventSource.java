@@ -206,20 +206,22 @@ public class GpsEventSource
 
     public void updateActiveListeners()
     {
-        SharedPreferences sharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(mContext);
-        mListenProviders = Integer.parseInt(sharedPreferences.getString(
-                SettingsConstants.KEY_PREF_LOCATION_SOURCE, "3"));
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        String value = sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_SOURCE, "3");
+        mListenProviders = Integer.parseInt(value != null ? value : "3");
 
-        String minTimeStr =
-                sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_TIME, "2");
-        String minDistanceStr =
-                sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_MIN_DISTANCE, "10");
-        mUpdateMinTime = Long.parseLong(minTimeStr) * 1000;
-        mUpdateMinDistance = Float.parseFloat(minDistanceStr);
+        String minTime = SettingsConstants.KEY_PREF_LOCATION_MIN_TIME;
+        String minTimeStr = sharedPreferences.getString(minTime, "2");
+        String minDistance = SettingsConstants.KEY_PREF_LOCATION_MIN_DISTANCE;
+        String minDistanceStr = sharedPreferences.getString(minDistance, "10");
+        mUpdateMinTime = Long.parseLong(minTimeStr != null ? minTimeStr : "2") * 1000;
+        mUpdateMinDistance = Float.parseFloat(minDistanceStr != null ? minDistanceStr : "1000");
 
-        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+        String fine = Manifest.permission.ACCESS_FINE_LOCATION;
+        String coarse = Manifest.permission.ACCESS_COARSE_LOCATION;
+        boolean hasFine = PermissionUtil.hasPermission(mContext, fine);
+        boolean hasCoarse = PermissionUtil.hasPermission(mContext, coarse);
+        if(!hasFine || !hasCoarse)
             return;
 
         mLocationManager.removeUpdates(mGpsLocationListener);

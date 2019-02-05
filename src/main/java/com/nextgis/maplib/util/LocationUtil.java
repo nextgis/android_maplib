@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -36,6 +36,7 @@ import com.nextgis.maplib.location.GpsEventSource;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Locale;
 
 import static android.content.Context.MODE_MULTI_PROCESS;
 
@@ -121,7 +122,8 @@ public class LocationUtil
 
     public static String formatLength(Context context, double length, int precision) {
         SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
-        boolean metric = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric").equals("metric");
+        String value = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric");
+        boolean metric = value == null || value.equals("metric");
         int unit = metric ? R.string.unit_meter : R.string.unit_foot;
         if (metric) {
             if (length >= 1000) {
@@ -143,7 +145,8 @@ public class LocationUtil
 
     public static String formatArea(Context context, double length) {
         SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
-        boolean metric = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric").equals("metric");
+        String value = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric");
+        boolean metric = value == null || value.equals("metric");
         int unit = metric ? R.string.unit_square_meter : R.string.unit_square_foot;
         if (metric) {
             if (length >= 1000000) {
@@ -158,7 +161,7 @@ public class LocationUtil
             }
         }
 
-        return String.format("%.3f %s", length, context.getString(unit));
+        return String.format(Locale.getDefault(), "%.3f %s", length, context.getString(unit));
     }
 
 
@@ -226,14 +229,13 @@ public class LocationUtil
                 break;
         }
 
-        String preferenceKey = isTracks
-                               ? SettingsConstants.KEY_PREF_TRACKS_SOURCE
-                               : SettingsConstants.KEY_PREF_LOCATION_SOURCE;
-
-        SharedPreferences sharedPreferences = context.getSharedPreferences(
-                context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
-        int providers = Integer.parseInt(sharedPreferences.getString(preferenceKey, "3"));
-
+        String tracks = SettingsConstants.KEY_PREF_TRACKS_SOURCE;
+        String location = SettingsConstants.KEY_PREF_LOCATION_SOURCE;
+        String preferenceKey = isTracks ? tracks : location;
+        String preferences = context.getPackageName() + "_preferences";
+        SharedPreferences sharedPreferences = context.getSharedPreferences(preferences, MODE_MULTI_PROCESS);
+        String value = sharedPreferences.getString(preferenceKey, "3");
+        int providers = value != null ? Integer.parseInt(value) : 3;
         return 0 != (providers & currentProvider);
     }
 
