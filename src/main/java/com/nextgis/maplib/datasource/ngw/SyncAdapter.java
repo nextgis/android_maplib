@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -25,6 +25,7 @@ package com.nextgis.maplib.datasource.ngw;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
@@ -46,12 +47,14 @@ import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.map.LayerGroup;
 import com.nextgis.maplib.map.MapBase;
 import com.nextgis.maplib.map.MapContentProviderHelper;
+import com.nextgis.maplib.map.TrackLayer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
 import java.util.HashMap;
 
+import static android.content.Context.MODE_MULTI_PROCESS;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 /* useful links
@@ -135,11 +138,11 @@ public class SyncAdapter
         }
 
         final String accountNameHash = "_" + account.name.hashCode();
-        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES, Constants.MODE_MULTI_PROCESS);
+        SharedPreferences settings = getContext().getSharedPreferences(Constants.PREFERENCES, MODE_MULTI_PROCESS);
         SharedPreferences.Editor editor = settings.edit();
         editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP + accountNameHash, System.currentTimeMillis());
         editor.putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis());
-        editor.commit();
+        editor.apply();
 
         mError = "";
         if (syncResult.stats.numIoExceptions > 0)
@@ -187,10 +190,13 @@ public class SyncAdapter
 
                 Pair<Integer, Integer> ver = mVersions.get(accountName);
                 ngwLayer.sync(authority, ver, syncResult);
+            } else if (layer instanceof TrackLayer) {
+                ((TrackLayer) layer).sync();
             }
         }
     }
 
+    @SuppressLint("MissingPermission")
     public static void setSyncPeriod(
             IGISApplication application,
             Bundle extras,

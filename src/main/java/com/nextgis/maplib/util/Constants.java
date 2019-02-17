@@ -33,7 +33,6 @@ public interface Constants
     String  TAG                = "nextgismobile";
     String  PREFERENCES        = "nextgismobile";
     String  SUPPORT            = "support.bin";
-    int     MODE_MULTI_PROCESS = 0x4;
     int     NOT_FOUND          = -1;
     boolean DEBUG_MODE         = false;
 
