@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2016, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -43,7 +43,6 @@ import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_TMS;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOOKUPTABLE;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_RASTER;
-import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_TRACKS;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_VECTOR;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_NGW_WEBMAP;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_REMOTE_TMS;
@@ -77,9 +76,6 @@ public abstract class LayerFactory
                     break;
                 case LAYERTYPE_NGW_WEBMAP:
                     layer = new NGWWebMapLayer(context, path);
-                    break;
-                case LAYERTYPE_NGW_TRACKS:
-                    layer = new NGWTrackLayer(context, path);
                     break;
                 case LAYERTYPE_LOCAL_VECTOR:
                     layer = new VectorLayer(context, path);

@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -184,9 +184,8 @@ public interface Constants
     int LAYERTYPE_TRACKS       = 1 << 6;
     int LAYERTYPE_LOOKUPTABLE  = 1 << 7;
     int LAYERTYPE_NGW_WEBMAP   = 1 << 8;
-    int LAYERTYPE_NGW_TRACKS   = 1 << 9;
 
-    int LAYERTYPE_SYSMAX = 10; // should be the max + 1 of system layer type
+    int LAYERTYPE_SYSMAX = 9; // should be the max + 1 of system layer type
 
     /**
      * File type
