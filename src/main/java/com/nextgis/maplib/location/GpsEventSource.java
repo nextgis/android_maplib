@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -23,7 +23,7 @@
 
 package com.nextgis.maplib.location;
 
-import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.GpsStatus;
@@ -33,6 +33,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+
 import com.nextgis.maplib.api.GpsEventListener;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.PermissionUtil;
@@ -42,8 +43,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 
-public class GpsEventSource
-{
+@SuppressLint("MissingPermission")
+public class GpsEventSource {
     protected Queue<GpsEventListener> mListeners;
 
     protected LocationManager     mLocationManager;
@@ -62,8 +63,7 @@ public class GpsEventSource
     protected static final int TWO_MINUTES      = 1000 * 60 * 2;
 
 
-    public GpsEventSource(Context context)
-    {
+    public GpsEventSource(Context context) {
         mContext = context;
         mListeners = new ConcurrentLinkedQueue<>();
 
@@ -86,14 +86,12 @@ public class GpsEventSource
      * @param listener
      *         A listener class implements GpsEventListener adding to listeners array
      */
-    public void addListener(GpsEventListener listener)
-    {
+    public void addListener(GpsEventListener listener) {
         if (mListeners != null && !mListeners.contains(listener)) {
             mListeners.add(listener);
 
             if (mListeners.size() == 1) {
-                if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                    || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+                if (!PermissionUtil.hasLocationPermissions(mContext))
                     return;
 
                 requestUpdates();
@@ -112,13 +110,11 @@ public class GpsEventSource
      * @param listener
      *         A listener class implements GpsEventListener removing from listeners array
      */
-    public void removeListener(GpsEventListener listener)
-    {
+    public void removeListener(GpsEventListener listener) {
         if (mListeners != null) {
             mListeners.remove(listener);
 
-            if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                    || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+            if (!PermissionUtil.hasLocationPermissions(mContext))
                 return;
 
             if (mListeners.size() == 0) {
@@ -129,10 +125,8 @@ public class GpsEventSource
     }
 
 
-    public Location getLastKnownLocation()
-    {
-        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+    public Location getLastKnownLocation() {
+        if (!PermissionUtil.hasLocationPermissions(mContext))
             return null;
 
         if (null != mLastLocation) {
@@ -159,10 +153,8 @@ public class GpsEventSource
     }
 
 
-    public Location getLastKnownBestLocation()
-    {
-        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+    public Location getLastKnownBestLocation() {
+        if (!PermissionUtil.hasLocationPermissions(mContext))
             return null;
 
         if (null != mCurrentBestLocation) {
@@ -204,8 +196,7 @@ public class GpsEventSource
     }
 
 
-    public void updateActiveListeners()
-    {
+    public void updateActiveListeners() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         String value = sharedPreferences.getString(SettingsConstants.KEY_PREF_LOCATION_SOURCE, "3");
         mListenProviders = Integer.parseInt(value != null ? value : "3");
@@ -217,11 +208,7 @@ public class GpsEventSource
         mUpdateMinTime = Long.parseLong(minTimeStr != null ? minTimeStr : "2") * 1000;
         mUpdateMinDistance = Float.parseFloat(minDistanceStr != null ? minDistanceStr : "1000");
 
-        String fine = Manifest.permission.ACCESS_FINE_LOCATION;
-        String coarse = Manifest.permission.ACCESS_COARSE_LOCATION;
-        boolean hasFine = PermissionUtil.hasPermission(mContext, fine);
-        boolean hasCoarse = PermissionUtil.hasPermission(mContext, coarse);
-        if(!hasFine || !hasCoarse)
+        if (!PermissionUtil.hasLocationPermissions(mContext))
             return;
 
         mLocationManager.removeUpdates(mGpsLocationListener);
@@ -230,8 +217,7 @@ public class GpsEventSource
     }
 
 
-    private void requestUpdates()
-    {
+    private void requestUpdates() {
         if (0 != (mListenProviders & GPS_PROVIDER) &&
                 mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
 

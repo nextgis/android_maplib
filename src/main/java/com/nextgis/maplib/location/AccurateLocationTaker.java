@@ -1,10 +1,11 @@
 /*
- * Project:  NextGIS mobile apps for Compulink
+ * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android
- * Authors:  Dmitry Baryshnikov (aka Bishop), polimax@mail.ru
- *           NikitaFeodonit, nfeodonit@yandex.com
+ * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
+ * Author:   NikitaFeodonit, nfeodonit@yandex.com
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (C) 2014-2015 NextGIS
+ * Copyright (C) 2015-2016, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -23,6 +24,7 @@
 package com.nextgis.maplib.location;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 
+@SuppressLint("MissingPermission")
 public class AccurateLocationTaker implements LocationListener
 {
     protected Float   mMaxTakenAccuracy;
@@ -319,8 +322,7 @@ public class AccurateLocationTaker implements LocationListener
 
         mProgressUpdateRunner.run();
 
-        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+        if (!PermissionUtil.hasLocationPermissions(mContext))
             return;
 
         if (null != mLocationManager) {
@@ -355,8 +357,7 @@ public class AccurateLocationTaker implements LocationListener
                     mTakeTimeMillis);
         }
 
-        if(!PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION)
-                || !PermissionUtil.hasPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION))
+        if (!PermissionUtil.hasLocationPermissions(mContext))
             return;
 
         if (null != mLocationManager) {
