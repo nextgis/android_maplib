@@ -1,0 +1,46 @@
+<!--
+  ~ Project:  NextGIS Tracker
+  ~ Purpose:  Software tracker for nextgis.com cloud
+  ~ Author:   Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+  ~ *****************************************************************************
+  ~ Copyright (c) 2018-2019 NextGIS <info@nextgis.com>
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="22"
+    android:viewportHeight="22"
+    android:tint="#BFC2C4">
+  <group android:translateX="-1"
+      android:translateY="-1">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M15.424,11.303l-6.829,-6.83C8.4,4.279 8.144,4.181 7.888,4.181S7.376,4.279 7.181,4.473L4.473,7.181c-0.39,0.391 -0.39,1.023 0,1.414l6.83,6.829c0.195,0.195 0.451,0.293 0.707,0.293c0.256,0 0.512,-0.098 0.707,-0.293l2.707,-2.707C15.815,12.327 15.815,11.693 15.424,11.303zM12.01,13.585L6.312,7.888l1.576,-1.576l5.697,5.698L12.01,13.585z"/>
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M14.949,9.454c0.187,0.186 0.435,0.284 0.687,0.284c0.147,0 0.296,-0.033 0.434,-0.103l3.664,-1.831c0.593,-0.297 0.721,-1.087 0.252,-1.556l-4.962,-4.963C14.83,1.092 14.583,1 14.338,1c-0.351,0 -0.696,0.188 -0.871,0.537l-1.832,3.664c-0.186,0.374 -0.113,0.825 0.182,1.121L14.949,9.454zM14.564,3.37l3.337,3.338l-2.102,1.05l-2.286,-2.286L14.564,3.37z"/>
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M6.322,11.818c-0.186,-0.187 -0.435,-0.285 -0.687,-0.285c-0.147,0 -0.296,0.034 -0.434,0.103l-3.664,1.831c-0.592,0.297 -0.721,1.088 -0.252,1.557l4.963,4.963c0.193,0.192 0.44,0.284 0.685,0.284c0.35,0 0.696,-0.188 0.871,-0.537l1.831,-3.663c0.187,-0.374 0.114,-0.827 -0.181,-1.121L6.322,11.818zM6.708,17.901L3.37,14.564l2.102,-1.051l2.287,2.286L6.708,17.901z"/>
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M18.879,13.05c-1.492,0 -2.983,0.569 -4.122,1.707c-2.276,2.276 -2.276,5.967 0,8.243L23,14.757C21.862,13.619 20.37,13.05 18.879,13.05zM16.029,16.029c0.762,-0.76 1.774,-1.179 2.85,-1.179c0.44,0 0.87,0.07 1.277,0.206l-5.098,5.098C14.592,18.752 14.916,17.144 16.029,16.029z"/>
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M20.014,19.327l-0.792,-0.792l-0.687,0.687l0.792,0.792c-0.082,0.321 -0.014,0.674 0.238,0.926c0.379,0.379 0.994,0.379 1.374,0c0.379,-0.38 0.379,-0.995 0,-1.374C20.688,19.314 20.336,19.245 20.014,19.327z"/>
+  </group>
+</vector>

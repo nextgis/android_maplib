@@ -3,7 +3,7 @@
  * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
  *
  * Created by Dmitry Baryshnikov on 14.08.18 20:28.
- * Copyright (c) 2018 NextGIS, info@nextgis.com.
+ * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -102,6 +102,7 @@ object API {
             "ZOOM_INCREMENT" to "0", // Add extra to zoom level corresponding to scale
             "VIEWPORT_REDUCE_FACTOR" to "1.0" // Reduce viewport width and height to decrease memory usage
     )
+    private var lastStoreName = Constants.Store.name
 
     /**
      * Use to load the 'ngstore' library on application startup.
@@ -153,7 +154,7 @@ object API {
         val homeDir = context.filesDir.parentFile.absolutePath
         val settingsDir = File(context.filesDir, "settings/ngstore").absolutePath
         val sharedPref = context.getSharedPreferences("ngstore", Context.MODE_PRIVATE)
-        cacheDir = sharedPref.getString("cache_dir", context.cacheDir.absolutePath)
+        cacheDir = sharedPref.getString("cache_dir", context.cacheDir.absolutePath)!!
 
         // Get library mandatory directories.
         val assetManager = context.assets;
@@ -195,7 +196,8 @@ object API {
                 "SETTINGS_DIR" to settingsDir,
                 "SSL_CERT_FILE" to certFile.absolutePath,
                 "NUM_THREADS" to "ALL_CPUS", // NOTE: "4"
-                "DEBUG_MODE" to if (Constants.debugMode) "ON" else "OFF"
+                "DEBUG_MODE" to if (Constants.debugMode) "ON" else "OFF",
+                "APP_NAME" to context.packageName
         )
 
         if (!init(toArrayOfCStrings(options))) {
@@ -384,7 +386,7 @@ object API {
      * @param name File name. If file name extension is not set it will append.
      * @return Catalog object instance or null.
      */
-    fun getStore(name: String) : Store? {
+    fun getStore(name: String = Constants.Store.name) : Store? {
         if (geodataDir == null) {
             printError("GeoData dir undefined. Cannot find store.")
             return null
@@ -399,7 +401,7 @@ object API {
         var store = geodataDir?.child(newName)
         if(store == null) {
             printWarning("Store $storePath is not exists. Create it.")
-            val options = mutableMapOf(
+            val options = mapOf(
                 "TYPE" to Object.Type.CONTAINER_NGS.toString(),
                 "CREATE_UNIQUE" to "OFF"
             )
@@ -411,7 +413,18 @@ object API {
             return null
         }
 
+        lastStoreName = newName
+
         return Store(store)
+    }
+
+    /**
+     * Get last store name get by getStore function or default name. Use in TrackerService to get Tracks table from  store.
+     *
+     * @return Last store name string.
+     */
+    fun getLastStoreName() : String {
+        return lastStoreName
     }
 
     /**
@@ -921,6 +934,15 @@ object API {
     internal fun accountUpdateInt() : Boolean = accountUpdateUserInfo()
     internal fun accountUpdateSupportInt() : Boolean = accountUpdateSupportInfo()
 
+    internal fun storeGetTracksTableInt(handle: Long) : Long = storeGetTracksTable(handle)
+    internal fun trackIsRegisteredInt() : Boolean = trackIsRegistered()
+    internal fun trackSyncInt(handle: Long, maxPointCount: Int) = trackSync(handle, maxPointCount)
+    internal fun trackGetListInt(handle: Long) : Array<TrackInfoInt> = trackGetList(handle)
+    internal fun trackAddPointInt(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float, speed: Float,
+                                  timeStamp: Long, satCount: Int, startTrack: Boolean, startSegment: Boolean) : Boolean =
+            trackAddPoint(handle, name, x, y, z, acc, speed, timeStamp, satCount, startTrack, startSegment)
+    internal fun trackDeletePointsInt(handle: Long, start: Long, stop: Long) : Boolean = trackDeletePoints(handle, start, stop)
+
     /*
      * A native method that is implemented by the 'ngstore' native library,
      * which is packaged with this application.
@@ -974,6 +996,20 @@ object API {
      * @return MD5 hash string created from text.
      */
     external fun md5(value: String) : String
+
+    /**
+     * Get unique device identifier.
+     * @param regenerate If true generates new identifier
+     * @return Hash string of device identifier
+     */
+    external fun getDeviceId(regenerate: Boolean = false) : String
+
+    /**
+     * Generate private key for encrypt/decrypt functions
+     *
+     * @return Private key string
+     */
+    external fun generatePrivateKey() : String
 
     private external fun jsonDocumentCreate() : Long
     private external fun jsonDocumentFree(handle: Long)
@@ -1232,4 +1268,14 @@ object API {
     private external fun accountUpdateUserInfo() : Boolean
     private external fun accountUpdateSupportInfo() : Boolean
 
+    /*
+     * Track
+     */
+    private external fun storeGetTracksTable(handle: Long) : Long
+    private external fun trackIsRegistered() : Boolean
+    private external fun trackSync(handle: Long, maxPointCount: Int)
+    private external fun trackGetList(handle: Long) : Array<TrackInfoInt>
+    private external fun trackAddPoint(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float, speed: Float,
+                                        timeStamp: Long, satCount: Int, startTrack: Boolean, startSegment: Boolean) : Boolean
+    private external fun trackDeletePoints(handle: Long, start: Long, stop: Long) : Boolean
 }

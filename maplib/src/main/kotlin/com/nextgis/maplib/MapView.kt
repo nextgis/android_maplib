@@ -281,6 +281,7 @@ open class MapView : GLSurfaceView {
                 locationManager.removeUpdates(networkLocationListener)
                 locationDelegate.get()?.onLocationStop()
             }
+            field = newVal
         }
 
     /**

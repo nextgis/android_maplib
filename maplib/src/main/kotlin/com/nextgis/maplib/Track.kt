@@ -1,0 +1,159 @@
+/*
+ * Project:  NextGIS Tracker
+ * Purpose:  Software tracker for nextgis.com cloud
+ * Author:   Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ * ****************************************************************************
+ * Copyright (c) 2018-2019 NextGIS <info@nextgis.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.nextgis.maplib
+
+import android.location.Location
+import java.text.SimpleDateFormat
+import java.util.*
+
+/**
+ * Track information class.
+ *
+ * @property name Track name
+ * @property start Track start date
+ * @property stop Track stop date
+ */
+data class TrackInfo(val name: String, val start: Date, val stop: Date) {
+    internal constructor(internalItem: TrackInfoInt) : this(internalItem.name, Date(internalItem.start * Constants.millisecondsInSecond), Date(internalItem.stop * Constants.millisecondsInSecond))
+}
+
+internal data class TrackInfoInt(val name: String, val start: Long, val stop: Long)
+
+/**
+ * Track. GPS Track class.
+ */
+open class Track(private val handle: Long) {
+
+    companion object {
+        /**
+         * Get tracker identifier.
+         *
+         * @param regenerate If true, the new identifier will be generated.
+         * @return String with tracker identifier.
+         */
+        fun getId(regenerate: Boolean = false): String {
+            return API.getDeviceId(regenerate)
+        }
+
+        /**
+         * Is current tracker identifier registered at NextGIS Tracker Hub.
+         *
+         * @return true if registered at NextGIS Tracker Hub.
+         */
+        fun isRegistered(): Boolean {
+            return API.trackIsRegisteredInt()
+        }
+    }
+
+    /**
+     * Sync coordinates with NextGIS tracker service.
+     *
+     * @param maxPointCount Point maximum count send to NextGIS Web.
+     */
+    fun sync(maxPointCount: Int = 100) {
+        API.trackSyncInt(handle, maxPointCount)
+    }
+
+    /**
+     * Get available tracks list.
+     *
+     * @return Array of tracks information.
+     */
+    fun getTracks() : Array<TrackInfo> {
+        val out = mutableListOf<TrackInfo>()
+        val items = API.trackGetListInt(handle)
+        for (item in items) {
+            out.add(TrackInfo(item))
+        }
+        return out.toTypedArray()
+    }
+
+    /**
+     * Export track to GPX
+     *
+     * @param start Track start date.
+     * @param stop Track stop date.
+     * @param name GPX file name.
+     * @param destination Destination path (must be folder)
+     * @param callback Export progress
+     * @return True on success.
+     */
+    fun export(start: Date, stop: Date, name: String, destination: Object,
+               callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)? = null) : Boolean {
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+
+        val startStr = sdf.format(start)
+        val stopStr = sdf.format(stop)
+
+        printMessage("Export track: time_stamp >= '$startStr' and time_stamp <= '$stopStr'")
+
+        if(!API.featureClassSetFilterInt(handle, 0,
+                "time_stamp >= '$startStr' and time_stamp <= '$stopStr'")) {
+            return false
+        }
+
+        val createOptions = mapOf(
+            "TYPE" to Object.Type.FC_GPX.toString(),
+            "CREATE_UNIQUE" to "OFF",
+            "OVERWRITE" to "ON",
+            "DS_NAME" to name,
+            "LAYER_NAME" to "track_points",
+            "GPX_USE_EXTENSIONS" to "ON",
+            "SKIP_EMPTY_GEOMETRY" to "ON"
+        )
+
+        val result = API.catalogObjectCopy(handle, destination.handle, toArrayOfCStrings(createOptions), callback)
+
+        // Reset filter
+        API.featureClassSetFilterInt(handle, 0, "")
+
+        return result
+    }
+
+    /**
+     * Add new point to current track
+     *
+     * @param name Track name
+     * @param location Point coordinates and other options
+     * @param satelliteCount Satellite count used in fix
+     * @param startTrack Is this new point starts new track
+     * @param startSegment Is this point starts new track segment
+     * @return True on success.
+     */
+    fun addPoint(name: String, location: Location, satelliteCount: Int, startTrack: Boolean, startSegment: Boolean) : Boolean {
+        return API.trackAddPointInt(handle, name, location.longitude, location.latitude, location.altitude, location.accuracy,
+            location.speed, location.time, satelliteCount, startTrack, startSegment)
+    }
+
+    /**
+     * Delete points from start to stop time
+     *
+     * @param start Start timestamp to delete points
+     * @param stop Stop timestamp to delete points
+     * @return True on success.
+     */
+    fun deletePoints(start: Date, stop: Date) : Boolean {
+        return API.trackDeletePointsInt(handle, start.time, stop.time)
+    }
+}

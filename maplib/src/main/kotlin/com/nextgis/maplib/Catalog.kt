@@ -50,11 +50,13 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         UNKNOWN(0),
         ROOT(51) ,          // CAT_CONTAINER_ROOT
         FOLDER(53),         // CAT_CONTAINER_DIR
+        CONTAINER_NGW(63),  // CAT_CONTAINER_NGW
         CONTAINER_NGS(64),  // CAT_CONTAINER_NGS
         CONTAINER_MEM(71),  // CAT_CONTAINER_MEM
         FC_GEOJSON(507),    // CAT_FC_GEOJSON
         FC_MEM(509),        // CAT_FC_MEM
         FC_GPKG(515),       // CAT_FC_GPKG
+        FC_GPX(517),        // CAT_FC_GPX
         RASTER_TMS(1011),   // CAT_RASTER_TMS
         TABLE_GPKG(1507);   // CAT_TABLE_GPKG
 

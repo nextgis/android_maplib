@@ -1,0 +1,37 @@
+<!--
+  ~ Project:  NextGIS Tracker
+  ~ Purpose:  Software tracker for nextgis.com cloud
+  ~ Author:   Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+  ~ *****************************************************************************
+  ~ Copyright (c) 2018-2019 NextGIS <info@nextgis.com>
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16"
+    android:tint="#BFC2C4">
+  <group android:translateX="-4"
+      android:translateY="-4">
+    <path
+        android:pathData="M15.85,15.85c-2.13,2.13 -5.569,2.13 -7.7,0c-2.13,-2.13 -2.13,-5.57 0,-7.7c2.131,-2.13 5.57,-2.13 7.7,0C17.981,10.28 17.981,13.72 15.85,15.85zM16.951,7.05c-2.731,-2.73 -7.17,-2.73 -9.901,0c-2.73,2.73 -2.73,7.17 0,9.901c2.731,2.729 7.17,2.729 9.901,0C19.68,14.22 19.68,9.79 16.951,7.05zM4,8l4,-4H4V8zM8,20l-4,-4v4H8zM20,16l-4,4h4V16zM16,4l4,4V4H16z"
+        android:fillColor="#231F20"/>
+    <path
+        android:pathData="M12,12m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0"
+        android:fillColor="#231F20"/>
+  </group>
+</vector>

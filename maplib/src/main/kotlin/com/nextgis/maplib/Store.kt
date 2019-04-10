@@ -3,7 +3,7 @@
  * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
  *
  * Created by Dmitry Baryshnikov on 20.08.18 11:04.
- * Copyright (c) 2018 NextGIS, info@nextgis.com.
+ * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -73,7 +73,7 @@ class MemoryStore(copyFrom: Object): Object(copyFrom)  {
 }
 
 /**
- * Spatial data storage. This is geopackage file with specific additions.
+ * Spatial data storage. This is geopackage with specific additions.
  *
  * @param copyFrom Origin object to copy properties.
  */
@@ -144,6 +144,21 @@ class Store(copyFrom: Object): Object(copyFrom) {
                 return Table(tableObject)
             }
         }
+        return null
+    }
+
+    /**
+     * Get tracks table
+     *
+     * @return Track class instance or null
+     */
+    fun trackTable() : Track? {
+        val tracksHandle = API.storeGetTracksTableInt(handle)
+        if(tracksHandle != 0L) {
+            return Track(tracksHandle)
+        }
+
+        printError(API.lastError())
         return null
     }
 }
@@ -446,7 +461,7 @@ class FeatureClass(copyFrom: Object): Table(copyFrom) {
     fun createOverviews(force: Boolean, zoomLevels: List<Int>,
                         callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)? = null) : Boolean {
 
-        printMessage("create overviews: " + zoomLevels.toString())
+        printMessage("create overviews: $zoomLevels")
 
         var zoomLevelsValue = ""
         for(zoomLevel in zoomLevels) {

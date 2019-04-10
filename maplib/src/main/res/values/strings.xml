@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">MapLib</string>
+    <string name="location_m_format">%.1f m</string>
+    <string name="location_km_hr_format">%.1f km/hr</string>
+    <string name="location_coordinates">%s Lat  %s Lon</string>
+    <string name="track_name">Track %s</string>
+    <string name="track_is_writing">Track is writing …</string>
+    <string name="stop">Stop</string>
+    <string name="open">Open</string>
+    <string name="speed">Speed</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="three_dots">…</string>
+    <string name="signal_source">Signal source</string>
+    <string name="altitude">Altitude</string>
+    <string name="satellite_count">Satellite count</string>
+    <string name="current_location">Current location</string>
+    <string name="nextgis">NextGIS</string>
 </resources>
