@@ -28,6 +28,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.location.*
 import android.os.Build
 import android.os.Bundle
@@ -237,6 +238,12 @@ class TrackerService : Service() {
             mTracksTable = store?.trackTable()
         }
 
+        // Start and stop immediately, as a android needs to call startForeground after service started.
+        if(mStatus != Status.RUNNING) {
+            prepareStart()
+            stopForeground(true)
+        }
+
         return START_STICKY
     }
 
@@ -321,7 +328,7 @@ class TrackerService : Service() {
         val stopIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         var notification = notificationBuilder.setOngoing(true)
-            .setSmallIcon(R.drawable.ic_walking)
+            .setSmallIcon(R.mipmap.ic_walking)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentTitle(getString(R.string.track_name).format(mTrackName))
@@ -395,11 +402,6 @@ class TrackerService : Service() {
             stop()
             start()
         }
-        else {
-            // Start and stop immediately, as a android needs to call startForeground after service started.
-            prepareStart()
-            stopForeground(true)
-        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -409,6 +411,7 @@ class TrackerService : Service() {
         val chan = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
         chan.importance = NotificationManager.IMPORTANCE_NONE
         chan.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+        chan.lightColor = Color.TRANSPARENT
         mNotificationManager?.createNotificationChannel(chan)
         return channelId
     }
