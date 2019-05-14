@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export MAKEFLAGS=-j2
+#export MAKEFLAGS=-j4
 
-# ./gradlew clean assembleRelease bintrayUpload
+#./gradlew clean assembleRelease bintrayUpload
 ./gradlew bintrayUpload

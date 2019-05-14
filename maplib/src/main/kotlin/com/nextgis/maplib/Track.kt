@@ -31,12 +31,13 @@ import java.util.*
  * @property name Track name
  * @property start Track start date
  * @property stop Track stop date
+ * @property count Track points count
  */
-data class TrackInfo(val name: String, val start: Date, val stop: Date) {
-    internal constructor(internalItem: TrackInfoInt) : this(internalItem.name, Date(internalItem.start * Constants.millisecondsInSecond), Date(internalItem.stop * Constants.millisecondsInSecond))
+data class TrackInfo(val name: String, val start: Date, val stop: Date, val count: Long) {
+    internal constructor(internalItem: TrackInfoInt) : this(internalItem.name, Date(internalItem.start * Constants.millisecondsInSecond), Date(internalItem.stop * Constants.millisecondsInSecond), internalItem.count)
 }
 
-internal data class TrackInfoInt(val name: String, val start: Long, val stop: Long)
+internal data class TrackInfoInt(val name: String, val start: Long, val stop: Long, val count: Long)
 
 /**
  * Track. GPS Track class.
@@ -81,6 +82,9 @@ open class Track(private val handle: Long) {
     fun getTracks() : Array<TrackInfo> {
         val out = mutableListOf<TrackInfo>()
         val items = API.trackGetListInt(handle)
+        if(items.isEmpty()) {
+            printError(API.lastError())
+        }
         for (item in items) {
             out.add(TrackInfo(item))
         }

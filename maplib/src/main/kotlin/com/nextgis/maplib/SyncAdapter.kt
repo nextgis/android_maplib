@@ -87,7 +87,6 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
             finish.putExtra(Constants.Settings.exceptionKey, errorMessage)
         }
         context.sendBroadcast(finish)
-
     }
 
 }

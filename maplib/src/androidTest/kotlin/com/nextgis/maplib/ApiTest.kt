@@ -22,20 +22,21 @@
 package com.nextgis.maplib
 
 import android.graphics.BitmapFactory
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 
 import org.junit.Test
 import org.junit.runner.RunWith
 
 import org.junit.Assert.*
+
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class ApiTest {
     @Test
     fun initApi() {
-        val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
         assertNotEquals(API.version(), 0)
         assertNotEquals(API.versionString(), "")
@@ -67,7 +68,7 @@ class ApiTest {
     @Test
     fun json() {
         val treesUrl = "https://raw.githubusercontent.com/nextgis/testdata/master/vector/geojson/trees.geojson"
-        val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
         val doc = JsonDocument()
@@ -87,7 +88,7 @@ class ApiTest {
     @Test
     fun url() {
         val treesUrl = "https://raw.githubusercontent.com/nextgis/testdata/master/vector/geojson/trees.geojson"
-        val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
         val options = mapOf(
@@ -123,7 +124,7 @@ class ApiTest {
 
     @Test
     fun store() {
-        val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
         // Get or create store
@@ -131,11 +132,12 @@ class ApiTest {
         if(store == null) {
             printError(API.lastError())
         }
-        assertTrue(store != null && store.handle != 0L)
+        assertTrue(store != null && store.handle != 0L && store.path != "")
 
         // Try to destroy previous layer
         val treesObj = store?.child("trees")
         if(treesObj != null) {
+            assertTrue(treesObj.path != "")
             printMessage("Try to destroy trees layer from store")
             assertTrue(treesObj.delete())
         }
@@ -174,7 +176,7 @@ class ApiTest {
         assertTrue(createResult)
 
         val treesFC = Object.forceChildToFeatureClass(store?.child("trees")!!)
-        assertTrue(treesFC != null)
+        assertTrue(treesFC != null && treesFC.path != "")
         assertEquals(treesFC?.geometryType, Geometry.Type.POINT)
 
         // Get feature
@@ -212,7 +214,7 @@ class ApiTest {
 
     @Test
     fun coordinateTransform() {
-        val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
         val coordTransform = CoordinateTransformation.new(4326, 3857)

@@ -26,9 +26,10 @@ import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Build
 import java.io.File
 import java.io.IOException
+import io.sentry.Sentry
+import io.sentry.android.AndroidSentryClientFactory
 
 /**
  * Operation status codes enumeration.
@@ -103,6 +104,7 @@ object API {
             "VIEWPORT_REDUCE_FACTOR" to "1.0" // Reduce viewport width and height to decrease memory usage
     )
     private var lastStoreName = Constants.Store.name
+    var hasSentry = false
 
     /**
      * Use to load the 'ngstore' library on application startup.
@@ -143,12 +145,19 @@ object API {
      * Initialize library. Should be executed as soon as possible.
      *
      * @param context Context of executed object.
+     * @param sentryDSN Sentry URL. Empty string disable sentry (default behaviour)
      */
-    fun init(context: Context) {
+    fun init(context: Context, sentryDSN: String = "") {
         // Prevent multiple launches
         if (isInit) {
             return
         }
+
+        if(!sentryDSN.isEmpty()) {
+            Sentry.init(sentryDSN, AndroidSentryClientFactory(context))
+            hasSentry = true
+        }
+
         isInit = true
 
         val homeDir = context.filesDir.parentFile.absolutePath
@@ -164,10 +173,12 @@ object API {
             try {
                 // Extract files from raw.
                 val gdalFiles = assetManager.list("gdal")
-                for(gdalFile in gdalFiles) {
-                    val inStream = assetManager.open("gdal/$gdalFile")
-                    copyFrom(inStream, File(gdalDataDir, gdalFile))
-                    inStream.close()
+                if(gdalFiles != null) {
+                    for (gdalFile in gdalFiles) {
+                        val inStream = assetManager.open("gdal/$gdalFile")
+                        copyFrom(inStream, File(gdalDataDir, gdalFile))
+                        inStream.close()
+                    }
                 }
             }
             catch (e: IOException) {
@@ -210,7 +221,7 @@ object API {
         catalog = Catalog(catalogObjectGet("ngc://"))
 
         val libDirCatalogPath = sharedPref.getString("files_dir", "ngc://Local connections/Home")
-        val libDir = catalog?.childByPath(libDirCatalogPath)
+        val libDir = catalog?.childByPath(libDirCatalogPath!!)
         if(libDir == null) {
             printError("Application directory not found")
             return
@@ -240,12 +251,7 @@ object API {
 
         // For low memory devices we create tiles bigger, so we get less tiles and less memory load
         var reduceFactor = 1.0
-        val totalRam = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            memoryInfo.totalMem / (1024 * 1024)
-        } else {
-            512
-        }
-
+        val totalRam = memoryInfo.totalMem / (1024 * 1024)
         if(totalRam < 1024) {
             reduceFactor = 2.0
         }
@@ -397,9 +403,9 @@ object API {
             newName += Store.ext
         }
 
-        val storePath = geodataDir!!.path + Catalog.separator + newName
         var store = geodataDir?.child(newName)
         if(store == null) {
+            val storePath = geodataDir!!.path + Catalog.separator + newName
             printWarning("Store $storePath is not exists. Create it.")
             val options = mapOf(
                 "TYPE" to Object.Type.CONTAINER_NGS.toString(),
@@ -705,6 +711,7 @@ object API {
     internal fun catalogObjectOptionsInt(handle: Long, optionType: Int): String = catalogObjectOptions(handle, optionType)
     internal fun catalogObjectTypeInt(handle: Long): Int = catalogObjectType(handle)
     internal fun catalogObjectNameInt(handle: Long): String = catalogObjectName(handle)
+    internal fun catalogObjectPathInt(handle: Long): String = catalogObjectPath(handle)
 //    internal fun catalogPathFromSystemInt(path: String): String = catalogPathFromSystem(path)
     internal fun catalogObjectPropertiesInt(handle: Long, domain: String): Array<String> = catalogObjectProperties(handle, domain)
     internal fun catalogObjectSetPropertyInt(handle: Long, name: String, value: String, domain: String): Boolean = catalogObjectSetProperty(handle, name, value, domain)
@@ -841,7 +848,11 @@ object API {
     internal fun layerGetNameInt(layer: Long) : String = layerGetName(layer)
     internal fun layerSetNameInt(layer: Long, name: String) : Boolean = layerSetName(layer, name)
     internal fun layerGetVisibleInt(layer: Long) : Boolean = layerGetVisible(layer)
+    internal fun layerGetMaxZoomInt(layer: Long) : Float = layerGetMaxZoom(layer)
+    internal fun layerGetMinZoomInt(layer: Long) : Float = layerGetMinZoom(layer)
     internal fun layerSetVisibleInt(layer: Long, visible: Boolean) : Boolean = layerSetVisible(layer, visible)
+    internal fun layerSetMaxZoomInt(layer: Long, zoom: Float) : Boolean = layerSetMaxZoom(layer, zoom)
+    internal fun layerSetMinZoomInt(layer: Long, zoom: Float) : Boolean = layerSetMinZoom(layer, zoom)
     internal fun layerGetDataSourceInt(layer: Long) : Long = layerGetDataSource(layer)
     internal fun layerGetStyleInt(layer: Long) : Long = layerGetStyle(layer)
     internal fun layerSetStyleInt(layer: Long, style: Long) : Boolean = layerSetStyle(layer, style)
@@ -1055,6 +1066,7 @@ object API {
     private external fun catalogObjectOptions(handle: Long, optionType: Int): String
     private external fun catalogObjectType(handle: Long): Int
     private external fun catalogObjectName(handle: Long): String
+    private external fun catalogObjectPath(handle: Long): String
     private external fun catalogObjectProperties(handle: Long, domain: String): Array<String>
     private external fun catalogObjectSetProperty(handle: Long, name: String, value: String, domain: String): Boolean
     private external fun catalogObjectRefresh(handle: Long)
@@ -1194,7 +1206,11 @@ object API {
     private external fun layerGetName(layer: Long) : String
     private external fun layerSetName(layer: Long, name: String) : Boolean
     private external fun layerGetVisible(layer: Long) : Boolean
+    private external fun layerGetMaxZoom(layer: Long) : Float
+    private external fun layerGetMinZoom(layer: Long) : Float
     private external fun layerSetVisible(layer: Long, visible: Boolean) : Boolean
+    private external fun layerSetMaxZoom(layer: Long, zoom: Float) : Boolean
+    private external fun layerSetMinZoom(layer: Long, zoom: Float) : Boolean
     private external fun layerGetDataSource(layer: Long) : Long
     private external fun layerGetStyle(layer: Long) : Long
     private external fun layerSetStyle(layer: Long, style: Long) : Boolean

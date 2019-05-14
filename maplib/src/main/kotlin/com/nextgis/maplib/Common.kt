@@ -29,6 +29,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.util.Log
 import com.nextgis.maplib.service.TrackerService
+import io.sentry.Sentry
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -168,6 +169,9 @@ internal fun toArrayOfCStrings(values: Map<String,String>?) : Array<String> {
  */
 fun printError(message: String) {
     Log.e(Constants.tag, "ngmobile: $message")
+    if(API.hasSentry) {
+        Sentry.capture(message)
+    }
 }
 
 /**
@@ -178,6 +182,10 @@ fun printError(message: String) {
 fun printMessage(message: String) {
     if (Constants.debugMode) {
         Log.i(Constants.tag, "ngmobile: $message")
+
+        if(API.hasSentry) {
+            Sentry.capture(message)
+        }
     }
 }
 
@@ -189,6 +197,10 @@ fun printMessage(message: String) {
 fun printWarning(message: String) {
     if (Constants.debugMode) {
         Log.w(Constants.tag, "ngmobile: $message")
+
+        if(API.hasSentry) {
+            Sentry.capture(message)
+        }
     }
 }
 

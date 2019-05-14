@@ -45,6 +45,24 @@ class Layer(internal val handle: Long) {
         }
 
     /**
+     * Layer maximum zoom to show. At higher zoom levels layer is not visible
+     */
+    var maxZoom: Float
+        get() = API.layerGetMaxZoomInt(handle)
+        set(newZoom) {
+            API.layerSetMaxZoomInt(handle, newZoom)
+        }
+
+    /**
+     * Layer minimum zoom to show. At lower zoom levels layer is not visible
+     */
+    var minZoom: Float
+        get() = API.layerGetMinZoomInt(handle)
+        set(newZoom) {
+            API.layerSetMinZoomInt(handle, newZoom)
+        }
+
+    /**
      * Layer data source readonly property
      */
     val dataSource: Object

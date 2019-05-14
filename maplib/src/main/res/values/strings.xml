@@ -4,7 +4,10 @@
     <string name="location_km_hr_format">%.1f km/hr</string>
     <string name="location_coordinates">%s Lat  %s Lon</string>
     <string name="track_name">Track %s</string>
-    <string name="track_is_writing">Track is writing …</string>
+    <string name="track_is_writing">Track is writing %s …</string>
+    <string name="track_is_writing_long">about %d days, %d hours, %d minutes</string>
+    <string name="track_is_writing_short">about %d hours, %d minutes</string>
+    <string name="track_is_writing_supershort">about %d minutes</string>
     <string name="stop">Stop</string>
     <string name="open">Open</string>
     <string name="speed">Speed</string>

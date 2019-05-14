@@ -41,7 +41,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * @param handle Object handle for C API
      */
     constructor(handle: Long) : this(API.catalogObjectNameInt(handle), API.catalogObjectTypeInt(handle),
-            "", handle)
+            API.catalogObjectPathInt(handle), handle)
 
     /**
      * Catalog object types
@@ -126,16 +126,10 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         val queryResult = API.catalogObjectQueryInt(handle, 0)
 
         for(catalogItem in queryResult) {
-            val prefix = if(path.endsWith(Catalog.separator)) {
-                path
-            } else {
-                path + Catalog.separator
-            }
-
             printMessage("Name: ${catalogItem.name}, type: ${catalogItem.type}, handle: ${catalogItem.handle}")
 
             out.add(Object(catalogItem.name, catalogItem.type,
-                    prefix + catalogItem.name, catalogItem.handle))
+                    API.catalogObjectPathInt(catalogItem.handle), catalogItem.handle))
         }
         return out.toTypedArray()
     }
@@ -279,7 +273,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type Type to check.
          * @return True if this type belongs to table types.
          */
-        internal fun isTable(type: Int) : Boolean {
+        fun isTable(type: Int) : Boolean {
             return type in 1500..1999
         }
 
@@ -289,7 +283,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type Type to check.
          * @return True if this type belongs to raster types.
          */
-        internal fun isRaster(type: Int) : Boolean {
+        fun isRaster(type: Int) : Boolean {
             return type in 1000..1499
         }
 
@@ -299,7 +293,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type Type to check.
          * @return True if this type belongs to FeatureClass types.
          */
-        internal fun isFeatureClass(type: Int) : Boolean {
+        fun isFeatureClass(type: Int) : Boolean {
             return type in 500..999
         }
 
@@ -309,7 +303,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
          * @param type Type to check.
          * @return True if this type belongs to container types.
          */
-        internal fun isContainer(type: Int) : Boolean {
+        fun isContainer(type: Int) : Boolean {
             return type in 50..499
         }
 
