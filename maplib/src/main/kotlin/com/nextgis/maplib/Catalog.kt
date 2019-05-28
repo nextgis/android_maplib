@@ -183,10 +183,10 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * @param limitExtent Data extent. Maybe equal or less of fullExtent
      * @param cacheExpires Time in seconds to remove old tiles
      * @param options Additional options as key: value array
-     * @return Catalog object or null
+     * @return Raster object or null
      */
     fun createTMS(name: String, url: String, epsg: Int, z_min: Int, z_max: Int, fullExtent: Envelope,
-                  limitExtent: Envelope, cacheExpires: Int, options: Map<String, String> = mapOf()) : Object? {
+                  limitExtent: Envelope, cacheExpires: Int, options: Map<String, String> = mapOf()) : Raster? {
         val createOptions = mutableMapOf(
             "TYPE" to Type.RASTER_TMS.toString(),
             "CREATE_UNIQUE" to "OFF",
@@ -206,7 +206,11 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         )
 
         createOptions.putAll(options)
-        return create(name, createOptions)
+        val ret = create(name, createOptions)
+        if (ret != null) {
+            return forceChildToRaster(ret)
+        }
+        return ret
     }
 
     /**

@@ -216,6 +216,9 @@ data class EditOperation(val fid: Long, val aid: Long, val rid: Long, val arid: 
 
 /**
  * Spatial referenced raster or image.
+ * For external raster sources (from internet services) maximum cache size and time to live can be set. Just execute `setProperty("TMS_CACHE_EXPIRES", value, "")` and  `setProperty("TMS_CACHE_MAX_SIZE", value, "")`:
+ * - TMS_CACHE_EXPIRES=604800 - Time in seconds cached files will stay valid. If cached file expires it is deleted when maximum size of cache is reached. Also expired file can be overwritten by the new one from internet. Defaults to 604800 (7 days).
+ * - TMS_CACHE_MAX_SIZE=33554432 - The cache maximum size in bytes. If cache reached maximum size, expired cached files will be deleted. Defaults to 33554432 (32Mb).
  *
  * @param copyFrom Origin object to copy properties.
  */

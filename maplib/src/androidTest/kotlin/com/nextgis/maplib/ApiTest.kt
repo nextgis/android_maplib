@@ -232,4 +232,39 @@ class ApiTest {
         printMessage("X2: ${transformPoint.x}, Y2: ${transformPoint.y}")
         assertTrue(transformPoint == transformPointControl2)
     }
+
+    @Test
+    fun properties() {
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+        API.init(appContext)
+
+        val tmpDir = API.getTmpDirectory()
+        assertTrue(tmpDir != null)
+
+        val bbox = Envelope(-20037508.34, 20037508.34, -20037508.34, 20037508.34)
+        val baseMap = tmpDir?.createTMS("osm.wconn", "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                3857, 0, 18, bbox, bbox, 14)
+        baseMap!!.isOpened = true
+        assertTrue(baseMap.isOpened)
+        var properties = baseMap.getProperties()
+
+        assertTrue(properties.isNotEmpty())
+        assertTrue(properties["TMS_CACHE_EXPIRES"] == "14")
+
+        baseMap.setProperty("TMS_CACHE_EXPIRES", "15", "")
+        baseMap.setProperty("TMS_CACHE_MAX_SIZE", "256", "")
+
+        properties = baseMap.getProperties()
+
+        assertTrue(properties["TMS_CACHE_EXPIRES"] == "15")
+        assertTrue(properties["TMS_CACHE_MAX_SIZE"] == "256")
+    }
+
+    @Test
+    fun layerVisibility() {
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+        API.init(appContext)
+
+
+    }
 }
