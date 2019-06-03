@@ -22,15 +22,13 @@
 package com.nextgis.maplib
 
 import android.graphics.BitmapFactory
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
-
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-
-import org.junit.Assert.*
-
 import java.io.File
+import java.util.*
 
 @RunWith(AndroidJUnit4::class)
 class ApiTest {
@@ -146,9 +144,9 @@ class ApiTest {
         val testGeojson = File(appContext.cacheDir, "test.geojson")
         val treesUrl = "https://raw.githubusercontent.com/nextgis/testdata/master/vector/geojson/trees.geojson"
         val options = mapOf(
-                "CONNECTTIMEOUT"    to "20",
-                "TIMEOUT"           to "20",
-                "MAX_RETRY"         to "20",
+                "CONNECTTIMEOUT"    to "30",
+                "TIMEOUT"           to "30",
+                "MAX_RETRY"         to "10",
                 "RETRY_DELAY"       to "5"
         )
         val result = Request.get(treesUrl, options)
@@ -258,13 +256,160 @@ class ApiTest {
 
         assertTrue(properties["TMS_CACHE_EXPIRES"] == "15")
         assertTrue(properties["TMS_CACHE_MAX_SIZE"] == "256")
+
+        assertTrue(baseMap.getProperty("TMS_CACHE_EXPIRES", "-1") == "15")
+    }
+
+    private fun gpsTime() : Long {
+        return Calendar.getInstance(TimeZone.getTimeZone("UTC")).timeInMillis
+    }
+
+    @Test
+    fun tracks() {
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+        API.init(appContext)
+        val dataStore = API.getStore("store")
+
+        assertTrue(dataStore != null)
+
+        val tracks = dataStore?.trackTable()
+        assertTrue(tracks != null)
+
+        var loc = Location(0.0, 0.0, 0.0, 0.0f, 0.0f, gpsTime(), "", 0.0f, 0)
+        tracks?.addPoint("test1", loc, startTrack = true, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(1.0, 1.0, 1.0, 1.0f, 1.0f, gpsTime(),"", 0.0f, 1)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(2.0, 2.0, 2.0, 2.0f, 2.0f, gpsTime(), "", 0.0f, 2)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(3.0, 3.0, 3.0, 3.0f, 3.0f, gpsTime(), "", 0.0f, 3)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(4.0, 4.0, 4.0, 4.0f, 4.0f, gpsTime(), "", 0.0f, 4)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = false)
+        Thread.sleep(2000)
+        // New segment
+        loc = Location(5.0, 5.0, 5.0, 5.0f, 5.0f, gpsTime(), "", 0.0f, 5)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = true)
+        Thread.sleep(1500)
+        loc = Location(6.0, 6.0, 6.0, 6.0f, 6.0f, gpsTime(), "", 0.0f, 6)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(7.0, 7.0, 7.0, 7.0f, 7.0f, gpsTime(), "", 0.0f, 7)
+        tracks?.addPoint("test1", loc, startTrack = false, startSegment = false)
+        Thread.sleep(2000)
+        // New track
+        loc = Location(8.0, 8.0, 8.0, 8.0f, 8.0f, gpsTime(), "", 0.0f, 8)
+        tracks?.addPoint("test2", loc, startTrack = true, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(9.0, 9.0, 9.0, 9.0f, 9.0f, gpsTime(), "", 0.0f, 9)
+        tracks?.addPoint("test2", loc, startTrack = false, startSegment = false)
+        Thread.sleep(1500)
+        loc = Location(10.0, 10.0, 10.0, 10.0f, 10.0f, gpsTime(), "", 0.0f, 10)
+        tracks?.addPoint("test2", loc, startTrack = false, startSegment = false)
+
+        val info = tracks?.getTracks()
+        val count1: Int = info?.size ?: 0 // Potentially get empty geometry in some features.
+        val count2: Int = tracks?.count?.toInt() ?: 0 // All records has valid geometry (more than 1 point).
+
+        assertTrue(count1 > 0 && count2 > 0)
     }
 
     @Test
     fun layerVisibility() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
+        val map = API.getMap("main")
 
+        assertTrue(map != null)
+        addPointsTo(map!!)
+        addOSMTo(map)
 
+        assertTrue(map.layerCount == 2)
+
+        for(index in 0 until map.layerCount) {
+            val layer = map.getLayer(index)
+            assertTrue(layer != null)
+            layer?.visible = false
+        }
+
+        for(index in 0 until map.layerCount) {
+            assertFalse(map.getLayer(index)?.visible ?: true)
+        }
+    }
+
+    private fun addOSMTo(map: MapDocument) {
+        val dataDir = API.getDataDirectory()
+        if(dataDir != null) {
+            val bbox = Envelope(-20037508.34, 20037508.34, -20037508.34, 20037508.34)
+            val baseMap = dataDir.createTMS("osm.wconn", "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    3857, 0, 18, bbox, bbox, 14)
+            if(baseMap != null) {
+                map.addLayer("OSM", baseMap)
+            }
+        }
+    }
+
+    private fun addPointsTo(map: MapDocument) {
+        // Get or create data store
+        val dataStore = API.getStore("store")
+        if(dataStore != null) {
+            // Create points feature class
+
+            var pointsFC = dataStore.child("points")
+
+            if(pointsFC == null) {
+                val options = mapOf(
+                        "CREATE_OVERVIEWS" to "ON",
+                        "ZOOM_LEVELS" to "2,3,4,5,6,7,8,9,10,11,12,13,14"
+                )
+
+                val fields = listOf(
+                        Field("long", "long", Field.Type.REAL),
+                        Field("lat", "lat", Field.Type.REAL),
+                        Field("datetime", "datetime", Field.Type.DATE, "CURRENT_TIMESTAMP"),
+                        Field("name", "name", Field.Type.STRING)
+                )
+
+                pointsFC = dataStore.createFeatureClass("points", Geometry.Type.POINT, fields, options)
+                if(pointsFC != null) {
+
+                    data class PtCoord(val name: String, val x: Double, val y: Double)
+
+                    // Add geodata to points feature class from https://en.wikipedia.org
+                    val coordinates = listOf(
+                            PtCoord("Moscow", 37.616667, 55.75),
+                            PtCoord("London", -0.1275, 51.507222),
+                            PtCoord("Washington", -77.016389, 38.904722),
+                            PtCoord("Beijing", 116.383333, 39.916667)
+                    )
+
+                    val coordTransform = CoordinateTransformation.new(4326, 3857)
+
+                    for (coordinate in coordinates) {
+                        val feature = pointsFC.createFeature()
+                        if (feature != null) {
+                            val geom = feature.createGeometry() as? GeoPoint
+                            if (geom != null) {
+                                val point = Point(coordinate.x, coordinate.y)
+                                val transformPoint = coordTransform.transform(point)
+                                geom.setCoordinates(transformPoint)
+                                feature.geometry = geom
+                                feature.setField(0, coordinate.x)
+                                feature.setField(1, coordinate.y)
+                                feature.setField(3, coordinate.name)
+                                pointsFC.insertFeature(feature)
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(pointsFC != null) {
+                map.addLayer("Points", pointsFC)
+            }
+        }
     }
 }

@@ -25,13 +25,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.location.Location
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.nextgis.maplib.Location
 import com.nextgis.maplib.R
 import com.nextgis.maplib.formatCoordinate
 import com.nextgis.maplib.service.TrackerService
@@ -84,12 +84,11 @@ class LocationInfoFragment : Fragment() {
             }
 
             // TODO: Add digits and format into settings
-            locationText.text = formatLocation(location.longitude, location.latitude, 2, Location.FORMAT_SECONDS)
+            locationText.text = formatLocation(location.longitude, location.latitude, 2, android.location.Location.FORMAT_SECONDS)
 
             signalSourceText.text = location.provider
             speedText.text = formatSpeed(location.speed)
-            val satelliteCount = intent.getIntExtra("satellites", 0)
-            satCountText.text = satelliteCount.toString()
+            satCountText.text = location.satelliteCount.toString()
 
             altText.text = getString(R.string.location_m_format).format(location.altitude)
         }

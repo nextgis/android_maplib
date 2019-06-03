@@ -41,6 +41,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nextgis.maplib.*
+import com.nextgis.maplib.Location
 import java.text.DateFormat.getDateInstance
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -109,7 +110,7 @@ class TrackerService : Service() {
 //            printMessage("onProviderDisabled: provider: $provider")
         }
 
-        override fun onLocationChanged(location: Location) {
+        override fun onLocationChanged(location: android.location.Location) {
             processLocationChanges(location)
         }
     }
@@ -120,7 +121,7 @@ class TrackerService : Service() {
             when (intent?.action) {
                 MessageType.PROCESS_LOCATION_UPDATES.code -> {
                     if(intent.hasExtra(LocationManager.KEY_LOCATION_CHANGED)) {
-                        val location = intent.extras?.get(LocationManager.KEY_LOCATION_CHANGED) as? Location
+                        val location = intent.extras?.get(LocationManager.KEY_LOCATION_CHANGED) as? android.location.Location
                         if(location != null) {
                             processLocationChanges(location)
                         }
@@ -130,15 +131,18 @@ class TrackerService : Service() {
         }
     }
 
-    private fun processLocationChanges(location: Location) {
+    private fun processLocationChanges(location: android.location.Location) {
 //        printMessage("onLocationChanged: location: $location")
         val satelliteInLoc = location.extras.getInt("satellites")
         if(satelliteInLoc > 0) {
             mSatelliteCount = satelliteInLoc
 //            printMessage("onLocationChanged: Satellite count: $mSatelliteCount")
         }
-        if(isBetterLocation(location, mCurrentLocation)) {
-            setNewLocation(location)
+
+        val thisLocation = Location(location, mSatelliteCount)
+
+        if(isBetterLocation(thisLocation, mCurrentLocation)) {
+            setNewLocation(thisLocation)
         }
     }
 
@@ -212,7 +216,7 @@ class TrackerService : Service() {
         }
 
         // Add location to DB
-        if(mTracksTable?.addPoint(mTrackName, location, mSatelliteCount, mStartNewTrack, newSegment) == false) {
+        if(mTracksTable?.addPoint(mTrackName, location, mStartNewTrack, newSegment) == false) {
             printError(API.lastError())
             return
         }
@@ -224,7 +228,6 @@ class TrackerService : Service() {
         val intent = Intent()
         intent.action = MessageType.LOCATION_CHANGED.code
         intent.putExtra("gps_location", location)
-        intent.putExtra("satellites", mSatelliteCount)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
 
         // If get second point after start new track - send status broadcast to update tracks list
@@ -504,7 +507,6 @@ class TrackerService : Service() {
             val intentLocation = Intent()
             intentLocation.action = MessageType.LOCATION_CHANGED.code
             intentLocation.putExtra("gps_location", mCurrentLocation)
-            intentLocation.putExtra("satellites", mSatelliteCount)
             LocalBroadcastManager.getInstance(this).sendBroadcast(intentLocation)
         }
     }

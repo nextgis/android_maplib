@@ -95,6 +95,18 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     }
 
     /**
+     * Get catalog object property.
+     *
+     * @param name Key name.
+     * @param defaultValue Default value.
+     * @param domain Domain name.
+     * @return Property value.
+     */
+    fun getProperty(name: String, defaultValue: String, domain: String = "") : String {
+        return API.catalogObjectGetPropertyInt(handle, name, defaultValue, domain)
+    }
+
+    /**
      * Set catalog object property.
      *
      * @param name Key name.

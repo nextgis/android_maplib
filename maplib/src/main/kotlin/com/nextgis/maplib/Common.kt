@@ -24,8 +24,6 @@ package com.nextgis.maplib
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationManager
 import android.os.Build
 import android.util.Log
 import com.nextgis.maplib.service.TrackerService
@@ -76,7 +74,8 @@ fun isBetterLocation(location: Location, currentBestLocation: Location?): Boolea
     val accuracyDelta: Float = location.accuracy - currentBestLocation.accuracy
     val isLessAccurate: Boolean = accuracyDelta > 0f
     val isMoreAccurate: Boolean = accuracyDelta < 0f
-    val isSignificantlyLessAccurate: Boolean = accuracyDelta > if(location.provider == LocationManager.GPS_PROVIDER) Constants.Location.significantLessAccurateGPS else Constants.Location.significantLessAccurateCell
+    val isSignificantlyLessAccurate: Boolean = accuracyDelta > if(location.provider ==
+            android.location.LocationManager.GPS_PROVIDER) Constants.Location.significantLessAccurateGPS else Constants.Location.significantLessAccurateCell
 
     // Check if the old and new location are from the same provider
     val isFromSameProvider: Boolean = location.provider == currentBestLocation.provider
@@ -131,7 +130,7 @@ fun startTrackerService(context: Context, command: TrackerService.Command, extra
 }
 
 fun formatCoordinate(coordinate: Double, outputType: Int, fraction: Int): String {
-    if(outputType == Location.FORMAT_DEGREES) {
+    if(outputType == android.location.Location.FORMAT_DEGREES) {
         val formatString = "%.${fraction}f${Constants.Location.degreeChar}"
         return formatString.format(coordinate)
     }
@@ -140,7 +139,7 @@ fun formatCoordinate(coordinate: Double, outputType: Int, fraction: Int): String
     val degrees = coordinate.toInt()
     val minutes = (coordinate - degrees) * 60
 
-    if(outputType == Location.FORMAT_MINUTES) {
+    if(outputType == android.location.Location.FORMAT_MINUTES) {
         val formatString = "%d${Constants.Location.degreeChar} %.${fraction}f\'"
         return formatString.format(degrees, minutes)
     }

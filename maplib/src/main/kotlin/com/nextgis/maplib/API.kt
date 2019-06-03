@@ -714,6 +714,7 @@ object API {
     internal fun catalogObjectPathInt(handle: Long): String = catalogObjectPath(handle)
 //    internal fun catalogPathFromSystemInt(path: String): String = catalogPathFromSystem(path)
     internal fun catalogObjectPropertiesInt(handle: Long, domain: String): Array<String> = catalogObjectProperties(handle, domain)
+    internal fun catalogObjectGetPropertyInt(handle: Long, name: String, defaultValue: String, domain: String): String = catalogObjectGetProperty(handle, name, defaultValue, domain)
     internal fun catalogObjectSetPropertyInt(handle: Long, name: String, value: String, domain: String): Boolean = catalogObjectSetProperty(handle, name, value, domain)
     internal fun catalogObjectRefreshInt(handle: Long) = catalogObjectRefresh(handle)
 
@@ -946,6 +947,7 @@ object API {
     internal fun accountUpdateSupportInt() : Boolean = accountUpdateSupportInfo()
 
     internal fun storeGetTracksTableInt(handle: Long) : Long = storeGetTracksTable(handle)
+    internal fun trackGetPointsTableInt(handle: Long) : Long = trackGetPointsTable(handle)
     internal fun trackIsRegisteredInt() : Boolean = trackIsRegistered()
     internal fun trackSyncInt(handle: Long, maxPointCount: Int) = trackSync(handle, maxPointCount)
     internal fun trackGetListInt(handle: Long) : Array<TrackInfoInt> = trackGetList(handle)
@@ -1068,6 +1070,7 @@ object API {
     private external fun catalogObjectName(handle: Long): String
     private external fun catalogObjectPath(handle: Long): String
     private external fun catalogObjectProperties(handle: Long, domain: String): Array<String>
+    private external fun catalogObjectGetProperty(handle: Long, name: String, defaultValue: String, domain: String): String
     private external fun catalogObjectSetProperty(handle: Long, name: String, value: String, domain: String): Boolean
     private external fun catalogObjectRefresh(handle: Long)
 
@@ -1288,6 +1291,7 @@ object API {
      * Track
      */
     private external fun storeGetTracksTable(handle: Long) : Long
+    private external fun trackGetPointsTable(handle: Long) : Long
     private external fun trackIsRegistered() : Boolean
     private external fun trackSync(handle: Long, maxPointCount: Int)
     private external fun trackGetList(handle: Long) : Array<TrackInfoInt>

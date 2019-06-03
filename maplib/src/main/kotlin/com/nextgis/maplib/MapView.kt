@@ -23,12 +23,10 @@ package com.nextgis.maplib
 
 import android.Manifest
 import android.content.Context
-import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.opengl.GLSurfaceView
 import android.os.Bundle
-import android.os.Handler
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -136,11 +134,13 @@ open class MapView : GLSurfaceView {
         override fun onProviderDisabled(provider: String?) {
         }
 
-        override fun onLocationChanged(location: Location) {
-            if(isBetterLocation(location, currentLocation)) {
-                setNewLocation(location)
+        override fun onLocationChanged(location: android.location.Location) {
+            val thisLoc = Location(location, 0)
+            if(isBetterLocation(thisLoc, currentLocation)) {
+                setNewLocation(thisLoc)
             }
             else if(currentLocation?.provider == LocationManager.GPS_PROVIDER) {
+                // Disable WiFi if GPS is available.
                 locationManager.removeUpdates(this)
             }
         }
@@ -156,9 +156,10 @@ open class MapView : GLSurfaceView {
         override fun onProviderDisabled(provider: String?) {
         }
 
-        override fun onLocationChanged(location: Location) {
-            if(isBetterLocation(location, currentLocation)) {
-                setNewLocation(location)
+        override fun onLocationChanged(location: android.location.Location) {
+            val thisLoc = Location(location, 0)
+            if(isBetterLocation(thisLoc, currentLocation)) {
+                setNewLocation(thisLoc)
             }
         }
     }

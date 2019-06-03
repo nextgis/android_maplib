@@ -21,7 +21,9 @@
 
 package com.nextgis.maplib
 
-import android.location.Location
+import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
+import java.nio.channels.spi.AsynchronousChannelProvider
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -38,6 +40,27 @@ data class TrackInfo(val name: String, val start: Date, val stop: Date, val coun
 }
 
 internal data class TrackInfoInt(val name: String, val start: Long, val stop: Long, val count: Long)
+
+/**
+ * GPS location class.
+ *
+ * @property longitude Longitude of location.
+ * @property latitude Latitude of location.
+ * @property altitude Altitude of location.
+ * @property accuracy Accuracy.
+ * @property speed Speed at point.
+ * @property time Timestamp.
+ * @property satelliteCount Satellite count.
+ */
+@Parcelize
+data class Location(val longitude: Double, val latitude: Double, val altitude: Double,
+                    val accuracy: Float, val speed: Float, val time: Long, val provider: String,
+                    val bearing: Float, val satelliteCount: Int) : Parcelable {
+    constructor(loc: android.location.Location, satelliteCount: Int) : this(loc.longitude,
+            loc.latitude, loc.altitude, loc.accuracy, loc.speed, loc.time, loc.provider, loc.bearing,
+            satelliteCount)
+    fun hasAccuracy(): Boolean = accuracy > 0
+}
 
 /**
  * Track. GPS Track class.
@@ -64,6 +87,11 @@ open class Track(private val handle: Long) {
             return API.trackIsRegisteredInt()
         }
     }
+
+    /**
+     * Track count readonly property.
+     */
+    val count: Long get() = API.featureClassCountInt(handle)
 
     /**
      * Sync coordinates with NextGIS tracker service.
@@ -104,6 +132,11 @@ open class Track(private val handle: Long) {
     fun export(start: Date, stop: Date, name: String, destination: Object,
                callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)? = null) : Boolean {
 
+        val pointsHandle = API.trackGetPointsTableInt(handle)
+        if(pointsHandle == 0L) {
+            return false
+        }
+
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
         sdf.timeZone = TimeZone.getTimeZone("UTC")
 
@@ -112,7 +145,7 @@ open class Track(private val handle: Long) {
 
         printMessage("Export track: time_stamp >= '$startStr' and time_stamp <= '$stopStr'")
 
-        if(!API.featureClassSetFilterInt(handle, 0,
+        if(!API.featureClassSetFilterInt(pointsHandle, 0,
                 "time_stamp >= '$startStr' and time_stamp <= '$stopStr'")) {
             return false
         }
@@ -127,10 +160,10 @@ open class Track(private val handle: Long) {
             "SKIP_EMPTY_GEOMETRY" to "ON"
         )
 
-        val result = API.catalogObjectCopy(handle, destination.handle, toArrayOfCStrings(createOptions), callback)
+        val result = API.catalogObjectCopy(pointsHandle, destination.handle, toArrayOfCStrings(createOptions), callback)
 
         // Reset filter
-        API.featureClassSetFilterInt(handle, 0, "")
+        API.featureClassSetFilterInt(pointsHandle, 0, "")
 
         return result
     }
@@ -140,14 +173,13 @@ open class Track(private val handle: Long) {
      *
      * @param name Track name
      * @param location Point coordinates and other options
-     * @param satelliteCount Satellite count used in fix
      * @param startTrack Is this new point starts new track
      * @param startSegment Is this point starts new track segment
      * @return True on success.
      */
-    fun addPoint(name: String, location: Location, satelliteCount: Int, startTrack: Boolean, startSegment: Boolean) : Boolean {
+    fun addPoint(name: String, location: Location, startTrack: Boolean, startSegment: Boolean) : Boolean {
         return API.trackAddPointInt(handle, name, location.longitude, location.latitude, location.altitude, location.accuracy,
-            location.speed, location.time, satelliteCount, startTrack, startSegment)
+            location.speed, location.time, location.satelliteCount, startTrack, startSegment)
     }
 
     /**
