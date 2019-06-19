@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -84,6 +84,7 @@ public class LayerUtil {
             case "STRING":
                 return GeoConstants.FTString;
             case "INTEGER":
+            case "BIGINT":
                 return GeoConstants.FTInteger;
             case "REAL":
                 return GeoConstants.FTReal;
