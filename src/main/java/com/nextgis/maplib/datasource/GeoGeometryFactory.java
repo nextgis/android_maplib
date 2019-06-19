@@ -63,7 +63,6 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
  */
 public class GeoGeometryFactory
 {
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static GeoGeometry fromJsonStream(JsonReader reader, int crs) throws IOException {
         GeoGeometry geometry = null;
         reader.beginObject();

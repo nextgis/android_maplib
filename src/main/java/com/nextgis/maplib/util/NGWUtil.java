@@ -424,7 +424,6 @@ public class NGWUtil
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static Feature readNGWFeature(
             JsonReader reader,
             List<Field> fields,
@@ -461,7 +460,6 @@ public class NGWUtil
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static void readNGWFeatureFields(Feature feature, JsonReader reader, List<Field> fields)
             throws IOException, IllegalStateException, NumberFormatException
     {
@@ -508,7 +506,6 @@ public class NGWUtil
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private static void readNGWDate(Feature feature, JsonReader reader, String fieldName)
             throws IOException
     {
@@ -549,7 +546,6 @@ public class NGWUtil
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private static void readNGWFeatureAttachments(Feature feature, JsonReader reader)
             throws IOException
     {
@@ -572,7 +568,6 @@ public class NGWUtil
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     private static void readNGWFeatureAttachment(Feature feature, JsonReader reader)
             throws IOException
     {

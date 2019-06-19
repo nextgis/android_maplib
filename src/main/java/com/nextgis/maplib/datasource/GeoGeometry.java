@@ -139,7 +139,6 @@ public abstract class GeoGeometry
     public abstract void setCoordinatesFromJSON(JSONArray coordinates)
             throws JSONException;
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public abstract void setCoordinatesFromJSONStream(JsonReader reader, int crs)
             throws IOException;
 

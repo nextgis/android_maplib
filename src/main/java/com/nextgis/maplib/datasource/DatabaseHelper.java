@@ -52,7 +52,6 @@ public class DatabaseHelper
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public DatabaseHelper(
             Context context,
             File dbFullName,

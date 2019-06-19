@@ -69,7 +69,6 @@ public class DatabaseContext
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public SQLiteDatabase openOrCreateDatabase(
             String name,

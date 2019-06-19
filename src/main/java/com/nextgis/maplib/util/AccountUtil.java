@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -101,15 +101,9 @@ public class AccountUtil {
     }
 
     public static boolean isSyncActive(Account account, String authority) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            return isSyncActiveHoneycomb(account, authority);
-        } else {
-            SyncInfo currentSync = ContentResolver.getCurrentSync();
-            return currentSync != null && currentSync.account.equals(account) && currentSync.authority.equals(authority);
-        }
+        return isSyncActiveHoneycomb(account, authority);
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static boolean isSyncActiveHoneycomb(Account account, String authority) {
         for (SyncInfo syncInfo : ContentResolver.getCurrentSyncs()) {
             if (syncInfo.account.equals(account) && syncInfo.authority.equals(authority)) {

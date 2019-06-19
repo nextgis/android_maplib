@@ -369,45 +369,13 @@ public class VectorLayer
             throw new NGException(mContext.getString(R.string.error_download_data));
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            int nSize = inputStream.available();
-
-            if (null != progressor) {
-                progressor.setMessage(mContext.getString(R.string.message_loading));
-                progressor.setMax(nSize);
-            }
-
-            int nIncrement = 0;
-            BufferedReader streamReader =
-                    new BufferedReader(new InputStreamReader(inputStream, "UTF-8"),
-                            Constants.IO_BUFFER_SIZE);
-            StringBuilder responseStrBuilder = new StringBuilder();
-            String inputStr;
-            while ((inputStr = streamReader.readLine()) != null) {
-                nIncrement += inputStr.length();
-                if (null != progressor) {
-                    if (progressor.isCanceled()) {
-                        break;
-                    }
-                    progressor.setValue(nIncrement);
-                }
-                responseStrBuilder.append(inputStr);
-                if (responseStrBuilder.length() > MAX_CONTENT_LENGTH) {
-                    throw new NGException(mContext.getString(R.string.error_layer_create));
-                }
-            }
-
-            JSONObject jsonObject = new JSONObject(responseStrBuilder.toString());
-            GeoJSONUtil.createLayerFromGeoJSON(this, jsonObject, progressor);
-        } else {
-            if (null != progressor) {
-                progressor.setMessage(mContext.getString(R.string.message_opening));
-                progressor.setIndeterminate(true);
-            }
-
-            boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
-            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
+        if (null != progressor) {
+            progressor.setMessage(mContext.getString(R.string.message_opening));
+            progressor.setIndeterminate(true);
         }
+
+        boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
+        GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
     }
 
 
@@ -422,42 +390,10 @@ public class VectorLayer
             throw new NGException(mContext.getString(R.string.error_download_data));
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            int nSize = inputStream.available();
-
-            if (null != progressor) {
-                progressor.setMessage(mContext.getString(R.string.message_loading));
-                progressor.setMax(nSize);
-            }
-
-            int nIncrement = 0;
-            BufferedReader streamReader =
-                    new BufferedReader(new InputStreamReader(inputStream, "UTF-8"),
-                            Constants.IO_BUFFER_SIZE);
-            StringBuilder responseStrBuilder = new StringBuilder();
-            String inputStr;
-            while ((inputStr = streamReader.readLine()) != null) {
-                nIncrement += inputStr.length();
-                if (null != progressor) {
-                    if (progressor.isCanceled()) {
-                        break;
-                    }
-                    progressor.setValue(nIncrement);
-                }
-                responseStrBuilder.append(inputStr);
-                if (responseStrBuilder.length() > MAX_CONTENT_LENGTH) {
-                    throw new NGException(mContext.getString(R.string.error_layer_create));
-                }
-            }
-
-            JSONObject jsonObject = new JSONObject(responseStrBuilder.toString());
-            GeoJSONUtil.fillLayerFromGeoJSON(this, jsonObject, srs, progressor);
-        } else {
-            if (null != progressor) {
-                progressor.setMessage(mContext.getString(R.string.create_features));
-            }
-            GeoJSONUtil.fillLayerFromGeoJSONStream(this, inputStream, srs, progressor);
+        if (null != progressor) {
+            progressor.setMessage(mContext.getString(R.string.create_features));
         }
+        GeoJSONUtil.fillLayerFromGeoJSONStream(this, inputStream, srs, progressor);
     }
 
 
@@ -471,16 +407,10 @@ public class VectorLayer
             progressor.setIndeterminate(true);
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            String jsonData = FileUtil.readFromFile(path);
-            JSONObject jsonObject = new JSONObject(jsonData);
-            GeoJSONUtil.createLayerFromGeoJSON(this, jsonObject, progressor);
-        } else {
-            FileInputStream inputStream = new FileInputStream(path);
-            FileInputStream is = new FileInputStream(path);
-            boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
-            GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
-        }
+        FileInputStream inputStream = new FileInputStream(path);
+        FileInputStream is = new FileInputStream(path);
+        boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
+        GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
     }
 
 
@@ -494,14 +424,8 @@ public class VectorLayer
             progressor.setMessage(mContext.getString(R.string.create_features));
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            String jsonData = FileUtil.readFromFile(path);
-            JSONObject jsonObject = new JSONObject(jsonData);
-            GeoJSONUtil.fillLayerFromGeoJSON(this, jsonObject, srs, progressor);
-        } else {
-            FileInputStream inputStream = new FileInputStream(path);
-            GeoJSONUtil.fillLayerFromGeoJSONStream(this, inputStream, srs, progressor);
-        }
+        FileInputStream inputStream = new FileInputStream(path);
+        GeoJSONUtil.fillLayerFromGeoJSONStream(this, inputStream, srs, progressor);
     }
 
 

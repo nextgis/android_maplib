@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -406,112 +406,71 @@ public class NGWVectorLayer
             Log.d(Constants.TAG, "download features from: " + sURL);
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            //get layer data
-            response = NetworkUtil.get(sURL, accountData.login, accountData.password, false);
-            if (!response.isOk()) {
-                throw new NGException(NetworkUtil.getError(mContext, response.getResponseCode()));
-            }
+        // get features and fill them
+        HttpURLConnection urlConnection = NetworkUtil.getHttpConnection("GET", sURL, accountData.login, accountData.password);
+        if (null == urlConnection) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + sURL);
 
-            JSONArray featuresJSONArray = new JSONArray(response.getResponseBody());
-            if (null != progressor) {
-                progressor.setMessage(getContext().getString(R.string.parse_features));
-            }
-            List<Feature> features = NGWUtil.jsonToFeatures(featuresJSONArray, fields, mCRS, progressor);
+            if (null != progressor)
+                progressor.setMessage(getContext().getString(R.string.error_connect_failed));
 
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "feature count: " + features.size());
-            }
+            return;
+        }
 
-            if (null != progressor) {
-                progressor.setMessage(getContext().getString(R.string.create_features));
-                progressor.setMax(features.size());
-                progressor.setIndeterminate(false);
-            }
-            int featureCount = 0;
+        InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
+        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+        reader.beginArray();
 
-            for (Feature feature : features) {
-                createFeature(feature);
-                if (null != progressor) {
-                    if (progressor.isCanceled()) {
-                        break;
-                    }
-                    progressor.setValue(featureCount++);
-                    progressor.setMessage(
-                            getContext().getString(R.string.processed) + " " + featureCount + " "
-                                    + getContext().getString(R.string.of) + " " + features.size());
-                }
-            }
+        SQLiteDatabase db = DatabaseContext.getDbForLayer(this);
 
-            mTracked = vectorLayerJSONObject.optBoolean(JSON_TRACKED_KEY);
-            notifyLayerChanged();
-        } else {
-            // get features and fill them
-            HttpURLConnection urlConnection = NetworkUtil.getHttpConnection("GET", sURL, accountData.login, accountData.password);
-            if (null == urlConnection) {
-                if (Constants.DEBUG_MODE)
-                    Log.d(TAG, "Error get connection object: " + sURL);
+        int streamSize = in.available();
+        if (null != progressor) {
+            progressor.setIndeterminate(false);
+            if (streamSize > 0)
+                progressor.setMax(streamSize);
+            progressor.setMessage(getContext().getString(R.string.start_fill_layer) + " " + getName());
+        }
 
+        int featureCount = 0;
+        while (reader.hasNext()) {
+            try {
+                final Feature feature = NGWUtil.readNGWFeature(reader, fields, mCRS);
+                if (feature.getGeometry() == null || !feature.getGeometry().isValid())
+                    continue;
+
+                createFeatureBatch(feature, db);
+            } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException e) {
+                e.printStackTrace();
                 if (null != progressor)
-                    progressor.setMessage(getContext().getString(R.string.error_connect_failed));
+                    throw new NGException(getContext().getString(R.string.error_download_data));
 
+                save();
                 return;
             }
 
-            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
-            JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
-            reader.beginArray();
-
-            SQLiteDatabase db = DatabaseContext.getDbForLayer(this);
-
-            int streamSize = in.available();
             if (null != progressor) {
-                progressor.setIndeterminate(false);
-                if (streamSize > 0)
-                    progressor.setMax(streamSize);
-                progressor.setMessage(getContext().getString(R.string.start_fill_layer) + " " + getName());
-            }
-
-            int featureCount = 0;
-            while (reader.hasNext()) {
-                try {
-                    final Feature feature = NGWUtil.readNGWFeature(reader, fields, mCRS);
-                    if (feature.getGeometry() == null || !feature.getGeometry().isValid())
-                        continue;
-
-                    createFeatureBatch(feature, db);
-                } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException e) {
-                    e.printStackTrace();
-                    if (null != progressor)
-                        throw new NGException(getContext().getString(R.string.error_download_data));
-
+                if (progressor.isCanceled()) {
                     save();
                     return;
                 }
-
-                if (null != progressor) {
-                    if (progressor.isCanceled()) {
-                        save();
-                        return;
-                    }
-                    progressor.setValue(streamSize - in.available());
-                    progressor.setMessage(getContext().getString(R.string.process_features) + ": " + featureCount);
-                }
-
-                ++featureCount;
+                progressor.setValue(streamSize - in.available());
+                progressor.setMessage(getContext().getString(R.string.process_features) + ": " + featureCount);
             }
-            reader.endArray();
-            reader.close();
-            //db.close();
 
-            urlConnection.disconnect();
-            mTracked = vectorLayerJSONObject.optBoolean(JSON_TRACKED_KEY);
+            ++featureCount;
+        }
+        reader.endArray();
+        reader.close();
+        //db.close();
 
-            save();
+        urlConnection.disconnect();
+        mTracked = vectorLayerJSONObject.optBoolean(JSON_TRACKED_KEY);
 
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "feature count: " + featureCount);
-            }
+        save();
+
+        if (Constants.DEBUG_MODE) {
+            Log.d(Constants.TAG, "feature count: " + featureCount);
         }
     }
 
@@ -1531,113 +1490,72 @@ public class NGWVectorLayer
 
         HashMap<Integer, List<Feature>> results = new HashMap<>();
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            HttpResponse response;
-            try {
-                response = NetworkUtil.get(getFeaturesUrl(accountData), accountData.login,
-                        accountData.password, false);
-            } catch (IOException e) {
-                log(e, "getFeatures(): getFeaturesUrl exception (sdk < 11)");
-                syncResult.stats.numIoExceptions++;
-                return null;
-            }
+        try {
+            HttpURLConnection urlConnection = getHttpConnection(accountData);
+            Log.d(TAG, "url: " + urlConnection.getURL().toString());
 
-            if (!response.isOk()) {
-                log(syncResult, response.getResponseCode() + "");
-                return null;
-            }
+            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
+            JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
 
-            // parse layer contents to Feature list
-            try {
-                if (tracked) {
-                    JSONObject featuresJSONObject = new JSONObject(response.getResponseBody());
-                    JSONArray addedFeatures = featuresJSONObject.getJSONArray("added");
-                    List<Feature> added = NGWUtil.jsonToFeatures(addedFeatures, getFields(), mCRS, null);
-                    JSONArray changedFeatures = featuresJSONObject.getJSONArray("changed");
-                    List<Feature> changed = NGWUtil.jsonToFeatures(changedFeatures, getFields(), mCRS, null);
-                    JSONArray deletedFeatures = featuresJSONObject.getJSONArray("deleted");
-                    List<Feature> deleted = NGWUtil.jsonToFeatures(deletedFeatures, getFields(), mCRS, null);
-                    results.put(0, added);
-                    results.put(1, changed);
-                    results.put(2, deleted);
-                } else  {
-                    JSONArray featuresJSONArray = new JSONArray(response.getResponseBody());
-                    results.put(0, NGWUtil.jsonToFeatures(featuresJSONArray, getFields(), mCRS, null));
-                }
-            } catch (JSONException e) {
-                log(e, "getFeatures(): JSON exception (sdk < 11)");
-                syncResult.stats.numParseExceptions++;
-                return null;
-            }
-        } else {
-            try {
-                HttpURLConnection urlConnection = getHttpConnection(accountData);
-                Log.d(TAG, "url: " + urlConnection.getURL().toString());
-
-                InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
-                JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
-
-                if (tracked) {
-                    List<Feature> added = new LinkedList<>(), changed = new LinkedList<>(), deleted = new LinkedList<>();
-                    reader.beginObject();
-                    while (reader.hasNext()) {
-                        String name = reader.nextName();
-                        switch (name) {
-                            case "deleted":
-                                reader.beginArray();
-                                while (reader.hasNext())
-                                    deleted.add(new Feature(reader.nextLong(), getFields()));
-                                reader.endArray();
-                                break;
-                            case "added":
-                                readFeatures(reader, added);
-                                break;
-                            case "changed":
-                                readFeatures(reader, changed);
-                                break;
-                        }
+            if (tracked) {
+                List<Feature> added = new LinkedList<>(), changed = new LinkedList<>(), deleted = new LinkedList<>();
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    String name = reader.nextName();
+                    switch (name) {
+                        case "deleted":
+                            reader.beginArray();
+                            while (reader.hasNext())
+                                deleted.add(new Feature(reader.nextLong(), getFields()));
+                            reader.endArray();
+                            break;
+                        case "added":
+                            readFeatures(reader, added);
+                            break;
+                        case "changed":
+                            readFeatures(reader, changed);
+                            break;
                     }
-                    reader.endObject();
-
-                    results.put(0, added);
-                    results.put(1, changed);
-                    results.put(2, deleted);
-                } else {
-                    List<Feature> features = new LinkedList<>();
-                    readFeatures(reader, features);
-                    results.put(0, features);
                 }
-                reader.close();
+                reader.endObject();
 
-                urlConnection.disconnect();
-            } catch (MalformedURLException e) {
-                log(e, "getFeatures(): MalformedURLException");
-                syncResult.stats.numIoExceptions++;
-                return null;
-            } catch (FileNotFoundException e) {
-                log(e, "getFeatures(): FileNotFoundException");
-                syncResult.stats.numIoExceptions++;
-                return null;
-            } catch (IOException e) {
-                log(e, "getFeatures(): IOException");
-                syncResult.stats.numParseExceptions++;
-                return null;
-            } catch (OutOfMemoryError e) {
-                e.printStackTrace();
-                syncResult.stats.numIoExceptions++;
-                return null;
-            } catch (IllegalStateException | NumberFormatException e) {
-                log(e, "getFeatures(): IllegalStateException | NumberFormatException");
-                syncResult.stats.numParseExceptions++;
-                return null;
+                results.put(0, added);
+                results.put(1, changed);
+                results.put(2, deleted);
+            } else {
+                List<Feature> features = new LinkedList<>();
+                readFeatures(reader, features);
+                results.put(0, features);
             }
+            reader.close();
+
+            urlConnection.disconnect();
+        } catch (MalformedURLException e) {
+            log(e, "getFeatures(): MalformedURLException");
+            syncResult.stats.numIoExceptions++;
+            return null;
+        } catch (FileNotFoundException e) {
+            log(e, "getFeatures(): FileNotFoundException");
+            syncResult.stats.numIoExceptions++;
+            return null;
+        } catch (IOException e) {
+            log(e, "getFeatures(): IOException");
+            syncResult.stats.numParseExceptions++;
+            return null;
+        } catch (OutOfMemoryError e) {
+            e.printStackTrace();
+            syncResult.stats.numIoExceptions++;
+            return null;
+        } catch (IllegalStateException | NumberFormatException e) {
+            log(e, "getFeatures(): IllegalStateException | NumberFormatException");
+            syncResult.stats.numParseExceptions++;
+            return null;
         }
 
         return results;
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, IllegalStateException, NumberFormatException, OutOfMemoryError {
         reader.beginArray();
         while (reader.hasNext()) {

@@ -92,7 +92,6 @@ public class SyncAdapter
     }
 
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public SyncAdapter(
             Context context,
             boolean autoInitialize,

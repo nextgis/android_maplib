@@ -85,7 +85,6 @@ public class GeoMultiPoint
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public void setCoordinatesFromJSONStream(JsonReader reader, int crs) throws IOException {
         setCRS(crs);
