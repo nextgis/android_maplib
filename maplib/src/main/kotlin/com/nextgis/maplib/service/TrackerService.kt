@@ -47,7 +47,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
-private const val DEFAULT_UPDATE_LOCATION_POINTS = 163
+private const val DEFAULT_UPDATE_LOCATION_POINTS = 17 // Any value < 30.
 /**
  * Service to get location information and store it into trackers table of current store. Also service notifies
  * listeners on location events via local broadcast messages.
@@ -197,6 +197,15 @@ class TrackerService : Service() {
     }
 
     private fun setNewLocation(location: Location) {
+        if(mTracksTable == null) {
+            printWarning("Tracks table is not opened. Try to get it.")
+            val store = API.getStore(API.getLastStoreName())
+            mTracksTable = store?.trackTable()
+            if(mTracksTable == null) {
+                printError("Tracks table is null")
+                return
+            }
+        }
         var newSegment = false
         if(mCurrentLocation != null) {
             // For a long time delay create new track segment.
@@ -206,7 +215,7 @@ class TrackerService : Service() {
         }
 
         mCurrentLocation = location
-        if(mDivTrackByDay) {
+        if(!mSecondPointInTrack && !mStartNewTrack && mDivTrackByDay) {
             val newTrackName = getTrackName()
             if(newTrackName != mTrackName) {
                 mTrackName = newTrackName
@@ -217,13 +226,13 @@ class TrackerService : Service() {
 
         // Add location to DB
         if(mTracksTable?.addPoint(mTrackName, location, mStartNewTrack, newSegment) == false) {
-            printError(API.lastError())
+            printError("Add track point failed. " + API.lastError())
             return
         }
-        else {
+
 //            printMessage("Track point added [$location]")
-            mPointsAdded++
-        }
+        mPointsAdded++
+
         // Send location to broadcast listeners
         val intent = Intent()
         intent.action = MessageType.LOCATION_CHANGED.code
@@ -449,21 +458,6 @@ class TrackerService : Service() {
             val sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
             val minTime = sharedPref.getInt("timeInterval", 1).toLong() * Constants.millisecondsInSecond
             val minDist = sharedPref.getInt("minDistance", 10).toFloat()
-
-            var factor = DEFAULT_UPDATE_LOCATION_POINTS
-            if(minTime >= Constants.millisecondsInSecond) {
-                factor = DEFAULT_UPDATE_LOCATION_POINTS / (minTime.toInt() / Constants.millisecondsInSecond)
-            }
-
-            if(minDist > 0.0f) {
-                factor /= (minDist / 1.5f).toInt()
-            }
-
-            if(factor < 1) {
-                factor = 1
-            }
-
-            mUpdateOnLocationPoints = factor
 
             if(minTime > 0) {
                 mLostFixTime = minTime * 15

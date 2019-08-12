@@ -111,7 +111,8 @@ class Store(copyFrom: Object): Object(copyFrom) {
         }
 
         if( API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions)) ) {
-            val featureClassObject = child(name)
+            val fullMatch = optionAsBool(options, "OVERWRITE", false) || !optionAsBool(options, "CREATE_UNIQUE", false)
+            val featureClassObject = child(name, fullMatch)
             if( featureClassObject != null ){
                 return FeatureClass(featureClassObject)
             }
@@ -139,7 +140,8 @@ class Store(copyFrom: Object): Object(copyFrom) {
         }
 
         if( API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions)) ) {
-            val tableObject = child(name)
+            val fullMatch = optionAsBool(options, "OVERWRITE", false) || !optionAsBool(options, "CREATE_UNIQUE", false)
+            val tableObject = child(name, fullMatch)
             if( tableObject != null ){
                 return Table(tableObject)
             }
@@ -158,7 +160,7 @@ class Store(copyFrom: Object): Object(copyFrom) {
             return Track(tracksHandle)
         }
 
-        printError(API.lastError())
+        printError("Failed to get tracks table. " + API.lastError())
         return null
     }
 }

@@ -252,7 +252,7 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
     /**
      * Reorder map layers.
      *
-     * @param before Before layer class instance will moved layer insert.
+     * @param before Before layer class instance will moved layer insert. If before = null, layyer will be moved to the end of layers tree.
      * @param moved Layer class instance to move.
      */
     fun reorder(before: Layer?, moved: Layer) {

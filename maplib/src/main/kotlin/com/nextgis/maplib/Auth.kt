@@ -32,7 +32,7 @@ package com.nextgis.maplib
  * @property expiresIn The token expires period.
  * @property tokenUpdateFailedCallback function executes if update failed.
  */
-data class Auth(private val url: String, private val authServerUrl: String,
+data class Auth(val url: String, private val authServerUrl: String,
                 private val accessToken: String, private val updateToken: String,
                 private val expiresIn: String, private val clientId: String,
                 private val tokenUpdateFailedCallback: (() -> Unit)? = null) {
@@ -51,13 +51,15 @@ data class Auth(private val url: String, private val authServerUrl: String,
         }
     }
 
-    /**
-     * The http request starting from this url will be authenticated
-     *
-     * @return url string
-     */
-    fun getURL() : String {
-        return url
+    internal fun initOptions() : Map<String, String> {
+        return mapOf(
+            "type" to "bearer",
+            "clientId" to clientId,
+            "accessToken" to accessToken,
+            "updateToken" to updateToken,
+            "tokenServer" to authServerUrl,
+            "expiresIn" to expiresIn
+        )
     }
 
     /**
@@ -66,16 +68,20 @@ data class Auth(private val url: String, private val authServerUrl: String,
      * @return true if class instances are equal.
      */
     override fun equals(other: Any?): Boolean {
-        val otherAuth: Auth? = other as? Auth
-        return getURL() == otherAuth?.getURL() ?: ""
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+
+        other as Auth
+
+        return url == other.url
     }
 
     override fun hashCode(): Int {
-        return (getURL() + clientId + "bearer").hashCode()
+        return (url + clientId + "bearer").hashCode()
     }
 
     override fun toString(): String {
-        return "bearer" + ":" + getURL()
+        return "bearer:$url"
     }
 
     /**
@@ -85,6 +91,6 @@ data class Auth(private val url: String, private val authServerUrl: String,
      * @return key-value dictionary of options
      */
     fun options() : Map<String, String> {
-        return API.URLAuthGetMapInt(url)
+        return API.URLAuthGetPropertiesInt(url)
     }
 }

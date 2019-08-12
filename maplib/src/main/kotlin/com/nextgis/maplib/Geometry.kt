@@ -21,6 +21,7 @@
 
 package com.nextgis.maplib
 
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -30,7 +31,23 @@ import kotlin.math.min
  * @property x X coordinate.
  * @property y Y coordinate.
  */
-data class Point(var x: Double = 0.0, var y: Double = 0.0)
+data class Point(var x: Double = 0.0, var y: Double = 0.0) {
+    override fun equals(other: Any?): Boolean{
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+
+        other as Point
+        val delta = 0.00000001
+
+        if (abs(x - other.x) < delta && abs(y - other.y) < delta) return true
+
+        return false
+    }
+
+    override fun hashCode(): Int {
+        return x.hashCode() + y.hashCode()
+    }
+}
 
 /**
  * Coordinate transformation class. Helps to transform from one spatial reference to another.

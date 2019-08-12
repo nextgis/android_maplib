@@ -167,9 +167,9 @@ internal fun toArrayOfCStrings(values: Map<String,String>?) : Array<String> {
  * @param message Error to print
  */
 fun printError(message: String) {
-    Log.e(Constants.tag, "ngmobile: $message")
+    Log.e(Constants.tag, message)
     if(API.hasSentry) {
-        Sentry.capture(message)
+        Sentry.capture("Error: $message")
     }
 }
 
@@ -180,10 +180,10 @@ fun printError(message: String) {
  */
 fun printMessage(message: String) {
     if (Constants.debugMode) {
-        Log.i(Constants.tag, "ngmobile: $message")
+        Log.i(Constants.tag, message)
 
         if(API.hasSentry) {
-            Sentry.capture(message)
+            Sentry.capture("Info: $message")
         }
     }
 }
@@ -195,12 +195,20 @@ fun printMessage(message: String) {
  */
 fun printWarning(message: String) {
     if (Constants.debugMode) {
-        Log.w(Constants.tag, "ngmobile: $message")
+        Log.w(Constants.tag, message)
 
         if(API.hasSentry) {
-            Sentry.capture(message)
+            Sentry.capture("Warning: $message")
         }
     }
+}
+
+internal fun optionAsBool(options: Map<String, String>, name: String, default: Boolean) : Boolean {
+    val option = options.get(name)
+    if (option == null || option.isEmpty()) {
+        return default
+    }
+    return option.compareTo("TRUE", true) == 0 || option.compareTo("ON", true) == 0 || option.compareTo("YES", true) == 0
 }
 
 internal fun copyFrom(inStream: InputStream, outFile: File) {

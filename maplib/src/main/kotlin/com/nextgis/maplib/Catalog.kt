@@ -3,7 +3,7 @@
  * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
  *
  * Created by Dmitry Baryshnikov on 18.08.18 22:38.
- * Copyright (c) 2018 NextGIS, info@nextgis.com.
+ * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -20,6 +20,8 @@
  */
 
 package com.nextgis.maplib
+
+import android.provider.DocumentsContract
 
 internal data class CatalogObjectInfo(val name: String, val type: Int, val handle: Long)
 
@@ -131,12 +133,19 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     /**
      * Get catalog object children.
      *
+     * @param filter Catalog object types to filter.
      * @return Array of catalog object class instances.
      */
-    fun children() : Array<Object> {
+    fun children(filter: Array<Type> = emptyArray()) : Array<Object> {
         val out: MutableList<Object> = mutableListOf()
-        val queryResult = API.catalogObjectQueryInt(handle, 0)
-
+        val queryResult: Array<CatalogObjectInfo>
+        if (filter.isEmpty()) {
+            queryResult = API.catalogObjectQueryInt(handle, 0)
+        } else {
+            val filterArray = arrayListOf<Int>()
+            for (value in filter) filterArray.add(value.code)
+            queryResult = API.catalogObjectQueryMultiFilterInt(handle, filterArray.toTypedArray())
+        }
         for(catalogItem in queryResult) {
             printMessage("Name: ${catalogItem.name}, type: ${catalogItem.type}, handle: ${catalogItem.handle}")
 
@@ -150,15 +159,16 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * Get child by name.
      *
      * @param name Catalog object child name.
+     * @param fullMatch If true the name must be equal, else the function return last child the name begins with 'name'.
      * @return Catalog object child instance or null.
      */
-    fun child(name: String) : Object? {
-        for( childItem in children() ) {
-            if( childItem.name == name ) {
-                return childItem
-            }
+    fun child(name: String, fullMatch: Boolean = true) : Object? {
+        val childHandle = API.catalogObjectGetByNameInt(handle, name, fullMatch)
+        if (childHandle == 0L) {
+            return null
         }
-        return null
+
+        return Object(childHandle)
     }
 
     /**
@@ -178,7 +188,8 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      */
     fun create(name: String, options: Map<String, String> = mapOf()) : Object? {
         if(API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(options))) {
-            return child(name)
+            val fullMatch = optionAsBool(options, "OVERWRITE", false) || !optionAsBool(options, "CREATE_UNIQUE", false)
+            return child(name, fullMatch)
         }
         return null
     }
@@ -402,6 +413,28 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
     }
 
     /**
+     * Catalog root objects names
+     */
+    enum class RootObjects(val code: String) {
+        UNKNOWN(""),
+        LOCAL_CONNECTIONS("ngc://Local connections"),
+        GIS_CONNECTIONS("ngc://GIS Server connections"),
+        DB_CONNECTIONS("ngc://Database connections");
+
+
+        companion object {
+            fun from(value: String): RootObjects {
+                for (code in values()) {
+                    if (code.code == value) {
+                        return code
+                    }
+                }
+                return UNKNOWN
+            }
+        }
+    }
+
+    /**
      * Get catalog child by file system path.
      *
      * @param path File system path.
@@ -416,4 +449,50 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
         }
         return null
     }
+
+    /**
+     * createConnection Create connection at default directory corespondent to connection type (i.e. for NextGIS Web connection, the connection file will be created at ngc://GIS Server connections path.
+     *
+     * @param name Connection file name
+     * @param connection Connection object. Before create connection, execute check function for test connection.
+     * @param options Create options as key = value array.
+     * @return Created connection object or null.
+     */
+    fun createConnection(name: String, connection: Connection, options: Map<String, String> = mapOf()) : Object? {
+        var parent: Object? = null
+        if (connection.type == Type.CONTAINER_NGW) {
+            parent = childByPath(RootObjects.GIS_CONNECTIONS.code)
+        }
+        if (parent == null) {
+            return null
+        }
+
+        val createOptions = mutableMapOf("TYPE" to connection.type.toString())
+        createOptions.putAll(connection.options)
+        createOptions.putAll(options)
+
+        return parent.create(name, createOptions)
+    }
 }
+
+/**
+ * Connection is class to store connection properties.
+ *
+ * @property type Connection object type.
+ * @property options Connection options as key = value map.
+ */
+open class Connection(val type: Object.Type, val options: Map<String, String> = mapOf()) {
+    fun check() : Boolean {
+        return API.catalogCheckConnectionInt(type.code, toArrayOfCStrings(options))
+    }
+}
+
+/**
+ * NGWConnection NextGIS Web connection properties.
+ *
+ * @property url NextGIS Web url.
+ * @property login NextGIS Web login.
+ * @property password NextGIS Web password.
+ * @property isGuest If true this is anonymous access.
+ */
+class NGWConnection(url: String, login: String, password : String = "", isGuest : Boolean = true) : Connection(Object.Type.CONTAINER_NGW, mapOf("url" to url, "login" to login, "password" to password, "is_guest" to if (isGuest) "yes" else "no"))

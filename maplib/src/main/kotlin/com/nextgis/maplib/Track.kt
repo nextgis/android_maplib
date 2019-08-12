@@ -59,7 +59,7 @@ data class Location(val longitude: Double, val latitude: Double, val altitude: D
     constructor(loc: android.location.Location, satelliteCount: Int) : this(loc.longitude,
             loc.latitude, loc.altitude, loc.accuracy, loc.speed, loc.time, loc.provider, loc.bearing,
             satelliteCount)
-    fun hasAccuracy(): Boolean = accuracy > 0
+    fun hasAccuracy(): Boolean = accuracy > 0.0f
 }
 
 /**
@@ -111,7 +111,7 @@ open class Track(private val handle: Long) {
         val out = mutableListOf<TrackInfo>()
         val items = API.trackGetListInt(handle)
         if(items.isEmpty()) {
-            printError(API.lastError())
+            printError("Tracks list is empty. " + API.lastError())
         }
         for (item in items) {
             out.add(TrackInfo(item))

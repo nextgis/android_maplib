@@ -24,6 +24,7 @@ package com.nextgis.maplib
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import java.io.File
@@ -153,7 +154,7 @@ object API {
             return
         }
 
-        if(!sentryDSN.isEmpty()) {
+        if(sentryDSN.isNotEmpty()) {
             Sentry.init(sentryDSN, AndroidSentryClientFactory(context))
             hasSentry = true
         }
@@ -166,46 +167,18 @@ object API {
         cacheDir = sharedPref.getString("cache_dir", context.cacheDir.absolutePath)!!
 
         // Get library mandatory directories.
-        val assetManager = context.assets;
-        val gdalDataDir = File(context.filesDir, "data/gdal")
-        if (!gdalDataDir.exists()) {
-            gdalDataDir.mkdirs()
-            try {
-                // Extract files from raw.
-                val gdalFiles = assetManager.list("gdal")
-                if(gdalFiles != null) {
-                    for (gdalFile in gdalFiles) {
-                        val inStream = assetManager.open("gdal/$gdalFile")
-                        copyFrom(inStream, File(gdalDataDir, gdalFile))
-                        inStream.close()
-                    }
-                }
-            }
-            catch (e: IOException) {
-                printError(e.localizedMessage)
-            }
-        }
-        val certDataDir = File(context.filesDir, "data/certs")
-        val certFile = File(certDataDir, "cert.pem")
-        if (!certDataDir.exists()) {
-            certDataDir.mkdirs()
-            // Extract files from raw.
-            try {
-                val inStream = assetManager.open("certs/cert.pem")
-                copyFrom(inStream, certFile)
-                inStream.close()
-            }
-            catch (e: IOException) {
-                printError(e.localizedMessage)
-            }
-        }
+        clearAssets(context)
+        copyAssets(context, "gdal")
+        copyAssets(context, "certs")
+        copyAssets(context, "proj")
 
         val options = mapOf(
                 "HOME" to homeDir,
-                "GDAL_DATA" to gdalDataDir.absolutePath,
+                "GDAL_DATA" to File(context.filesDir, "$dataDir/gdal").absolutePath,
                 "CACHE_DIR" to cacheDir,
                 "SETTINGS_DIR" to settingsDir,
-                "SSL_CERT_FILE" to certFile.absolutePath,
+                "SSL_CERT_FILE" to File(context.filesDir, "$dataDir/certs/cert.pem").absolutePath,
+                "PROJ_DATA" to File(context.filesDir, "$dataDir/proj").absolutePath,
                 "NUM_THREADS" to "ALL_CPUS", // NOTE: "4"
                 "DEBUG_MODE" to if (Constants.debugMode) "ON" else "OFF",
                 "APP_NAME" to context.packageName
@@ -216,13 +189,13 @@ object API {
             return
         }
 
-        printMessage("\n home dir: $homeDir\n settings: $settingsDir\n cache dir: $cacheDir\n GDAL data dir: $gdalDataDir")
+        printMessage("\n home dir: $homeDir\n settings: $settingsDir\n cache dir: $cacheDir\n GDAL data dir: ${options["GDAL_DATA"]}")
 
         catalog = Catalog(catalogObjectGet("ngc://"))
 
         val libDirCatalogPath = sharedPref.getString("files_dir", "ngc://Local connections/Home")
         val libDir = catalog?.childByPath(libDirCatalogPath!!)
-        if(libDir == null) {
+        if (libDir == null) {
             printError("Application directory not found")
             return
         }
@@ -262,6 +235,51 @@ object API {
 
     private fun finalize() {
         unInit()
+    }
+
+    private val dataDir = "data/${BuildConfig.VERSION_CODE}"
+
+    private fun clearAssets(context: Context) {
+        val gdalDataDir = File(context.filesDir, "$dataDir/gdal")
+        if (!gdalDataDir.exists()) {
+            val arrayOfDirs = arrayOf("gdal", "certs", "proj")
+            for (dir in arrayOfDirs) {
+                val dataDirOld = File(context.filesDir, "data/$dir")
+                dataDirOld.deleteRecursively()
+
+                for (code in 0 until BuildConfig.VERSION_CODE) {
+                    val dataDirOldNum = File(context.filesDir, "data/$code/$dir")
+                    dataDirOldNum.deleteRecursively()
+                }
+            }
+        }
+    }
+
+    private fun copyAssets(context: Context, childDir: String) : Boolean {
+        val assetManager = context.assets
+        val dataDir = File(context.filesDir, "$dataDir/$childDir")
+        if (!dataDir.exists()) {
+            dataDir.mkdirs()
+        }
+
+        if (dataDir.list().isEmpty()) {
+            try {
+                // Extract files from raw.
+                val assetFiles = assetManager.list(childDir)
+                if(assetFiles != null) {
+                    for (assetFile in assetFiles) {
+                        val inStream = assetManager.open("$childDir/$assetFile")
+                        copyFrom(inStream, File(dataDir, assetFile))
+                        inStream.close()
+                    }
+                }
+            }
+            catch (e: IOException) {
+                printError(e.localizedMessage)
+                return false
+            }
+        }
+        return true
     }
 
     /**
@@ -321,7 +339,7 @@ object API {
      * @param auth Authorization class instance.
      */
     fun addAuth(auth: Auth) : Boolean {
-        if(URLAuthAdd(auth.getURL(), toArrayOfCStrings(auth.options()))) {
+        if(URLAuthAdd(auth.url, toArrayOfCStrings(auth.initOptions()))) {
             authArray.add(auth)
             return true
         }
@@ -334,7 +352,7 @@ object API {
      * @param auth Authorization class instance to remove.
      */
     fun removeAuth(auth: Auth) {
-        if(URLAuthDelete(auth.getURL())) {
+        if(URLAuthDelete(auth.url)) {
             authArray.remove(auth)
         }
     }
@@ -459,6 +477,36 @@ object API {
 //    fun getDocDirectory() : Object? {
 //        return catalog?.childByPath(Constants.docDirCatalogPath)
 //    }
+
+    /**
+     * Create backup zip archive of data and settings.
+     *
+     * @param name Archive name.
+     * @param destination Directory to create backup archive.
+     * @param callback Function executed periodically to indicate progress or cancel executing. May be null.
+     * @return True on success.
+     */
+    fun backup(name: String, destination: Object,
+               callback: ((status: StatusCode, complete: Double, message: String) -> Boolean)? = null) : Boolean {
+        // Save opened maps
+        for(mapView in mapViewArray) {
+            mapView.map?.save()
+        }
+
+        val objects = longArrayOf(mapsDir?.handle ?: 0, geodataDir?.handle ?: 0)
+
+        if(null != callback) {
+            progressFunctions[callback.hashCode()] = ProgressFunction(callback)
+        }
+
+        val res = backup(name, destination.handle, objects, callback?.hashCode() ?: 0)
+
+        if(null != callback) {
+            progressFunctions.remove(callback.hashCode())
+        }
+        return res
+
+    }
 
     internal fun addMapView(view: MapView) {
         mapViewArray.add(view)
@@ -609,8 +657,8 @@ object API {
         return res
     }
 
-    internal fun URLAuthGetMapInt(uri: String) : Map<String, String> {
-        val properties = API.URLAuthGet(uri)
+    internal fun URLAuthGetPropertiesInt(uri: String) : Map<String, String> {
+        val properties = URLAuthGet(uri)
         val out: MutableMap<String, String> = mutableMapOf()
         for(property in properties) {
             val parts = property.split("=")
@@ -703,6 +751,7 @@ object API {
      */
 
     internal fun catalogObjectGetInt(path: String): Long = catalogObjectGet(path)
+    internal fun catalogObjectGetByNameInt(parent: Long, name: String, fullMatch: Boolean): Long = catalogObjectGetByName(parent, name, fullMatch)
     internal fun catalogObjectQueryInt(handle: Long, filter: Int) : Array<CatalogObjectInfo> = catalogObjectQuery(handle, filter)
     internal fun catalogObjectQueryMultiFilterInt(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo> = catalogObjectQueryMultiFilter(handle, filters)
     internal fun catalogObjectCreateInt(handle: Long, name: String, options: Array<String>): Boolean = catalogObjectCreate(handle, name, options)
@@ -717,6 +766,7 @@ object API {
     internal fun catalogObjectGetPropertyInt(handle: Long, name: String, defaultValue: String, domain: String): String = catalogObjectGetProperty(handle, name, defaultValue, domain)
     internal fun catalogObjectSetPropertyInt(handle: Long, name: String, value: String, domain: String): Boolean = catalogObjectSetProperty(handle, name, value, domain)
     internal fun catalogObjectRefreshInt(handle: Long) = catalogObjectRefresh(handle)
+    internal fun catalogCheckConnectionInt(objectType: Int, options: Array<String>) : Boolean = catalogCheckConnection(objectType, options)
 
     /*
      * Geometry
@@ -966,6 +1016,7 @@ object API {
     private external fun getLastErrorMessage() : String
     private external fun settingsGetString(key: String, default: String): String
     private external fun settingsSetString(key: String, value: String)
+    private external fun backup(name: String, dstObject: Long, objects: LongArray, callbackId: Int) : Boolean
 
     /**
      * Free library resources. On this call catalog removes all preloaded tree items.
@@ -1059,6 +1110,7 @@ object API {
 
     private external fun catalogPathFromSystem(path: String): String
     private external fun catalogObjectGet(path: String): Long
+    private external fun catalogObjectGetByName(parent: Long, name: String, fullMatch: Boolean): Long
     private external fun catalogObjectQuery(handle: Long, filter: Int) : Array<CatalogObjectInfo>
     private external fun catalogObjectQueryMultiFilter(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo>
     private external fun catalogObjectCreate(handle: Long, name: String, options: Array<String>): Boolean
@@ -1073,6 +1125,7 @@ object API {
     private external fun catalogObjectGetProperty(handle: Long, name: String, defaultValue: String, domain: String): String
     private external fun catalogObjectSetProperty(handle: Long, name: String, value: String, domain: String): Boolean
     private external fun catalogObjectRefresh(handle: Long)
+    private external fun catalogCheckConnection(type: Int, options: Array<String>): Boolean
 
 
     /*

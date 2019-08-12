@@ -29,7 +29,9 @@ import android.graphics.Bitmap
 import android.os.Bundle
 
 /**
- * Class for NextGIS Account operations.
+ * Class for NextGIS Account operations. It's expected that application authorised in nextgis.com and
+ * has initial access and update tokens. After created account class instance the tokens will updated
+ * internally. The latest values can be fetched using options function.
  *
  * @param clientId Application identifier
  * @param accessToken oAuth2 access token
@@ -94,7 +96,7 @@ class Account(clientId: String, accessToken: String, updateToken: String,
     }
 
     /**
-     * Get account options. Now return only authorize status (last access token, update token etc.).
+     * Get account options. Now return only authorize status (latest access token, update token etc.).
      *
      * @return key-value dictionary of options.
      */
