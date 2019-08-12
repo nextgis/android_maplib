@@ -482,6 +482,12 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
  * @property options Connection options as key = value map.
  */
 open class Connection(val type: Object.Type, val options: Map<String, String> = mapOf()) {
+
+    /**
+     * Check if connection is valid.
+     *
+     * @return true if connection is valid. 
+     */
     fun check() : Boolean {
         return API.catalogCheckConnectionInt(type.code, toArrayOfCStrings(options))
     }
