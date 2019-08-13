@@ -61,11 +61,9 @@ class MemoryStore(copyFrom: Object): Object(copyFrom)  {
             }
         }
 
-        if(API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions))) {
-            val featureClassObject = child(name)
-            if(featureClassObject != null) {
-                return FeatureClass(featureClassObject)
-            }
+        val newHandle = API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions))
+        if(newHandle != 0L) {
+            return FeatureClass(Object(newHandle))
         }
         return null
 
@@ -110,12 +108,9 @@ class Store(copyFrom: Object): Object(copyFrom) {
             }
         }
 
-        if( API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions)) ) {
-            val fullMatch = optionAsBool(options, "OVERWRITE", false) || !optionAsBool(options, "CREATE_UNIQUE", false)
-            val featureClassObject = child(name, fullMatch)
-            if( featureClassObject != null ){
-                return FeatureClass(featureClassObject)
-            }
+        val newHandle = API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions))
+        if(newHandle != 0L) {
+            return FeatureClass(Object(newHandle))
         }
 
         return null
@@ -139,12 +134,9 @@ class Store(copyFrom: Object): Object(copyFrom) {
             fullOptions["FIELD_${index}_ALIAS"] = field.alias
         }
 
-        if( API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions)) ) {
-            val fullMatch = optionAsBool(options, "OVERWRITE", false) || !optionAsBool(options, "CREATE_UNIQUE", false)
-            val tableObject = child(name, fullMatch)
-            if( tableObject != null ){
-                return Table(tableObject)
-            }
+        val newHandle = API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(fullOptions))
+        if(newHandle != 0L) {
+            return Table(Object(newHandle))
         }
         return null
     }

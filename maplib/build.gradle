@@ -108,7 +108,7 @@ android {
         test.java.srcDirs += 'src/test/kotlin'
         androidTest.java.srcDirs += 'src/androidTest/kotlin'
     }
-    dokka {
+    dokka { // Needed for bintray
         outputFormat = 'javadoc'
         outputDirectory = "$buildDir/docs/javadoc"
 //        sourceDirs = files('src/main/kotlin')

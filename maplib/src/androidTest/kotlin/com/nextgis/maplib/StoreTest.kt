@@ -34,6 +34,7 @@ import java.util.*
 class StoreTest {
     @Test
     fun store() {
+
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
@@ -122,6 +123,8 @@ class StoreTest {
         val attId = newFeature.addAttachment("test.png", "test picture",
                 testPng.absolutePath,true)
         assertTrue(attId != -1L)
+
+        treesFC.reset() // This needed tp close cursor and let to delete another table (overwrite points in createFC test)!
     }
 
     @Test
@@ -193,8 +196,11 @@ class StoreTest {
         assertTrue(tmpDir != null)
 
         val bbox = Envelope(-20037508.34, 20037508.34, -20037508.34, 20037508.34)
+        val options = mapOf(
+            "OVERWRITE" to "YES"
+        )
         val baseMap = tmpDir?.createTMS("osm.wconn", "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                3857, 0, 18, bbox, bbox, 14)
+                3857, 0, 18, bbox, bbox, 14, options)
         baseMap!!.isOpened = true
         assertTrue(baseMap.isOpened)
         var properties = baseMap.getProperties()

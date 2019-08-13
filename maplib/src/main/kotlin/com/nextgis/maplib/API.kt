@@ -754,7 +754,7 @@ object API {
     internal fun catalogObjectGetByNameInt(parent: Long, name: String, fullMatch: Boolean): Long = catalogObjectGetByName(parent, name, fullMatch)
     internal fun catalogObjectQueryInt(handle: Long, filter: Int) : Array<CatalogObjectInfo> = catalogObjectQuery(handle, filter)
     internal fun catalogObjectQueryMultiFilterInt(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo> = catalogObjectQueryMultiFilter(handle, filters)
-    internal fun catalogObjectCreateInt(handle: Long, name: String, options: Array<String>): Boolean = catalogObjectCreate(handle, name, options)
+    internal fun catalogObjectCreateInt(handle: Long, name: String, options: Array<String>): Long = catalogObjectCreate(handle, name, options)
     internal fun catalogObjectDeleteInt(handle: Long): Boolean = catalogObjectDelete(handle)
     internal fun catalogObjectRenameInt(handle: Long, newName: String): Boolean = catalogObjectRename(handle, newName)
     internal fun catalogObjectOptionsInt(handle: Long, optionType: Int): String = catalogObjectOptions(handle, optionType)
@@ -1113,7 +1113,7 @@ object API {
     private external fun catalogObjectGetByName(parent: Long, name: String, fullMatch: Boolean): Long
     private external fun catalogObjectQuery(handle: Long, filter: Int) : Array<CatalogObjectInfo>
     private external fun catalogObjectQueryMultiFilter(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo>
-    private external fun catalogObjectCreate(handle: Long, name: String, options: Array<String>): Boolean
+    private external fun catalogObjectCreate(handle: Long, name: String, options: Array<String>): Long
     private external fun catalogObjectDelete(handle: Long): Boolean
     private external fun catalogObjectCopy(srcHandle: Long, dstHandle: Long, options: Array<String>, callbackId: Int) : Boolean
     private external fun catalogObjectRename(handle: Long, newName: String): Boolean

@@ -187,9 +187,9 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * @return Created catalog object instance or null.
      */
     fun create(name: String, options: Map<String, String> = mapOf()) : Object? {
-        if(API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(options))) {
-            val fullMatch = optionAsBool(options, "OVERWRITE", false) || !optionAsBool(options, "CREATE_UNIQUE", false)
-            return child(name, fullMatch)
+        val newHandle = API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(options))
+        if(newHandle != 0L) {
+            return Object(newHandle)
         }
         return null
     }
@@ -451,9 +451,10 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
     }
 
     /**
-     * createConnection Create connection at default directory corespondent to connection type (i.e. for NextGIS Web connection, the connection file will be created at ngc://GIS Server connections path.
+     * Create connection at default directory corespondent to connection type (i.e. for NextGIS Web
+     * connection, the connection file will be created at ngc://GIS Server connections path.
      *
-     * @param name Connection file name
+     * @param name Connection file name.
      * @param connection Connection object. Before create connection, execute check function for test connection.
      * @param options Create options as key = value array.
      * @return Created connection object or null.

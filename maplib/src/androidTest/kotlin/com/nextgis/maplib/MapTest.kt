@@ -37,6 +37,7 @@ class MapTest {
         val map = API.getMap("main")
 
         assertTrue(map != null)
+
         addPointsTo(map!!)
         addOSMTo(map)
 
@@ -57,8 +58,11 @@ class MapTest {
         val dataDir = API.getDataDirectory()
         if(dataDir != null) {
             val bbox = Envelope(-20037508.34, 20037508.34, -20037508.34, 20037508.34)
+            val options = mapOf(
+                "OVERWRITE" to "YES"
+            )
             val baseMap = dataDir.createTMS("osm.wconn", "http://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                    3857, 0, 18, bbox, bbox, 14)
+                    3857, 0, 18, bbox, bbox, 14, options)
             if(baseMap != null) {
                 map.addLayer("OSM", baseMap)
             }
@@ -75,8 +79,9 @@ class MapTest {
 
             if(pointsFC == null) {
                 val options = mapOf(
-                        "CREATE_OVERVIEWS" to "ON",
-                        "ZOOM_LEVELS" to "2,3,4,5,6,7,8,9,10,11,12,13,14"
+                    "CREATE_OVERVIEWS" to "ON",
+                    "ZOOM_LEVELS" to "2,3,4,5,6,7,8,9,10,11,12,13,14",
+                    "OVERWRITE" to "YES"
                 )
 
                 val fields = listOf(
