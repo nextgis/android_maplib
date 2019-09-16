@@ -117,8 +117,8 @@ object API {
     @Suppress("NON_EXHAUSTIVE_WHEN")
     private fun notifyFunction(uri: String, code: ChangeCode) {
         when (code) {
-            ChangeCode.TOKEN_EXPIRED -> API.onAuthNotify(uri)
-            ChangeCode.CREATE_FEATURE, ChangeCode.CHANGE_FEATURE, ChangeCode.DELETE_FEATURE, ChangeCode.DELETEALL_FEATURES -> API.onMapViewNotify(uri, code)
+            ChangeCode.TOKEN_EXPIRED -> onAuthNotify(uri)
+            ChangeCode.CREATE_FEATURE, ChangeCode.CHANGE_FEATURE, ChangeCode.DELETE_FEATURE, ChangeCode.DELETEALL_FEATURES -> onMapViewNotify(uri, code)
         }
     }
 
@@ -1002,9 +1002,11 @@ object API {
     internal fun trackSyncInt(handle: Long, maxPointCount: Int) = trackSync(handle, maxPointCount)
     internal fun trackGetListInt(handle: Long) : Array<TrackInfoInt> = trackGetList(handle)
     internal fun trackAddPointInt(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float, speed: Float,
-                                  timeStamp: Long, satCount: Int, startTrack: Boolean, startSegment: Boolean) : Boolean =
-            trackAddPoint(handle, name, x, y, z, acc, speed, timeStamp, satCount, startTrack, startSegment)
-    internal fun trackDeletePointsInt(handle: Long, start: Long, stop: Long) : Boolean = trackDeletePoints(handle, start, stop)
+                                  course: Float, timeStamp: Long, satCount: Int, startTrack: Boolean,
+                                  startSegment: Boolean) : Boolean =
+            trackAddPoint(handle, name, x, y, z, acc, speed, course, timeStamp / 1000, satCount, startTrack, startSegment)
+
+    internal fun trackDeletePointsInt(handle: Long, start: Long, stop: Long) : Boolean = trackDeletePoints(handle, start / 1000, stop / 1000)
 
     /*
      * A native method that is implemented by the 'ngstore' native library,
@@ -1348,7 +1350,8 @@ object API {
     private external fun trackIsRegistered() : Boolean
     private external fun trackSync(handle: Long, maxPointCount: Int)
     private external fun trackGetList(handle: Long) : Array<TrackInfoInt>
-    private external fun trackAddPoint(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float, speed: Float,
-                                        timeStamp: Long, satCount: Int, startTrack: Boolean, startSegment: Boolean) : Boolean
+    private external fun trackAddPoint(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float,
+                                       speed: Float, course: Float, timeStamp: Long, satCount: Int, startTrack: Boolean,
+                                       startSegment: Boolean) : Boolean
     private external fun trackDeletePoints(handle: Long, start: Long, stop: Long) : Boolean
 }

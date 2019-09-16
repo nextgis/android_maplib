@@ -162,12 +162,13 @@ class ApiTest {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
-        val test = Auth("https://demo.nextgis.com", "https://my.nextgis.com", "", "", "120", "")
-        val options = test.options()
-        assertFalse(options.isEmpty())
-
         val account = Account("", "", "")
         val accountOpt = account.options()
         assertFalse(accountOpt.isEmpty())
+        assertFalse(account.authorized)
+
+        val test = Auth("https://demo.nextgis.com", "https://my.nextgis.com", "", "", "120", "")
+        val options = test.options()
+        assertFalse(options.isEmpty())
     }
 }

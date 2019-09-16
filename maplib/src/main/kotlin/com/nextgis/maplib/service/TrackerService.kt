@@ -22,6 +22,7 @@
 package com.nextgis.maplib.service
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -31,23 +32,33 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
-import android.location.*
-import android.os.Build
-import android.os.Bundle
-import android.os.IBinder
-import android.os.PowerManager
+import android.location.GnssStatus
+import android.location.GpsStatus
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.*
 import android.preference.PreferenceManager
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nextgis.maplib.*
-import com.nextgis.maplib.Location
+import java.io.Serializable
+import java.lang.ref.WeakReference
 import java.text.DateFormat.getDateInstance
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
 private const val DEFAULT_UPDATE_LOCATION_POINTS = 17 // Any value < 30.
+
+
+/**
+ * Tracker delegate protocol. Correspondent functions will be executed on tracker service events.
+ */
+interface TrackerDelegate : Serializable {
+    fun onLocationChanged(location: Location) {}
+    fun onStatusChanged(status: TrackerService.Status, trackName: String, trackStartTime: Date) {}
+}
+
 /**
  * Service to get location information and store it into trackers table of current store. Also service notifies
  * listeners on location events via local broadcast messages.
@@ -64,13 +75,12 @@ class TrackerService : Service() {
     private var mPointsAdded = 0
     private var mTracksTable: Track? = null
     private var mUpdateOnLocationPoints = DEFAULT_UPDATE_LOCATION_POINTS
+    private var mNotifiers = mutableListOf<WeakReference<TrackerDelegate>>()
 
     enum class Command(val code: String) {
         UNKNOWN("com.nextgis.tracker.UNKNOWN"),
-        STATUS("com.nextgis.tracker.STATUS"),
         START("com.nextgis.tracker.START"),
-        STOP("com.nextgis.tracker.STOP"),
-        UPDATE("com.nextgis.tracker.UPDATE")
+        STOP("com.nextgis.tracker.STOP")
     }
 
     enum class Status(val code: Int) {
@@ -80,8 +90,6 @@ class TrackerService : Service() {
     }
 
     enum class MessageType(val code: String) {
-        STATUS_CHANGED("com.nextgis.tracker.STATUS_CHANGED"),
-        LOCATION_CHANGED("com.nextgis.tracker.LOCATION_CHANGED"),
         PROCESS_LOCATION_UPDATES("com.nextgis.tracker.PROCESS_LOCATION_UPDATES")
     }
 
@@ -170,29 +178,28 @@ class TrackerService : Service() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     @Suppress("DEPRECATION")
-    private val mGpsStatusListener = object : GpsStatus.Listener {
-        override fun onGpsStatusChanged(event: Int) {
-            if(event == GpsStatus.GPS_EVENT_SATELLITE_STATUS) {
-                var satelliteCount = 0
+    private val mGpsStatusListener = GpsStatus.Listener { event ->
+        if(event == GpsStatus.GPS_EVENT_SATELLITE_STATUS) {
+            var satelliteCount = 0
 
-                if (checkPermission(this@TrackerService, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    val satellites = mLocationManager?.getGpsStatus(null)?.satellites
-                    if(satellites != null) {
-                        for (sat in satellites) {
-                            if (sat.usedInFix()) {
-                                satelliteCount++
-                            }
+            if (checkPermission(this@TrackerService, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                val satellites = mLocationManager?.getGpsStatus(null)?.satellites
+                if(satellites != null) {
+                    for (sat in satellites) {
+                        if (sat.usedInFix()) {
+                            satelliteCount++
                         }
                     }
                 }
+            }
 
-                if(satelliteCount > 0) {
-                    mSatelliteCount = satelliteCount
-                }
+            if(satelliteCount > 0) {
+                mSatelliteCount = satelliteCount
+            }
 
 //                printMessage("onGpsStatusChanged: Satellite count: $mSatelliteCount")
-            }
         }
     }
 
@@ -233,11 +240,10 @@ class TrackerService : Service() {
 //            printMessage("Track point added [$location]")
         mPointsAdded++
 
-        // Send location to broadcast listeners
-        val intent = Intent()
-        intent.action = MessageType.LOCATION_CHANGED.code
-        intent.putExtra("gps_location", location)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        // Send location to listeners
+        for(notify in mNotifiers) {
+            notify.get()?.onLocationChanged(location)
+        }
 
         // If get second point after start new track - send status broadcast to update tracks list
         if(mSecondPointInTrack) {
@@ -289,11 +295,13 @@ class TrackerService : Service() {
             Command.START.code -> {
                 mOpenIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT)
                 mOpenIntent?.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+                val delegate = intent.getSerializableExtra("com.nextgis.tracker.DELEGATE") as? TrackerDelegate
+                addDelegate(delegate)
+
                 start()
             }
             Command.STOP.code -> stop()
-            Command.STATUS.code -> status()
-            Command.UPDATE.code -> update()
         }
 
 
@@ -306,8 +314,34 @@ class TrackerService : Service() {
         return START_STICKY
     }
 
-    override fun onBind(p0: Intent?): IBinder? {
-        return null
+    fun addDelegate(delegate: TrackerDelegate?) {
+        if(delegate == null) {
+            return
+        }
+        for(notify in mNotifiers) {
+            if(notify.get() == delegate) {
+                return
+            }
+        }
+        mNotifiers.add(WeakReference(delegate))
+    }
+
+    fun removeDelegate(delegate: TrackerDelegate?) {
+        if (delegate == null) {
+            return
+        }
+        for(notify in mNotifiers) {
+            if(notify.get() == delegate) {
+                mNotifiers.remove(notify)
+                return
+            }
+        }
+    }
+
+    override fun onBind(intent: Intent) = LocalBinder()
+
+    inner class LocalBinder : Binder() {
+        fun getService() = this@TrackerService
     }
 
     override fun onDestroy() {
@@ -365,20 +399,21 @@ class TrackerService : Service() {
         }
     }
 
-    private fun getUniqueName(name: String, add: Int, tracksInfo: Array<TrackInfo>?) : String {
-        var newName = name
-        if(add != 0) {
-            newName = "$name [$add]"
-        }
-        if(tracksInfo != null) {
-            for (trackInfo in tracksInfo) {
-                if (trackInfo.name == newName) {
-                    return getUniqueName(name, add + 1, tracksInfo)
-                }
-            }
-        }
-        return newName
-    }
+// Not needed
+//    private fun getUniqueName(name: String, add: Int, tracksInfo: Array<TrackInfo>?) : String {
+//        var newName = name
+//        if(add != 0) {
+//            newName = "$name [$add]"
+//        }
+//        if(tracksInfo != null) {
+//            for (trackInfo in tracksInfo) {
+//                if (trackInfo.name == newName) {
+//                    return getUniqueName(name, add + 1, tracksInfo)
+//                }
+//            }
+//        }
+//        return newName
+//    }
 
     private fun getNotification() : NotificationCompat.Builder {
         val channelId =
@@ -481,31 +516,25 @@ class TrackerService : Service() {
         if(checkPermission(this, Manifest.permission.WAKE_LOCK)) {
             mWakeLock = mPowerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "${Constants.tag}:TrackerService")
 //            mPowerManager.locationPowerSaveMode = PowerManager.LOCATION_MODE_FOREGROUND_ONLY
-            mWakeLock?.acquire()
+            mWakeLock?.acquire(1000000)
         }
     }
 
-    private fun status() {
-        val intentStatus = Intent()
-        intentStatus.action = MessageType.STATUS_CHANGED.code
-        // You can also include some extra data.
-        val isRunning: Boolean = mStatus == Status.RUNNING
-        intentStatus.putExtra("is_running", isRunning)
-        intentStatus.putExtra("name", mTrackName)
-        intentStatus.putExtra("start", mTrackStartTime)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intentStatus)
+    fun status() {
+        for(notify in mNotifiers) {
+            notify.get()?.onStatusChanged(mStatus, mTrackName, mTrackStartTime)
+        }
 
         // printMessage("Tracking service status: " + if(mStatus == Status.RUNNING) "running" else "stopped" )
 
         if(mCurrentLocation != null) {
-            val intentLocation = Intent()
-            intentLocation.action = MessageType.LOCATION_CHANGED.code
-            intentLocation.putExtra("gps_location", mCurrentLocation)
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intentLocation)
+            for(notify in mNotifiers) {
+                notify.get()?.onLocationChanged(mCurrentLocation!!)
+            }
         }
     }
 
-    private fun update() {
+    fun update() {
         val sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
         mDivTrackByDay = sharedPref.getBoolean("divTracksByDay", true)
 

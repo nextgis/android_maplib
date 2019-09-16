@@ -54,10 +54,10 @@ internal data class TrackInfoInt(val name: String, val start: Long, val stop: Lo
  */
 @Parcelize
 data class Location(val longitude: Double, val latitude: Double, val altitude: Double,
-                    val accuracy: Float, val speed: Float, val time: Long, val provider: String,
+                    val accuracy: Float, val speed: Float, val course: Float, val time: Long, val provider: String,
                     val bearing: Float, val satelliteCount: Int) : Parcelable {
     constructor(loc: android.location.Location, satelliteCount: Int) : this(loc.longitude,
-            loc.latitude, loc.altitude, loc.accuracy, loc.speed, loc.time, loc.provider, loc.bearing,
+            loc.latitude, loc.altitude, loc.accuracy, loc.speed, loc.bearing,loc.time, loc.provider, loc.bearing,
             satelliteCount)
     fun hasAccuracy(): Boolean = accuracy > 0.0f
 }
@@ -179,7 +179,7 @@ open class Track(private val handle: Long) {
      */
     fun addPoint(name: String, location: Location, startTrack: Boolean, startSegment: Boolean) : Boolean {
         return API.trackAddPointInt(handle, name, location.longitude, location.latitude, location.altitude, location.accuracy,
-            location.speed, location.time, location.satelliteCount, startTrack, startSegment)
+            location.speed, location.course, location.time, location.satelliteCount, startTrack, startSegment)
     }
 
     /**

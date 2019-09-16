@@ -26,12 +26,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import com.nextgis.maplib.service.TrackerDelegate
 import com.nextgis.maplib.service.TrackerService
 import io.sentry.Sentry
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-
+import java.lang.ref.WeakReference
 
 
 /**
@@ -108,13 +109,17 @@ fun checkPermission(context: Context, permission: String) : Boolean {
  * @param command Tracker service command enum value
  * @param extraIntent Intent to put in service start intent EXTRA_INTENT field
  * @param options Key - value string map. Key set to intent key, and value - to intent value.
+ * @param delegate Delegate for tracker service events.
  */
 fun startTrackerService(context: Context, command: TrackerService.Command, extraIntent: Intent? = null,
                         options: Map<String, String> = mapOf()) {
     val intent = Intent(context, TrackerService::class.java)
     intent.action = command.code
-    if(command == TrackerService.Command.START && extraIntent != null) {
-        intent.putExtra(Intent.EXTRA_INTENT, extraIntent)
+    if(command == TrackerService.Command.START) {
+        if(extraIntent != null) {
+            intent.putExtra(Intent.EXTRA_INTENT, extraIntent)
+        }
+
     }
 
     for ((k, v) in options) {

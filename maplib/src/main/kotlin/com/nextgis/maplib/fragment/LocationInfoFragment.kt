@@ -21,58 +21,48 @@
 
 package com.nextgis.maplib.fragment
 
-import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nextgis.maplib.Location
 import com.nextgis.maplib.R
 import com.nextgis.maplib.formatCoordinate
+import com.nextgis.maplib.service.TrackerDelegate
 import com.nextgis.maplib.service.TrackerService
+import com.nextgis.maplib.startTrackerService
 import kotlinx.android.synthetic.main.location_info.*
+import java.util.*
 
 /**
  * Location information panel.
  */
 class LocationInfoFragment : Fragment() {
 
-    private val mBroadCastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
+    private var mTrackerService: TrackerService? = null
+    private var mIsBound = false
+    private val mServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as TrackerService.LocalBinder
+            mTrackerService = binder.getService()
+            mTrackerService?.addDelegate(mTrackerDelegate)
+            mIsBound = true
+            mTrackerService?.status()
+        }
 
-            when (intent?.action) {
-                TrackerService.MessageType.LOCATION_CHANGED.code -> handleLocationChanged(intent)
-            }
+        override fun onServiceDisconnected(name: ComponentName) {
+            mIsBound = false
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.location_info, container, false)
-        val ctx = context
-        if (ctx != null) {
-            val filter = IntentFilter()
-            filter.addAction(TrackerService.MessageType.LOCATION_CHANGED.code)
-            LocalBroadcastManager.getInstance(ctx).registerReceiver(mBroadCastReceiver, filter)
-        }
-        return view
-    }
-
-    override fun onDestroyView() {
-        val ctx = context
-        if (ctx != null) {
-            LocalBroadcastManager.getInstance(ctx).unregisterReceiver(mBroadCastReceiver)
-        }
-        super.onDestroyView()
-    }
-
-    private fun handleLocationChanged(intent: Intent?) {
-        val location = intent?.getParcelableExtra<Location>("gps_location")
-        if(location != null) {
+    private val mTrackerDelegate = object : TrackerDelegate {
+        override fun onLocationChanged(location: Location) {
             locationIcon.setImageResource(R.drawable.ic_gps_fixed)
 
             if(location.hasAccuracy()) {
@@ -92,6 +82,14 @@ class LocationInfoFragment : Fragment() {
 
             altText.text = getString(R.string.location_m_format).format(location.altitude)
         }
+
+        override fun onStatusChanged(status: TrackerService.Status, trackName: String, trackStartTime: Date) {
+
+        }
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.location_info, container, false)
     }
 
     private fun formatSpeed(speed: Float) : String {
@@ -102,5 +100,22 @@ class LocationInfoFragment : Fragment() {
         val outLon = formatCoordinate(lon, format, digits)
         val outLat = formatCoordinate(lat, format, digits)
         return getString(R.string.location_coordinates).format(outLat, outLon)
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        // Get current status
+        val intent = Intent(context, TrackerService::class.java)
+        context?.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        if(mIsBound) {
+            mTrackerService?.removeDelegate(mTrackerDelegate)
+            context?.unbindService(mServiceConnection)
+        }
     }
 }
