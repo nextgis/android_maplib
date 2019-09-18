@@ -6,7 +6,7 @@
  * *****************************************************************************
  * Based on https://github.com/rweeks/util/blob/master/src/com/newbrightidea/util/RTree.java
  * @see https://github.com/rweeks/util
- * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -218,8 +218,8 @@ public class GeometryRTree implements IGeometryCache {
     public IGeometryCacheItem getItem(long featureId, Node n) {
         if (n.mLeaf){
             for (Node e : n.mChildren){
-                if (e instanceof Entry) {
-                    Entry entry = (Entry)e;
+                if (!e.isNode()) {
+                    Entry entry = (Entry) e;
                     if (entry.getFeatureId() == featureId){
                         return entry;
                     }
@@ -270,8 +270,10 @@ public class GeometryRTree implements IGeometryCache {
     protected void getAll(Node n, LinkedList<IGeometryCacheItem> results){
         if (n.mLeaf){
             for (Node e : n.mChildren){
-                Entry entry = (Entry)e;
-                results.add(entry);
+                if (!e.isNode()) {
+                    Entry entry = (Entry) e;
+                    results.add(entry);
+                }
             }
         }
         else{
