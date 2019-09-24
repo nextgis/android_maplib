@@ -18,4 +18,6 @@
     <string name="satellite_count">Satellite count</string>
     <string name="current_location">Current location</string>
     <string name="nextgis">NextGIS</string>
+    <string name="refresh">Refresh</string>
+    <string name="back">Back</string>
 </resources>
