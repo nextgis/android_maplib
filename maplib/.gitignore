@@ -1,2 +1,4 @@
 /build
 /src/main/assets
+.cxx
+.externalNativeBuild

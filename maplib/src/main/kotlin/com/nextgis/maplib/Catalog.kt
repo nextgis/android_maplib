@@ -21,8 +21,6 @@
 
 package com.nextgis.maplib
 
-import android.provider.DocumentsContract
-
 internal data class CatalogObjectInfo(val name: String, val type: Int, val handle: Long)
 
 /**
@@ -50,17 +48,20 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      */
     enum class Type(val code: Int) {
         UNKNOWN(0),
-        ROOT(51) ,          // CAT_CONTAINER_ROOT
-        FOLDER(53),         // CAT_CONTAINER_DIR
-        CONTAINER_NGW(63),  // CAT_CONTAINER_NGW
-        CONTAINER_NGS(64),  // CAT_CONTAINER_NGS
-        CONTAINER_MEM(71),  // CAT_CONTAINER_MEM
-        FC_GEOJSON(507),    // CAT_FC_GEOJSON
-        FC_MEM(509),        // CAT_FC_MEM
-        FC_GPKG(515),       // CAT_FC_GPKG
-        FC_GPX(517),        // CAT_FC_GPX
-        RASTER_TMS(1011),   // CAT_RASTER_TMS
-        TABLE_GPKG(1507);   // CAT_TABLE_GPKG
+        ROOT(51) ,                      // CAT_CONTAINER_ROOT
+        FOLDER(53),                     // CAT_CONTAINER_DIR
+        CONTAINER_NGW(63),              // CAT_CONTAINER_NGW
+        CONTAINER_NGS(64),              // CAT_CONTAINER_NGS
+        CONTAINER_MEM(71),              // CAT_CONTAINER_MEM
+        CONTAINER_NGWGROUP(74),         // CAT_CONTAINER_NGWGROUP
+        CONTAINER_NGWTRACKERGROUP(75),  // CAT_CONTAINER_NGWTRACKERGROUP
+        FC_GEOJSON(507),                // CAT_FC_GEOJSON
+        FC_MEM(509),                    // CAT_FC_MEM
+        FC_GPKG(515),                   // CAT_FC_GPKG
+        FC_GPX(517),                    // CAT_FC_GPX
+        RASTER_TMS(1011),               // CAT_RASTER_TMS
+        TABLE_GPKG(1507),               // CAT_TABLE_GPKG
+        NGW_TRACKER(2503);              // CAT_NGW_TRACKER
 
         override fun toString(): String {
             return code.toString()
@@ -385,6 +386,20 @@ open class Object(val name: String, val type: Int, val path: String, internal va
             }
             return null
         }
+
+        /**
+         * Force catalog object instance to NextGIS Web resource group.
+         *
+         * @param ngwResource Catalog object instance.
+         * @return NGWResourceGroup class instance or null.
+         */
+        fun forceChildToNGWResourceGroup(ngwResource: Object) : NGWResourceGroup? {
+            if( ngwResource.type == Type.CONTAINER_NGW.code ||
+                ngwResource.type == Type.CONTAINER_NGWGROUP.code ) {
+                return NGWResourceGroup(ngwResource)
+            }
+            return null
+        }
     }
 }
 
@@ -493,13 +508,3 @@ open class Connection(val type: Object.Type, val options: Map<String, String> = 
         return API.catalogCheckConnectionInt(type.code, toArrayOfCStrings(options))
     }
 }
-
-/**
- * NGWConnection NextGIS Web connection properties.
- *
- * @property url NextGIS Web url.
- * @property login NextGIS Web login.
- * @property password NextGIS Web password.
- * @property isGuest If true this is anonymous access.
- */
-class NGWConnection(url: String, login: String, password : String = "", isGuest : Boolean = true) : Connection(Object.Type.CONTAINER_NGW, mapOf("url" to url, "login" to login, "password" to password, "is_guest" to if (isGuest) "yes" else "no"))
