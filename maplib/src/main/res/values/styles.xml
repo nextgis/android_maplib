@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Project:  NextGIS Mobile SDK
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ *****************************************************************************
@@ -19,9 +18,22 @@
   ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
+
 <resources>
-    <color name="grey">#C5C9CA</color>
-    <color name="black">#000</color>
-    <color name="white">#FFF</color>
-    <color name="colorButton">#00b77e</color>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppTheme.Toolbar" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:textColorSecondary">#000</item>
+        <item name="android:textColorPrimary">#000</item>
+        <item name="android:background">#fff</item>
+    </style>
+
+    <style name="FabButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="rippleColor">@color/colorButton</item>
+    </style>
 </resources>

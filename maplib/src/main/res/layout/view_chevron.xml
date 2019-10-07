@@ -19,9 +19,10 @@
   ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<resources>
-    <color name="grey">#C5C9CA</color>
-    <color name="black">#000</color>
-    <color name="white">#FFF</color>
-    <color name="colorButton">#00b77e</color>
-</resources>
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="end|center_vertical"
+    android:src="@drawable/ic_chevron_right"
+    tools:ignore="ContentDescription" />

@@ -40,9 +40,10 @@ import java.util.*
 
 open class FilePickerFragment : Fragment(), OnFileClickListener {
     private lateinit var binding: FragmentFilePickerBinding
-    val path = NonNullObservableField("/")
     private var root = ""
     private val stack = Stack<Object>()
+    val path = NonNullObservableField("/")
+    val current: Object? get() = if (stack.isNotEmpty()) stack.peek() else null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,10 +101,10 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             (activity as? PickerActivity)?.onLayerSelected(file)
             return
         }
-        if (file.type == 75) { // tracker
-            (activity as? PickerActivity)?.onLayerSelected(file)
-            return
-        }
+//        if (file.type == 75) { // tracker
+//            (activity as? PickerActivity)?.onLayerSelected(file)
+//            return
+//        }
         if (file.type == 1002) { // tif type
             (activity as? PickerActivity)?.onLayerSelected(file)
             return

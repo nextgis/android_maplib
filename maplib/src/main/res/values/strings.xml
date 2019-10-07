@@ -20,4 +20,14 @@
     <string name="nextgis">NextGIS</string>
     <string name="refresh">Refresh</string>
     <string name="back">Back</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="add_account">Add account</string>
+    <string name="choose_account">Choose account</string>
+    <string name="nextgis_url">Instance URL</string>
+    <string name="account">Account</string>
+    <string name="login">Login</string>
+    <string name="password">Password</string>
+    <string name="connection_error">Cannot create a connection</string>
+    <string name="empty_field">Field should not be empty</string>
 </resources>

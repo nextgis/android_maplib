@@ -378,7 +378,7 @@ class TrackerService : Service() {
         }
 
         if(checkPermission(this, Manifest.permission.WAKE_LOCK)) {
-            mWakeLock?.release()
+            mWakeLock?.let { if (it.isHeld) it.release() }
         }
 
         printMessage("Stop tracking service")
