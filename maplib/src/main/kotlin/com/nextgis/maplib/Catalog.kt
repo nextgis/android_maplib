@@ -474,7 +474,7 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
      * @param options Create options as key = value array.
      * @return Created connection object or null.
      */
-    fun createConnection(name: String, connection: Connection, options: Map<String, String> = mapOf()) : Object? {
+    fun createConnection(name: String, connection: ConnectionDescription, options: Map<String, String> = mapOf()) : Object? {
         var parent: Object? = null
         if (connection.type == Type.CONTAINER_NGW) {
             parent = childByPath(RootObjects.GIS_CONNECTIONS.code)
@@ -492,12 +492,12 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
 }
 
 /**
- * Connection is class to store connection properties.
+ * ConnectionDescription is class to store connection properties.
  *
  * @property type Connection object type.
  * @property options Connection options as key = value map.
  */
-open class Connection(val type: Object.Type, val options: Map<String, String> = mapOf()) {
+open class ConnectionDescription(val type: Object.Type, val options: Map<String, String> = mapOf()) {
 
     /**
      * Check if connection is valid.

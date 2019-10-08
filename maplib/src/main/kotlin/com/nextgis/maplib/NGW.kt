@@ -23,21 +23,51 @@ package com.nextgis.maplib
 
 
 /**
- * NGWConnection NextGIS Web connection properties.
+ * NGWConnectionDescription NextGIS Web connection description.
  *
  * @property url NextGIS Web url.
  * @property login NextGIS Web login.
  * @property password NextGIS Web password.
  * @property isGuest If true this is anonymous access.
  */
-class NGWConnection(url: String, login: String, password : String = "", isGuest : Boolean = true) : Connection(Object.Type.CONTAINER_NGW, mapOf("url" to url, "login" to login, "password" to password, "is_guest" to if (isGuest) "yes" else "no"))
+class NGWConnectionDescription(url: String, login: String, password : String = "", isGuest : Boolean = true) : ConnectionDescription(Object.Type.CONTAINER_NGW, mapOf("url" to url, "login" to login, "password" to password, "is_guest" to if (isGuest) "yes" else "no"))
+
+/**
+ * NGWConnection NextGIS Web connection.
+ *
+ * @param copyFrom Origin object to copy properties.
+ */
+class NGWConnection(copyFrom: Object): NGWResourceGroup(copyFrom) {
+
+    var url: String
+        get() = getProperty("url", "")
+        set(value) {
+            setProperty("url", value, "")
+        }
+
+    var login: String
+        get() = getProperty("login", "")
+        set(value) {
+            setProperty("login", value, "")
+        }
+
+    var isGuest: Boolean
+        get() = getProperty("is_guest", "") == "yes"
+        set(value) {
+            setProperty("is_guest", if(value) "yes" else "no", "")
+        }
+
+    fun setPassword(password: String): Boolean {
+        return setProperty("password", password, "")
+    }
+}
 
 /**
  * NextGIS Web resource group.
  *
  * @param copyFrom Origin object to copy properties.
  */
-class NGWResourceGroup(copyFrom: Object): Object(copyFrom) {
+open class NGWResourceGroup(copyFrom: Object): Object(copyFrom) {
 
     /**
      * Create new NextGIS Web resource group.
@@ -47,7 +77,7 @@ class NGWResourceGroup(copyFrom: Object): Object(copyFrom) {
      * @param description Group description.
      * @return New NGWResourceGroup class instance or null.
      */
-    fun createResourceGroup(name: String, key: String = "", description: String = "") : Object? {
+    fun createResourceGroup(name: String, key: String = "", description: String = "") : NGWResourceGroup? {
         val options = mapOf(
             "TYPE" to Type.CONTAINER_NGWGROUP.toString(),
             "CREATE_UNIQUE" to "OFF",
@@ -69,9 +99,9 @@ class NGWResourceGroup(copyFrom: Object): Object(copyFrom) {
      * @param name Group name.
      * @param key NextGIS Web unique key.
      * @param description Group description.
-     * @return New NGWResourceGroup class instance or null.
+     * @return New NGWTrackerGroup class instance or null.
      */
-    fun createTrackerGroup(name: String, key: String = "", description: String = "") : Object? {
+    fun createTrackerGroup(name: String, key: String = "", description: String = "") : NGWTrackerGroup? {
         val options = mapOf(
             "TYPE" to Type.CONTAINER_NGWTRACKERGROUP.toString(),
             "CREATE_UNIQUE" to "OFF",
@@ -81,7 +111,7 @@ class NGWResourceGroup(copyFrom: Object): Object(copyFrom) {
 
         val group = create(name, options)
         if(group != null) {
-            return forceChildToNGWResourceGroup(group)
+            return NGWTrackerGroup(group)
         }
         return group
     }
@@ -104,7 +134,7 @@ class NGWTrackerGroup(copyFrom: Object): Object(copyFrom) {
      * @param description Group description.
      * @param tracker_id Tracker identifier.
      * @param tracker_description Tracker description.
-     * @return New NGWResourceGroup class instance or null.
+     * @return New catalog object class instance or null.
      */
     fun createTracker(name: String, key: String = "", description: String = "", tracker_id: String,
                       tracker_description: String = "") : Object? {

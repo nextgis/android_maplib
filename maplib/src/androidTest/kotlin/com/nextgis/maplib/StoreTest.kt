@@ -28,6 +28,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.text.SimpleDateFormat
 import java.util.*
 
 @RunWith(AndroidJUnit4::class)
@@ -276,19 +277,66 @@ class StoreTest {
         assertTrue(count1 > 0 && count2 > 0)
     }
 
+
     @Test
-    fun ngwConn() {
+    fun ngw() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         API.init(appContext)
 
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
+
         val catalog = API.getCatalog()
-        val guestConnection = NGWConnection("https://sandbox.nextgis.com", "guest")
+        // Check connection
+        val guestConnection = NGWConnectionDescription("https://sandbox.nextgis.com", "guest")
         assertTrue(guestConnection.check())
-        val adminConnection = NGWConnection("https://sandbox.nextgis.com", "administrator", "demodemo", false)
-        assertTrue(adminConnection.check())
         val options = mapOf("OVERWRITE" to "YES")
-        val ngwConn = catalog?.createConnection("sandbox.wconn", adminConnection, options)
+        // Create connection
+        val ngwConn = catalog?.createConnection("sandbox.wconn", guestConnection, options)
         assertTrue(ngwConn != null)
+
+        // Get properties (url, login, as guest)
+        val properties = ngwConn?.getProperties()
+        assertTrue(properties?.getValue("url") == "https://sandbox.nextgis.com")
+        assertTrue(properties?.getValue("login") == "guest")
+        assertTrue(properties?.getValue("is_guest") == "yes")
+
+        // List children
+        val ngwConnRG = Object.forceChildToNGWResourceGroup(ngwConn!!)
+        val children = ngwConnRG?.children()
+        if(children != null) {
+            for (child in children) {
+                printMessage("${child.name} - ${child.path}")
+            }
+        }
+
+        val len = children?.size ?: 0
+
+        val ngwConnObj = NGWConnection(ngwConnRG!!)
+        assertTrue(ngwConnObj.url == "https://sandbox.nextgis.com")
+        assertTrue(ngwConnObj.login == "guest")
+
+        // Check new properties
+        val adminConnection = NGWConnectionDescription("https://sandbox.nextgis.com", "administrator", "demodemo", false)
+        assertTrue(adminConnection.check())
+
+        // Change properties
+        ngwConnObj.url = adminConnection.options["url"] ?: error("")
+        ngwConnObj.login = adminConnection.options["login"] ?: error("")
+        ngwConnObj.setPassword(adminConnection.options["password"] ?: error(""))
+        ngwConnObj.isGuest = adminConnection.options["password"] ?: error("") == "yes"
+
+        // Open connection
+        assertTrue(len <= ngwConnObj.children().size)
+
+        // Create new folder
+        val folder = ngwConnObj.createResourceGroup("folder $timeStamp")
+        assertTrue(folder != null)
+        // Create new subfolder
+        val subFolder = folder?.createResourceGroup("subfolder $timeStamp")
+        assertTrue(subFolder != null)
+
+        // Delete folder
+        assertTrue(folder?.delete() ?: false)
 
         val remoteConnections = catalog?.childByPath(Catalog.RootObjects.GIS_CONNECTIONS.code)
         assertTrue(remoteConnections?.child("sandbox.wconn") != null)

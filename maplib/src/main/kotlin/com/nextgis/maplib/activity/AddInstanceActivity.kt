@@ -27,10 +27,7 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
-import com.nextgis.maplib.API
-import com.nextgis.maplib.Instance
-import com.nextgis.maplib.NGWConnection
-import com.nextgis.maplib.R
+import com.nextgis.maplib.*
 import com.nextgis.maplib.databinding.ActivityAddInstanceBinding
 import com.nextgis.maplib.util.NonNullObservableField
 import com.nextgis.maplib.util.tint
@@ -73,7 +70,7 @@ class AddInstanceActivity : AppCompatActivity() {
         }
 
         API.getCatalog()?.let {
-            val connection = NGWConnection(instance.get().url, instance.get().login, instance.get().password)
+            val connection = NGWConnectionDescription(instance.get().url, instance.get().login, instance.get().password)
             val status = connection.check()
             if (status) {
                 it.createConnection(instance.get().url, connection)
