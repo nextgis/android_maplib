@@ -30,14 +30,16 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 
-inline fun Context.getColorCompat(color: Int) = ContextCompat.getColor(this, color)
+fun runAsync(action: () -> Unit) = Thread(Runnable(action)).start()
 
-inline fun FloatingActionButton.tint(@ColorRes resId: Int) {
+fun Context.getColorCompat(color: Int) = ContextCompat.getColor(this, color)
+
+fun FloatingActionButton.tint(@ColorRes resId: Int) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
         this.backgroundTintList = ColorStateList.valueOf(this.context.getColorCompat(resId))
 }
 
-inline fun View.tint(@ColorRes resId: Int) {
+fun View.tint(@ColorRes resId: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         this.backgroundTintList = ColorStateList.valueOf(this.context.getColorCompat(resId))
 }

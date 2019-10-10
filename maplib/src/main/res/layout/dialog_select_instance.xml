@@ -100,6 +100,7 @@
                 android:layout_marginEnd="24dp"
                 android:layout_gravity="end|bottom"
                 android:onClick="@{()->fragment.dismiss()}"
+                android:textColor="@color/black"
                 android:text="@string/cancel" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -34,6 +34,7 @@ import com.nextgis.maplib.adapter.FilesAdapter
 import com.nextgis.maplib.adapter.OnFileClickListener
 import com.nextgis.maplib.databinding.FragmentFilePickerBinding
 import com.nextgis.maplib.util.NonNullObservableField
+import com.nextgis.maplib.util.runAsync
 import kotlinx.android.synthetic.main.fragment_file_picker.*
 import java.util.*
 
@@ -58,14 +59,20 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_refresh -> {
-                if (stack.isNotEmpty()) {
-                    val file = stack.pop()
-                    file.refresh()
-                    onFileClick(file)
-                }
+                refresh()
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    fun refresh() {
+        if (stack.isNotEmpty()) {
+            val file = stack.pop()
+            file.refresh()
+            onFileClick(file)
+        } else {
+            addRoot(activity as? PickerActivity)
         }
     }
 
@@ -74,12 +81,8 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
 
         binding.apply {
             fragment = this@FilePickerFragment
-            (activity as? PickerActivity)?.let {
-                val items = arrayListOf<Object>()
-                addItems(items, it.root())
-                list.adapter = FilesAdapter(items, this@FilePickerFragment)
-                list.layoutManager = LinearLayoutManager(activity, RecyclerView.VERTICAL, false)
-            }
+            addRoot(activity as? PickerActivity)
+            list.layoutManager = LinearLayoutManager(activity, RecyclerView.VERTICAL, false)
         }
         binding.executePendingBindings()
         return binding.root
@@ -131,6 +134,16 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
         }
         (list.adapter as? FilesAdapter)?.items?.addAll(children)
         list.adapter?.notifyDataSetChanged()
+    }
+
+    private fun addRoot(parent: PickerActivity?) {
+        parent?.let {
+            runAsync {
+                val items = arrayListOf<Object>()
+                addItems(items, it.root())
+                activity?.runOnUiThread { list.adapter = FilesAdapter(items, this@FilePickerFragment) }
+            }
+        }
     }
 
     private fun addBack(children: ArrayList<Object>) {
