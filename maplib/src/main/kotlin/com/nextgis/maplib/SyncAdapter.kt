@@ -26,6 +26,9 @@ import android.content.*
 import android.os.Bundle
 import android.content.Intent
 import android.preference.PreferenceManager
+import android.accounts.AccountManager
+
+
 
 
 internal class SyncAdapter @JvmOverloads constructor(context: Context, autoInitialize: Boolean,
@@ -51,7 +54,10 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
                                syncResult: SyncResult?) {
         printMessage("onPerformSync")
 
-        API.init(context)
+        // Get key from account
+        val manager = AccountManager.get(context)
+        val cryptKey = manager.getUserData(account, Constants.Settings.cryptKey)
+        API.init(context, cryptKey)
         context.sendBroadcast(Intent(SyncEvent.START.code))
 
         var errorMessage = ""

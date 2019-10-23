@@ -276,7 +276,7 @@ class TrackerService : Service() {
         mDivTrackByDay = sharedPref.getBoolean("divTracksByDay", true)
 
         // Start syncing with NGW
-        API.init(this@TrackerService)
+        API.init(this@TrackerService, API.generatePrivateKey()) // Any key suits here.
         val store = API.getStore(API.getLastStoreName())
         mTracksTable = store?.trackTable()
     }

@@ -33,7 +33,7 @@ class MapTest {
     @Test
     fun layerVisibility() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext)
+        API.init(appContext, API.generatePrivateKey())
         val map = API.getMap("main")
 
         assertTrue(map != null)

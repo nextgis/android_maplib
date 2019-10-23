@@ -140,12 +140,12 @@ open class Object(val name: String, val type: Int, val path: String, internal va
     fun children(filter: Array<Type> = emptyArray()) : Array<Object> {
         val out: MutableList<Object> = mutableListOf()
         val queryResult: Array<CatalogObjectInfo>
-        if (filter.isEmpty()) {
-            queryResult = API.catalogObjectQueryInt(handle, 0)
+        queryResult = if (filter.isEmpty()) {
+            API.catalogObjectQueryInt(handle, 0)
         } else {
             val filterArray = arrayListOf<Int>()
             for (value in filter) filterArray.add(value.code)
-            queryResult = API.catalogObjectQueryMultiFilterInt(handle, filterArray.toTypedArray())
+            API.catalogObjectQueryMultiFilterInt(handle, filterArray.toTypedArray())
         }
         for(catalogItem in queryResult) {
             printMessage("Name: ${catalogItem.name}, type: ${catalogItem.type}, handle: ${catalogItem.handle}")
@@ -193,6 +193,16 @@ open class Object(val name: String, val type: Int, val path: String, internal va
             return Object(newHandle)
         }
         return null
+    }
+
+    /**
+     * Check if object type can be created at this parent object
+     *
+     * @param type Object type to check.
+     * @return true if object of type can be created at this parent object or false.
+     */
+    fun canCreate(type: Type) : Boolean {
+        return API.catalogObjectCanCreateInt(handle, type.code)
     }
 
     /**

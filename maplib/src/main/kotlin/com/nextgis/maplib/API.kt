@@ -146,9 +146,10 @@ object API {
      * Initialize library. Should be executed as soon as possible.
      *
      * @param context Context of executed object.
+     * @param cryptKey Key to crypt/decrypt values. Generate it first time using API.generatePrivateKey() and store securely outside the library.
      * @param sentryDSN Sentry URL. Empty string disable sentry (default behaviour)
      */
-    fun init(context: Context, sentryDSN: String = "") {
+    fun init(context: Context, cryptKey: String, sentryDSN: String = "") {
         // Prevent multiple launches
         if (isInit) {
             return
@@ -181,7 +182,8 @@ object API {
                 "PROJ_DATA" to File(context.filesDir, "$dataDir/proj").absolutePath,
                 "NUM_THREADS" to "ALL_CPUS", // NOTE: "4"
                 "DEBUG_MODE" to if (Constants.debugMode) "ON" else "OFF",
-                "APP_NAME" to context.packageName
+                "APP_NAME" to context.packageName,
+                "CRYPT_KEY" to cryptKey
         )
 
         if (!init(toArrayOfCStrings(options))) {
@@ -755,6 +757,7 @@ object API {
     internal fun catalogObjectQueryInt(handle: Long, filter: Int) : Array<CatalogObjectInfo> = catalogObjectQuery(handle, filter)
     internal fun catalogObjectQueryMultiFilterInt(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo> = catalogObjectQueryMultiFilter(handle, filters)
     internal fun catalogObjectCreateInt(handle: Long, name: String, options: Array<String>): Long = catalogObjectCreate(handle, name, options)
+    internal fun catalogObjectCanCreateInt(handle: Long, type: Int): Boolean = catalogObjectCanCreate(handle, type)
     internal fun catalogObjectDeleteInt(handle: Long): Boolean = catalogObjectDelete(handle)
     internal fun catalogObjectRenameInt(handle: Long, newName: String): Boolean = catalogObjectRename(handle, newName)
     internal fun catalogObjectOptionsInt(handle: Long, optionType: Int): String = catalogObjectOptions(handle, optionType)
@@ -1116,6 +1119,7 @@ object API {
     private external fun catalogObjectQuery(handle: Long, filter: Int) : Array<CatalogObjectInfo>
     private external fun catalogObjectQueryMultiFilter(handle: Long, filters: Array<Int>) : Array<CatalogObjectInfo>
     private external fun catalogObjectCreate(handle: Long, name: String, options: Array<String>): Long
+    private external fun catalogObjectCanCreate(handle: Long, type: Int): Boolean
     private external fun catalogObjectDelete(handle: Long): Boolean
     private external fun catalogObjectCopy(srcHandle: Long, dstHandle: Long, options: Array<String>, callbackId: Int) : Boolean
     private external fun catalogObjectRename(handle: Long, newName: String): Boolean

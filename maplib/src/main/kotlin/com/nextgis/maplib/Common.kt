@@ -236,7 +236,7 @@ internal fun isMapIdValid(mapId: Int) : Boolean {
 
 object Constants {
     const val tag = "com.nextgis.maplib"
-    const val debugMode = true
+    const val debugMode = false // true //
     const val refreshTime = 330L
     const val bigValue = 10000000.0
     const val bufferSize = 1024
@@ -270,6 +270,7 @@ object Constants {
         const val sendTracksPointsMaxKey = "sendTracksPointsMaxKey"
         const val lastSyncTimestampKey = "lastSyncTimestampKey"
         const val exceptionKey = "exception"
+        const val cryptKey = "CRYPT_KEY"
     }
 
     const val tmpDirCatalogPath = "ngc://Local connections/Home/tmp"
