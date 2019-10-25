@@ -31,10 +31,21 @@ import com.nextgis.maplib.Instance
 import com.nextgis.maplib.databinding.ItemWebInstanceBinding
 
 
+/**
+ * Interface defining callback for operations with instances.
+ */
 interface OnInstanceClickListener {
+    /**
+     * Fired when user selects an Instance.
+     *
+     * @param instance Instance selected by user.
+     */
     fun onInstanceClick(instance: Instance)
 }
 
+/**
+ * Adapter for Instance objects.
+ */
 class InstanceAdapter(val items: ArrayList<Instance>, val listener: OnInstanceClickListener) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -60,6 +71,12 @@ class InstanceAdapter(val items: ArrayList<Instance>, val listener: OnInstanceCl
     }
 }
 
+/**
+ * Replaces adapter's old items with new instances, respecting 'more' menu to show.
+ *
+ * @param adapter RecyclerView adapter with instances.
+ * @param more To show 'more' menu or not.
+ */
 fun replaceInstances(adapter: RecyclerView.Adapter<RecyclerView.ViewHolder>?, more: Boolean = true) {
     (adapter as? InstanceAdapter)?.items?.let {
         it.clear()
@@ -81,6 +98,12 @@ private fun addInstances(list: ArrayList<Instance>, more: Boolean) {
     }
 }
 
+/**
+ * Returns new InstanceAdapter with all instances, respecting 'more' menu to show.
+ *
+ * @param listener Listener for operations with instances.
+ * @param more To show 'more' menu or not.
+ */
 fun getInstances(listener: OnInstanceClickListener, more: Boolean = true): InstanceAdapter {
     val list = arrayListOf<Instance>()
     addInstances(list, more)

@@ -21,4 +21,14 @@
 
 package com.nextgis.maplib
 
+/**
+ * Class for NextGIS WebGIS Instance. .
+ *
+ * @param url nextgis.com or on-premise URL
+ * @param title title to show in UI
+ * @param login login for this Instance
+ * @param password password for this Instance
+ * @param description description to show in UI **not used**
+ * @param more show 'more' menu or not
+ */
 class Instance(var url: String, val title: String, var login: String, var password: String, val description: String, val more: Boolean = true)

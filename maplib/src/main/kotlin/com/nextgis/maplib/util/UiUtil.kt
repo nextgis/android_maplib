@@ -30,20 +30,41 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 
+/**
+ * Runs a block in new Thread
+ */
 fun runAsync(action: () -> Unit) = Thread(Runnable(action)).start()
 
+/**
+ * Returns a color from resources by it's ID
+ *
+ * @return Int color
+ */
 fun Context.getColorCompat(color: Int) = ContextCompat.getColor(this, color)
 
+/**
+ * Tints a FAB's background
+ *
+ * @param resId color from resources
+ */
 fun FloatingActionButton.tint(@ColorRes resId: Int) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
         this.backgroundTintList = ColorStateList.valueOf(this.context.getColorCompat(resId))
 }
 
+/**
+ * Tints a view's background
+ *
+ * @param resId color from resources
+ */
 fun View.tint(@ColorRes resId: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         this.backgroundTintList = ColorStateList.valueOf(this.context.getColorCompat(resId))
 }
 
+/**
+ * @return status bar height
+ */
 inline val Context.statusBarHeight: Int
     get() {
         var result = 0

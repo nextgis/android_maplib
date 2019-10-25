@@ -24,7 +24,21 @@ package com.nextgis.maplib.activity
 import com.nextgis.maplib.Object
 
 
+/**
+ * Interface defining an Activity which supports file picker with [FilePickerFragment].
+ */
 interface PickerActivity {
+    /**
+     * Returns a list of Objects which are shown as root directory
+     *
+     * @return list of Objects shown as root.
+     */
     fun root(): List<Object>
+
+    /**
+     * Fired when user selects an Object from supported file types.
+     *
+     * @param file Object selected by user.
+     */
     fun onLayerSelected(file: Object?)
 }

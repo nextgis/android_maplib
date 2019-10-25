@@ -39,6 +39,9 @@ import kotlinx.android.synthetic.main.fragment_file_picker.*
 import java.util.*
 
 
+/**
+ * Fragment with file picker implementation for Object.
+ */
 open class FilePickerFragment : Fragment(), OnFileClickListener {
     private lateinit var binding: FragmentFilePickerBinding
     private var root = ""
@@ -66,6 +69,9 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
         }
     }
 
+    /**
+     * Refresh contents of current directory.
+     */
     fun refresh() {
         if (stack.isNotEmpty()) {
             val file = stack.pop()

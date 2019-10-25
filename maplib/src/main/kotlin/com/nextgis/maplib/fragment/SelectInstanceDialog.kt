@@ -40,6 +40,9 @@ import com.nextgis.maplib.adapter.replaceInstances
 import com.nextgis.maplib.databinding.DialogSelectInstanceBinding
 
 
+/**
+ * Fragment with all saved [Instances][Instance] and link to create a new one.
+ */
 class SelectInstanceDialog : DialogFragment(), OnInstanceClickListener {
     override fun onInstanceClick(instance: Instance) {
         listener?.onInstanceClick(instance)
@@ -59,11 +62,20 @@ class SelectInstanceDialog : DialogFragment(), OnInstanceClickListener {
         return dialog
     }
 
+    /**
+     * Show this fragment and attach listener.
+     *
+     * @param activity parent activity.
+     * @param listener listener for instances callback.
+     */
     fun show(activity: FragmentActivity, listener: OnInstanceClickListener) {
         this.listener = listener
         show(activity.supportFragmentManager, TAG)
     }
 
+    /**
+     * Start activity to add a new instance connection.
+     */
     fun addAccount() {
         context?.let {
             val intent = Intent(it, AddInstanceActivity::class.java)

@@ -33,6 +33,13 @@ private fun getCryptore(context: Context, alias: String): Cryptore {
     return builder.build()
 }
 
+/**
+ * Encrypt String with key for given alias from Android KeyStore.
+ *
+ * @param context required Context to init KeyStore.
+ * @param plainStr String to encrypt.
+ * @param alias optional alias for key to use from KeyStore.
+ */
 @Throws(Exception::class)
 fun encrypt(context: Context, plainStr: String, alias: String = "nextgis"): String {
     val plainByte = plainStr.toByteArray()
@@ -40,6 +47,13 @@ fun encrypt(context: Context, plainStr: String, alias: String = "nextgis"): Stri
     return android.util.Base64.encodeToString(result.bytes, android.util.Base64.DEFAULT)
 }
 
+/**
+ * Decrypt encrypted String with key for given alias from Android KeyStore.
+ *
+ * @param context required Context to init KeyStore.
+ * @param encryptedStr encrypted String to decrypt.
+ * @param alias optional alias for key to use from KeyStore.
+ */
 @Throws(Exception::class)
 fun decrypt(context: Context, encryptedStr: String, alias: String = "nextgis"): String {
     val encryptedByte = android.util.Base64.decode(encryptedStr, android.util.Base64.DEFAULT)

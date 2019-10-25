@@ -31,10 +31,21 @@ import com.nextgis.maplib.Object
 import com.nextgis.maplib.databinding.ItemFileBinding
 
 
+/**
+ * Interface defining callback for operations with files.
+ */
 interface OnFileClickListener {
+    /**
+     * Fired when user selects an Object.
+     *
+     * @param file Object selected by user.
+     */
     fun onFileClick(file: Object)
 }
 
+/**
+ * Adapter for Object files.
+ */
 class FilesAdapter(val items: ArrayList<Object>, val listener: OnFileClickListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)

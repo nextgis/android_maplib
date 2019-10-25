@@ -34,6 +34,9 @@ import com.nextgis.maplib.util.tint
 import kotlinx.android.synthetic.main.activity_add_instance.*
 
 
+/**
+ * Activity to create a new [Instance].
+ */
 class AddInstanceActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddInstanceBinding
     val instance = NonNullObservableField(Instance("", "", "", "", ""))
@@ -63,6 +66,9 @@ class AddInstanceActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Validate and save form data to [Instance].
+     */
     fun save() {
         if (instance.get().url.isBlank() || instance.get().login.isBlank() || instance.get().password.isBlank()) {
             Toast.makeText(this, R.string.empty_field, Toast.LENGTH_SHORT).show()
