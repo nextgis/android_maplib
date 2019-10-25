@@ -37,7 +37,7 @@ class StoreTest {
     fun store() {
 
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         // Get or create store
         val store = API.getStore()
@@ -131,7 +131,7 @@ class StoreTest {
     @Test
     fun createFC() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         // Get or create store
         val store = API.getStore()
@@ -191,7 +191,7 @@ class StoreTest {
     @Test
     fun properties() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val tmpDir = API.getTmpDirectory()
         assertTrue(tmpDir != null)
@@ -227,7 +227,7 @@ class StoreTest {
     @Test
     fun tracks() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
         val dataStore = API.getStore("store")
 
         assertTrue(dataStore != null)
@@ -281,7 +281,7 @@ class StoreTest {
     @Test
     fun ngw() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
 

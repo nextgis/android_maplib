@@ -2,6 +2,7 @@
  * Project:  NextGIS Tracker
  * Purpose:  Software tracker for nextgis.com cloud
  * Author:   Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * ****************************************************************************
  * Copyright (c) 2018-2019 NextGIS <info@nextgis.com>
  *
@@ -26,9 +27,6 @@ import android.content.*
 import android.os.Bundle
 import android.content.Intent
 import android.preference.PreferenceManager
-import android.accounts.AccountManager
-
-
 
 
 internal class SyncAdapter @JvmOverloads constructor(context: Context, autoInitialize: Boolean,
@@ -54,10 +52,7 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
                                syncResult: SyncResult?) {
         printMessage("onPerformSync")
 
-        // Get key from account
-        val manager = AccountManager.get(context)
-        val cryptKey = manager.getUserData(account, Constants.Settings.cryptKey)
-        API.init(context, cryptKey)
+        API.init(context)
         context.sendBroadcast(Intent(SyncEvent.START.code))
 
         var errorMessage = ""

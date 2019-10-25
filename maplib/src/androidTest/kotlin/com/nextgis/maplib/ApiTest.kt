@@ -34,7 +34,7 @@ class ApiTest {
     @Test
     fun initApi() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
         assertNotEquals(API.version(), 0)
         assertNotEquals(API.versionString(), "")
         assertNotEquals(API.versionString("gdal"), "")
@@ -68,7 +68,7 @@ class ApiTest {
     fun json() {
         val treesUrl = "https://raw.githubusercontent.com/nextgis/testdata/master/vector/geojson/trees.geojson"
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val doc = JsonDocument()
         val options = mapOf(
@@ -88,7 +88,7 @@ class ApiTest {
     fun url() {
         val treesUrl = "https://raw.githubusercontent.com/nextgis/testdata/master/vector/geojson/trees.geojson"
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val options = mapOf(
                 "CONNECTTIMEOUT"    to "20",
@@ -124,7 +124,7 @@ class ApiTest {
     @Test
     fun coordinateTransform() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val coordTransform = CoordinateTransformation.new(4326, 3857)
         var point = Point(37.616667, 55.75)
@@ -145,7 +145,7 @@ class ApiTest {
     @Test
     fun backup() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val dstObj = API.getTmpDirectory()
         assertTrue(API.backup("test.zip", dstObj!!))
@@ -160,7 +160,7 @@ class ApiTest {
     @Test
     fun auth() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        API.init(appContext, API.generatePrivateKey())
+        API.init(appContext)
 
         val account = Account("", "", "")
         val accountOpt = account.options()

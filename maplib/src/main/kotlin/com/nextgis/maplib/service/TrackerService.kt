@@ -2,6 +2,7 @@
  * Project:  NextGIS Tracker
  * Purpose:  Software tracker for nextgis.com cloud
  * Author:   Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+ * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * ****************************************************************************
  * Copyright (c) 2018-2019 NextGIS <info@nextgis.com>
  *
@@ -276,7 +277,7 @@ class TrackerService : Service() {
         mDivTrackByDay = sharedPref.getBoolean("divTracksByDay", true)
 
         // Start syncing with NGW
-        API.init(this@TrackerService, API.generatePrivateKey()) // Any key suits here.
+        API.init(this@TrackerService)
         val store = API.getStore(API.getLastStoreName())
         mTracksTable = store?.trackTable()
     }

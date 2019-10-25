@@ -1,6 +1,7 @@
 /*
  * Project: NextGIS Mobile SDK
  * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
+ * Author:  Stanislav Petriakov, becomeglory@gmail.com
  *
  * Created by Dmitry Baryshnikov on 14.08.18 20:28.
  * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
@@ -24,13 +25,15 @@ package com.nextgis.maplib
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
-import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.nextgis.maplib.util.decrypt
+import com.nextgis.maplib.util.encrypt
 import java.io.File
 import java.io.IOException
 import io.sentry.Sentry
 import io.sentry.android.AndroidSentryClientFactory
+import java.lang.Exception
 
 /**
  * Operation status codes enumeration.
@@ -146,10 +149,9 @@ object API {
      * Initialize library. Should be executed as soon as possible.
      *
      * @param context Context of executed object.
-     * @param cryptKey Key to crypt/decrypt values. Generate it first time using API.generatePrivateKey() and store securely outside the library.
      * @param sentryDSN Sentry URL. Empty string disable sentry (default behaviour)
      */
-    fun init(context: Context, cryptKey: String, sentryDSN: String = "") {
+    fun init(context: Context, sentryDSN: String = "") {
         // Prevent multiple launches
         if (isInit) {
             return
@@ -172,6 +174,20 @@ object API {
         copyAssets(context, "gdal")
         copyAssets(context, "certs")
         copyAssets(context, "proj")
+
+        var cryptKey = sharedPref.getString(Constants.Settings.cryptKey, null)
+        try {
+            if (cryptKey != null) {
+                cryptKey = decrypt(context, cryptKey)
+            } else {
+                cryptKey = generatePrivateKey()
+                sharedPref.edit().putString(Constants.Settings.cryptKey, encrypt(context, cryptKey)).apply()
+            }
+        } catch (exception: Exception) {
+            if (hasSentry)
+                Sentry.capture("Cannot encrypt/decrypt cryptKey: " + exception.message)
+            cryptKey = generatePrivateKey()
+        }
 
         val options = mapOf(
                 "HOME" to homeDir,
