@@ -24,6 +24,8 @@ package com.nextgis.maplib.activity
 import android.app.Activity
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
@@ -47,10 +49,17 @@ class AddInstanceActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         binding.apply {
             activity = this@AddInstanceActivity
             fab.tint(R.color.white)
+            ngwPassword?.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE)
+                    save()
+
+                false
+            }
         }
 
         binding.executePendingBindings()
