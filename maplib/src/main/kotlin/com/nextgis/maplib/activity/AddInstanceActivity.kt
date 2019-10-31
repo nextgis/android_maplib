@@ -85,14 +85,13 @@ class AddInstanceActivity : AppCompatActivity() {
         }
 
         API.getCatalog()?.let {
-            val connection = NGWConnectionDescription(instance.get().url, instance.get().login, instance.get().password)
-            val status = connection.check()
-            if (status) {
+            val connection = NGWConnectionDescription(instance.get().url, instance.get().login, instance.get().password, false)
+            if (connection.check()) {
                 it.createConnection(instance.get().url, connection)
                 setResult(Activity.RESULT_OK)
                 finish()
             } else {
-                Toast.makeText(this, R.string.connection_error, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.connection_error) + ": " + API.lastError(), Toast.LENGTH_LONG).show()
             }
         }
     }
