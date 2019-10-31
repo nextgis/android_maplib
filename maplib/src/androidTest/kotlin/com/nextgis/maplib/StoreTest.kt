@@ -23,8 +23,7 @@ package com.nextgis.maplib
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -316,7 +315,9 @@ class StoreTest {
         assertTrue(ngwConnObj.login == "guest")
 
         // Check new properties
-        val adminConnection = NGWConnectionDescription("https://sandbox.nextgis.com", "administrator", "demodemo", false)
+        var adminConnection = NGWConnectionDescription("https://demo.nextgis.com", "admin", "wrong password", false)
+        assertFalse(adminConnection.check())
+        adminConnection = NGWConnectionDescription("https://sandbox.nextgis.com", "administrator", "demodemo", false)
         assertTrue(adminConnection.check())
 
         // Change properties
