@@ -2383,7 +2383,7 @@ public class VectorLayer
                     GeoGeometry result = GeoGeometryFactory.fromBlob(cursor.getBlob(0));
                     cursor.close();
                     return result;
-                } catch (IOException | ClassNotFoundException e) {
+                } catch (IOException e) {
                     // e.printStackTrace();
                 }
             }
@@ -2538,7 +2538,7 @@ public class VectorLayer
                     GeoGeometry geometry = null;
                     try {
                         geometry = GeoGeometryFactory.fromBlob(cursor.getBlob(1));
-                    } catch (IOException | ClassNotFoundException e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
 

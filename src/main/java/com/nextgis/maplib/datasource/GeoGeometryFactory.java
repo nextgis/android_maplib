@@ -247,7 +247,7 @@ public class GeoGeometryFactory
     }
 
     public static GeoGeometry fromBlob(byte[] raw)
-            throws IOException, ClassNotFoundException
+            throws IOException
     {
         if (null == raw) {
             return null;

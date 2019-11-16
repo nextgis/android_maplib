@@ -842,7 +842,7 @@ public class NGWVectorLayer
             return false;
         } catch (IOException e) {
             log(e, "changeAttachOnServer IOException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return false;
         } catch (IllegalStateException e) {
             log(e, "changeAttachOnServer IllegalStateException");
@@ -881,7 +881,7 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             log(e, "deleteAttachOnServer IOException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return false;
         } catch (IllegalStateException e) {
             log(e, "deleteAttachOnServer IllegalStateException");
@@ -949,7 +949,7 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             log(e, "sendAttachOnServer IOException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return false;
         }  catch (JSONException e) {
             log(e, "sendAttachOnServer JSONException");
@@ -1544,7 +1544,7 @@ public class NGWVectorLayer
             return null;
         } catch (OutOfMemoryError e) {
             e.printStackTrace();
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 10000;
             return null;
         } catch (IllegalStateException | NumberFormatException e) {
             log(e, "getFeatures(): IllegalStateException | NumberFormatException");
@@ -1621,9 +1621,9 @@ public class NGWVectorLayer
             log(e, "addFeatureOnServer JSONException");
             syncResult.stats.numParseExceptions++;
             return false;
-        } catch (IOException | ClassNotFoundException e) {
-            log(e, "addFeatureOnServer IOException | ClassNotFoundException");
-            syncResult.stats.numIoExceptions++;
+        } catch (IOException e) {
+            log(e, "addFeatureOnServer IOException");
+            syncResult.stats.numIoExceptions += 100000000;
             return false;
         } catch (SQLiteConstraintException e) {
             log(e, "addFeatureOnServer SQLiteConstraintException");
@@ -1667,7 +1667,7 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             log(e, "deleteFeatureOnServer IOException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return false;
         } catch (IllegalStateException e) {
             log(e, "deleteFeatureOnServer IllegalStateException");
@@ -1733,9 +1733,9 @@ public class NGWVectorLayer
             log(e, "changeFeatureOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             log(e, "changeFeatureOnServer IOException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return false;
         } catch (JSONException e) {
             log(e, "changeFeatureOnServer JSONException");
@@ -1757,7 +1757,7 @@ public class NGWVectorLayer
 
 
     protected String cursorToJson(Cursor cursor)
-            throws JSONException, IOException, ClassNotFoundException
+            throws JSONException, IOException
     {
         JSONObject rootObject = new JSONObject();
         if (0 != (mSyncType & Constants.SYNC_ATTRIBUTES)) {

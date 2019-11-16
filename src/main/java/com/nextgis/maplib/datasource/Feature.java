@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016, 2018 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2016, 2018-2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -387,7 +387,7 @@ public class Feature
         try {
             mGeometry =
                     GeoGeometryFactory.fromBlob(cursor.getBlob(cursor.getColumnIndex(FIELD_GEOM)));
-        } catch (ClassNotFoundException | IOException e) { //let it be empty geometry
+        } catch (IOException e) { //let it be empty geometry
             e.printStackTrace();
         }
 
