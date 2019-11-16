@@ -842,7 +842,7 @@ public class NGWVectorLayer
             return false;
         } catch (IOException e) {
             log(e, "changeAttachOnServer IOException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
             log(e, "changeAttachOnServer IllegalStateException");
@@ -874,14 +874,14 @@ public class NGWVectorLayer
             HttpResponse response = deleteAttachOnServer(featureId, attachId);
 
             if (!response.isOk()) {
-                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numIoExceptions += 10000;
                 return false;
             }
 
             return true;
         } catch (IOException e) {
             log(e, "deleteAttachOnServer IOException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
             log(e, "deleteAttachOnServer IllegalStateException");
@@ -949,7 +949,7 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             log(e, "sendAttachOnServer IOException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }  catch (JSONException e) {
             log(e, "sendAttachOnServer JSONException");
@@ -1034,7 +1034,7 @@ public class NGWVectorLayer
             default:
             case HttpURLConnection.HTTP_NOT_FOUND:
             case HttpURLConnection.HTTP_INTERNAL_ERROR:
-                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numIoExceptions += 10000;
                 break;
         }
     }
@@ -1532,11 +1532,11 @@ public class NGWVectorLayer
             urlConnection.disconnect();
         } catch (MalformedURLException e) {
             log(e, "getFeatures(): MalformedURLException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return null;
         } catch (FileNotFoundException e) {
             log(e, "getFeatures(): FileNotFoundException");
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return null;
         } catch (IOException e) {
             log(e, "getFeatures(): IOException");
@@ -1544,7 +1544,7 @@ public class NGWVectorLayer
             return null;
         } catch (OutOfMemoryError e) {
             e.printStackTrace();
-            syncResult.stats.numIoExceptions += 10000;
+            syncResult.stats.numIoExceptions++;
             return null;
         } catch (IllegalStateException | NumberFormatException e) {
             log(e, "getFeatures(): IllegalStateException | NumberFormatException");
@@ -1623,7 +1623,7 @@ public class NGWVectorLayer
             return false;
         } catch (IOException e) {
             log(e, "addFeatureOnServer IOException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return false;
         } catch (SQLiteConstraintException e) {
             log(e, "addFeatureOnServer SQLiteConstraintException");
@@ -1660,14 +1660,14 @@ public class NGWVectorLayer
             HttpResponse response = deleteFeatureOnServer(featureId);
 
             if (!response.isOk()) {
-                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numIoExceptions += 10000;
                 return false;
             }
 
             return true;
         } catch (IOException e) {
             log(e, "deleteFeatureOnServer IOException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return false;
         } catch (IllegalStateException e) {
             log(e, "deleteFeatureOnServer IllegalStateException");
@@ -1735,7 +1735,7 @@ public class NGWVectorLayer
             return false;
         } catch (IOException e) {
             log(e, "changeFeatureOnServer IOException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return false;
         } catch (JSONException e) {
             log(e, "changeFeatureOnServer JSONException");

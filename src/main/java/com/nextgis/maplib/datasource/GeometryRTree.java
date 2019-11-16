@@ -121,9 +121,11 @@ public class GeometryRTree implements IGeometryCache {
         if (n.mLeaf)
         {
             for (Node e : n.mChildren){
-                Entry entry = (Entry)e;
-                if (entry.getFeatureId() == featureId){
-                    return true;
+                if (!e.isNode()) {
+                    Entry entry = (Entry) e;
+                    if (entry.getFeatureId() == featureId) {
+                        return true;
+                    }
                 }
             }
         }
@@ -338,7 +340,7 @@ public class GeometryRTree implements IGeometryCache {
     private Node findLeaf(Node n, long featureId){
         if (n.mLeaf){
             for (Node c : n.mChildren){
-                if (((Entry) c).mFeatureId == featureId)
+                if (!c.isNode() && ((Entry) c).mFeatureId == featureId)
                 {
                     return c;
                 }
@@ -395,9 +397,10 @@ public class GeometryRTree implements IGeometryCache {
         }
 
         for (Node ne : q){
-            @SuppressWarnings("unchecked")
-            Entry e = (Entry) ne;
-            insert(e.mFeatureId, e.mCoords);
+            if (!ne.isNode()) {
+                Entry e = (Entry) ne;
+                insert(e.mFeatureId, e.mCoords);
+            }
         }
         size -= q.size();
     }
