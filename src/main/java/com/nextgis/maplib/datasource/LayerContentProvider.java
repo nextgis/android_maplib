@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2015. NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2016, 2019 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -26,6 +26,7 @@ package com.nextgis.maplib.datasource;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import com.nextgis.maplib.api.IGISApplication;
@@ -106,8 +107,12 @@ public class LayerContentProvider
         }
 
         if (layer instanceof TrackLayer) {
-            return ((TrackLayer) layer).query(
-                    uri, projection, selection, selectionArgs, sortOrder, limit);
+            try {
+                return ((TrackLayer) layer).query(
+                        uri, projection, selection, selectionArgs, sortOrder, limit);
+            } catch (SQLException e) {
+                return null;
+            }
         }
 
         return null;

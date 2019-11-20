@@ -812,7 +812,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 1000;
             return false;
         }
 
@@ -866,7 +866,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 1000;
             return false;
         }
 
@@ -874,7 +874,7 @@ public class NGWVectorLayer
             HttpResponse response = deleteAttachOnServer(featureId, attachId);
 
             if (!response.isOk()) {
-                syncResult.stats.numIoExceptions += 10000;
+                syncResult.stats.numIoExceptions += 1000000;
                 return false;
             }
 
@@ -905,7 +905,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 1000;
             return false;
         }
 
@@ -1034,7 +1034,7 @@ public class NGWVectorLayer
             default:
             case HttpURLConnection.HTTP_NOT_FOUND:
             case HttpURLConnection.HTTP_INTERNAL_ERROR:
-                syncResult.stats.numIoExceptions += 10000;
+                syncResult.stats.numIoExceptions += 1000000;
                 break;
         }
     }
@@ -1532,11 +1532,11 @@ public class NGWVectorLayer
             urlConnection.disconnect();
         } catch (MalformedURLException e) {
             log(e, "getFeatures(): MalformedURLException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return null;
         } catch (FileNotFoundException e) {
             log(e, "getFeatures(): FileNotFoundException");
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
             return null;
         } catch (IOException e) {
             log(e, "getFeatures(): IOException");
@@ -1544,7 +1544,7 @@ public class NGWVectorLayer
             return null;
         } catch (OutOfMemoryError e) {
             e.printStackTrace();
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 100000000;
             return null;
         } catch (IllegalStateException | NumberFormatException e) {
             log(e, "getFeatures(): IllegalStateException | NumberFormatException");
@@ -1574,7 +1574,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 1000;
             return false;
         }
         Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
@@ -1652,7 +1652,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 1000;
             return false;
         }
 
@@ -1660,7 +1660,7 @@ public class NGWVectorLayer
             HttpResponse response = deleteFeatureOnServer(featureId);
 
             if (!response.isOk()) {
-                syncResult.stats.numIoExceptions += 10000;
+                syncResult.stats.numIoExceptions += 1000000;
                 return false;
             }
 
@@ -1691,7 +1691,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numIoExceptions += 1000;
             return false;
         }
 

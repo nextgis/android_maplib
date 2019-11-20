@@ -28,6 +28,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.net.Uri;
@@ -338,7 +339,7 @@ public class TrackLayer
             String selection,
             String[] selectionArgs,
             String sortOrder,
-            String limit)
+            String limit) throws SQLException, IllegalArgumentException
     {
         mSQLiteDatabase = mMap.getDatabase(true);
         Cursor cursor;

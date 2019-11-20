@@ -59,10 +59,9 @@ public class NetworkUtil
             + "|[1-9][0-9]|[0-9]))(:[0-9]{1,5})?";
     public static final String URL_PATTERN = "^(?i)((ftp|https?)://)?(([\\da-z.-]+)\\.([a-z.]{2,6})|" + IP_ADDRESS + ")(:[0-9]{1,5})?(/\\S*)?$";
 
-    protected final ConnectivityManager mConnectionManager;
-    protected final TelephonyManager    mTelephonyManager;
+    public final ConnectivityManager mConnectionManager;
+    public final TelephonyManager    mTelephonyManager;
     protected       long                mLastCheckTime;
-    protected       boolean             mLastState;
     protected       Context             mContext;
 
     public final static int TIMEOUT_CONNECTION = 10000;
@@ -91,34 +90,16 @@ public class NetworkUtil
 
     public synchronized boolean isNetworkAvailable()
     {
-        //if(System.currentTimeMillis() - mLastCheckTime < ONE_SECOND * 5)     //check every 5 sec.
-        //    return mLastState;
-
-        //mLastCheckTime = System.currentTimeMillis();
-        mLastState = false;
-
         if (mConnectionManager == null) {
             return false;
         }
 
-
         NetworkInfo info = mConnectionManager.getActiveNetworkInfo();
-        if (info == null) //|| !cm.getBackgroundDataSetting()
-        {
+        if (info == null) {
             return false;
         }
 
-        int netType = info.getType();
-        if (netType == ConnectivityManager.TYPE_WIFI) {
-            mLastState = info.isConnected();
-        } else if (netType ==
-                   ConnectivityManager.TYPE_MOBILE) { // netSubtype == TelephonyManager.NETWORK_TYPE_UMTS
-            if (mTelephonyManager != null && !mTelephonyManager.isNetworkRoaming()) {
-                mLastState = info.isConnected();
-            }
-        }
-
-        return mLastState;
+        return info.isConnected();
     }
 
     public static HttpURLConnection getHttpConnection(
