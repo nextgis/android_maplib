@@ -50,7 +50,7 @@ public class LayerUtil {
     }
 
     public static String normalizeFieldName(String fieldName) {
-        char [] forbiddenChars = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')', '+', '-', '?', '=', '/', '\\', '"', '\'', '[', ']', ','};
+        char [] forbiddenChars = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')', '+', '-', '?', '=', '/', '\\', '"', '\'', '[', ']', ',', ' '};
         String result = fieldName;
 
         if (Character.isDigit(result.charAt(0)))

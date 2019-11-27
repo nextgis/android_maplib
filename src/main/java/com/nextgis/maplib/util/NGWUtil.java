@@ -471,7 +471,7 @@ public class NGWUtil
             } else {
                 boolean bAdded = false;
                 for (Field field : fields) {
-                    if (field.getName().equals(name)) {
+                    if (field.getName().equals(name) || field.getName().equals(LayerUtil.normalizeFieldName(name))) {
                         switch (field.getType()) {
                             case GeoConstants.FTReal:
                                 feature.setFieldValue(field.getName(), reader.nextDouble());
