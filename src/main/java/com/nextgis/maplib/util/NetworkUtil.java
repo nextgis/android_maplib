@@ -174,14 +174,14 @@ public class NetworkUtil
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get stream: " + targetURL);
-            return;
+            throw new IOException("Connection is null");
         }
         int responseCode = conn.getResponseCode();
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute getStream: " + targetURL + " HTTP response: " +
                     responseCode + " username: " + username);
-            return;
+            throw new IOException("Response code is " + responseCode);
         }
 
         byte data[] = new byte[Constants.IO_BUFFER_SIZE];
