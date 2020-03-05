@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2020 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -201,13 +201,15 @@ public class NGWUtil
             String fullVer = verJSONObject.getString("nextgisweb");
             String[] verParts = fullVer.split("\\.");
 
-            if (2 == verParts.length) {
-                Integer major = Integer.parseInt(verParts[0]);
-                Integer minor = Integer.parseInt(verParts[1]);
-                return new Pair<>(major, minor);
-            } else {
-                Log.d(TAG, "BAD format of the NGW version, must be 'major.minor', obtained: " + fullVer);
+            if (verParts.length >= 2) {
+                try {
+                    Integer major = Integer.parseInt(verParts[0]);
+                    Integer minor = Integer.parseInt(verParts[1]);
+                    return new Pair<>(major, minor);
+                } catch (NumberFormatException ignored) { }
             }
+
+            Log.d(TAG, "BAD format of the NGW version, must start with 'major.minor', obtained: " + fullVer);
         }
 
         return null;
