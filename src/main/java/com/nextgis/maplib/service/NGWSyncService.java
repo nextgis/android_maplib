@@ -37,10 +37,10 @@ import com.nextgis.maplib.util.Constants;
 public class NGWSyncService
         extends Service
 {
-    private static SyncAdapter mSyncAdapter = null;
+    protected static SyncAdapter mSyncAdapter = null;
 
     // Object to use as a thread-safe lock
-    private static final Object mSyncAdapterLock = new Object();
+    protected static final Object mSyncAdapterLock = new Object();
 
     protected SyncReceiver mSyncReceiver;
     protected boolean      mIsSyncStarted;
