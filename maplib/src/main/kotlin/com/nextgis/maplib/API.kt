@@ -785,6 +785,7 @@ object API {
     internal fun catalogObjectGetPropertyInt(handle: Long, name: String, defaultValue: String, domain: String): String = catalogObjectGetProperty(handle, name, defaultValue, domain)
     internal fun catalogObjectSetPropertyInt(handle: Long, name: String, value: String, domain: String): Boolean = catalogObjectSetProperty(handle, name, value, domain)
     internal fun catalogObjectRefreshInt(handle: Long) = catalogObjectRefresh(handle)
+    internal fun catalogObjectSyncInt(handle: Long) = catalogObjectSync(handle)
     internal fun catalogCheckConnectionInt(objectType: Int, options: Array<String>) : Boolean = catalogCheckConnection(objectType, options)
 
     /*
@@ -846,9 +847,6 @@ object API {
     internal fun featureSetFieldStringInt(handle: Long, field: Int, value: String) = featureSetFieldString(handle, field, value)
     internal fun featureSetFieldDateTimeInt(handle: Long, field: Int, year: Int, month: Int,
                                  day: Int, hour: Int, minute: Int, second: Int) = featureSetFieldDateTime(handle, field, year, month, day, hour, minute, second)
-    internal fun storeFeatureClassGetFeatureByRemoteIdInt(handle: Long, rid: Long) : Long = storeFeatureClassGetFeatureByRemoteId(handle, rid)
-    internal fun storeFeatureGetRemoteIdInt(handle: Long) : Long = storeFeatureGetRemoteId(handle)
-    internal fun storeFeatureSetRemoteIdInt(handle: Long, rid: Long) = storeFeatureSetRemoteId(handle, rid)
     internal fun featureCreateGeometryInt(handle: Long) : Long = featureCreateGeometry(handle)
     internal fun featureCreateGeometryFromJsonInt(geometry: Long) : Long = featureCreateGeometryFromJson(geometry)
     internal fun featureAttachmentAddInt(feature: Long, name: String, description: String,
@@ -858,7 +856,6 @@ object API {
     internal fun featureAttachmentsGetInt(feature: Long) : Array<Attachment> = featureAttachmentsGet(feature)
     internal fun featureAttachmentUpdateInt(feature: Long, aid: Long, name: String,
                                   description: String, logEdits: Boolean) : Boolean = featureAttachmentUpdate(feature, aid, name, description, logEdits)
-    internal fun storeFeatureSetAttachmentRemoteIdInt(feature: Long, aid: Long, rid: Long) = storeFeatureSetAttachmentRemoteId(feature, aid, rid)
 
     internal fun mapCreateInt(name: String, description: String, EPSG: Int, minX: Double,
                                    minY: Double, maxX: Double, maxY: Double) : Int = mapCreate(name, description, EPSG, minX, minY, maxX, maxY)
@@ -1018,7 +1015,6 @@ object API {
     internal fun storeGetTracksTableInt(handle: Long) : Long = storeGetTracksTable(handle)
     internal fun trackGetPointsTableInt(handle: Long) : Long = trackGetPointsTable(handle)
     internal fun trackIsRegisteredInt() : Boolean = trackIsRegistered()
-    internal fun trackSyncInt(handle: Long, maxPointCount: Int) = trackSync(handle, maxPointCount)
     internal fun trackGetListInt(handle: Long) : Array<TrackInfoInt> = trackGetList(handle)
     internal fun trackAddPointInt(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float, speed: Float,
                                   course: Float, timeStamp: Long, satCount: Int, startTrack: Boolean,
@@ -1148,7 +1144,7 @@ object API {
     private external fun catalogObjectSetProperty(handle: Long, name: String, value: String, domain: String): Boolean
     private external fun catalogObjectRefresh(handle: Long)
     private external fun catalogCheckConnection(type: Int, options: Array<String>): Boolean
-
+    private external fun catalogObjectSync(handle: Long)
 
     /*
      * Geometry
@@ -1211,9 +1207,6 @@ object API {
     private external fun featureSetFieldString(handle: Long, field: Int, value: String)
     private external fun featureSetFieldDateTime(handle: Long, field: Int, year: Int, month: Int,
                                                   day: Int, hour: Int, minute: Int, second: Int)
-    private external fun storeFeatureClassGetFeatureByRemoteId(handle: Long, rid: Long) : Long
-    private external fun storeFeatureGetRemoteId(handle: Long) : Long
-    private external fun storeFeatureSetRemoteId(handle: Long, rid: Long)
     private external fun featureCreateGeometry(handle: Long) : Long
     private external fun featureCreateGeometryFromJson(geometry: Long) : Long
 
@@ -1224,7 +1217,6 @@ object API {
     private external fun featureAttachmentsGet(feature: Long) : Array<Attachment>
     private external fun featureAttachmentUpdate(feature: Long, aid: Long, name: String,
                                                   description: String, logEdits: Boolean) : Boolean
-    private external fun storeFeatureSetAttachmentRemoteId(feature: Long, aid: Long, rid: Long)
 
     /*
      * Raster
@@ -1368,7 +1360,6 @@ object API {
     private external fun storeGetTracksTable(handle: Long) : Long
     private external fun trackGetPointsTable(handle: Long) : Long
     private external fun trackIsRegistered() : Boolean
-    private external fun trackSync(handle: Long, maxPointCount: Int)
     private external fun trackGetList(handle: Long) : Array<TrackInfoInt>
     private external fun trackAddPoint(handle: Long, name: String, x: Double, y: Double, z: Double, acc: Float,
                                        speed: Float, course: Float, timeStamp: Long, satCount: Int, startTrack: Boolean,

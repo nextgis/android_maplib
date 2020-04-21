@@ -389,20 +389,6 @@ open class Table(copyFrom: Object): Object(copyFrom) {
     }
 
     /**
-     * Get feature/row by remote identifier.
-     *
-     * @param id remote identifier.
-     * @return Feature class instance or null.
-     */
-    fun getFeatureByRemote(id: Long) : Feature? {
-        val handle = API.storeFeatureClassGetFeatureByRemoteIdInt(handle, id)
-        if(handle != 0L) {
-            return Feature(handle, this)
-        }
-        return null
-    }
-
-    /**
      * Search field index and type by field name.
      *
      * @param name Field name.

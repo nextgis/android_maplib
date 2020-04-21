@@ -79,15 +79,6 @@ class Feature(val handle: Long, val table: Table) {
             }
         }
 
-    /**
-     * Feature/row remote identifier or -1.
-     */
-    var remoteId: Long
-        get() = API.storeFeatureGetRemoteIdInt(handle)
-        set(id) {
-            API.storeFeatureSetRemoteIdInt(handle, id)
-        }
-
     private fun finalize() {
         API.featureFreeInt(handle)
     }
@@ -297,18 +288,6 @@ class Attachment(val handle: Long = 0, val id: Long, val name: String, val descr
                  val path: String, val size: Long, private var remoteIdVal: Long) {
 
     constructor(name: String, description: String, path: String) : this(0, -1, name, description, path, -1, -1)
-
-    /**
-     * Remote identifier read/write property.
-     */
-    var remoteId: Long
-        get() = remoteIdVal
-        set(rid) {
-            if(handle != 0L) {
-                API.storeFeatureSetAttachmentRemoteIdInt(handle, id, rid)
-            }
-            remoteIdVal = rid
-        }
 
     /**
      * Is attachment file available on disk.

@@ -23,7 +23,6 @@ package com.nextgis.maplib
 
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
-import java.nio.channels.spi.AsynchronousChannelProvider
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -95,11 +94,9 @@ open class Track(private val handle: Long) {
 
     /**
      * Sync coordinates with NextGIS tracker service.
-     *
-     * @param maxPointCount Point maximum count send to NextGIS Web.
      */
-    fun sync(maxPointCount: Int = 100) {
-        API.trackSyncInt(handle, maxPointCount)
+    fun sync() {
+        API.catalogObjectSyncInt(handle)
     }
 
     /**

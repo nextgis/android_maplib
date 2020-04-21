@@ -64,10 +64,9 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
 
         // Sync tracks
         if(sendToNgw) {
-            val sendPointMax = settings.getInt(Constants.Settings.sendTracksPointsMaxKey, 100)
             val store = API.getStore(API.getLastStoreName())
             val tracksTable = store?.trackTable()
-            tracksTable?.sync(sendPointMax)
+            tracksTable?.sync()
 
             errorMessage = appendErrorMessage(errorMessage, API.lastError())
             if(!errorMessage.isEmpty()) {
