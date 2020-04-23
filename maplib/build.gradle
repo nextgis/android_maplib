@@ -124,21 +124,21 @@ task copyFiles() {
     gdalFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/gdal"
-            from "$projectDir/.externalNativeBuild/cmake/$buildConfig/x86_64/data/$name"
+            from "$projectDir/.cxx/cmake/$buildConfig/x86_64/data/$name"
         }
     }
 
     projFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/proj"
-            from "$projectDir/.externalNativeBuild/cmake/$buildConfig/x86_64/data/$name"
+            from "$projectDir/.cxx/cmake/$buildConfig/x86_64/data/$name"
         }
     }
 
     sslFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/certs"
-            from "$projectDir/.externalNativeBuild/cmake/$buildConfig/x86_64/data/$name"
+            from "$projectDir/.cxx/cmake/$buildConfig/x86_64/data/$name"
         }
     }
 }

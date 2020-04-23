@@ -53,15 +53,15 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         CONTAINER_NGW(63),              // CAT_CONTAINER_NGW
         CONTAINER_NGS(64),              // CAT_CONTAINER_NGS
         CONTAINER_MEM(71),              // CAT_CONTAINER_MEM
-        CONTAINER_NGWGROUP(74),         // CAT_CONTAINER_NGWGROUP
-        CONTAINER_NGWTRACKERGROUP(75),  // CAT_CONTAINER_NGWTRACKERGROUP
+        CONTAINER_NGWGROUP(3001),       // CAT_NGW_GROUP
+        CONTAINER_NGWTRACKERGROUP(3002),// CAT_NGW_TRACKERGROUP
         FC_GEOJSON(507),                // CAT_FC_GEOJSON
         FC_MEM(509),                    // CAT_FC_MEM
         FC_GPKG(515),                   // CAT_FC_GPKG
         FC_GPX(517),                    // CAT_FC_GPX
         RASTER_TMS(1011),               // CAT_RASTER_TMS
         TABLE_GPKG(1507),               // CAT_TABLE_GPKG
-        NGW_TRACKER(2503);              // CAT_NGW_TRACKER
+        NGW_TRACKER(3018);              // CAT_NGW_TRACKER
 
         override fun toString(): String {
             return code.toString()

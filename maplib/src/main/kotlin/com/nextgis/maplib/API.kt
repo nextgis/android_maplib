@@ -4,7 +4,7 @@
  * Author:  Stanislav Petriakov, becomeglory@gmail.com
  *
  * Created by Dmitry Baryshnikov on 14.08.18 20:28.
- * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
+ * Copyright (c) 2018-2020 NextGIS, info@nextgis.com.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
