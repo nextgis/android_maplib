@@ -786,6 +786,9 @@ object API {
     internal fun catalogObjectSetPropertyInt(handle: Long, name: String, value: String, domain: String): Boolean = catalogObjectSetProperty(handle, name, value, domain)
     internal fun catalogObjectRefreshInt(handle: Long) = catalogObjectRefresh(handle)
     internal fun catalogObjectSyncInt(handle: Long) = catalogObjectSync(handle)
+    internal fun catalogObjectOpenInt(handle: Long, openOptions: Array<String> = emptyArray()) : Boolean = catalogObjectOpen(handle, openOptions)
+    internal fun catalogObjectIsOpenedInt(handle: Long) : Boolean = catalogObjectIsOpened(handle)
+    internal fun catalogObjectCloseInt(handle: Long) : Boolean = catalogObjectClose(handle)
     internal fun catalogCheckConnectionInt(objectType: Int, options: Array<String>) : Boolean = catalogCheckConnection(objectType, options)
 
     /*
@@ -813,9 +816,6 @@ object API {
      * Feature class
      */
 
-    internal fun datasetOpenInt(handle: Long, openFlags: Int, openOptions: Array<String> = emptyArray()) : Boolean = datasetOpen(handle, openFlags, openOptions)
-    internal fun datasetIsOpenedInt(handle: Long) : Boolean = datasetIsOpened(handle)
-    internal fun datasetCloseInt(handle: Long) : Boolean = datasetClose(handle)
     internal fun featureClassFieldsInt(handle: Long) : Array<Field> = featureClassFields(handle)
     internal fun featureClassGeometryTypeInt(handle: Long) : Int = featureClassGeometryType(handle)
     internal fun featureClassCreateFeatureInt(handle: Long) : Long = featureClassCreateFeature(handle)
@@ -1145,6 +1145,9 @@ object API {
     private external fun catalogObjectRefresh(handle: Long)
     private external fun catalogCheckConnection(type: Int, options: Array<String>): Boolean
     private external fun catalogObjectSync(handle: Long)
+    private external fun catalogObjectOpen(handle: Long, openOptions: Array<String> = emptyArray()) : Boolean
+    private external fun catalogObjectIsOpened(handle: Long) : Boolean
+    private external fun catalogObjectClose(handle: Long) : Boolean
 
     /*
      * Geometry
@@ -1171,9 +1174,6 @@ object API {
      * Feature class
      */
 
-    private external fun datasetOpen(handle: Long, openFlags: Int, openOptions: Array<String> = emptyArray()) : Boolean
-    private external fun datasetIsOpened(handle: Long) : Boolean
-    private external fun datasetClose(handle: Long) : Boolean
     private external fun featureClassFields(handle: Long) : Array<Field>
     private external fun featureClassGeometryType(handle: Long) : Int
     private external fun featureClassCreateOverviews(handle: Long, options: Array<String>, callbackId: Int) : Boolean

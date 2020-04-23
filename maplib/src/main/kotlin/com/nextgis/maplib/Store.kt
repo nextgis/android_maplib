@@ -219,13 +219,13 @@ data class EditOperation(val fid: Long, val aid: Long, val rid: Long, val arid: 
 class Raster(copyFrom: Object): Object(copyFrom) {
 
     var isOpened: Boolean
-        get() = API.datasetIsOpenedInt(handle)
+        get() = API.catalogObjectIsOpenedInt(handle)
         set(value) {
             if(value) {
-                API.datasetOpenInt(handle, 96)
+                API.catalogObjectOpenInt(handle)
             }
             else {
-                API.datasetCloseInt(handle)
+                API.catalogObjectCloseInt(handle)
             }
         }
 
