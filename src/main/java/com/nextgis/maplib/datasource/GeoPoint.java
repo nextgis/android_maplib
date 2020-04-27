@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2016, 2019-2020 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -22,8 +22,6 @@
  */
 package com.nextgis.maplib.datasource;
 
-import android.annotation.TargetApi;
-import android.os.Build;
 import android.util.JsonReader;
 
 import com.nextgis.maplib.util.GeoConstants;
@@ -36,7 +34,12 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
-import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WEB_MERCATOR;
+import static com.nextgis.maplib.util.GeoConstants.CRS_WGS84;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
+import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
+import static com.nextgis.maplib.util.GeoConstants.WGS_LAT_MAX;
+import static com.nextgis.maplib.util.GeoConstants.WGS_LONG_MAX;
 
 
 public class GeoPoint
@@ -196,8 +199,11 @@ public class GeoPoint
             wkt = wkt.substring(1, wkt.length() - 1);
         }
         int pos = wkt.indexOf(" ");
+        if (pos == -1) {
+            return;
+        }
         mX = Double.parseDouble(wkt.substring(0, pos).trim());
-        mY = Double.parseDouble(wkt.substring(pos, wkt.length()).trim());
+        mY = Double.parseDouble(wkt.substring(pos).trim());
     }
 
 
