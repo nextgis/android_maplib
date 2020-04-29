@@ -73,6 +73,11 @@
     <string name="sync_progress">Синхронизация выполняется</string>
     <string name="sync_canceled">Синхронизация отменена</string>
     <string name="sync_error">Ошибка синхронизации</string>
+    <string name="sync_error_oom">Слой слишком большой</string>
+    <string name="sync_error_change">Невозможно применить изменения</string>
+    <string name="sync_error_insert">Невозможно создать объект</string>
+    <string name="sync_error_delete">Невозможно удалить объект</string>
+    <string name="sync_error_server">Ошибка сервера</string>
     <string name="sync_finished">Синхронизация завершена</string>
     <string name="text">Подпись</string>
     <string name="error_connect_failed">Соединение не установлено</string>

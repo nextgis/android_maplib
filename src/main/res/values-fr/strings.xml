@@ -75,6 +75,11 @@
     <string name="sync_progress">Synchronisation en cours</string>
     <string name="sync_canceled">Synchronisation annulé</string>
     <string name="sync_error">Erreur de synchronisation</string>
+    <string name="sync_error_oom">Layer is too big</string>
+    <string name="sync_error_change">Cannot apply changes</string>
+    <string name="sync_error_insert">Cannot create new feature</string>
+    <string name="sync_error_delete">Cannot delete feature</string>
+    <string name="sync_error_server">Server error</string>
     <string name="sync_finished">Synchronisation terminé</string>
     <string name="error_auth">Problème d\'authentification sur le compte</string>
     <string name="sync_error_parse">Erreur du serveur NextGIS Web</string>

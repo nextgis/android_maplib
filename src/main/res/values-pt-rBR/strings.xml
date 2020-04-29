@@ -73,6 +73,11 @@
     <string name="sync_progress">Sync in progress</string>
     <string name="sync_canceled">Sync canceled</string>
     <string name="sync_error">Sync error</string>
+    <string name="sync_error_oom">Layer is too big</string>
+    <string name="sync_error_change">Cannot apply changes</string>
+    <string name="sync_error_insert">Cannot create new feature</string>
+    <string name="sync_error_delete">Cannot delete feature</string>
+    <string name="sync_error_server">Server error</string>
     <string name="sync_finished">Sync finished</string>
     <string name="text">Text</string>
     <string name="error_connect_failed">Connect failed</string>

@@ -161,6 +161,31 @@ public class SyncAdapter
                 mError += "\r\n";
             mError += getContext().getString(R.string.sync_error_conflict);
         }
+        if (syncResult.stats.numInserts > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_insert);
+        }
+        if (syncResult.stats.numUpdates > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_change);
+        }
+        if (syncResult.stats.numDeletes > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_delete);
+        }
+        if (syncResult.stats.numEntries > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_server);
+        }
+        if (syncResult.stats.numSkippedEntries > 0) {
+            if (mError.length() > 0)
+                mError += "\r\n";
+            mError += getContext().getString(R.string.sync_error_oom);
+        }
 
         Intent finish = new Intent(SYNC_FINISH);
         if (!TextUtils.isEmpty(mError))

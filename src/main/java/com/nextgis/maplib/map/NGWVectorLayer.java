@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2020 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -23,7 +23,6 @@
 
 package com.nextgis.maplib.map;
 
-import android.annotation.TargetApi;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -34,7 +33,6 @@ import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
@@ -812,7 +810,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions += 1000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -843,6 +841,7 @@ public class NGWVectorLayer
         } catch (IOException e) {
             log(e, "changeAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
+            syncResult.stats.numUpdates++;
             return false;
         } catch (IllegalStateException e) {
             log(e, "changeAttachOnServer IllegalStateException");
@@ -866,7 +865,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions += 1000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -874,7 +873,8 @@ public class NGWVectorLayer
             HttpResponse response = deleteAttachOnServer(featureId, attachId);
 
             if (!response.isOk()) {
-                syncResult.stats.numIoExceptions += 1000000;
+                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numEntries++;
                 return false;
             }
 
@@ -882,6 +882,7 @@ public class NGWVectorLayer
         } catch (IOException e) {
             log(e, "deleteAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
+            syncResult.stats.numDeletes++;
             return false;
         } catch (IllegalStateException e) {
             log(e, "deleteAttachOnServer IllegalStateException");
@@ -905,7 +906,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions += 1000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -950,6 +951,7 @@ public class NGWVectorLayer
         } catch (IOException e) {
             log(e, "sendAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
+            syncResult.stats.numInserts++;
             return false;
         }  catch (JSONException e) {
             log(e, "sendAttachOnServer JSONException");
@@ -1034,7 +1036,8 @@ public class NGWVectorLayer
             default:
             case HttpURLConnection.HTTP_NOT_FOUND:
             case HttpURLConnection.HTTP_INTERNAL_ERROR:
-                syncResult.stats.numIoExceptions += 1000000;
+                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numEntries++;
                 break;
         }
     }
@@ -1544,7 +1547,8 @@ public class NGWVectorLayer
             return null;
         } catch (OutOfMemoryError e) {
             e.printStackTrace();
-            syncResult.stats.numIoExceptions += 100000000;
+            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numSkippedEntries++;
             return null;
         } catch (IllegalStateException | NumberFormatException e) {
             log(e, "getFeatures(): IllegalStateException | NumberFormatException");
@@ -1574,7 +1578,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions += 1000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }
         Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
@@ -1624,6 +1628,7 @@ public class NGWVectorLayer
         } catch (IOException e) {
             log(e, "addFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
+            syncResult.stats.numInserts++;
             return false;
         } catch (SQLiteConstraintException e) {
             log(e, "addFeatureOnServer SQLiteConstraintException");
@@ -1652,7 +1657,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions += 1000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -1660,7 +1665,8 @@ public class NGWVectorLayer
             HttpResponse response = deleteFeatureOnServer(featureId);
 
             if (!response.isOk()) {
-                syncResult.stats.numIoExceptions += 1000000;
+                syncResult.stats.numIoExceptions++;
+                syncResult.stats.numEntries++;
                 return false;
             }
 
@@ -1668,6 +1674,7 @@ public class NGWVectorLayer
         } catch (IOException e) {
             log(e, "deleteFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
+            syncResult.stats.numDeletes++;
             return false;
         } catch (IllegalStateException e) {
             log(e, "deleteFeatureOnServer IllegalStateException");
@@ -1691,7 +1698,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
-            syncResult.stats.numIoExceptions += 1000;
+            syncResult.stats.numIoExceptions++;
             return false;
         }
 
@@ -1736,6 +1743,7 @@ public class NGWVectorLayer
         } catch (IOException e) {
             log(e, "changeFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
+            syncResult.stats.numUpdates++;
             return false;
         } catch (JSONException e) {
             log(e, "changeFeatureOnServer JSONException");
