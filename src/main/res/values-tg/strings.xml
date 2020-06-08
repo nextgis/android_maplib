@@ -23,9 +23,9 @@
     <string name="error_crs_unsupported">ССистемаи координатӣ дастгирӣ намешавад</string>
     <string name="error_empty_dataset">Маҷмӯи маълумот холӣ аст.</string>
     <string name="error_download_data">Боргузориӣ маълумот каът шуд</string>
-    <string name="Шимол">С</string>
-    <string name="Ҷануб">Ю</string>
-    <string name="Шарқ">В</string>
+    <string name="N">Шимол</string>
+    <string name="S">Ҷануб</string>
+    <string name="E">Шарқ</string>
     <string name="W">Ғарб</string>
     <string name="unit_meter">м</string>
     <string name="unit_square_meter">м²</string>
@@ -45,7 +45,7 @@
     <string name="tracks">Роҳҳои ман</string>
     <string name="create_features">Сохтани объектҳо</string>
     <string name="parse_features">Parse features</string>
-    <string name="message_loading">Боркунӣ...</string>
+    <string name="message_loading">Боркунӣ…</string>
     <string name="error_layer_create">Қабат сохта нашуд</string>
     <string name="start_fill_layer">Оғози пуркунии қабати маълумот</string>
     <string name="message_opening">Бозкушои</string>
