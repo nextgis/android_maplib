@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2019 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2019, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -148,6 +148,8 @@ public interface Constants
     String JSON_END_DATE_KEY      = "end_date";
     String JSON_USER_ID_KEY       = "nextgis_guid";
     String JSON_SIGNATURE_KEY     = "sign";
+    String JSON_TOP_DIR_KEY       = "top_dir";
+    String JSON_EXTENSION_KEY     = "tile_ext";
 
     /**
      * database fields

@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2016, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -83,7 +83,7 @@ public class FileUtil
             throws IOException
     {
 
-        String ret = "";
+        String ret;
 
         FileInputStream inputStream = new FileInputStream(filePath);
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
@@ -199,7 +199,7 @@ public class FileUtil
             throws IOException
     {
         byte[] buffer = new byte[1024];
-        int bytesRead = 0;
+        int bytesRead;
         while ((bytesRead = is.read(buffer)) != -1) {
             os.write(buffer, 0, bytesRead);
         }
@@ -280,7 +280,7 @@ public class FileUtil
         if (lastPeriodPos <= 0) {
             return "";
         } else {
-            return name.substring(lastPeriodPos + 1, name.length());
+            return name.substring(lastPeriodPos + 1);
         }
     }
 
@@ -323,6 +323,19 @@ public class FileUtil
         return "/";
     }
 
+    public static String getTopDirNameIfHas(String entryName) {
+        int pos = entryName.indexOf('/');
+
+        //for backward capability where the zip has root directory named "mapnik"
+        if (pos != Constants.NOT_FOUND) {
+            String folderName = entryName.substring(0, pos);
+            if (!TextUtils.isDigitsOnly(folderName)) {
+                return entryName.substring(0, pos);
+            }
+        }
+        return null;
+    }
+
     public static void unzipEntry(
             ZipInputStream zis,
             ZipEntry entry,
@@ -331,14 +344,11 @@ public class FileUtil
             throws IOException, RuntimeException
     {
         String entryName = entry.getName();
-        int pos = entryName.indexOf('/');
+        String topDir = getTopDirNameIfHas(entryName);
 
         //for backward capability where the zip has root directory named "mapnik"
-        if (pos != Constants.NOT_FOUND) {
-            String folderName = entryName.substring(0, pos);
-            if (!TextUtils.isDigitsOnly(folderName)) {
-                entryName = entryName.substring(pos, entryName.length());
-            }
+        if (topDir != null) {
+            entryName = entryName.replace(topDir + "/", "");
         }
 
         if (entry.isDirectory()) {

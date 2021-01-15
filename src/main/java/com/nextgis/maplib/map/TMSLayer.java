@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2018, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -42,8 +42,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -59,6 +61,7 @@ public abstract class TMSLayer
     protected static final String JSON_TMSTYPE_KEY     = "tms_type";
     protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
     public static final String TILE_EXT = ".tile";
+    public static final String SOURCE_ARCH = "source.zip";
 
     protected int mTMSType;
     protected static final int HTTP_SEPARATE_THREADS = 2;
@@ -236,7 +239,20 @@ public abstract class TMSLayer
         };
     }
 
-    protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
+    protected void copyZip(Uri uri) throws IOException, NGException {
+        try {
+            File archive = new File(mPath, SOURCE_ARCH);
+            OutputStream out = new FileOutputStream(archive);
+            InputStream inputStream = getZipStream(uri);
+            FileUtil.copy(inputStream, out);
+            out.close();
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected InputStream getZipStream(Uri uri) throws IOException, NGException {
         InputStream inputStream;
         String url = uri.toString();
         if (NetworkUtil.isValidUri(url))
@@ -247,6 +263,19 @@ public abstract class TMSLayer
         if (inputStream == null)
             throw new NGException(mContext.getString(R.string.error_download_data));
 
+        return inputStream;
+    }
+
+    protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
+        if (!mPath.exists()) {
+            FileUtil.createDir(mPath);
+        }
+
+        copyZip(uri);
+//        unzip(progressor, inputStream);
+    }
+
+    protected void unzip(IProgressor progressor, InputStream inputStream) throws IOException {
         int streamSize = inputStream.available();
         if (null != progressor)
             progressor.setMax(streamSize);
@@ -268,7 +297,6 @@ public abstract class TMSLayer
             }
         }
     }
-
 
     public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
         fillFromZipInt(uri, progressor);

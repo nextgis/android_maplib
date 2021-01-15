@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2018, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -27,6 +27,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.nextgis.maplib.R;
@@ -34,8 +35,10 @@ import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGException;
+import com.nextgis.maplib.util.ZipResourceFile;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,18 +46,24 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import static com.nextgis.maplib.util.Constants.DRAWING_SEPARATE_THREADS;
 import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXX_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_BBOX_MAXY_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_BBOX_MINX_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_BBOX_MINY_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_EXTENSION_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_LEVELS_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_LEVEL_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_MAXLEVEL_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_MINLEVEL_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_TOP_DIR_KEY;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_TMS;
 
 
@@ -65,6 +74,9 @@ public class LocalTMSLayer
         extends TMSLayer
 {
     protected Map<Integer, TileCacheLevelDescItem> mLimits;
+    protected String  mTopDirName;
+    protected String  mExtension;
+    protected ZipResourceFile  mExpansionFile;
 
 
     public LocalTMSLayer(
@@ -80,6 +92,7 @@ public class LocalTMSLayer
     @Override
     public Bitmap getBitmap(TileItem tile)
     {
+        Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap ");
         Bitmap ret = getBitmapFromCache(tile.getHash());
         if (null != ret) {
             if(Constants.DEBUG_MODE) {
@@ -91,16 +104,22 @@ public class LocalTMSLayer
         TileCacheLevelDescItem item = mLimits.get(tile.getZoomLevel());
         boolean isInside = item != null && item.isInside(tile.getX(), tile.getY());
         if (isInside) {
-            File tilePath = new File(mPath, tile.toString() + TILE_EXT);
-            boolean isExist = tilePath.exists();
-            if (isExist) {
-                ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
-                putBitmapToCache(tile.getHash(), ret);
-                if(Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap for: " + tile.toString() + ", path " + tilePath.getAbsolutePath() + " is valid - " + (ret != null));
+            try {
+                String tilePath = tile.toString() + "." + mExtension;
+                if (!TextUtils.isEmpty(mTopDirName))
+                    tilePath = mTopDirName + "/" + tilePath;
+
+                InputStream is = mExpansionFile.getInputStream(tilePath);
+                boolean status = is != null && is.available() > 0;
+                if (status) {
+                    BitmapFactory.Options bfo = new BitmapFactory.Options();
+                    bfo.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                    return BitmapFactory.decodeStream(is, null, bfo);
                 }
-                return ret;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            return getBitmapLocal(tile);
         }
 
         if(Constants.DEBUG_MODE && isInside) {
@@ -109,6 +128,51 @@ public class LocalTMSLayer
         return null;
     }
 
+    protected Bitmap getBitmapLocal(TileItem tile) {
+        File tilePath = new File(mPath, tile.toString() + TILE_EXT);
+        boolean isExist = tilePath.exists();
+        if (isExist) {
+            Bitmap ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
+            putBitmapToCache(tile.getHash(), ret);
+            if(Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap for: " + tile.toString() + ", path " + tilePath.getAbsolutePath() + " is valid - " + (ret != null));
+            }
+            return ret;
+        }
+        return null;
+    }
+
+    @Override
+    protected void copyZip(Uri uri) throws IOException, NGException {
+        try {
+            byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+            InputStream inputStream = getZipStream(uri);
+            ZipInputStream zis = new ZipInputStream(inputStream);
+            ZipEntry ze;
+            while ((ze = zis.getNextEntry()) != null) {
+                String topDirName = FileUtil.getTopDirNameIfHas(ze.getName());
+                if (topDirName != null)
+                    mTopDirName = topDirName;
+                if (ze.getName().endsWith(".jpg"))
+                    mExtension = "jpg";
+                if (ze.getName().endsWith(".jpeg"))
+                    mExtension = "jpeg";
+                if (ze.getName().endsWith(".png"))
+                    mExtension = "png";
+                if (ze.isDirectory() || ze.getName().contains("/"))
+                    continue;
+                FileUtil.unzipEntry(zis, ze, buffer, mPath);
+                zis.closeEntry();
+            }
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        super.copyZip(uri);
+
+        loadZip();
+    }
 
     @Override
     public JSONObject toJSON()
@@ -144,16 +208,31 @@ public class LocalTMSLayer
             rootConfig.put(JSON_MAXLEVEL_KEY, nMaxLevel);
             rootConfig.put(JSON_MINLEVEL_KEY, nMinLevel);
         }
+        rootConfig.put(JSON_TOP_DIR_KEY, mTopDirName);
+        rootConfig.put(JSON_EXTENSION_KEY, mExtension);
         return rootConfig;
     }
 
+    protected void loadZip() {
+        try {
+            File path = new File(mPath, SOURCE_ARCH);
+            // Define the zip file as ZipResourceFile
+            mExpansionFile = new ZipResourceFile(path.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void fromJSON(JSONObject jsonObject)
             throws JSONException
     {
         super.fromJSON(jsonObject);
+        mTopDirName = jsonObject.optString(JSON_TOP_DIR_KEY);
+        mExtension = jsonObject.optString(JSON_EXTENSION_KEY);
         mLimits = new HashMap<>();
+
+        loadZip();
 
         if(jsonObject.has(JSON_LEVELS_KEY)) {
             final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LEVELS_KEY);
@@ -186,6 +265,13 @@ public class LocalTMSLayer
     public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
         fillFromZipInt(uri, progressor);
 
+        addLimitsZip(progressor);
+//        addLimitsLocal(progressor);
+
+        save();
+    }
+
+    private void addLimitsLocal(IProgressor progressor) throws NGException {
         int nMaxLevel = 0;
         int nMinLevel = 512;
         final File[] zoomLevels = mPath.listFiles();
@@ -260,8 +346,101 @@ public class LocalTMSLayer
             }
             addLimits(nLevelZ, nMaxX, nMaxY, nMinX, nMinY);
         }
+    }
 
-        save();
+    private void putXY(HashMap<String, ArrayList<String>> xy, String x, String y) {
+        ArrayList<String> ys = new ArrayList<>();
+        ys.add(y);
+        xy.put(x, ys);
+    }
+
+    private void addLimitsZip(IProgressor progressor) {
+        int nMaxLevel = 0;
+        int nMinLevel = 512;
+
+        ArrayList<ZipResourceFile.ZipEntryRO> files = mExpansionFile.getAllEntries();
+        if(null != progressor){
+            progressor.setMax(files.size());
+            progressor.setValue(0);
+            progressor.setMessage(mContext.getString(R.string.message_opening));
+        }
+
+        HashMap<String, HashMap<String, ArrayList<String>>> zoomLevels = new HashMap<>();
+        for (ZipResourceFile.ZipEntryRO file : files) {
+            String name = file.mFileName;
+            if (name.endsWith("/"))
+                continue;
+            if (!TextUtils.isEmpty(mTopDirName)) {
+                name = name.replace(mTopDirName + "/", "");
+            }
+            String[] parts = name.split("/");
+            if (parts.length == 3) {
+                String y = parts[2].replace("." + mExtension, "");
+                HashMap<String, ArrayList<String>> xy;
+                if (zoomLevels.containsKey(parts[0])) {
+                    xy = zoomLevels.get(parts[0]);
+                    if (xy.containsKey(parts[1])) {
+                        xy.get(parts[1]).add(y);
+                    } else {
+                        putXY(xy, parts[1], y);
+                    }
+                } else {
+                    xy = new HashMap<>();
+                    putXY(xy, parts[1], y);
+                    zoomLevels.put(parts[0], xy);
+                }
+            }
+        }
+
+        int counter = 0;
+
+        for (Map.Entry<String, HashMap<String, ArrayList<String>>> zoomLevel : zoomLevels.entrySet()) {
+            if(null != progressor) {
+                if(progressor.isCanceled())
+                    return;
+                progressor.setValue(counter++);
+                progressor.setMessage(getContext().getString(R.string.processed) + " " + counter + " " + getContext().getString(R.string.of) + " " + zoomLevels.size());
+            }
+
+            int nMaxX = 0;
+            int nMinX = 10000000;
+            int nMaxY = 0;
+            int nMinY = 10000000;
+
+            int nLevelZ = Integer.parseInt(zoomLevel.getKey());
+            if (nLevelZ > nMaxLevel) {
+                nMaxLevel = nLevelZ;
+            }
+            if (nLevelZ < nMinLevel) {
+                nMinLevel = nLevelZ;
+            }
+
+            boolean bFirstTurn = true;
+            for (Map.Entry<String, ArrayList<String>> xy : zoomLevel.getValue().entrySet()) {
+                int nX = Integer.parseInt(xy.getKey());
+                if (nX > nMaxX) {
+                    nMaxX = nX;
+                }
+                if (nX < nMinX) {
+                    nMinX = nX;
+                }
+
+                if (bFirstTurn) {
+                    for (String y : xy.getValue()) {
+                        //Log.d(TAG, y);
+                        int nY = Integer.parseInt(y);
+                        if (nY > nMaxY) {
+                            nMaxY = nY;
+                        }
+                        if (nY < nMinY) {
+                            nMinY = nY;
+                        }
+                    }
+                    bFirstTurn = false;
+                }
+            }
+            addLimits(nLevelZ, nMaxX, nMaxY, nMinX, nMinY);
+        }
     }
 
     public void addLimits(
