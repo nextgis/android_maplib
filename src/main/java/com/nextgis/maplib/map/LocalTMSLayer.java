@@ -149,6 +149,7 @@ public class LocalTMSLayer
             InputStream inputStream = getZipStream(uri);
             ZipInputStream zis = new ZipInputStream(inputStream);
             ZipEntry ze;
+            boolean config = false;
             while ((ze = zis.getNextEntry()) != null) {
                 String topDirName = FileUtil.getTopDirNameIfHas(ze.getName());
                 if (topDirName != null)
@@ -159,8 +160,15 @@ public class LocalTMSLayer
                     mExtension = "jpeg";
                 if (ze.getName().endsWith(".png"))
                     mExtension = "png";
-                if (ze.isDirectory() || ze.getName().contains("/"))
+                if (mExtension != null && config) {
+                    zis.closeEntry();
+                    break;
+                }
+                if (ze.isDirectory() || ze.getName().contains("/")) {
+                    zis.closeEntry();
                     continue;
+                }
+                config = true;
                 FileUtil.unzipEntry(zis, ze, buffer, mPath);
                 zis.closeEntry();
             }
@@ -211,6 +219,17 @@ public class LocalTMSLayer
         rootConfig.put(JSON_TOP_DIR_KEY, mTopDirName);
         rootConfig.put(JSON_EXTENSION_KEY, mExtension);
         return rootConfig;
+    }
+
+    @Override
+    public void fillFromNgrc(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
+        fillFromZipInt(uri, progressor);
+        String ext = mExtension;
+        String topDir = mTopDirName;
+        load();
+        mExtension = ext;
+        mTopDirName = topDir;
+        save();
     }
 
     protected void loadZip() {
