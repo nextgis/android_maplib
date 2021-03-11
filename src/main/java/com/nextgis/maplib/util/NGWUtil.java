@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2020 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -23,9 +23,7 @@
 
 package com.nextgis.maplib.util;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.JsonToken;
@@ -158,22 +156,22 @@ public class NGWUtil
         return getConnectionCookie(reference, login, password);
     }
 
-
-    public static String getFileUploadUrl(String server)
-    {
+    public static String getServerUrl(String server) {
         if (!server.startsWith("http")) {
             server = "http://" + server;
         }
-        return server + "/api/component/file_upload/upload";
+        return server;//.replace("http://", "https://");
+    }
+
+    public static String getFileUploadUrl(String server)
+    {
+        return getServerUrl(server) + "/api/component/file_upload/upload";
     }
 
 
     public static String getNgwVersionUrl(String server)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        return server + "/api/component/pyramid/pkg_version";
+        return getServerUrl(server) + "/api/component/pyramid/pkg_version";
     }
 
 
@@ -248,11 +246,6 @@ public class NGWUtil
             String server,
             Long[] styleIds)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-        // old url return server + "/resource/" + styleId + "/tms?z={z}&x={x}&y={y}";
-
         String ids = "";
         if (styleIds != null && styleIds.length > 0) {
             ids += styleIds[0];
@@ -261,7 +254,8 @@ public class NGWUtil
             }
         }
 
-        return server + "/api/component/render/tile?x={x}&y={y}&z={z}&resource=" + ids;
+        // old url return server + "/resource/" + styleId + "/tms?z={z}&x={x}&y={y}";
+        return getServerUrl(server) + "/api/component/render/tile?x={x}&y={y}&z={z}&resource=" + ids;
     }
 
 
@@ -292,10 +286,7 @@ public class NGWUtil
      * @return URL to base resource
      */
     public static String getBaseUrl(String server) {
-        if (!server.startsWith("http"))
-            server = "http://" + server;
-
-        return server + "/api/resource/";
+        return getServerUrl(server) + "/api/resource/";
     }
 
 
@@ -388,13 +379,9 @@ public class NGWUtil
             long remoteId,
             long startDate)
     {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
-
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
         String start = sdf.format(new Date(startDate));
-        return server + "/api/vector_layer/" + remoteId + "/diff/?ts_start=" + start;
+        return getServerUrl(server) + "/api/vector_layer/" + remoteId + "/diff/?ts_start=" + start;
     }
 
 
@@ -719,9 +706,7 @@ public class NGWUtil
     {
         server += server.endsWith("/") ? "" : "/";
         server += "api/component/auth/register";
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
-        }
+        server = getServerUrl(server);
 
         JSONObject payload = new JSONObject();
         try {
