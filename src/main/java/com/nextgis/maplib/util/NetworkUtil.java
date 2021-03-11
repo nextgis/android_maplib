@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2014-2020 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -26,7 +26,6 @@ package com.nextgis.maplib.util;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -47,6 +46,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
@@ -110,7 +111,12 @@ public class NetworkUtil
             throws IOException {
         URL url = new URL(targetURL);
         // Open a HTTP connection to the URL
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn;
+        if (targetURL.startsWith("https://"))
+            conn = (HttpsURLConnection) url.openConnection();
+        else
+            conn = (HttpURLConnection) url.openConnection();
+
         String basicAuth = getHTTPBaseAuth(username, password);
         if (null != basicAuth) {
             conn.setRequestProperty("Authorization", basicAuth);
