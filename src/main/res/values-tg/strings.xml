@@ -3,7 +3,7 @@
   ~ Purpose:  Mobile GIS for Android.
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2020 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2020-2021 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -84,7 +84,7 @@
     <string name="error_500">Хатогии сервер</string>
     <string name="error_401">Авторизатсия лозим аст</string>
     <string name="error_network_unavailable">Пайвастшавӣ ба шабака</string>
-    <string name="error_auth">Мушкилоти аслшиносӣ</string>
+    <string name="error_auth">Вуруд ё пароли нодуруст</string>
     <string name="sync_error_conflict">Муноқишаҳо муайян шуд</string>
     <string name="sync_error_io">Хатогии номаълум</string>
     <string name="sync_error_parse">Хатогии сервери Web NetGIS</string>

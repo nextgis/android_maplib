@@ -4,7 +4,7 @@
   ~ Author:   Maxim Dubinin, maxim.dubinin@nextgis.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2016-2018 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2016-2018, 2020-2021 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -85,7 +85,7 @@
     <string name="error_404">Resource not found</string>
     <string name="error_500">Internal server error</string>
     <string name="error_401">Authorization required</string>
-    <string name="error_auth">Account authentication problem</string>
+    <string name="error_auth">Incorrect login or password</string>
     <string name="sync_error_conflict">Conflicts found</string>
     <string name="sync_error_io">Unexpected error</string>
     <string name="sync_error_parse">NextGIS Web server error</string>

@@ -5,7 +5,7 @@
   ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2012-2018 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2014-2018, 2020-2021 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -80,7 +80,7 @@
     <string name="sync_error_delete">Cannot delete feature</string>
     <string name="sync_error_server">Server error</string>
     <string name="sync_finished">Sync finished</string>
-    <string name="error_auth">Account authentication problem</string>
+    <string name="error_auth">Incorrect login or password</string>
     <string name="sync_error_parse">NextGIS Web server error</string>
     <string name="sync_error_conflict">Conflicts found</string>
     <string name="text">Text</string>

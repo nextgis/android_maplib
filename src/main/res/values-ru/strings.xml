@@ -5,7 +5,7 @@
   ~ Author:   NikitaFeodonit, nfeodonit@yandex.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2015-2018, 2020-2021 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -86,7 +86,7 @@
     <string name="error_500">Ошибка сервера</string>
     <string name="error_401">Требуется авторизация</string>
     <string name="error_network_unavailable">Нет соединения с сетью</string>
-    <string name="error_auth">Проблема аутентификации</string>
+    <string name="error_auth">Неверный логин или пароль</string>
     <string name="sync_error_conflict">Обнаружены конфликты</string>
     <string name="sync_error_io">Неизвестная ошибка</string>
     <string name="sync_error_parse">Ошибка сервера NetGIS Web</string>

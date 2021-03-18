@@ -4,7 +4,7 @@
   ~ Author:   Maxim Dubinin, maxim.dubinin@nextgis.com
   ~ Author:   Stanislav Petriakov, becomeglory@gmail.com
   ~ ******************************************************************************
-  ~ Copyright (c) 2016-2017 NextGIS, info@nextgis.com
+  ~ Copyright (c) 2016-2018, 2020-2021 NextGIS, info@nextgis.com
   ~
   ~ This program is free software: you can redistribute it and/or modify
   ~ it under the terms of the GNU Lesser Public License as published by
@@ -85,7 +85,7 @@
     <string name="error_404">Ресурс не знайдено</string>
     <string name="error_500">Помилка сервера</string>
     <string name="error_401">Потрібно авторизуватися</string>
-    <string name="error_auth">Проблема автентифікації</string>
+    <string name="error_auth">Невірний логін або пароль</string>
     <string name="sync_error_conflict">Виявлено конфлікти</string>
     <string name="sync_error_io">Невідома помилка</string>
     <string name="sync_error_parse">Помилка сервера NetGIS Web</string>
