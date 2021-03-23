@@ -4,7 +4,7 @@
  * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ public class MapUtil {
     private static final long MAX_INTERNAL_CACHE_SIZE = 1048576; // 1MB
     private static final long MAX_EXTERNAL_CACHE_SIZE = 5242880; // 5MB
 
-    public static File prepareTempDir(Context context, String path) {
+    public static File prepareTempDir(Context context, String path, Boolean preserveCache) {
         boolean clearCached;
         File temp = context.getExternalCacheDir();
 
@@ -60,7 +60,7 @@ public class MapUtil {
             clearCached = FileUtil.getDirectorySize(temp) > MAX_EXTERNAL_CACHE_SIZE;
         }
 
-        if (clearCached)
+        if (clearCached && !preserveCache)
             FileUtil.deleteRecursive(temp);
 
         if (path != null)
@@ -234,7 +234,7 @@ public class MapUtil {
 
             while ((ze = zis.getNextEntry()) != null) {
                 if (ze.getName().toLowerCase().endsWith(".geojson")) {
-                    File temp = prepareTempDir(context, null);
+                    File temp = prepareTempDir(context, null, false);
                     FileUtil.unzipEntry(zis, ze, buffer, temp);
                     temp = new File(temp, ze.getName());
                     uri.set(Uri.fromFile(temp));
