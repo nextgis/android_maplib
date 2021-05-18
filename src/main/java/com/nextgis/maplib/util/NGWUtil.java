@@ -99,7 +99,8 @@ public class NGWUtil
     public static String NGWKEY_LOOKUP_TABLE    = "lookup_table";
     public static String NGWKEY_RESMETA         = "resmeta";
     public static String NGWKEY_ITEMS           = "items";
-
+    public static String NGID = "";
+    public static String UUID = "";
 
     /**
      * NGW API Functions
@@ -159,12 +160,16 @@ public class NGWUtil
     }
 
 
+    public static String appendix() {
+        return "?source=ng_collector&ngid=" + NGID + "&deviceid=" + UUID;
+    }
+
     public static String getFileUploadUrl(String server)
     {
         if (!server.startsWith("http")) {
             server = "http://" + server;
         }
-        return server + "/api/component/file_upload/upload";
+        return server + "/api/component/file_upload/upload" + appendix();
     }
 
 
@@ -344,7 +349,7 @@ public class NGWUtil
             long remoteId,
             long featureId)
     {
-        return getFeaturesUrl(server, remoteId) + featureId;
+        return getFeaturesUrl(server, remoteId) + featureId + appendix();
     }
 
 

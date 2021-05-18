@@ -93,6 +93,7 @@ import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
+import static com.nextgis.maplib.util.NGWUtil.appendix;
 
 
 public class NGWVectorLayer
@@ -1647,7 +1648,7 @@ public class NGWVectorLayer
     protected HttpResponse addFeatureOnServer(String payload) throws IOException {
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
-        return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId),
+        return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId) + appendix(),
                          payload, accountData.login, accountData.password, false);
     }
 
