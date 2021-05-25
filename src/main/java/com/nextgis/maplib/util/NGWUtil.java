@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2020 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -99,6 +99,7 @@ public class NGWUtil
     public static String NGWKEY_LOOKUP_TABLE    = "lookup_table";
     public static String NGWKEY_RESMETA         = "resmeta";
     public static String NGWKEY_ITEMS           = "items";
+    public static String NGUA = "";
     public static String NGID = "";
     public static String UUID = "";
 
@@ -161,7 +162,7 @@ public class NGWUtil
 
 
     public static String appendix() {
-        return "?source=ng_collector&ngid=" + NGID + "&deviceid=" + UUID;
+        return "?source=" + NGUA + "&ngid=" + NGID + "&deviceid=" + UUID;
     }
 
     public static String getFileUploadUrl(String server)
