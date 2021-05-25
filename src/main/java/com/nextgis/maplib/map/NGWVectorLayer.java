@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2020 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -1909,36 +1909,29 @@ public class NGWVectorLayer
             return;
         }
 
-        if (syncType == Constants.SYNC_NONE) {
-            mSyncType = syncType;
-
-            new Thread(new Runnable()
-            {
-                public void run()
-                {
-                    android.os.Process.setThreadPriority(
-                            android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                    applySync(Constants.SYNC_NONE);
-                }
-            }).start();
-
-        } else if (mSyncType == Constants.SYNC_NONE && 0 != (syncType & Constants.SYNC_DATA)) {
-            mSyncType = syncType;
-
-            new Thread(new Runnable()
-            {
-                public void run()
-                {
-                    android.os.Process.setThreadPriority(
-                            android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                    applySync(Constants.SYNC_ALL);
-                }
-            }).start();
-
-
-        } else {
-            mSyncType = syncType;
-        }
+        mSyncType = syncType;
+        // Commented due to useless changes addition/removing. We lose the history if someone changes the sync type and then return previous setting.
+//        if (syncType == Constants.SYNC_NONE) {
+//            new Thread(new Runnable()
+//            {
+//                public void run()
+//                {
+//                    android.os.Process.setThreadPriority(
+//                            android.os.Process.THREAD_PRIORITY_BACKGROUND);
+//                    applySync(Constants.SYNC_NONE);
+//                }
+//            }).start();
+//        } else if (mSyncType == Constants.SYNC_NONE && 0 != (syncType & Constants.SYNC_DATA)) {
+//            new Thread(new Runnable()
+//            {
+//                public void run()
+//                {
+//                    android.os.Process.setThreadPriority(
+//                            android.os.Process.THREAD_PRIORITY_BACKGROUND);
+//                    applySync(Constants.SYNC_ALL);
+//                }
+//            }).start();
+//        }
     }
 
 
