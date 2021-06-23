@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2017, 2019 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2017, 2019-2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -40,6 +40,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
+import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
@@ -119,11 +120,13 @@ public class SyncAdapter
             SyncResult syncResult)
     {
         Log.d(TAG, "onPerformSync");
+        HyperLog.v(Constants.TAG, "SyncAdapter: onPerformSync");
 
         MapContentProviderHelper mapContentProviderHelper =(MapContentProviderHelper) MapBase.getInstance();
         getContext().sendBroadcast(new Intent(SYNC_START));
 
         mVersions = new HashMap<>();
+        HyperLog.v(Constants.TAG, "SyncAdapter: mapContentProviderHelper is " + mapContentProviderHelper);
         if (null != mapContentProviderHelper) {
             // FIXME Temporary fix till 3.0
 //            mapContentProviderHelper.load(); // reload map for deleted/added layers
@@ -132,6 +135,7 @@ public class SyncAdapter
 
         if (isCanceled()) {
             Log.d(Constants.TAG, "onPerformSync - SYNC_CANCELED is sent");
+            HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_CANCELED is sent");
             getContext().sendBroadcast(new Intent(SYNC_CANCELED));
             return;
         }
@@ -190,6 +194,7 @@ public class SyncAdapter
         Intent finish = new Intent(SYNC_FINISH);
         if (!TextUtils.isEmpty(mError))
             finish.putExtra(EXCEPTION, mError);
+        HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_FINISH is sent / mError is " + mError);
         getContext().sendBroadcast(finish);
     }
 
@@ -199,14 +204,17 @@ public class SyncAdapter
             String authority,
             SyncResult syncResult)
     {
+        HyperLog.v(Constants.TAG, "SyncAdapter: total layers for sync in " + layerGroup + " is " + layerGroup.getLayerCount());
         for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             if (isCanceled()) {
                 return;
             }
             ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
+                HyperLog.v(Constants.TAG, "SyncAdapter: " + layer + " is a layer group");
                 sync((LayerGroup) layer, authority, syncResult);
             } else if (layer instanceof INGWLayer) {
+                HyperLog.v(Constants.TAG, "SyncAdapter: " + layer + " is a NGW layer");
                 INGWLayer ngwLayer = (INGWLayer) layer;
                 String accountName = ngwLayer.getAccountName();
                 if (!mVersions.containsKey(accountName))
@@ -215,6 +223,7 @@ public class SyncAdapter
                 Pair<Integer, Integer> ver = mVersions.get(accountName);
                 ngwLayer.sync(authority, ver, syncResult);
             } else if (layer instanceof TrackLayer) {
+                HyperLog.v(Constants.TAG, "SyncAdapter: " + layer + " is a tracking layer");
                 ((TrackLayer) layer).sync();
             }
         }

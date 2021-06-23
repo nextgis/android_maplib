@@ -4,7 +4,7 @@
  * Author:  Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2015-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2018, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import android.content.SyncResult;
 import android.util.Log;
 import android.util.Pair;
 
+import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
@@ -147,14 +148,17 @@ public class NGWLookupTable extends Table
     @Override
     public void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult) {
         if (0 != (mSyncType & Constants.SYNC_NONE)) {
+            HyperLog.v(Constants.TAG, "Lookup table: " + getName() + " sync type is SYNC_NONE");
             return;
         }
 
         Map<String, String> remoteData = new Hashtable<>();
 
         try {
+            HyperLog.v(Constants.TAG, "Lookup table: " + getName() + " fillFromNGW");
             fillFromNGW(remoteData, null);
         } catch (IOException | NGException | JSONException e) {
+            HyperLog.v(Constants.TAG, "Lookup table: " + getName() + " exception " + e.getMessage());
             e.printStackTrace();
             String locMsg = e.getLocalizedMessage();
             if(locMsg != null) {
@@ -169,6 +173,7 @@ public class NGWLookupTable extends Table
             mData.putAll(remoteData);
             save();
             Log.d(Constants.TAG, "Update lookup table " + getName() + " from server");
+            HyperLog.v(Constants.TAG, "Lookup table: " + getName() + " update from server");
             return;
         }
 
@@ -181,6 +186,7 @@ public class NGWLookupTable extends Table
             }
         }
 
+        HyperLog.v(Constants.TAG, "Lookup table: " + getName() + " isSame is " + isSame);
         if(!isSame){
             mData.clear();
             mData.putAll(remoteData);
