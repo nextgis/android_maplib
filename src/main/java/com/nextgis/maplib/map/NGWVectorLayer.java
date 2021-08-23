@@ -602,17 +602,6 @@ public class NGWVectorLayer
             return;
         }
 
-        // 1. check NGW version
-        if (null != ver) {
-            int majorVer = ver.first;
-            int minorVer = ver.second;
-
-            if (mNgwVersionMajor != majorVer) {
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " layer: different NGW version! " + mNgwVersionMajor + " != " + majorVer);
-                return;
-            }
-        }
-
         // 2. get remote changes
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteGetAllowed is " + isRemoteGetAllowed());
         if (isRemoteGetAllowed())
