@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2020 NextGIS, info@nextgis.com
+ * Copyright (c) 2012-2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -72,6 +72,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ConcurrentModificationException;
@@ -1467,9 +1468,9 @@ public class NGWVectorLayer
     }
 
 
-    protected HttpURLConnection getHttpConnection(AccountUtil.AccountData accountData) throws IOException {
+    protected URLConnection getConnection(AccountUtil.AccountData accountData) throws IOException {
         URL url = new URL(getFeaturesUrl(accountData));
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        URLConnection connection = url.openConnection();
 
         final String basicAuth = NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
         if (null != basicAuth) {
@@ -1494,7 +1495,7 @@ public class NGWVectorLayer
         HashMap<Integer, List<Feature>> results = new HashMap<>();
 
         try {
-            HttpURLConnection urlConnection = getHttpConnection(accountData);
+            URLConnection urlConnection = getConnection(accountData);
             Log.d(TAG, "url: " + urlConnection.getURL().toString());
 
             InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
@@ -1532,7 +1533,8 @@ public class NGWVectorLayer
             }
             reader.close();
 
-            urlConnection.disconnect();
+            if (urlConnection instanceof HttpURLConnection)
+                ((HttpURLConnection) urlConnection).disconnect();
         } catch (MalformedURLException e) {
             log(e, "getFeatures(): MalformedURLException");
             syncResult.stats.numIoExceptions++;
