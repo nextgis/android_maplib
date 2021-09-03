@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2018 NextGIS, info@nextgis.com
+ * Copyright (c) 2015-2018, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -81,16 +81,12 @@ public class Connection
             String name,
             String login,
             String password,
-            String URL)
+            String url)
     {
         mName = name;
         mLogin = login;
         mPassword = password;
-        if (URL.startsWith("http")) {
-            mURL = URL;
-        } else {
-            mURL = "http://" + URL;
-        }
+        mURL = NGWUtil.getServerUrl(url);
         mIsConnected = false;
         mId = Connections.getNewId();
         mSupportedTypes = new ArrayList<>();
