@@ -421,6 +421,11 @@ public class NGWVectorLayer
             return;
         }
 
+        if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM && urlConnection.getURL().getProtocol().equals("http")) {
+            sURL = sURL.replace("http", "https");
+            urlConnection = NetworkUtil.getHttpConnection("GET", sURL, accountData.login, accountData.password);
+        }
+
         InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
         JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
         reader.beginArray();

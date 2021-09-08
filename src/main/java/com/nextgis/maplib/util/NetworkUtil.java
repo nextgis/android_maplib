@@ -213,6 +213,11 @@ public class NetworkUtil
             throw new IOException("Connection is null");
         }
         int responseCode = conn.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
+            targetURL = targetURL.replace("http", "https");
+            getStream(targetURL, username, password, outputStream);
+            return;
+        }
         if (responseCode != HttpURLConnection.HTTP_OK) {
             if(Constants.DEBUG_MODE)
                 Log.d(TAG, "Problem execute getStream: " + targetURL + " HTTP response: " +
