@@ -103,24 +103,53 @@ public class NetworkUtil
         return info.isConnected();
     }
 
+    public static HttpURLConnection getProperConnection(String targetURL) throws IOException {
+        URL url = new URL(targetURL);
+        // Open a HTTP connection to the URL
+        HttpURLConnection conn;
+        if (targetURL.startsWith("https://"))
+            return (HttpsURLConnection) url.openConnection();
+        else
+            return (HttpURLConnection) url.openConnection();
+    }
+
+
     public static HttpURLConnection getHttpConnection(
             String method,
             String targetURL,
             String username,
             String password)
             throws IOException {
-        URL url = new URL(targetURL);
-        // Open a HTTP connection to the URL
-        HttpURLConnection conn;
-        if (targetURL.startsWith("https://"))
-            conn = (HttpsURLConnection) url.openConnection();
-        else
-            conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = getProperConnection(targetURL);
 
         String basicAuth = getHTTPBaseAuth(username, password);
         if (null != basicAuth) {
             conn.setRequestProperty("Authorization", basicAuth);
         }
+
+        return getHttpConnection(method, targetURL, conn);
+    }
+
+    public static HttpURLConnection getHttpConnection(
+            String method,
+            String targetURL,
+            String auth)
+            throws IOException {
+        HttpURLConnection conn = getProperConnection(targetURL);
+
+        if (null != auth) {
+            conn.setRequestProperty("Authorization", auth);
+        }
+
+        return getHttpConnection(method, targetURL, conn);
+    }
+
+
+    public static HttpURLConnection getHttpConnection(
+            String method,
+            String targetURL,
+            HttpURLConnection conn)
+            throws IOException {
         conn.setRequestProperty("User-Agent", Constants.APP_USER_AGENT);
 
         // Allow Inputs
@@ -128,7 +157,7 @@ public class NetworkUtil
         // Don't use a cached copy.
         conn.setUseCaches(false);
         // Use a post method.
-        if(method.length() > 0)
+        if (method.length() > 0)
             conn.setRequestMethod(method);
 
         conn.setConnectTimeout(TIMEOUT_CONNECTION);
@@ -137,6 +166,7 @@ public class NetworkUtil
 
         return isValidUri(targetURL) ? conn : null;
     }
+
 
     public static boolean isValidUri(String url) {
         Pattern pattern = Pattern.compile(URL_PATTERN);
@@ -206,6 +236,15 @@ public class NetworkUtil
         String message = conn.getResponseMessage();
         HttpResponse response = new HttpResponse(code, message);
 
+        if (code == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
+            if (method.equals("PUT") || method.equals("POST")) {
+                return response;
+            }
+            String target = conn.getURL().toString().replace("http", "https");
+            HttpURLConnection connection = getHttpConnection(conn.getRequestMethod(), target, conn.getHeaderField("Authorization"));
+            return getHttpResponse(connection, readErrorResponseBody);
+        }
+
         if (!(code == HttpURLConnection.HTTP_OK
                 || (code == HttpURLConnection.HTTP_CREATED && method.equals(HTTP_POST)))) {
             if (Constants.DEBUG_MODE) {
@@ -273,7 +312,12 @@ public class NetworkUtil
         writer.close();
         os.close();
 
-        return getHttpResponse(conn, readErrorResponseBody);
+        HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
+        if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
+            targetURL = targetURL.replace("http", "https");
+            return post(targetURL, payload, username, password, readErrorResponseBody);
+        }
+        return response;
     }
 
     public static HttpResponse delete(
@@ -319,7 +363,12 @@ public class NetworkUtil
         writer.close();
         os.close();
 
-        return getHttpResponse(conn, readErrorResponseBody);
+        HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
+        if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
+            targetURL = targetURL.replace("http", "https");
+            return put(targetURL, payload, username, password, readErrorResponseBody);
+        }
+        return response;
     }
 
 
@@ -373,7 +422,12 @@ public class NetworkUtil
         dos.flush();
         dos.close();
 
-        return getHttpResponse(conn, readErrorResponseBody);
+        HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
+        if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
+            targetURL = targetURL.replace("http", "https");
+            return postFile(targetURL, fileName, file, fileMime, username, password, readErrorResponseBody);
+        }
+        return response;
     }
 
     public static String trimSlash(String url) {

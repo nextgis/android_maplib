@@ -83,6 +83,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import static com.nextgis.maplib.datasource.ngw.Connection.NGWResourceTypePostgisLayer;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_ATTACH;
 import static com.nextgis.maplib.util.Constants.CHANGE_OPERATION_TEMP;
@@ -1479,13 +1481,22 @@ public class NGWVectorLayer
     }
 
 
-    protected URLConnection getConnection(AccountUtil.AccountData accountData) throws IOException {
-        URL url = new URL(getFeaturesUrl(accountData));
-        URLConnection connection = url.openConnection();
-
+    protected void authenticate(AccountUtil.AccountData accountData, HttpURLConnection connection) {
         final String basicAuth = NetworkUtil.getHTTPBaseAuth(accountData.login, accountData.password);
         if (null != basicAuth) {
             connection.setRequestProperty("Authorization", basicAuth);
+        }
+    }
+
+    protected HttpURLConnection getConnection(AccountUtil.AccountData accountData) throws IOException {
+        URL url = new URL(getFeaturesUrl(accountData));
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        authenticate(accountData, connection);
+
+        if (connection.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM && url.getProtocol().equals("http")) {
+            url = new URL(url.toString().replace("http", "https"));
+            connection = (HttpsURLConnection) url.openConnection();
+            authenticate(accountData, connection);
         }
 
         return connection;
@@ -1506,7 +1517,7 @@ public class NGWVectorLayer
         HashMap<Integer, List<Feature>> results = new HashMap<>();
 
         try {
-            URLConnection urlConnection = getConnection(accountData);
+            HttpURLConnection urlConnection = getConnection(accountData);
             Log.d(TAG, "url: " + urlConnection.getURL().toString());
 
             InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
@@ -1544,8 +1555,7 @@ public class NGWVectorLayer
             }
             reader.close();
 
-            if (urlConnection instanceof HttpURLConnection)
-                ((HttpURLConnection) urlConnection).disconnect();
+            urlConnection.disconnect();
         } catch (MalformedURLException e) {
             log(e, "getFeatures(): MalformedURLException");
             syncResult.stats.numIoExceptions++;
