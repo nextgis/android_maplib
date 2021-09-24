@@ -246,7 +246,8 @@ public class NetworkUtil
                 return response;
             }
             String target = conn.getURL().toString().replace("http", "https");
-            HttpURLConnection connection = getHttpConnection(conn.getRequestMethod(), target, conn.getHeaderField("Authorization"));
+            String auth = conn.getRequestProperty("Authorization");
+            HttpURLConnection connection = getHttpConnection(conn.getRequestMethod(), target, auth);
             return getHttpResponse(connection, readErrorResponseBody);
         }
 
