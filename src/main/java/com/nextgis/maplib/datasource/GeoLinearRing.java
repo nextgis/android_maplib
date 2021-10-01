@@ -64,6 +64,10 @@ public class GeoLinearRing
             if (!isClosed()) {
                 buf.append(mPoints.get(0).toWKT(false));
                 buf.append(")");
+            } else {
+                buf.deleteCharAt(buf.length() - 1);
+                buf.deleteCharAt(buf.length() - 1);
+                buf.append(")");
             }
         }
         return buf.toString();
