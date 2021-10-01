@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2016 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2016, 2018-2019, 2021 NextGIS, info@nextgis.com
  *
  * The simplify algorithm adopted from simplify-java project under the MIT license
  * Copyright (c) 2013 Heinrich Göbl
@@ -177,7 +177,11 @@ public class GeoLineString
         }
 
         if (wkt.startsWith("(")) {
-            wkt = wkt.substring(1, wkt.length() - 1);
+            int len = wkt.length();
+            if (wkt.endsWith(")")) {
+                len--;
+            }
+            wkt = wkt.substring(1, len);
         }
 
         for (String token : wkt.split(",")) {

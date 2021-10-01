@@ -5,7 +5,7 @@
  * Author:   NikitaFeodonit, nfeodonit@yandex.com
  * Author:   Stanislav Petriakov, becomeglory@gmail.com
  * *****************************************************************************
- * Copyright (c) 2012-2017 NextGIS, info@nextgis.com
+ * Copyright (c) 2014-2017, 2021 NextGIS, info@nextgis.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser Public License as published by
@@ -61,8 +61,10 @@ public class GeoLinearRing
                 buf.append(pt.toWKT(false));
                 buf.append(", ");
             }
-            buf.append(mPoints.get(0).toWKT(false));
-            buf.append(")");
+            if (!isClosed()) {
+                buf.append(mPoints.get(0).toWKT(false));
+                buf.append(")");
+            }
         }
         return buf.toString();
     }
