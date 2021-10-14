@@ -40,6 +40,7 @@ import android.util.Pair;
 
 import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
+import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
@@ -73,7 +74,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ConcurrentModificationException;
@@ -82,6 +82,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -586,6 +588,35 @@ public class NGWVectorLayer
     }
 
 
+    protected void replaceUuidWithUrl(SyncResult syncResult) {
+        AccountUtil.AccountData accountData;
+        try {
+            accountData = AccountUtil.getAccountData(mContext, mAccountName);
+            String uuidPattern = "([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})";
+            String url = accountData.url;
+            Matcher uuidMatcher = Pattern.compile(uuidPattern).matcher(url);
+            if (!uuidMatcher.find()) {
+                return;
+            }
+            String uuid = uuidMatcher.group();
+            HttpResponse response =
+                    NetworkUtil.get(NGWUtil.getNgwVersionUrl(accountData.url), accountData.login, accountData.password, false);
+            if (!response.isOk() && response.getResponseCode() == 404) {
+                String gcUrl = NGWUtil.getNgwUrlResolverUrl(uuid);
+                String newUrl = NGWUtil.getRealNgwUrlFromUuid(gcUrl).replace("\"", "");
+                IGISApplication app = (IGISApplication) mContext.getApplicationContext();
+                app.setUserData(mAccountName, "url", newUrl);
+            }
+        } catch (IllegalStateException e) {
+            log(e, "replaceUuidWithUrl(): account is null " + e.getMessage());
+            syncResult.stats.numAuthExceptions++;
+        } catch (IOException e) {
+            log(e, "replaceUuidWithUrl(): IOException: " + e.getMessage());
+            syncResult.stats.numIoExceptions++;
+        }
+    }
+
+
     /**
      * Synchronize changes with NGW. Should be run from non UI thread.
      *
@@ -609,6 +640,9 @@ public class NGWVectorLayer
             }
             return;
         }
+
+        // 1. check for old UUID URL and replace it
+        replaceUuidWithUrl(syncResult);
 
         // 2. get remote changes
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteGetAllowed is " + isRemoteGetAllowed());
