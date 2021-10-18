@@ -106,7 +106,6 @@ public class NetworkUtil
     public static HttpURLConnection getProperConnection(String targetURL) throws IOException {
         URL url = new URL(targetURL);
         // Open a HTTP connection to the URL
-        HttpURLConnection conn;
         if (targetURL.startsWith("https://"))
             return (HttpsURLConnection) url.openConnection();
         else
