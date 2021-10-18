@@ -181,6 +181,21 @@ public class NGWUtil
     }
 
 
+    public static String getNgwUrlResolverUrl(String uuid)
+    {
+        return "https://groundcontrol.nimbo.nextgis.net/api/instance/" + uuid + "/url";
+    }
+
+
+    public static String getRealNgwUrlFromUuid(String url) throws IOException {
+        HttpResponse response = NetworkUtil.get(url, null, null, false);
+        if (response.isOk()) {
+            return response.mResponseBody;
+        }
+        return null;
+    }
+
+
     public static Pair<Integer, Integer> getNgwVersion(Context context, String account) {
         Pair<Integer, Integer> ver = new Pair<>(-1, -1);
         try {
