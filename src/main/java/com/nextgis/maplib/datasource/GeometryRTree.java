@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -701,15 +702,16 @@ public class GeometryRTree implements IGeometryCache {
             if (n.mChildren.size() <= 0) throw new AssertionError("tighten() called on empty node!");
             n.mCoords.unInit();
 
-            for (Node c : n.mChildren)
-            {
-                // we may have bulk-added a bunch of children to a node (eg. in
-                // splitNode)
-                // so here we just enforce the child->parent relationship.
-                //c.mParent = n;
+            try {
+                for (Node c : n.mChildren) {
+                    // we may have bulk-added a bunch of children to a node (eg. in
+                    // splitNode)
+                    // so here we just enforce the child->parent relationship.
+                    //c.mParent = n;
 
-                n.mCoords.merge(c.mCoords);
-            }
+                    n.mCoords.merge(c.mCoords);
+                }
+            } catch (ConcurrentModificationException ignored) {}
         }
     }
 

@@ -152,19 +152,20 @@ public class GeoEnvelope
     }
 
 
-    public void merge(final GeoEnvelope other)
-    {
-        if (isInit()) {
-            mMinX = Math.min(mMinX, other.mMinX);
-            mMaxX = Math.max(mMaxX, other.mMaxX);
-            mMinY = Math.min(mMinY, other.mMinY);
-            mMaxY = Math.max(mMaxY, other.mMaxY);
-        } else {
-            mMinX = other.mMinX;
-            mMaxX = other.mMaxX;
-            mMinY = other.mMinY;
-            mMaxY = other.mMaxY;
-        }
+    public void merge(final GeoEnvelope other) {
+        try {
+            if (isInit() && other.isInit()) {
+                mMinX = Math.min(mMinX, other.mMinX);
+                mMaxX = Math.max(mMaxX, other.mMaxX);
+                mMinY = Math.min(mMinY, other.mMinY);
+                mMaxY = Math.max(mMaxY, other.mMaxY);
+            } else {
+                mMinX = other.mMinX;
+                mMaxX = other.mMaxX;
+                mMinY = other.mMinY;
+                mMaxY = other.mMaxY;
+            }
+        } catch (Exception ignored) {}
     }
 
 
