@@ -55,6 +55,7 @@
     <string name="processed">Processed</string>
     <string name="of">of</string>
     <string name="rebuild_cache">Rebuild cache</string>
+    <string name="updating_data">Updating data…</string>
     <string name="clear_cache">Clear cache</string>
     <string name="general">General</string>
     <string name="fields">Fields</string>

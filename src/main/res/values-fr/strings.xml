@@ -57,6 +57,7 @@
     <string name="processed">Analysé</string>
     <string name="of">de</string>
     <string name="rebuild_cache">Reconstruction du cache</string>
+    <string name="updating_data">Updating data…</string>
     <string name="clear_cache">Nettoyer le cache</string>
     <string name="general">Générale</string>
     <string name="fields">Champs</string>

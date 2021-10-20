@@ -55,6 +55,7 @@
     <string name="processed">Обработано</string>
     <string name="of">из</string>
     <string name="rebuild_cache">Перестроить кэш</string>
+    <string name="updating_data">Обновление данных…</string>
     <string name="clear_cache">Очистить кэш</string>
     <string name="general">Общее</string>
     <string name="fields">Поля</string>

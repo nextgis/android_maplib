@@ -56,6 +56,7 @@
     <string name="processed">Zpracované</string>
     <string name="of">z</string>
     <string name="rebuild_cache">Obnovit mezipaměť</string>
+    <string name="updating_data">Updating data…</string>
     <string name="clear_cache">Clear cache</string>
     <string name="general">Obecné</string>
     <string name="fields">Pole</string>
