@@ -30,6 +30,7 @@ android {
         targetSdkVersion 30
         versionCode 89
         versionName '2.6.31'
+        buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
     }
