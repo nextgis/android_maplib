@@ -28,6 +28,7 @@ import com.nextgis.maplib.R;
 
 import java.util.List;
 
+import static com.nextgis.maplib.util.Constants.VECTOR_FORBIDDEN_CHARS;
 
 /**
  * Raster and vector utilities
@@ -50,13 +51,12 @@ public class LayerUtil {
     }
 
     public static String normalizeFieldName(String fieldName) {
-        char [] forbiddenChars = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')', '+', '-', '?', '=', '/', '\\', '"', '\'', '[', ']', ',', ' '};
         String result = fieldName;
 
         if (Character.isDigit(result.charAt(0)))
             result = "_" + result;
 
-        for(char testChar : forbiddenChars)
+        for(char testChar : VECTOR_FORBIDDEN_CHARS)
             result = result.replace(testChar, '_');
 
         if(result.equals(Constants.FIELD_ID))
