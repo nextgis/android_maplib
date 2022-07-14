@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -118,6 +119,8 @@ public class NGWUtil
         }
 
         sUrl += "/login";
+        login = URLEncoder.encode(login, "UTF-8").replaceAll("\\+", "%20");
+        password = URLEncoder.encode(password, "UTF-8").replaceAll("\\+", "%20");
         String sPayload = "login=" + login + "&password=" + password;
         final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
         if (null == conn) {
