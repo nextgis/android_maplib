@@ -203,16 +203,23 @@ public class GeoPolygon
         pos = wkt.indexOf("(");
         while (pos != Constants.NOT_FOUND) {
             wkt = wkt.substring(pos + 1, wkt.length());
-            pos = wkt.indexOf(")") - 1;
-            if (pos < 1) {
-                return;
-            }
+            pos = wkt.indexOf(")") ;
+
 
             GeoLinearRing innerRing = new GeoLinearRing();
-            innerRing.setCoordinatesFromWKT(wkt.substring(0, pos), crs);
+            if (pos == Constants.NOT_FOUND) // no inner rings
+            {
+                innerRing.setCoordinatesFromWKT(wkt, crs);
+            } else {
+                innerRing.setCoordinatesFromWKT(wkt.substring(0, pos -1 ), crs);
+            }
+
             mInnerRings.add(innerRing);
 
             pos = wkt.indexOf("(");
+            if (pos < 1) {
+                return;
+            }
         }
     }
 
