@@ -245,6 +245,8 @@ public class GeoPolygon
             if (mInnerRings.size() > 0) {
                 buf.append(", ");
                 for (int i = 0; i < mInnerRings.size(); i++) {
+                    if (i>0)
+                        buf.append(", ");
                     GeoLinearRing ring = mInnerRings.get(i);
                     buf.append(ring.toWKT(false));
                 }
