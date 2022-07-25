@@ -109,7 +109,8 @@ public class NGWUtil
     public static String getConnectionCookie(
             AtomicReference<String> reference,
             String login,
-            String password)
+            String password,
+            boolean useUrlEncode)
             throws IOException
     {
         String sUrl = reference.get();
@@ -119,8 +120,10 @@ public class NGWUtil
         }
 
         sUrl += "/login";
-        login = URLEncoder.encode(login, "UTF-8").replaceAll("\\+", "%20");
-        password = URLEncoder.encode(password, "UTF-8").replaceAll("\\+", "%20");
+        if (useUrlEncode) {
+            login = URLEncoder.encode(login, "UTF-8").replaceAll("\\+", "%20");
+            password = URLEncoder.encode(password, "UTF-8").replaceAll("\\+", "%20");
+        }
         String sPayload = "login=" + login + "&password=" + password;
         final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
         if (null == conn) {
@@ -158,7 +161,7 @@ public class NGWUtil
             reference.set(sUrl);
         }
 
-        return getConnectionCookie(reference, login, password);
+        return getConnectionCookie(reference, login, password,false);
     }
 
     public static String appendix() {

@@ -102,7 +102,7 @@ public class Connection
         if (!guest) {
             try {
                 AtomicReference<String> reference = new AtomicReference<>(mURL);
-                mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword);
+                mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword, true);
                 if (null == mCookie) {
                     return false;
                 }
