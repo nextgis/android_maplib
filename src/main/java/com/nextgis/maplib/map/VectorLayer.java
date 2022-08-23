@@ -2544,7 +2544,11 @@ public class VectorLayer
 
                     if (null != geometry) {
                         long rowId = cursor.getLong(0);
-                        mCache.addItem(rowId, geometry.getEnvelope());
+                        try { // fail on debugapp
+                            mCache.addItem(rowId, geometry.getEnvelope());
+                        } catch ( Exception ex){
+                            Log.e("envelope fail", ex.getMessage());
+                        }
                     }
 
                     if (null != progressor) {

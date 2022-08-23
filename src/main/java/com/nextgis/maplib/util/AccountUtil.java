@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.SyncInfo;
 import android.os.Build;
 import android.util.Base64;
+import android.util.Log;
 
 import com.nextgis.maplib.api.IGISApplication;
 
@@ -49,6 +50,7 @@ import static com.nextgis.maplib.util.Constants.JSON_START_DATE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_SUPPORTED_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_USER_ID_KEY;
 import static com.nextgis.maplib.util.Constants.SUPPORT;
+import static com.nextgis.maplib.util.Constants.TAG;
 
 public class AccountUtil {
     public static boolean isProUser(Context context) {
@@ -58,6 +60,8 @@ public class AccountUtil {
         else
             support = new File(support, SUPPORT);
 
+        if (!support.exists())      
+            return false;
         try {
             String jsonString = FileUtil.readFromFile(support);
             JSONObject json = new JSONObject(jsonString);
@@ -70,7 +74,9 @@ public class AccountUtil {
 
                 return verifySignature(data, signature);
             }
-        } catch (JSONException | IOException ignored) { }
+        } catch (JSONException | IOException ignored) {
+            Log.e(TAG, ignored.getMessage());
+        }
 
         return false;
     }
