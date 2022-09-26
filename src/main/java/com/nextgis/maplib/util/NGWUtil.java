@@ -46,8 +46,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -102,6 +105,8 @@ public class NGWUtil
     public static String NGID = "";
     public static String UUID = "";
 
+    public static final  String ngLoginPart = "/api/component/auth/login";
+
     /**
      * NGW API Functions
      */
@@ -114,12 +119,12 @@ public class NGWUtil
             throws IOException
     {
         String sUrl = reference.get();
-        if (!sUrl.startsWith("http")) {
-            sUrl = "http://" + sUrl;
+        if (!sUrl.startsWith("https")) {
+            sUrl = "https://" + sUrl;
             reference.set(sUrl);
         }
 
-        sUrl += "/login";
+        sUrl += ngLoginPart;
         if (useUrlEncode) {
             login = URLEncoder.encode(login, "UTF-8").replaceAll("\\+", "%20");
             password = URLEncoder.encode(password, "UTF-8").replaceAll("\\+", "%20");
@@ -144,20 +149,22 @@ public class NGWUtil
         os.close();
 
         int responseCode = conn.getResponseCode();
-        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM)) {
+        if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP
+                || responseCode == HttpURLConnection.HTTP_MOVED_PERM
+                || responseCode == HttpURLConnection.HTTP_OK)) {
             Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " + responseCode);
             return null;
         }
 
         String headerName;
         for (int i = 1; (headerName = conn.getHeaderFieldKey(i)) != null; i++) {
-            if (headerName.equals("Set-Cookie")) {
+            if (headerName.toLowerCase().equals("set-cookie")) {
                 return conn.getHeaderField(i);
             }
         }
 
         if (!sUrl.startsWith("https")) {
-            sUrl = sUrl.replace("http", "https").replace("/login", "");
+            sUrl = sUrl.replace("http", "https").replace(ngLoginPart, "");
             reference.set(sUrl);
         }
 
