@@ -101,6 +101,8 @@ import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
 
+import io.tus.java.client.ProtocolException;
+
 
 public class NGWVectorLayer
         extends VectorLayer
@@ -1006,17 +1008,16 @@ public class NGWVectorLayer
 
 
     protected boolean proceedAttach(JSONObject result, SyncResult syncResult) throws JSONException {
-        // get attach info
-        if (!result.has("upload_meta")) {
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " + result.toString());
-            }
-            syncResult.stats.numParseExceptions++;
-            return false;
-        }
+        // get attach info // old json  answer
+        //        if (!result.has("upload_meta")) {
+        //            if (Constants.DEBUG_MODE) {
+        //                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " + result.toString());
+        //            }
+        //            syncResult.stats.numParseExceptions++;
+        //            return false;
+        //        }
 
-        JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
-        if (uploadMetaArray.length() == 0) {
+        if (!(result.has("id" ) || result.has("size") || result.has("mime_type") )){
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
             }
@@ -1024,14 +1025,24 @@ public class NGWVectorLayer
             return false;
         }
 
+        //old json  answer
+        //        JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
+        //        if (uploadMetaArray.length() == 0) {
+        //            if (Constants.DEBUG_MODE) {
+        //                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
+        //            }
+        //            syncResult.stats.numParseExceptions++;
+        //            return false;
+        //        }
         return true;
     }
 
     protected HttpResponse sendFeatureAttachOnServer(JSONObject result, long featureId, AttachItem attach) throws JSONException, IOException {
         // add attachment to row
         JSONObject postJsonData = new JSONObject();
-        JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
-        postJsonData.put("file_upload", uploadMetaArray.get(0));
+        //JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
+        //postJsonData.put("file_upload", uploadMetaArray.get(0));
+        postJsonData.put("file_upload", result);
         postJsonData.put("description", attach.getDescription());
         String postload = postJsonData.toString();
         if (Constants.DEBUG_MODE) {

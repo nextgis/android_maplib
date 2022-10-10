@@ -24,6 +24,7 @@
 package com.nextgis.maplib.util;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
@@ -44,12 +45,24 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.tus.android.client.TusPreferencesURLStore;
+import io.tus.java.client.ProtocolException;
+import io.tus.java.client.TusClient;
+import io.tus.java.client.TusExecutor;
+import io.tus.java.client.TusUpload;
+import io.tus.java.client.TusUploader;
 import javax.net.ssl.HttpsURLConnection;
 
 import static com.nextgis.maplib.util.Constants.TAG;
+
+import org.json.JSONObject;
+
+import io.tus.android.client.TusPreferencesURLStore;
 
 
 public class NetworkUtil
@@ -387,52 +400,65 @@ public class NetworkUtil
             boolean readErrorResponseBody)
             throws IOException
     {
-        final String lineEnd = "\r\n";
-        final String twoHyphens = "--";
-        final String boundary = "**nextgis**";
 
         //------------------ CLIENT REQUEST
-        FileInputStream fileInputStream = new FileInputStream(file);
         // open a URL connection to the Servlet
-
         HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
         if (null == conn) {
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
-            return new HttpResponse(ERROR_CONNECT_FAILED);
-        }
-        conn.setRequestProperty("Connection", "Keep-Alive");
-        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-        // Allow Outputs
-        conn.setDoOutput(true);
-
-        DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
-        dos.writeBytes(twoHyphens + boundary + lineEnd);
-        dos.writeBytes(
-                "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" +
-                lineEnd);
-
-        if (!TextUtils.isEmpty(fileMime)) {
-            dos.writeBytes("Content-Type: " + fileMime + lineEnd);
+            return  new HttpResponse(ERROR_CONNECT_FAILED);
         }
 
-        dos.writeBytes(lineEnd);
-
-        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
-        FileUtil.copyStream(fileInputStream, dos, buffer, Constants.IO_BUFFER_SIZE);
-
-        dos.writeBytes(lineEnd);
-        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-        fileInputStream.close();
-        dos.flush();
-        dos.close();
-
-        HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
-        if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
-            targetURL = targetURL.replace("http", "https");
-            return postFile(targetURL, fileName, file, fileMime, username, password, readErrorResponseBody);
+        final TusClient client = new TusClient();
+        client.prepareConnection(conn);
+        client.setUploadCreationURL(new URL(targetURL));
+        String basicAuth = getHTTPBaseAuth(username, password);
+        if (null != basicAuth) {
+            conn.setRequestProperty("Authorization", basicAuth);
         }
-        return response;
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", basicAuth);
+        headers.put("Connection", "Keep-Alive");
+        client.setHeaders(headers);
+
+        String returnUrl = "";
+        final TusUpload upload = new TusUpload(file);
+
+        try {
+            TusUploader uploader = client.resumeOrCreateUpload(upload);
+            uploader.setChunkSize(10240);
+
+            do {
+                //long totalBytes = upload.getSize();
+                //long bytesUploaded = uploader.getOffset();
+                //double progress = (double) bytesUploaded / totalBytes * 100;
+                //System.out.printf("Upload at %06.2f%%.\n", progress);
+            } while (uploader.uploadChunk() > -1);
+            uploader.finish();
+            returnUrl = uploader.getUploadURL().toString();
+
+        } catch (ProtocolException exception) {
+            return new HttpResponse(0);
+        }
+
+        if (! TextUtils.isEmpty(returnUrl) ){
+            HttpResponse response = NetworkUtil.get(returnUrl, username, password,false);
+            if (response.mIsOk){
+                try {
+                    JSONObject result = new JSONObject(response.getResponseBody());
+                    result.put("name", fileName);
+                    HttpResponse responseS = new HttpResponse(response.getResponseCode(), response.getResponseMessage(),
+                            result.toString());
+                    responseS.setOk(true);
+                    return  responseS;
+                } catch (Exception ex){
+                    Log.e("ff", ex.getMessage());
+                }
+                return response;
+            }
+        }
+        return new HttpResponse(200);
     }
 
     public static String trimSlash(String url) {

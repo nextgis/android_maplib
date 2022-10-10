@@ -184,7 +184,7 @@ public class NGWUtil
 
     public static String getFileUploadUrl(String server)
     {
-        return getServerUrl(server) + "/api/component/file_upload/upload" + appendix();
+        return getServerUrl(server) + "/api/component/file_upload/" + appendix();
     }
 
 
