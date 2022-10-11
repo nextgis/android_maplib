@@ -100,6 +100,8 @@ import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
+import static com.nextgis.maplib.util.NetworkUtil.getUserAgentPostfix;
+import static com.nextgis.maplib.util.NetworkUtil.getUserAgentPrefix;
 
 import io.tus.java.client.ProtocolException;
 
@@ -1541,11 +1543,19 @@ public class NGWVectorLayer
     protected HttpURLConnection getConnection(AccountUtil.AccountData accountData) throws IOException {
         URL url = new URL(getFeaturesUrl(accountData));
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setRequestProperty("User-Agent",
+                getUserAgentPrefix() + " "
+                        + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+
         authenticate(accountData, connection);
 
         if (connection.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM && url.getProtocol().equals("http")) {
             url = new URL(url.toString().replace("http", "https"));
             connection = (HttpsURLConnection) url.openConnection();
+            connection.setRequestProperty("User-Agent",
+                    getUserAgentPrefix() + " "
+                            + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
             authenticate(accountData, connection);
         }
 

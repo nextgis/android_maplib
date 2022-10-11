@@ -131,10 +131,16 @@ public class NetworkUtil
     public static HttpURLConnection getProperConnection(String targetURL) throws IOException {
         URL url = new URL(targetURL);
         // Open a HTTP connection to the URL
+        HttpURLConnection result = null;
         if (targetURL.startsWith("https://"))
-            return (HttpsURLConnection) url.openConnection();
+             result = (HttpsURLConnection) url.openConnection();
         else
-            return (HttpURLConnection) url.openConnection();
+            result= (HttpURLConnection) url.openConnection();
+        result.setRequestProperty("User-Agent",
+                getUserAgentPrefix() + " "
+                        + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+        return result;
+
     }
 
 
@@ -433,6 +439,9 @@ public class NetworkUtil
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", basicAuth);
         headers.put("Connection", "Keep-Alive");
+        headers.put("User-Agent",
+                getUserAgentPrefix() + " "
+                        + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
         client.setHeaders(headers);
 
         String returnUrl = "";
