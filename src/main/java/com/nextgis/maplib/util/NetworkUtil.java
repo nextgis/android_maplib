@@ -24,7 +24,6 @@
 package com.nextgis.maplib.util;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
@@ -36,9 +35,7 @@ import com.nextgis.maplib.R;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,10 +47,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.tus.android.client.TusPreferencesURLStore;
 import io.tus.java.client.ProtocolException;
 import io.tus.java.client.TusClient;
-import io.tus.java.client.TusExecutor;
 import io.tus.java.client.TusUpload;
 import io.tus.java.client.TusUploader;
 import javax.net.ssl.HttpsURLConnection;
@@ -61,8 +56,6 @@ import javax.net.ssl.HttpsURLConnection;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 import org.json.JSONObject;
-
-import io.tus.android.client.TusPreferencesURLStore;
 
 
 public class NetworkUtil
@@ -77,6 +70,25 @@ public class NetworkUtil
     public final TelephonyManager    mTelephonyManager;
     protected       long                mLastCheckTime;
     protected       Context             mContext;
+
+    static String userAgentPrefix = "none";
+    static String userAgentPostfix = "none";
+
+    public static String getUserAgentPrefix(){
+        return userAgentPrefix;
+    }
+
+    public static void setUserAgentPrefix(final String pref){
+        userAgentPrefix = pref;
+    }
+
+    public static String getUserAgentPostfix(){
+        return userAgentPostfix;
+    }
+
+    public static void setUserAgentPostfix(final String pref){
+        userAgentPostfix = pref;
+    }
 
     public final static int TIMEOUT_CONNECTION = 10000;
     public final static int TIMEOUT_SOCKET = 240000; // 180 sec
@@ -162,7 +174,8 @@ public class NetworkUtil
             String targetURL,
             HttpURLConnection conn)
             throws IOException {
-        conn.setRequestProperty("User-Agent", Constants.APP_USER_AGENT);
+        conn.setRequestProperty("User-Agent", getUserAgentPrefix() + " "
+                + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
 
         // Allow Inputs
         conn.setDoInput(true);
