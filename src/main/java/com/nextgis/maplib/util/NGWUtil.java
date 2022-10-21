@@ -397,9 +397,8 @@ public class NGWUtil
             String where)
     {
         if (TextUtils.isEmpty(where))
-            return getFeaturesUrl(server, remoteId);
-
-        return getFeaturesUrl(server, remoteId) + "?" + where;
+            return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=";
+        return getFeaturesUrl(server, remoteId) + "?" + where + "&dt_format=iso&?extensions=";
     }
 
 
