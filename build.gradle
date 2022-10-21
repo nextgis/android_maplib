@@ -29,7 +29,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 30
         versionCode 91
-        versionName '2.6.38'
+        versionName '2.6.39'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
