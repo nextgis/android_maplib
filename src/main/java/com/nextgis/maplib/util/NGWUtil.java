@@ -509,8 +509,11 @@ public class NGWUtil
                                 break;
                             case GeoConstants.FTDate:
                             case GeoConstants.FTTime:
+                                readNGWDateOrTime(feature, reader, field.getName(), field.getType());
+                                bAdded = true;
+                                break;
                             case GeoConstants.FTDateTime:
-                                readNGWDate(feature, reader, field.getName());
+                                readNGWDateTime(feature, reader, field.getName());
                                 bAdded = true;
                                 break;
                             default:
@@ -527,33 +530,93 @@ public class NGWUtil
         reader.endObject();
     }
 
+// previous getDateTime format (not iso)
+//    private static void readNGWDate(Feature feature, JsonReader reader, String fieldName)
+//            throws IOException
+//    {
+//        reader.beginObject();
+//        int nYear = 1900;
+//        int nMonth = 1;
+//        int nDay = 1;
+//        int nHour = 0;
+//        int nMinute = 0;
+//        int nSecond = 0;
+//        while (reader.hasNext()) {
+//            String name = reader.nextName();
+//            if (name.equals(NGWUtil.NGWKEY_YEAR)) {
+//                nYear = reader.nextInt();
+//            } else if (name.equals(NGWUtil.NGWKEY_MONTH)) {
+//                nMonth = reader.nextInt();
+//            } else if (name.equals(NGWUtil.NGWKEY_DAY)) {
+//                nDay = reader.nextInt();
+//            } else if (name.equals(NGWUtil.NGWKEY_HOUR)) {
+//                nHour = reader.nextInt();
+//            } else if (name.equals(NGWUtil.NGWKEY_MINUTE)) {
+//                nMinute = reader.nextInt();
+//            } else if (name.equals(NGWUtil.NGWKEY_SECOND)) {
+//                nSecond = reader.nextInt();
+//            } else {
+//                reader.skipValue();
+//            }
+//        }
+//
+//        TimeZone timeZone = TimeZone.getDefault();
+//        timeZone.setRawOffset(0); // set to UTC
+//        Calendar calendar = new GregorianCalendar(timeZone);
+//        calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
+//        calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
+//        feature.setFieldValue(fieldName, calendar.getTimeInMillis());
+//
+//        reader.endObject();
+//    }
 
-    private static void readNGWDate(Feature feature, JsonReader reader, String fieldName)
+    private static void readNGWDateOrTime(Feature feature, JsonReader reader, String fieldName, int type)
             throws IOException
     {
-        reader.beginObject();
+        String dateOrTime = reader.nextString();
+
         int nYear = 1900;
         int nMonth = 1;
         int nDay = 1;
         int nHour = 0;
         int nMinute = 0;
-        int nSecond = 0;
-        while (reader.hasNext()) {
-            String name = reader.nextName();
-            if (name.equals(NGWUtil.NGWKEY_YEAR)) {
-                nYear = reader.nextInt();
-            } else if (name.equals(NGWUtil.NGWKEY_MONTH)) {
-                nMonth = reader.nextInt();
-            } else if (name.equals(NGWUtil.NGWKEY_DAY)) {
-                nDay = reader.nextInt();
-            } else if (name.equals(NGWUtil.NGWKEY_HOUR)) {
-                nHour = reader.nextInt();
-            } else if (name.equals(NGWUtil.NGWKEY_MINUTE)) {
-                nMinute = reader.nextInt();
-            } else if (name.equals(NGWUtil.NGWKEY_SECOND)) {
-                nSecond = reader.nextInt();
-            } else {
-                reader.skipValue();
+        int nSecond = 0; // init data
+
+        if (type ==  GeoConstants.FTDate){ // date only in yyyy-MM-dd format
+
+            final String ISO8601DATEFORMAT = "yyyy-MM-dd";
+            SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATEFORMAT, Locale.getDefault());
+            dateformat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Calendar calendar = new GregorianCalendar() ;
+
+            try {
+                Date date = dateformat.parse(dateOrTime);
+                calendar.setTime(date);
+                calendar.set(Calendar.MILLISECOND, 0);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+            nYear = calendar.get(Calendar.YEAR);
+            nMonth = calendar.get(Calendar.MONTH) + 1;
+            nDay = calendar.get(Calendar.DAY_OF_MONTH);
+
+        }
+
+        if (type ==  GeoConstants.FTTime){// time only in HH:mm:ss format
+
+            final String ISO8601TIMEFORMAT = "HH:mm:ss";
+            SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601TIMEFORMAT, Locale.getDefault());
+            dateformat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            try {
+                Date date = dateformat.parse(dateOrTime);
+                nHour = date.getHours();
+                nMinute = date.getMinutes();
+                nSecond = date.getSeconds();
+
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
         }
 
@@ -562,11 +625,31 @@ public class NGWUtil
         Calendar calendar = new GregorianCalendar(timeZone);
         calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
         calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
-        feature.setFieldValue(fieldName, calendar.getTimeInMillis());
 
-        reader.endObject();
+        feature.setFieldValue(fieldName, calendar.getTimeInMillis());
     }
 
+    private static void readNGWDateTime(Feature feature, JsonReader reader, String fieldName)
+            throws IOException
+    {
+
+        String dateString = reader.nextString();
+
+        final String ISO8601DATETIMEFORMAT = "yyyy-MM-dd'T'HH:mm:ss";
+        SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATETIMEFORMAT, Locale.getDefault());
+        dateformat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Calendar calendar = new GregorianCalendar() ;
+
+        try {
+            Date date = dateformat.parse(dateString);
+            calendar.setTime(date);
+            calendar.set(Calendar.MILLISECOND, 0);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        feature.setFieldValue(fieldName, calendar.getTimeInMillis());
+    }
 
     private static void readNGWFeatureAttachments(Feature feature, JsonReader reader)
             throws IOException
