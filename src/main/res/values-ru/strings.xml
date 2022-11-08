@@ -98,4 +98,7 @@
     <string name="unit_foot">фут</string>
     <string name="unit_square_mile">миль²</string>
     <string name="unit_square_foot">фут²</string>
+    <string name="warning_layer_not_exist_title">Проблема с синхронизацией слоя</string>
+    <string name="warning_layer_not_exist">Слой: \'%s\' отсутсвует на сервере. Синхронизация для слоя выключена.</string>
+
 </resources>

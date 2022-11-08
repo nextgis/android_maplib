@@ -98,4 +98,7 @@
     <string name="unit_foot">ft</string>
     <string name="unit_square_mile">ml²</string>
     <string name="unit_square_foot">ft²</string>
+    <string name="warning_layer_not_exist_title">Layer sync problem</string>
+
+    <string name="warning_layer_not_exist">Layer \'%s\' does not exists on server. Sync for layer is turn to off</string>
 </resources>

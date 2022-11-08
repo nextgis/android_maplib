@@ -139,6 +139,7 @@ public class NetworkUtil
         result.setRequestProperty("User-Agent",
                 getUserAgentPrefix() + " "
                         + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+        result.setRequestProperty("connection", "keep-alive");
         return result;
 
     }
@@ -194,6 +195,7 @@ public class NetworkUtil
         conn.setConnectTimeout(TIMEOUT_CONNECTION);
         conn.setReadTimeout(TIMEOUT_SOCKET);
         conn.setRequestProperty("Accept", "*/*");
+        conn.setRequestProperty("connection", "keep-alive");
 
         return isValidUri(targetURL) ? conn : null;
     }
@@ -262,7 +264,7 @@ public class NetworkUtil
         outputStream.close();
     }
 
-    protected static HttpResponse getHttpResponse(
+    public static HttpResponse getHttpResponse(
             HttpURLConnection conn,
             boolean readErrorResponseBody)
             throws IOException

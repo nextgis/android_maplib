@@ -3187,6 +3187,23 @@ public class VectorLayer
         }
     }
 
+    public void toVectorLayer(Long id) {
+        if (id != null && id != NOT_FOUND) {
+            mLayerType = Constants.LAYERTYPE_LOCAL_VECTOR;
+            try {
+                JSONObject rootConfig = toJSON();
+                rootConfig.put(NGWVectorLayer.JSON_ACCOUNT_KEY, "");
+                rootConfig.put(Constants.JSON_ID_KEY, id);
+                rootConfig.put(NGWVectorLayer.JSON_SYNC_TYPE_KEY, 0);
+                rootConfig.put(NGWVectorLayer.JSON_NGWLAYER_TYPE_KEY, Connection.NGWResourceTypeVectorLayer);
+                FileUtil.writeToFile(getFileName(), rootConfig.toString());
+                MapBase map = MapDrawable.getInstance();
+                map.load();
+                //new Sync().execute();
+            } catch (IOException | JSONException ignored) { }
+        }
+    }
+
     class Sync extends AsyncTask<Void, Void, Void> {
         protected Void doInBackground(Void... params) {
             try {

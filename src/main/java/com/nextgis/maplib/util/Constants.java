@@ -365,4 +365,10 @@ public interface Constants
             "WITH",
             "WITHOUT"};
     char [] VECTOR_FORBIDDEN_CHARS = {':', '@', '#', '%', '^', '&', '*', '!', '$', '(', ')', '+', '-', '?', '=', '/', '\\', '"', '\'', '[', ']', ',', ' '};
+
+
+    String MESSAGE_ALERT_INTENT = "com.nextgis.malibui.MESSAGE_ALERT";
+    String MESSAGE_NOTIFY_INTENT = "com.nextgis.malibui.MESSAGE_NOTIFY";
+    String MESSAGE_EXTRA = "message_extra";
+    String MESSAGE_TITLE_EXTRA = "message_title_extra";
 }

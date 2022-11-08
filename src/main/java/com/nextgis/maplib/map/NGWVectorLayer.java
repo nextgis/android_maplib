@@ -37,6 +37,7 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Toast;
 
 import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
@@ -95,11 +96,15 @@ import static com.nextgis.maplib.util.Constants.FIELD_ATTACH_OPERATION;
 import static com.nextgis.maplib.util.Constants.FIELD_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.FIELD_ID;
 import static com.nextgis.maplib.util.Constants.FIELD_OPERATION;
+import static com.nextgis.maplib.util.Constants.MESSAGE_ALERT_INTENT;
+import static com.nextgis.maplib.util.Constants.MESSAGE_EXTRA;
+import static com.nextgis.maplib.util.Constants.MESSAGE_TITLE_EXTRA;
 import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
+import static com.nextgis.maplib.util.NetworkUtil.get;
 import static com.nextgis.maplib.util.NetworkUtil.getUserAgentPostfix;
 import static com.nextgis.maplib.util.NetworkUtil.getUserAgentPrefix;
 
@@ -648,6 +653,11 @@ public class NGWVectorLayer
         // 1. check for old UUID URL and replace it
         replaceUuidWithUrl(syncResult);
 
+        if (isRemoteGetAllowed())
+            if (checkFeatureForExists(authority, syncResult, this)) {
+                return;
+            }
+
         // 2. get remote changes
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteGetAllowed is " + isRemoteGetAllowed());
         if (isRemoteGetAllowed())
@@ -1162,6 +1172,62 @@ public class NGWVectorLayer
     }
 
 
+    // true - 404 was and proceed, false - no 404 happen
+    public boolean checkFeatureForExists(
+            String authority,
+            SyncResult syncResult,
+            final NGWVectorLayer ngwVectorLayer) {
+        if (!mNet.isNetworkAvailable()) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " network is unavailable");
+            return false;
+        }
+
+        if (Constants.DEBUG_MODE) {
+            Log.d(Constants.TAG, "The network is available. Get changes from server");
+        }
+
+        /* check feature on server        * */
+//        HttpResponse response = NetworkUtil.get(returnUrl, username, password,false);
+        AccountUtil.AccountData accountDataCheck = null;
+
+        try {
+            accountDataCheck = AccountUtil.getAccountData(mContext, mAccountName);
+        } catch (IllegalStateException e) {
+            log(e, "getFeatures(): account is null");
+        }
+
+        if (accountDataCheck != null) {
+            try {
+                HttpURLConnection urlConnectionCheckFeature = getConnection(accountDataCheck);
+                HttpResponse response1 = NetworkUtil.getHttpResponse(urlConnectionCheckFeature, false);
+                if (response1.getResponseCode() == 404) {
+                    // 404 response  on get feature - reature not on server (deleted)
+                    // need to turn off sync,
+                    ngwVectorLayer.setSyncType(Constants.SYNC_NONE);
+                    ngwVectorLayer.toVectorLayer(ngwVectorLayer.getUniqId());
+
+
+                    String message = String.format(getContext().getString(R.string.warning_layer_not_exist),
+                            ngwVectorLayer.getName());
+                    String title = String.format(getContext().getString(R.string.warning_layer_not_exist_title),
+                            ngwVectorLayer.getName());
+
+                    Intent msg = new Intent(MESSAGE_ALERT_INTENT);
+                    msg.putExtra(MESSAGE_EXTRA, message);
+                    msg.putExtra(MESSAGE_TITLE_EXTRA, message);
+                    getContext().sendBroadcast(msg);
+
+                    com.nextgis.maplib.datasource.ngw.SyncAdapter.showNotify(getContext(), message, title);
+
+                    return true;
+                }
+            } catch (Exception ex) {
+                Log.e(Constants.TAG, ex.getMessage());
+            }
+        }
+        return false;
+    }
+
     public boolean getChangesFromServer(
             String authority,
             SyncResult syncResult)
@@ -1547,6 +1613,7 @@ public class NGWVectorLayer
         connection.setRequestProperty("User-Agent",
                 getUserAgentPrefix() + " "
                         + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+        connection.setRequestProperty("connection", "keep-alive");
 
         authenticate(accountData, connection);
 

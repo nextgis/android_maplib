@@ -56,6 +56,10 @@ import com.nextgis.maplib.util.SettingsConstants;
 import java.util.HashMap;
 
 import static android.content.Context.MODE_MULTI_PROCESS;
+import static com.nextgis.maplib.util.Constants.MESSAGE_ALERT_INTENT;
+import static com.nextgis.maplib.util.Constants.MESSAGE_EXTRA;
+import static com.nextgis.maplib.util.Constants.MESSAGE_NOTIFY_INTENT;
+import static com.nextgis.maplib.util.Constants.MESSAGE_TITLE_EXTRA;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 /* useful links
@@ -244,9 +248,20 @@ public class SyncAdapter
         }
     }
 
-
     public boolean isCanceled()
     {
         return Thread.currentThread().isInterrupted();
     }
+
+
+    // send broadcast for  MESSAGE_NOTIFY_INTENT
+    static public void showNotify(final Context context, final String message , final String title){
+        // send broadcast to show notify
+        Intent msg = new Intent(MESSAGE_NOTIFY_INTENT);
+        msg.putExtra(MESSAGE_EXTRA, message);
+        msg.putExtra(MESSAGE_TITLE_EXTRA, title);
+        context.sendBroadcast(msg);
+
+    }
+
 }
