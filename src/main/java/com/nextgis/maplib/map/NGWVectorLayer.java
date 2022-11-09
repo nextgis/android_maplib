@@ -1209,12 +1209,11 @@ public class NGWVectorLayer
 
                     String message = String.format(getContext().getString(R.string.warning_layer_not_exist),
                             ngwVectorLayer.getName());
-                    String title = String.format(getContext().getString(R.string.warning_layer_not_exist_title),
-                            ngwVectorLayer.getName());
+                    String title = getContext().getString(R.string.warning_layer_not_exist_title);
 
                     Intent msg = new Intent(MESSAGE_ALERT_INTENT);
                     msg.putExtra(MESSAGE_EXTRA, message);
-                    msg.putExtra(MESSAGE_TITLE_EXTRA, message);
+                    msg.putExtra(MESSAGE_TITLE_EXTRA, title);
                     getContext().sendBroadcast(msg);
 
                     com.nextgis.maplib.datasource.ngw.SyncAdapter.showNotify(getContext(), message, title);
