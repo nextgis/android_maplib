@@ -54,6 +54,7 @@ import com.nextgis.maplib.util.AccountUtil;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.DatabaseContext;
+import com.nextgis.maplib.util.ExistFeatureResult;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.HttpResponse;
@@ -104,9 +105,7 @@ import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
-import static com.nextgis.maplib.util.NetworkUtil.get;
-import static com.nextgis.maplib.util.NetworkUtil.getUserAgentPostfix;
-import static com.nextgis.maplib.util.NetworkUtil.getUserAgentPrefix;
+import static com.nextgis.maplib.util.NetworkUtil.getUserAgent;
 
 import io.tus.java.client.ProtocolException;
 
@@ -653,10 +652,13 @@ public class NGWVectorLayer
         // 1. check for old UUID URL and replace it
         replaceUuidWithUrl(syncResult);
 
-        if (isRemoteGetAllowed())
-            if (checkFeatureForExists(authority, syncResult, this)) {
-                return;
-            }
+        //ExistFeatureResult result = null;
+//        if (isRemoteGetAllowed()) {
+//            result = checkFeatureForExists(authority, syncResult, this);
+//            if (result.result) {
+//                return;
+//            }
+//        }
 
         // 2. get remote changes
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteGetAllowed is " + isRemoteGetAllowed());
@@ -665,6 +667,7 @@ public class NGWVectorLayer
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "Get remote changes failed");
                 }
+                return; // layer not exist - exits
             }
 
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteReadOnly is " + isRemoteReadOnly());
@@ -1171,36 +1174,9 @@ public class NGWVectorLayer
         }
     }
 
-
     // true - 404 was and proceed, false - no 404 happen
-    public boolean checkFeatureForExists(
-            String authority,
-            SyncResult syncResult,
-            final NGWVectorLayer ngwVectorLayer) {
-        if (!mNet.isNetworkAvailable()) {
-            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " network is unavailable");
-            return false;
-        }
+    public void clearLayerSync(final NGWVectorLayer ngwVectorLayer) {
 
-        if (Constants.DEBUG_MODE) {
-            Log.d(Constants.TAG, "The network is available. Get changes from server");
-        }
-
-        /* check feature on server        * */
-//        HttpResponse response = NetworkUtil.get(returnUrl, username, password,false);
-        AccountUtil.AccountData accountDataCheck = null;
-
-        try {
-            accountDataCheck = AccountUtil.getAccountData(mContext, mAccountName);
-        } catch (IllegalStateException e) {
-            log(e, "getFeatures(): account is null");
-        }
-
-        if (accountDataCheck != null) {
-            try {
-                HttpURLConnection urlConnectionCheckFeature = getConnection(accountDataCheck);
-                HttpResponse response1 = NetworkUtil.getHttpResponse(urlConnectionCheckFeature, false);
-                if (response1.getResponseCode() == 404) {
                     // 404 response  on get feature - reature not on server (deleted)
                     // need to turn off sync,
                     ngwVectorLayer.setSyncType(Constants.SYNC_NONE);
@@ -1217,14 +1193,7 @@ public class NGWVectorLayer
                     getContext().sendBroadcast(msg);
 
                     com.nextgis.maplib.datasource.ngw.SyncAdapter.showNotify(getContext(), message, title);
-
-                    return true;
-                }
-            } catch (Exception ex) {
-                Log.e(Constants.TAG, ex.getMessage());
-            }
-        }
-        return false;
+                    return;
     }
 
     public boolean getChangesFromServer(
@@ -1233,7 +1202,7 @@ public class NGWVectorLayer
     {
         if (!mNet.isNetworkAvailable()) {
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " network is unavailable");
-            return false;
+            return true;
         }
 
         if (Constants.DEBUG_MODE) {
@@ -1242,11 +1211,23 @@ public class NGWVectorLayer
 
         List<Feature> features, added = null, deleted = null, changed = null;
         List<Long> deleteItems = new ArrayList<>();
-        HashMap<Integer, List<Feature>> tracked = getFeatures(syncResult, mTracked);
+
+        ExistFeatureResult result =  getFeatures(syncResult, mTracked);
+        if (result.code == 404){
+            clearLayerSync(this);
+            return false;
+        }
+        if (result.object == null) // no objects
+            return  true;
+        if (! (result.object instanceof  HashMap)){
+            return true;
+        }
+        HashMap<Integer, List<Feature>> tracked = (HashMap<Integer, List<Feature>>)result.object;
+
 
         if (tracked == null) {
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " tracked = null");
-            return false;
+            return true;
         }
 
         if (mTracked) {
@@ -1270,7 +1251,7 @@ public class NGWVectorLayer
 
         if (features == null) {
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " features = null");
-            return false;
+            return true;
         }
 
         if (Constants.DEBUG_MODE) {
@@ -1414,7 +1395,7 @@ public class NGWVectorLayer
                 Log.d(Constants.TAG, "proceed getChangesFromServer() failed");
             }
             e.printStackTrace();
-            return false;
+            return true;
         }
 
         getPreferences().edit().putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis()).apply();
@@ -1609,9 +1590,7 @@ public class NGWVectorLayer
         URL url = new URL(getFeaturesUrl(accountData));
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
-        connection.setRequestProperty("User-Agent",
-                getUserAgentPrefix() + " "
-                        + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+        connection.setRequestProperty("User-Agent", getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
         connection.setRequestProperty("connection", "keep-alive");
 
         authenticate(accountData, connection);
@@ -1620,8 +1599,7 @@ public class NGWVectorLayer
             url = new URL(url.toString().replace("http", "https"));
             connection = (HttpsURLConnection) url.openConnection();
             connection.setRequestProperty("User-Agent",
-                    getUserAgentPrefix() + " "
-                            + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+                    getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
             authenticate(accountData, connection);
         }
 
@@ -1630,7 +1608,7 @@ public class NGWVectorLayer
 
 
     // read layer contents as string
-    protected HashMap<Integer, List<Feature>> getFeatures(SyncResult syncResult, boolean tracked) {
+    protected ExistFeatureResult getFeatures(SyncResult syncResult, boolean tracked) {
         AccountUtil.AccountData accountData;
         try {
             accountData = AccountUtil.getAccountData(mContext, mAccountName);
@@ -1646,7 +1624,14 @@ public class NGWVectorLayer
             HttpURLConnection urlConnection = getConnection(accountData);
             Log.d(TAG, "url: " + urlConnection.getURL().toString());
 
-            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(), urlConnection.getContentLength());
+            int code = urlConnection.getResponseCode();
+            if (code == 404){
+                return new ExistFeatureResult(null, false, 404);
+            }
+            Log.d(TAG, "code: " + code);
+
+            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
+                    urlConnection.getContentLength());
             JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
 
             if (tracked) {
@@ -1685,27 +1670,27 @@ public class NGWVectorLayer
         } catch (MalformedURLException e) {
             log(e, "getFeatures(): MalformedURLException");
             syncResult.stats.numIoExceptions++;
-            return null;
+            return new ExistFeatureResult(null, false, 0);
         } catch (FileNotFoundException e) {
             log(e, "getFeatures(): FileNotFoundException");
             syncResult.stats.numIoExceptions++;
-            return null;
+            return new ExistFeatureResult(null, false, 0);
         } catch (IOException e) {
             log(e, "getFeatures(): IOException");
             syncResult.stats.numParseExceptions++;
-            return null;
+            return new ExistFeatureResult(null, false, 0);
         } catch (OutOfMemoryError e) {
             e.printStackTrace();
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numSkippedEntries++;
-            return null;
+            return new ExistFeatureResult(null, false, 0);
         } catch (IllegalStateException | NumberFormatException e) {
             log(e, "getFeatures(): IllegalStateException | NumberFormatException");
             syncResult.stats.numParseExceptions++;
-            return null;
+            return new ExistFeatureResult(null, false, 0);
         }
 
-        return results;
+        return new ExistFeatureResult(results, true, 200);
     }
 
 

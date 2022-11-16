@@ -26,11 +26,13 @@ package com.nextgis.maplib.util;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
+import com.hypertrack.hyperlog.BuildConfig;
 import com.nextgis.maplib.R;
 
 import java.io.BufferedWriter;
@@ -71,19 +73,51 @@ public class NetworkUtil
     protected       long                mLastCheckTime;
     protected       Context             mContext;
 
-    static String userAgentPrefix = "none";
+    static String NGUid = null;
+    static String isProString = "";
+    static String userAgentPrefix1 = "";
+    static String userAgentPrefix2 = "";
     static String userAgentPostfix = "none";
 
-    public static String getUserAgentPrefix(){
-        return userAgentPrefix;
+    public static String getUserAgent(String middlePart){
+        return getUserAgentPrefix() + " "
+                + middlePart + " " + getUserAgentPostfix();
     }
 
-    public static void setUserAgentPrefix(final String pref){
-        userAgentPrefix = pref;
+    private static String getUserAgentPrefix(){
+        return userAgentPrefix1 +
+                (TextUtils.isEmpty(NGUid) ? "" : "NGID " + NGUid  + "; ") +
+                isProString +
+                userAgentPrefix2;
     }
 
-    public static String getUserAgentPostfix(){
+    private static String getUserAgentPostfix(){
         return userAgentPostfix;
+    }
+
+    public static void setUserAgentPrefix(final Context context, final String pref,
+                                          final String deviceID, int versionCode){
+
+        NGUid = AccountUtil.getNGUID(context);
+        isProString = AccountUtil.isProUser(context)? "Supported; " : "";
+        userAgentPrefix1 = pref
+                + " (";
+        userAgentPrefix2 =
+                  "DID " + deviceID + "; "
+                + "Build " + versionCode + "; "
+                + "Vendor " + Build.MANUFACTURER
+                +")";
+    }
+
+    public static void setUserNGUID(final String NGUID){
+        if (TextUtils.isEmpty(NGUID))
+            NGUid = "";
+        else
+            NGUid = NGUID ;
+    }
+
+    public static void setIsPro(boolean isPro){
+        isProString = isPro ? "Supported; " : "";
     }
 
     public static void setUserAgentPostfix(final String pref){
@@ -136,9 +170,7 @@ public class NetworkUtil
              result = (HttpsURLConnection) url.openConnection();
         else
             result= (HttpURLConnection) url.openConnection();
-        result.setRequestProperty("User-Agent",
-                getUserAgentPrefix() + " "
-                        + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+        result.setRequestProperty("User-Agent",getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
         result.setRequestProperty("connection", "keep-alive");
         return result;
 
@@ -441,9 +473,7 @@ public class NetworkUtil
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", basicAuth);
         headers.put("Connection", "Keep-Alive");
-        headers.put("User-Agent",
-                getUserAgentPrefix() + " "
-                        + Constants.MAPLIB_USER_AGENT_PART + " " + getUserAgentPostfix());
+        headers.put("User-Agent",getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
         client.setHeaders(headers);
 
         String returnUrl = "";

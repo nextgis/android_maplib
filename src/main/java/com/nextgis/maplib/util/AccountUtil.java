@@ -72,13 +72,51 @@ public class AccountUtil {
                 final String data = id + start + end + "true";
                 final String signature = json.getString(JSON_SIGNATURE_KEY);
 
-                return verifySignature(data, signature);
+                NetworkUtil.setUserNGUID(id);
+                boolean result = verifySignature(data, signature);
+
+                NetworkUtil.setIsPro(result);
+                return result;
             }
         } catch (JSONException | IOException ignored) {
             Log.e(TAG, ignored.getMessage());
         }
 
         return false;
+    }
+
+    public static String getNGUID(Context context) {
+        File support = context.getExternalFilesDir(null);
+        if (support == null)
+            support = new File(context.getFilesDir(), SUPPORT);
+        else
+            support = new File(support, SUPPORT);
+
+        if (!support.exists())
+            return null;
+        try {
+            String jsonString = FileUtil.readFromFile(support);
+            JSONObject json = new JSONObject(jsonString);
+            //if (json.optBoolean(JSON_SUPPORTED_KEY)) {
+                final String id = json.getString(JSON_USER_ID_KEY);
+                return id;
+            //}
+        } catch (JSONException | IOException ignored) {
+            Log.e(TAG, ignored.getMessage());
+        }
+        return null;
+    }
+
+    public static boolean isUserExists(Context context) {
+        File support = context.getExternalFilesDir(null);
+        if (support == null)
+            support = new File(context.getFilesDir(), SUPPORT);
+        else
+            support = new File(support, SUPPORT);
+
+        if (!support.exists())
+            return false;
+        return true;
     }
 
     private static boolean verifySignature(String data, String signature) {
