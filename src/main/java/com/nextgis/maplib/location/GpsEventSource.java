@@ -26,10 +26,12 @@ package com.nextgis.maplib.location;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.location.GnssStatus;
 import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -50,6 +52,7 @@ public class GpsEventSource {
     protected LocationManager     mLocationManager;
     protected GpsLocationListener mGpsLocationListener;
     protected GpsStatusListener   mGpsStatusListener;
+    protected GnssStatus.Callback mGnssCallback;
     protected boolean             mHasGPSFix;
     protected int                 mListenProviders;
     protected Location            mLastLocation;
@@ -71,8 +74,46 @@ public class GpsEventSource {
         mGpsLocationListener = new GpsLocationListener();
         mGpsStatusListener = new GpsStatusListener();
 
-        mHasGPSFix = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            mGnssCallback = new GnssStatus.Callback() {
+                @Override
+                public void onSatelliteStatusChanged(GnssStatus status) {
+                    super.onSatelliteStatusChanged(status);
 
+                    for (GpsEventListener listener : mListeners) {
+                        listener.onGpsStatusChanged(GpsStatus.GPS_EVENT_SATELLITE_STATUS);
+                    }
+                    Log.e("GSNN", status.toString());
+                }
+                @Override
+                public void onStarted() {
+                    mHasGPSFix = false;
+                    for (GpsEventListener listener : mListeners) {
+                        listener.onGpsStatusChanged(GpsStatus.GPS_EVENT_STARTED);
+                    }
+                }
+
+                @Override
+                public void onStopped() {
+                    mHasGPSFix = false;
+                    for (GpsEventListener listener : mListeners) {
+                        listener.onGpsStatusChanged(GpsStatus.GPS_EVENT_STOPPED);
+                    }
+                }
+
+                @Override
+                public void onFirstFix(int ttffMillis) {
+                    mHasGPSFix = true;
+
+                    for (GpsEventListener listener : mListeners) {
+                        listener.onGpsStatusChanged(GpsStatus.GPS_EVENT_FIRST_FIX);
+                    }
+
+                }
+            };
+        }
+
+        mHasGPSFix = false;
         updateActiveListeners();
     }
 
@@ -95,7 +136,13 @@ public class GpsEventSource {
                     return;
 
                 requestUpdates();
-                mLocationManager.addGpsStatusListener(mGpsStatusListener);
+
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    mLocationManager.registerGnssStatusCallback(mGnssCallback);
+                }else
+                    mLocationManager.addGpsStatusListener(mGpsStatusListener);
+
             }
         }
     }
@@ -119,7 +166,11 @@ public class GpsEventSource {
 
             if (mListeners.size() == 0) {
                 mLocationManager.removeUpdates(mGpsLocationListener);
-                mLocationManager.removeGpsStatusListener(mGpsStatusListener);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    mLocationManager.unregisterGnssStatusCallback(mGnssCallback);
+                }else
+                    mLocationManager.removeGpsStatusListener(mGpsStatusListener);
             }
         }
     }
