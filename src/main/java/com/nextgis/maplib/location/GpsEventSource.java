@@ -83,7 +83,6 @@ public class GpsEventSource {
                     for (GpsEventListener listener : mListeners) {
                         listener.onGpsStatusChanged(GpsStatus.GPS_EVENT_SATELLITE_STATUS);
                     }
-                    Log.e("GSNN", status.toString());
                 }
                 @Override
                 public void onStarted() {
