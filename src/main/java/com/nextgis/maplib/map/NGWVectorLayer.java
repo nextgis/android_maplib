@@ -1213,6 +1213,9 @@ public class NGWVectorLayer
         List<Long> deleteItems = new ArrayList<>();
 
         ExistFeatureResult result =  getFeatures(syncResult, mTracked);
+        if (result == null)
+            return false;
+
         if (result.code == 404){
             clearLayerSync(this);
             return false;
