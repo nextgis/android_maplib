@@ -108,6 +108,7 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
                 SimplePolygonStyle polygonStyle = (SimplePolygonStyle) style;
                 SimplePolygonStyle ruleStyle = (SimplePolygonStyle) rule;
                 polygonStyle.setColor(ruleStyle.getColor());
+                polygonStyle.setOutColor(ruleStyle.getOutColor());
                 polygonStyle.setWidth(ruleStyle.getWidth());
                 polygonStyle.setFill(ruleStyle.isFill());
                 polygonStyle.setText(ruleStyle.getText());
