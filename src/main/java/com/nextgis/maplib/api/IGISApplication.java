@@ -25,6 +25,7 @@ package com.nextgis.maplib.api;
 
 import android.accounts.Account;
 import android.accounts.AccountManagerFuture;
+import android.app.Activity;
 
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.LayerFactory;
@@ -159,7 +160,7 @@ public interface IGISApplication
     /**
      * Show settings Activity or nothing
      */
-    void showSettings(String setting);
+    void showSettings(String setting, int code, final Activity activity);
 
     /**
      * Send target event to analytics

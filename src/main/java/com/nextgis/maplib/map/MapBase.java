@@ -123,6 +123,9 @@ public class MapBase
 
         clearLayers();
 
+        if (newPath != null && newPath.listFiles() !=null && newPath.listFiles().length != 0)
+            FileUtil.deleteRecursive(newPath);
+
         if (FileUtil.move(mPath, newPath)) {
             //change path
             mPath = newPath;
