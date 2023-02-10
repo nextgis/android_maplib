@@ -1,4 +1,4 @@
-/*
+    /*
  * Project:  NextGIS Mobile
  * Purpose:  Mobile GIS for Android.
  * Author:   Dmitry Baryshnikov (aka Bishop), bishop.dev@gmail.com
@@ -28,8 +28,8 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 32
-        versionCode 93
-        versionName '2.6.41'
+        versionCode 94
+        versionName '2.6.43'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
