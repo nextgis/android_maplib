@@ -362,6 +362,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         setPaintsColors();
     }
 
+    @Override
     public String getField() {
         return mField;
     }

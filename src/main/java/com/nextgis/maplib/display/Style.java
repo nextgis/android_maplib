@@ -56,6 +56,8 @@ public abstract class Style implements IJSONStore, Cloneable {
         return obj;
     }
 
+    public abstract String getField();
+
     public int getColor() {
         return mColor;
     }

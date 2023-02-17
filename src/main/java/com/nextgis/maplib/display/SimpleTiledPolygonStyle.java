@@ -242,4 +242,9 @@ public class SimpleTiledPolygonStyle extends Style {
             polygonPath.close();
         }
     }
+
+    @Override
+    public String getField() {
+        return null;
+    }
 }

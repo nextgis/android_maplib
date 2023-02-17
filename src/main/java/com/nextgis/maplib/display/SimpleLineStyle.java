@@ -307,6 +307,7 @@ public class SimpleLineStyle extends Style implements ITextStyle {
         mType = type;
     }
 
+    @Override
     public String getField() {
         return mField;
     }
@@ -354,4 +355,5 @@ public class SimpleLineStyle extends Style implements ITextStyle {
             mField = jsonObject.getString(JSON_VALUE_KEY);
         }
     }
+
 }
