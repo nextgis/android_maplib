@@ -128,10 +128,10 @@ open class MapView : GLSurfaceView {
         override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
         }
 
-        override fun onProviderEnabled(provider: String?) {
+        override fun onProviderEnabled(provider: String) {
         }
 
-        override fun onProviderDisabled(provider: String?) {
+        override fun onProviderDisabled(provider: String) {
         }
 
         override fun onLocationChanged(location: android.location.Location) {
@@ -150,10 +150,10 @@ open class MapView : GLSurfaceView {
         override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
         }
 
-        override fun onProviderEnabled(provider: String?) {
+        override fun onProviderEnabled(provider: String) {
         }
 
-        override fun onProviderDisabled(provider: String?) {
+        override fun onProviderDisabled(provider: String) {
         }
 
         override fun onLocationChanged(location: android.location.Location) {
@@ -185,21 +185,21 @@ open class MapView : GLSurfaceView {
 
     private val gestureListener = object : GestureDetector.OnGestureListener {
 
-        override fun onShowPress(event: MotionEvent?) { }
+        override fun onShowPress(event: MotionEvent) { }
 
-        override fun onSingleTapUp(p0: MotionEvent?): Boolean {
+        override fun onSingleTapUp(p0: MotionEvent): Boolean {
             return true
         }
 
-        override fun onDown(p0: MotionEvent?): Boolean {
+        override fun onDown(p0: MotionEvent): Boolean {
             return true
         }
 
-        override fun onFling(p0: MotionEvent?, p1: MotionEvent?, p2: Float, p3: Float): Boolean {
+        override fun onFling(p0: MotionEvent, p1: MotionEvent, p2: Float, p3: Float): Boolean {
             return true
         }
 
-        override fun onScroll(event1: MotionEvent?, event2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
+        override fun onScroll(event1: MotionEvent, event2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
             val x = distanceX.toDouble()
             val y = distanceY.toDouble()
 
@@ -211,13 +211,13 @@ open class MapView : GLSurfaceView {
             return true
         }
 
-        override fun onLongPress(p0: MotionEvent?) {
+        override fun onLongPress(p0: MotionEvent) {
 
         }
     }
 
     private val doubleTapListener = object : GestureDetector.OnDoubleTapListener {
-        override fun onDoubleTap(event: MotionEvent?): Boolean {
+        override fun onDoubleTap(event: MotionEvent): Boolean {
             val x = event?.x?.toDouble() ?: 0.0
             val y = event?.y?.toDouble() ?: 0.0
 
@@ -230,11 +230,11 @@ open class MapView : GLSurfaceView {
             return true
         }
 
-        override fun onDoubleTapEvent(p0: MotionEvent?): Boolean {
+        override fun onDoubleTapEvent(p0: MotionEvent): Boolean {
             return true
         }
 
-        override fun onSingleTapConfirmed(event: MotionEvent?): Boolean {
+        override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
             gestureDelegate.get()?.onSingleTap(event)
             return true
         }
@@ -242,15 +242,15 @@ open class MapView : GLSurfaceView {
     }
 
     private val scaleGestureListener = object : ScaleGestureDetector.OnScaleGestureListener {
-        override fun onScaleBegin(event: ScaleGestureDetector?): Boolean {
+        override fun onScaleBegin(event: ScaleGestureDetector): Boolean {
             return true
         }
 
-        override fun onScaleEnd(event: ScaleGestureDetector?) {
+        override fun onScaleEnd(event: ScaleGestureDetector) {
 
         }
 
-        override fun onScale(event: ScaleGestureDetector?): Boolean {
+        override fun onScale(event: ScaleGestureDetector): Boolean {
             val scale = event?.scaleFactor?.toDouble() ?: 1.0
 
             map?.zoomIn(scale)
@@ -487,7 +487,7 @@ open class MapView : GLSurfaceView {
         gestureDelegate = WeakReference(delegate)
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
+    override fun onTouchEvent(event: MotionEvent): Boolean {
         val res = scaleGestureDetector?.onTouchEvent(event) == true
         if(scaleGestureDetector?.isInProgress == true)
             return res

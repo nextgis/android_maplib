@@ -34,6 +34,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.location.GnssStatus
+import android.location.GnssStatus.Callback
 import android.location.GpsStatus
 import android.location.LocationListener
 import android.location.LocationManager
@@ -111,11 +112,11 @@ class TrackerService : Service() {
 //            printMessage("onStatusChanged: provider: $provider, status: $status")
         }
 
-        override fun onProviderEnabled(provider: String?) {
+        override fun onProviderEnabled(provider: String) {
 //            printMessage("onProviderEnabled: provider: $provider")
         }
 
-        override fun onProviderDisabled(provider: String?) {
+        override fun onProviderDisabled(provider: String) {
 //            printMessage("onProviderDisabled: provider: $provider")
         }
 
@@ -142,10 +143,12 @@ class TrackerService : Service() {
 
     private fun processLocationChanges(location: android.location.Location) {
 //        printMessage("onLocationChanged: location: $location")
-        val satelliteInLoc = location.extras.getInt("satellites")
-        if(satelliteInLoc > 0) {
-            mSatelliteCount = satelliteInLoc
-//            printMessage("onLocationChanged: Satellite count: $mSatelliteCount")
+        val extras: Bundle? = location.extras
+        extras?.let {
+            val satelliteInLoc = extras.getInt("satellites")
+            if (satelliteInLoc > 0) {
+                mSatelliteCount = satelliteInLoc
+            }
         }
 
         val thisLocation = Location(location, mSatelliteCount)
@@ -162,7 +165,7 @@ class TrackerService : Service() {
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    private val mGnssStatusListener = object : GnssStatus.Callback() {
+    private val mGnssStatusListener = object : Callback() {
         override fun onSatelliteStatusChanged(status: GnssStatus) {
             var satelliteCount = 0
             for(index in 0 until status.satelliteCount) {
@@ -288,7 +291,7 @@ class TrackerService : Service() {
         // Get or create tracks table.
         if(intent?.hasExtra("STORE_NAME") == true && mTracksTable == null) {
             val storeName = intent.getStringExtra("STORE_NAME")
-            val store = API.getStore(storeName)
+            val store = API.getStore(storeName!!)
             mTracksTable = store?.trackTable()
         }
 

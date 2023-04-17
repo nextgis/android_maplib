@@ -26,7 +26,6 @@ import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
-import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -49,12 +48,14 @@ class SelectInstanceDialog : DialogFragment(), OnInstanceClickListener {
         dismiss()
     }
 
-    private lateinit var binding: DialogSelectInstanceBinding
+    private var _binding: DialogSelectInstanceBinding? = null
+    private val binding get() = _binding!!
+
     private var listener: OnInstanceClickListener? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = Dialog(requireContext(), R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
-        binding = DataBindingUtil.inflate(LayoutInflater.from(context), R.layout.dialog_select_instance, null, false)
+        _binding = DialogSelectInstanceBinding.inflate(LayoutInflater.from(context), null, false)
         dialog.setContentView(binding.root)
         binding.fragment = this
         binding.list.adapter = getInstances(this, false)
@@ -95,5 +96,10 @@ class SelectInstanceDialog : DialogFragment(), OnInstanceClickListener {
 
     companion object {
         const val TAG = "SelectInstanceDialog"
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

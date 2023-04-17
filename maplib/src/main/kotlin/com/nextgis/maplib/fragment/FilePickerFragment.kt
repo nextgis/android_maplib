@@ -23,7 +23,6 @@ package com.nextgis.maplib.fragment
 
 import android.os.Bundle
 import android.view.*
-import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,7 +34,6 @@ import com.nextgis.maplib.adapter.OnFileClickListener
 import com.nextgis.maplib.databinding.FragmentFilePickerBinding
 import com.nextgis.maplib.util.NonNullObservableField
 import com.nextgis.maplib.util.runAsync
-import kotlinx.android.synthetic.main.fragment_file_picker.*
 import java.util.*
 
 
@@ -43,7 +41,10 @@ import java.util.*
  * Fragment with file picker implementation for Object.
  */
 open class FilePickerFragment : Fragment(), OnFileClickListener {
-    private lateinit var binding: FragmentFilePickerBinding
+
+    private var _binding: FragmentFilePickerBinding? = null
+    private val binding get() = _binding!!
+
     private var root = ""
     private val stack = Stack<Object>()
     val path = NonNullObservableField("/")
@@ -52,6 +53,18 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        _binding = FragmentFilePickerBinding.inflate(LayoutInflater.from(context), null, false)
+
+        binding.apply {
+            fragment = this@FilePickerFragment
+            addRoot(activity as? PickerActivity)
+            list.layoutManager = LinearLayoutManager(activity, RecyclerView.VERTICAL, false)
+        }
+        binding.executePendingBindings()
+        return binding.root
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -82,20 +95,10 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_file_picker, container, false)
 
-        binding.apply {
-            fragment = this@FilePickerFragment
-            addRoot(activity as? PickerActivity)
-            list.layoutManager = LinearLayoutManager(activity, RecyclerView.VERTICAL, false)
-        }
-        binding.executePendingBindings()
-        return binding.root
-    }
 
     override fun onFileClick(file: Object) {
-        (list.adapter as? FilesAdapter)?.items?.clear()
+        (binding.list.adapter as? FilesAdapter)?.items?.clear()
         val children = arrayListOf<Object>()
         // TODO gpkg/ngrc type
         if (file.type == 501) { // shp type
@@ -138,8 +141,8 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             stack.add(file)
             path.set(file.path.replace(root, ""))
         }
-        (list.adapter as? FilesAdapter)?.items?.addAll(children)
-        list.adapter?.notifyDataSetChanged()
+        (binding.list.adapter as? FilesAdapter)?.items?.addAll(children)
+        binding.list.adapter?.notifyDataSetChanged()
     }
 
     private fun addRoot(parent: PickerActivity?) {
@@ -147,7 +150,7 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             runAsync {
                 val items = arrayListOf<Object>()
                 addItems(items, it.root())
-                activity?.runOnUiThread { list.adapter = FilesAdapter(items, this@FilePickerFragment) }
+                activity?.runOnUiThread { binding.list.adapter = FilesAdapter(items, this@FilePickerFragment) }
             }
         }
     }
@@ -158,6 +161,11 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
 
     private fun addItems(children: ArrayList<Object>, items: List<Object>) {
         children.addAll(items.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }).sortedBy { it.type != 53 || it.type != 74 })
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
 }

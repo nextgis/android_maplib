@@ -121,7 +121,13 @@ object API {
     private fun notifyFunction(uri: String, code: ChangeCode) {
         when (code) {
             ChangeCode.TOKEN_EXPIRED -> onAuthNotify(uri)
-            ChangeCode.CREATE_FEATURE, ChangeCode.CHANGE_FEATURE, ChangeCode.DELETE_FEATURE, ChangeCode.DELETEALL_FEATURES -> onMapViewNotify(uri, code)
+            ChangeCode.CREATE_FEATURE,
+            ChangeCode.CHANGE_FEATURE,
+            ChangeCode.DELETE_FEATURE,
+            ChangeCode.DELETEALL_FEATURES -> onMapViewNotify(uri, code)
+            else -> {
+                // TODO
+            }
         }
     }
 
@@ -255,7 +261,7 @@ object API {
         unInit()
     }
 
-    private val dataDir = "data/${BuildConfig.VERSION_CODE}"
+    private val dataDir = "data/${BuildConfig.VERSION_CODE1}"
 
     private fun clearAssets(context: Context) {
         val gdalDataDir = File(context.filesDir, "$dataDir/gdal")
@@ -265,7 +271,7 @@ object API {
                 val dataDirOld = File(context.filesDir, "data/$dir")
                 dataDirOld.deleteRecursively()
 
-                for (code in 0 until BuildConfig.VERSION_CODE) {
+                for (code in 0 until BuildConfig.VERSION_CODE1) {
                     val dataDirOldNum = File(context.filesDir, "data/$code/$dir")
                     dataDirOldNum.deleteRecursively()
                 }

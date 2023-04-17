@@ -26,13 +26,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import com.nextgis.maplib.service.TrackerDelegate
 import com.nextgis.maplib.service.TrackerService
 import io.sentry.Sentry
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.lang.ref.WeakReference
 
 
 /**
@@ -156,7 +154,7 @@ fun formatCoordinate(coordinate: Double, outputType: Int, fraction: Int): String
     return formatString.format(degrees, minutesRound, seconds)
 }
 
-internal fun toArrayOfCStrings(values: Map<String,String>?) : Array<String> {
+internal fun toArrayOfCStrings(values: Map<String, String?>?) : Array<String> {
 
     values?.let {
         val out = arrayListOf<String>()

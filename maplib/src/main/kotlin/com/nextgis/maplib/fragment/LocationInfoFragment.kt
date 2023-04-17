@@ -33,17 +33,21 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.nextgis.maplib.Location
 import com.nextgis.maplib.R
+import com.nextgis.maplib.databinding.FragmentFilePickerBinding
+import com.nextgis.maplib.databinding.LocationInfoBinding
 import com.nextgis.maplib.formatCoordinate
 import com.nextgis.maplib.service.TrackerDelegate
 import com.nextgis.maplib.service.TrackerService
 import com.nextgis.maplib.startTrackerService
-import kotlinx.android.synthetic.main.location_info.*
 import java.util.*
 
 /**
  * Location information panel.
  */
 class LocationInfoFragment : Fragment() {
+
+    private var _binding: LocationInfoBinding? = null
+    private val binding get() = _binding!!
 
     private var mTrackerService: TrackerService? = null
     private var mIsBound = false
@@ -61,26 +65,31 @@ class LocationInfoFragment : Fragment() {
         }
     }
 
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        _binding = LocationInfoBinding.inflate(LayoutInflater.from(context), null, false)
+        return binding.root
+    }
+
     private val mTrackerDelegate = object : TrackerDelegate {
         override fun onLocationChanged(location: Location) {
-            locationIcon.setImageResource(R.drawable.ic_gps_fixed)
+            binding.locationIcon.setImageResource(R.drawable.ic_gps_fixed)
 
             if(location.hasAccuracy()) {
-                accuracyText.text = getString(R.string.location_m_format).format(location.accuracy)
-                accuracyIcon.setImageResource(R.drawable.ic_accuracy_on)
+                binding.accuracyText.text = getString(R.string.location_m_format).format(location.accuracy)
+                binding.accuracyIcon.setImageResource(R.drawable.ic_accuracy_on)
             }
             else {
-                accuracyIcon.setImageResource(R.drawable.ic_accuracy)
+                binding.accuracyIcon.setImageResource(R.drawable.ic_accuracy)
             }
 
             // TODO: Add digits and format into settings
-            locationText.text = formatLocation(location.longitude, location.latitude, 2, android.location.Location.FORMAT_SECONDS)
+            binding.locationText.text = formatLocation(location.longitude, location.latitude, 2, android.location.Location.FORMAT_SECONDS)
 
-            signalSourceText.text = location.provider
-            speedText.text = formatSpeed(location.speed)
-            satCountText.text = location.satelliteCount.toString()
+            binding.signalSourceText.text = location.provider
+            binding.speedText.text = formatSpeed(location.speed)
+            binding.satCountText.text = location.satelliteCount.toString()
 
-            altText.text = getString(R.string.location_m_format).format(location.altitude)
+            binding.altText.text = getString(R.string.location_m_format).format(location.altitude)
         }
 
         override fun onStatusChanged(status: TrackerService.Status, trackName: String, trackStartTime: Date) {
@@ -88,9 +97,6 @@ class LocationInfoFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.location_info, container, false)
-    }
 
     private fun formatSpeed(speed: Float) : String {
         return getString(R.string.location_km_hr_format).format(3.6 * speed) // When converting m/sec to km/hr, divide the speed with 1000 and multiply the result with 3600.
@@ -117,5 +123,10 @@ class LocationInfoFragment : Fragment() {
             mTrackerService?.removeDelegate(mTrackerDelegate)
             context?.unbindService(mServiceConnection)
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

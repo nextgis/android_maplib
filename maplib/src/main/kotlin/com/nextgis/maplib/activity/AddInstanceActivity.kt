@@ -28,13 +28,10 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.DataBindingUtil
 import com.nextgis.maplib.*
 import com.nextgis.maplib.databinding.ActivityAddInstanceBinding
 import com.nextgis.maplib.util.NonNullObservableField
 import com.nextgis.maplib.util.tint
-import kotlinx.android.synthetic.main.activity_add_instance.*
-
 
 /**
  * Activity to create a new [Instance].
@@ -45,8 +42,9 @@ class AddInstanceActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_add_instance)
-        setSupportActionBar(toolbar)
+        binding = ActivityAddInstanceBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)

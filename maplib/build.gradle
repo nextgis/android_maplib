@@ -21,9 +21,10 @@
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+//apply plugin: 'kotlin-android-extensions'
 apply plugin: 'org.jetbrains.dokka-android'
 apply plugin: 'kotlin-kapt'
+apply plugin: "org.jetbrains.kotlin.plugin.parcelize"
 
 def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
 def gdalFiles = [ "cubewerx_extra.wkt", "ecw_cs.wkt", "ellipsoid.csv", "epsg.wkt", "esri_StatePlane_extra.wkt", "gdalvrt.xsd", "gml_registry.xml", "gmlasconf.xml", "gmlasconf.xsd", "gt_datum.csv", "gt_ellips.csv", "ogrvrt.xsd", "stateplane.csv" ]
@@ -57,15 +58,15 @@ ext {
     allLicenses = ["LGPL-3.0"]
 }
 
-androidExtensions {
-    experimental = true
-}
+//androidExtensions {
+//    experimental = true
+//}
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 33
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 28
+        targetSdkVersion 33
         versionCode 20
         versionName '3.7.0'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -92,6 +93,11 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
+
+        }
+        debug {
+            buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
         }
     }
     externalNativeBuild {
@@ -114,7 +120,10 @@ android {
     dataBinding {
         enabled = true
     }
-    buildToolsVersion '28.0.3'
+    buildFeatures {
+        viewBinding = true
+    }
+    //buildToolsVersion '28.0.3'
 }
 
 task copyFiles() {
@@ -155,20 +164,20 @@ tasks.matching { it.name == 'externalNativeBuild' }.all {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    testImplementation 'junit:junit:4.13-beta-3'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test:runner:1.2.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    implementation 'androidx.core:core-ktx:1.2.0'
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0-alpha01'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-beta4'
+    implementation "androidx.core:core-ktx:$core_version"
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'io.sentry:sentry-android:1.7.23'
     implementation 'org.slf4j:slf4j-nop:1.8.0-beta4'
-    implementation 'com.google.android.material:material:1.2.0-alpha06'
+    implementation 'com.google.android.material:material:1.8.0'
 }
 
 // add it to the bottom of the file
 
-apply from: 'installv1.gradle'
-apply from: 'bintrayv1.gradle'
+//apply from: 'installv1.gradle'
+//apply from: 'bintrayv1.gradle'

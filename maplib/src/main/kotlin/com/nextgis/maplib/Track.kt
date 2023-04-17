@@ -22,7 +22,7 @@
 package com.nextgis.maplib
 
 import android.os.Parcelable
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -56,7 +56,7 @@ data class Location(val longitude: Double, val latitude: Double, val altitude: D
                     val accuracy: Float, val speed: Float, val course: Float, val time: Long, val provider: String,
                     val bearing: Float, val satelliteCount: Int) : Parcelable {
     constructor(loc: android.location.Location, satelliteCount: Int) : this(loc.longitude,
-            loc.latitude, loc.altitude, loc.accuracy, loc.speed, loc.bearing,loc.time, loc.provider, loc.bearing,
+            loc.latitude, loc.altitude, loc.accuracy, loc.speed, loc.bearing,loc.time, loc.provider!!, loc.bearing,
             satelliteCount)
     fun hasAccuracy(): Boolean = accuracy > 0.0f
 }
