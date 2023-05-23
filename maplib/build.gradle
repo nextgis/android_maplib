@@ -19,12 +19,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-//apply plugin: 'kotlin-android-extensions'
-apply plugin: 'org.jetbrains.dokka-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: "org.jetbrains.kotlin.plugin.parcelize"
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-parcelize'
+    id 'org.jetbrains.dokka'
+    id 'maven-publish'
+    id 'signing'
+}
 
 def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
 def gdalFiles = [ "cubewerx_extra.wkt", "ecw_cs.wkt", "ellipsoid.csv", "epsg.wkt", "esri_StatePlane_extra.wkt", "gdalvrt.xsd", "gml_registry.xml", "gmlasconf.xml", "gmlasconf.xsd", "gt_datum.csv", "gt_ellips.csv", "ogrvrt.xsd", "stateplane.csv" ]
@@ -35,40 +37,26 @@ def buildConfigUpper = buildConfig.substring(0, 1).toUpperCase() +
         buildConfig.substring(1, buildConfig.length())
 
 ext {
-    bintrayRepo = 'MapLib'
-    bintrayName = 'com.nextgis.maplib'
-
-    publishedGroupId = 'com.nextgis.maplib'
-    libraryName = 'maplib'
-    artifact = 'maplib'
-
-    libraryDescription = 'The base map library for Android geo applications.'
-
-    siteUrl = 'https://github.com/nextgis/android_maplib'
-    gitUrl = 'https://github.com/nextgis/android_maplib.git'
-
-    libraryVersion = '3.7.0'
-
-    developerId = 'bishopgis'
-    developerName = 'Dmitry Baryshnikov'
-    developerEmail = 'dmitry.baryshnikov@nextgis.com'
-
-    licenseName = 'GNU LESSER GENERAL PUBLIC LICENSE, Version 3.0'
-    licenseUrl = 'https://www.gnu.org/licenses/lgpl-3.0.txt'
-    allLicenses = ["LGPL-3.0"]
+    // group id
+    PUBLISH_GROUP_ID = 'io.github.nextgis'
+    // текущая версия библиотеки
+    PUBLISH_VERSION = '3.7.2'
+    // artifact id библиотеки
+    PUBLISH_ARTIFACT_ID = 'maplib'
 }
 
-//androidExtensions {
-//    experimental = true
-//}
+//apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
+
 
 android {
+
+    namespace 'com.nextgis.maplib'
     compileSdkVersion 33
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 20
-        versionName '3.7.0'
+        versionName '3.7.2'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters = androidAbis
@@ -112,11 +100,11 @@ android {
         test.java.srcDirs += 'src/test/kotlin'
         androidTest.java.srcDirs += 'src/androidTest/kotlin'
     }
-    dokka { // Needed for bintray
-        outputFormat = 'javadoc'
-        outputDirectory = "$buildDir/docs/javadoc"
-//        sourceDirs = files('src/main/kotlin')
-    }
+//    dokka { // Needed for bintray
+//        outputFormat = 'javadoc'
+//        outputDirectory = "$buildDir/docs/javadoc"
+////        sourceDirs = files('src/main/kotlin')
+//    }
     dataBinding {
         enabled = true
     }
@@ -124,7 +112,14 @@ android {
         viewBinding = true
     }
     ndkVersion '25.2.9519653'
-    //buildToolsVersion '28.0.3'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = 17
+    }
 }
 
 task copyFiles() {
@@ -162,14 +157,15 @@ tasks.matching { it.name == 'externalNativeBuild' }.all {
     it.dependsOn(copyFiles)
 }
 
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0"
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    implementation "androidx.core:core-ktx:$core_version"
+    implementation "androidx.core:core-ktx:1.8.0"
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
@@ -177,8 +173,3 @@ dependencies {
     implementation 'org.slf4j:slf4j-nop:1.8.0-beta4'
     implementation 'com.google.android.material:material:1.8.0'
 }
-
-// add it to the bottom of the file
-
-//apply from: 'installv1.gradle'
-//apply from: 'bintrayv1.gradle'

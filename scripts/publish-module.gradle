@@ -1,0 +1,94 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    if (project.plugins.findPlugin("com.android.library")) {
+        // For Android libraries
+        from android.sourceSets.main.java.srcDirs
+        from android.sourceSets.main.kotlin.srcDirs
+    } else {
+        // For pure Kotlin libraries, in case you have them
+        from sourceSets.main.java.srcDirs
+        from sourceSets.main.kotlin.srcDirs
+    }
+}
+
+
+artifacts {
+    archives androidSourcesJar
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                // add this contstants lately
+                groupId PUBLISH_GROUP_ID
+                artifactId PUBLISH_ARTIFACT_ID
+                version PUBLISH_VERSION
+
+                // Two artifacts, the `aar` (or `jar`) and the sources
+                if (project.plugins.findPlugin("com.android.library")) {
+                    from components.release
+                } else {
+                    from components.java
+                }
+
+                artifact androidSourcesJar
+
+                // Mostly self-explanatory metadata
+                pom {
+                    name = PUBLISH_ARTIFACT_ID
+                    // lib description
+                    description = 'native map library for nextgis'
+
+                    url = 'https://github.com/nextgis/android_maplib'
+                    licenses {
+                        license {
+                            name = 'Apache License 2.0'
+                            url =  'https://github.com/nextgis/android_maplib/blob/master/LICENSE'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'nextgis'
+                            name = 'NextGis'
+                            email = 'info@nextgis.com'
+                        }
+                    }
+                    scm {
+                    		// info about libs from  Github
+                        connection = 'scm:github.com/nextgis/android_maplib.git'
+                        developerConnection = 'scm:git:ssh://github.com/nextgis/android_maplib.git'
+                        url = 'https://github.com/nextgis/android_maplib/tree/master'
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(
+            rootProject.ext["signing.keyId"],
+            rootProject.ext["signing.key"],
+            rootProject.ext["signing.password"],
+    )
+    sign publishing.publications
+}
+
+/*
+start to publish - ./gradlew publishToSonatype closeAndReleaseStagingRepository
+
+only pulish to staging rep  - ./gradlew publishToSonatype
+
+lib after release can be found here -
+https://repo1.maven.org/maven2/io/github/nextgis/maplib/
+https://repo.maven.apache.org/maven2/io/github/nextgis/maplib/
+https://central.sonatype.com/artifact/io.github.nextgis/maplib/3.7.1/versions
+
+mavenCentral - add to project via:
+mavenCentral()
+implementation 'io.github.nextgis:maplib:3.7.1'
+* */

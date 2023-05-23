@@ -54,7 +54,7 @@ class SelectInstanceDialog : DialogFragment(), OnInstanceClickListener {
     private var listener: OnInstanceClickListener? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = Dialog(requireContext(), R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
+        val dialog = Dialog(requireContext(), androidx.appcompat.R.style.Base_ThemeOverlay_AppCompat_Dialog_Alert)
         _binding = DialogSelectInstanceBinding.inflate(LayoutInflater.from(context), null, false)
         dialog.setContentView(binding.root)
         binding.fragment = this

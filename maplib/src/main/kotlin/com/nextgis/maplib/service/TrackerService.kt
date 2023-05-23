@@ -161,7 +161,7 @@ class TrackerService : Service() {
     private fun getPendingIntent() : PendingIntent {
         val intent = Intent()
         intent.action = MessageType.PROCESS_LOCATION_UPDATES.code
-        return PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -432,7 +432,7 @@ class TrackerService : Service() {
 
         val intent = Intent(this, TrackerService::class.java)
         intent.action = Command.STOP.code
-        val stopIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val stopIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
 
         var diff = (Date().time - mTrackStartTime.time) / (60 * Constants.millisecondsInSecond)
         val minutes = diff % 60
@@ -457,7 +457,7 @@ class TrackerService : Service() {
             .addAction(android.R.drawable.ic_media_pause, getText(R.string.stop), stopIntent)
 
         if(mOpenIntent != null) {
-            val openIntent = PendingIntent.getActivity(this, 0, mOpenIntent, 0)
+            val openIntent = PendingIntent.getActivity(this, 0, mOpenIntent, PendingIntent.FLAG_MUTABLE)
             notification = notification
                 .setContentIntent(openIntent)
                 .addAction(android.R.drawable.ic_menu_view, getText(R.string.open), openIntent)
