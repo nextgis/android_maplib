@@ -25,6 +25,7 @@ package com.nextgis.maplib.datasource;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.util.JsonReader;
+import android.util.Log;
 
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
@@ -148,7 +149,7 @@ public class GeoMultiPolygon
             }
 
             GeoPolygon polygon = new GeoPolygon();
-            polygon.setCoordinatesFromWKT(wkt.substring(0, pos).trim(), crs);
+            polygon.setCoordinatesFromWKT(wkt.substring(0, pos+2).trim(), crs);
             add(polygon);
 
             pos = wkt.indexOf("((");

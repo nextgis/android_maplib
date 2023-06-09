@@ -25,6 +25,8 @@ package com.nextgis.maplib.datasource;
 import android.annotation.TargetApi;
 import android.os.Build;
 import android.util.JsonReader;
+import android.util.Log;
+
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.GeoConstants;
 import org.json.JSONArray;
@@ -211,7 +213,7 @@ public class GeoPolygon
             {
                 innerRing.setCoordinatesFromWKT(wkt, crs);
             } else {
-                innerRing.setCoordinatesFromWKT(wkt.substring(0, pos -1 ), crs);
+                innerRing.setCoordinatesFromWKT(wkt.substring(0, pos  ), crs);
             }
 
             mInnerRings.add(innerRing);
