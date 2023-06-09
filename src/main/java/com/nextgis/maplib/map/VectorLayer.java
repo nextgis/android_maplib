@@ -2547,7 +2547,7 @@ public class VectorLayer
                         try { // fail on debugapp
                             mCache.addItem(rowId, geometry.getEnvelope());
                         } catch ( Exception ex){
-                            Log.e("envelope fail", ex.getMessage());
+                            Log.e("envelope fail", ex != null ? ex.getMessage() : "null message");
                         }
                     }
 

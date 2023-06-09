@@ -1304,24 +1304,28 @@ public class NGWVectorLayer
 
                 // remove features not exist on server from local layer
                 // if no operation is in changes array or change operation for local feature present
-                for (Long featureId : query(null)) {
-                    boolean bDeleteFeature = true;
-                    for (Feature remoteFeature : features) {
-                        if (remoteFeature.getId() == featureId) {
-                            bDeleteFeature = false;
-                            break;
+                try {
+                    for (Long featureId : query(null)) {
+                        boolean bDeleteFeature = true;
+                        for (Feature remoteFeature : features) {
+                            if (remoteFeature.getId() == featureId) {
+                                bDeleteFeature = false;
+                                break;
+                            }
+                        }
+
+                        // if local item is in update list and state ADD_NEW skip delete
+                        bDeleteFeature =
+                                bDeleteFeature && !FeatureChanges.isChanges(changeTableName, featureId,
+                                        Constants.CHANGE_OPERATION_NEW) &&
+                                        !FeatureChanges.hasFeatureFlags(changeTableName, featureId);
+
+                        if (bDeleteFeature) {
+                            deleteItems.add(featureId);
                         }
                     }
-
-                    // if local item is in update list and state ADD_NEW skip delete
-                    bDeleteFeature =
-                            bDeleteFeature && !FeatureChanges.isChanges(changeTableName, featureId,
-                                    Constants.CHANGE_OPERATION_NEW) &&
-                                    !FeatureChanges.hasFeatureFlags(changeTableName, featureId);
-
-                    if (bDeleteFeature) {
-                        deleteItems.add(featureId);
-                    }
+                } catch (Exception ex){
+                    Log.e(TAG, "error on query:" + ex.getMessage());
                 }
 
                 HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " delete features " + deleteItems.size());
