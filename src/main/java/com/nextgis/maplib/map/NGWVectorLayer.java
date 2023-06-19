@@ -458,8 +458,11 @@ public class NGWVectorLayer
                     continue;
 
                 createFeatureBatch(feature, db);
-            } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException e) {
+            } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException |
+             NGException e) {
                 e.printStackTrace();
+                if (e instanceof NGException && ((NGException) e).getMessage() != null )
+                    throw new NGException(((NGException) e).getMessage());
                 if (null != progressor)
                     throw new NGException(getContext().getString(R.string.error_download_data));
 
@@ -1682,7 +1685,7 @@ public class NGWVectorLayer
             log(e, "getFeatures(): FileNotFoundException");
             syncResult.stats.numIoExceptions++;
             return new ExistFeatureResult(null, false, 0);
-        } catch (IOException e) {
+        } catch (IOException | NGException e) {
             log(e, "getFeatures(): IOException");
             syncResult.stats.numParseExceptions++;
             return new ExistFeatureResult(null, false, 0);
@@ -1701,7 +1704,8 @@ public class NGWVectorLayer
     }
 
 
-    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, IllegalStateException, NumberFormatException, OutOfMemoryError {
+    protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, IllegalStateException,
+            NumberFormatException, OutOfMemoryError, NGException {
         reader.beginArray();
         while (reader.hasNext()) {
             final Feature feature = NGWUtil.readNGWFeature(reader, getFields(), mCRS);

@@ -30,6 +30,7 @@ import android.util.JsonToken;
 import android.util.Log;
 import android.util.Pair;
 
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
@@ -447,12 +448,11 @@ public class NGWUtil
     }
 
 
-    public static Feature readNGWFeature(
+    public static Feature readNGWFeature (
             JsonReader reader,
             List<Field> fields,
             int nSRS)
-            throws IOException, IllegalStateException, NumberFormatException, OutOfMemoryError
-    {
+            throws IOException, IllegalStateException, NumberFormatException, OutOfMemoryError, NGException {
         final Feature feature = new Feature(Constants.NOT_FOUND, fields);
 
         reader.beginObject();
@@ -462,6 +462,9 @@ public class NGWUtil
                 feature.setId(reader.nextLong());
             } else if (name.equals(NGWUtil.NGWKEY_GEOM)) {
                 String wkt = reader.nextString();
+                if (wkt.startsWith("POINT Z")) {
+                    throw new NGException("POINTZ");
+                }
                 GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt, nSRS);
                 geom.setCRS(nSRS);
                 if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
