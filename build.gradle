@@ -24,10 +24,10 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 32
+        targetSdkVersion 33
         versionCode 95
         versionName '2.6.47'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
