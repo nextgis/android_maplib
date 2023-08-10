@@ -54,7 +54,7 @@ public class Feature
     protected long                    mId;
     protected GeoGeometry             mGeometry;
     protected List<Object>            mFieldValues;
-    protected List<Field>             mFields;
+    protected final List<Field>             mFields;
     protected Map<String, AttachItem> mAttachments;
 
 
