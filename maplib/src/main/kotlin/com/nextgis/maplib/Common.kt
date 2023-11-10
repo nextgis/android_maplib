@@ -273,4 +273,10 @@ object Constants {
 
     const val tmpDirCatalogPath = "ngc://Local connections/Home/tmp"
 //    const val docDirCatalogPath = "ngc://Local connections/Home/Documents"
+
+    object SettingsStrings {
+        const val intro_shown = "intro_shown"
+        const val ngid_shown = "ngid_shown"
+    }
+
 }

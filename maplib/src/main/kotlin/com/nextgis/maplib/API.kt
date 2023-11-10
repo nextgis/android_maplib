@@ -27,6 +27,7 @@ import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import com.nextgis.maplib.util.decrypt
 import com.nextgis.maplib.util.encrypt
 import java.io.File
@@ -119,8 +120,10 @@ object API {
 
     @Suppress("NON_EXHAUSTIVE_WHEN")
     private fun notifyFunction(uri: String, code: ChangeCode) {
+        Log.e("NNGGWW", "notifyFunction $uri $code : " + code.toString())
         when (code) {
             ChangeCode.TOKEN_EXPIRED -> onAuthNotify(uri)
+            ChangeCode.TOKEN_CHANGED -> onAuthNotify(uri)
             ChangeCode.CREATE_FEATURE,
             ChangeCode.CHANGE_FEATURE,
             ChangeCode.DELETE_FEATURE,
@@ -130,6 +133,8 @@ object API {
             }
         }
     }
+
+
 
     @Suppress("unused")
     @JvmStatic
@@ -240,6 +245,8 @@ object API {
         geodataDir = Catalog.getOrCreateFolder(ngstoreDir, "geodata")
 
         addNotifyFunction(ChangeCode.ALL, API::notifyFunction)
+        addNotifyFunction(ChangeCode.TOKEN_EXPIRED, API::notifyFunction)
+        addNotifyFunction(ChangeCode.TOKEN_CHANGED, API::notifyFunction)
 
         // Form default map options
         val activityManager = context.getSystemService(ACTIVITY_SERVICE) as ActivityManager
@@ -364,6 +371,10 @@ object API {
      */
     fun addAuth(auth: Auth) : Boolean {
         if(URLAuthAdd(auth.url, toArrayOfCStrings(auth.initOptions()))) {
+            for (a in authArray){
+                if (a.equals(auth))
+                    return true
+            }
             authArray.add(auth)
             return true
         }
@@ -382,6 +393,8 @@ object API {
     }
 
     private fun onAuthNotify(url: String) {
+        Log.e("NNGGWW", "onAuthNotify $url")
+
         authArray.forEach { auth ->
             auth.onRefreshTokenFailed(url)
         }
@@ -1003,12 +1016,16 @@ object API {
     internal fun accountLastNameGetInt() : String = accountGetLastName()
     internal fun accountEmailGetInt() : String = accountGetEmail()
 
-    internal fun accountBitmapGetInt() : Bitmap {
-        val path = accountBitmapPath()
-        if(path.isEmpty()) {
-            return Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+    internal fun accountBitmapGetInt() : Bitmap? {
+        try {
+            val path = accountBitmapPath()
+            if (path.isEmpty()) {
+                return Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
+            }
+            return BitmapFactory.decodeFile(path)
+        }catch (ex : Exception){
+           return null
         }
-        return BitmapFactory.decodeFile(path)
     }
 
     internal fun accountAuthorizedGetInt() : Boolean = accountIsAuthorized()

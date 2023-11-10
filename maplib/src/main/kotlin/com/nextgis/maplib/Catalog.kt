@@ -467,7 +467,7 @@ class Catalog(handle: Long) : Object("Catalog", Type.ROOT.code, "ngc://", handle
      */
     fun childByPath(path: String) : Object? {
         val objectHandle = API.catalogObjectGetInt(path)
-        if(objectHandle > 0) {
+        if(objectHandle != 0L) { // zero is invalid handler
             val objectType = API.catalogObjectTypeInt(objectHandle)
             val objectName = API.catalogObjectNameInt(objectHandle)
             return Object(objectName, objectType, path, objectHandle)

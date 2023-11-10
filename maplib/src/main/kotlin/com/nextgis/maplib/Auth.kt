@@ -73,7 +73,7 @@ data class Auth(val url: String, private val authServerUrl: String,
 
         other as Auth
 
-        return url == other.url
+        return url == other.url && accessToken == other.accessToken && updateToken == other.updateToken
     }
 
     override fun hashCode(): Int {

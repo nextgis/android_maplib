@@ -47,11 +47,11 @@ class ApiTest {
         assertNotEquals(API.versionString("geotiff"), "")
 
         // Check asset files copying
-        val certFile = File(appContext.filesDir, "data/${BuildConfig.VERSION_CODE}/certs/cert.pem")
+        val certFile = File(appContext.filesDir, "data/${BuildConfig.VERSION_CODE1}/certs/cert.pem")
         assertTrue(certFile.exists())
-        val gdalDataDir = File(appContext.filesDir, "data/${BuildConfig.VERSION_CODE}/gdal")
+        val gdalDataDir = File(appContext.filesDir, "data/${BuildConfig.VERSION_CODE1}/gdal")
         assertTrue(gdalDataDir.listFiles().isNotEmpty())
-        val projDBFile = File(appContext.filesDir, "data/${BuildConfig.VERSION_CODE}/proj/proj.db")
+        val projDBFile = File(appContext.filesDir, "data/${BuildConfig.VERSION_CODE1}/proj/proj.db")
         assertTrue(projDBFile.exists())
 
         // Check catalog, store, data, temp, doc directories
