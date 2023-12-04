@@ -30,7 +30,6 @@ import android.util.JsonToken;
 import android.util.Log;
 import android.util.Pair;
 
-import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
@@ -156,9 +155,6 @@ public class NGWUtil
                 || responseCode == HttpURLConnection.HTTP_MOVED_PERM
                 || responseCode == HttpURLConnection.HTTP_OK)) {
             Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " + responseCode);
-            HyperLog.v(Constants.TAG, "NGWUtil: getConnectionCookie error: url: " + sUrl +
-                    " responseCode: " + responseCode);
-
             return null;
         }
 
@@ -393,6 +389,7 @@ public class NGWUtil
             String server,
             long remoteId)
     {
+        //return "https://wrongurl.com/wrong";
         return getResourceUrl(server, remoteId) + "/feature/";
     }
 
@@ -405,6 +402,9 @@ public class NGWUtil
         if (TextUtils.isEmpty(where))
             return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=";
         return getFeaturesUrl(server, remoteId) + "?" + where + "&dt_format=iso&?extensions=";
+
+        // return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=attachment";
+        //  keeps attachment after sync  - but delete attach manualy  not work  on sync changes to  server - tryes to delete all
     }
 
 

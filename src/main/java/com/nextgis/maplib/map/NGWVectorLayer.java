@@ -83,6 +83,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -649,6 +650,7 @@ public class NGWVectorLayer
                         "Layer " + getName() + " is not checked to sync or not inited");
                 HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sync type is SYNC_NONE");
             }
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sync for " + getName() + "  - sync type is SYNC_NONE - exit");
             return;
         }
 
@@ -670,11 +672,14 @@ public class NGWVectorLayer
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "Get remote changes failed");
                 }
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer return null - EXIT" );
+
                 return; // layer not exist - exits
             }
 
-        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteReadOnly is " + isRemoteReadOnly());
+        //HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteReadOnly is " + isRemoteReadOnly());
         if (isRemoteReadOnly()) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteReadOnly is true - EXIT");
             return;
         }
 
@@ -682,6 +687,8 @@ public class NGWVectorLayer
         // 3. send current changes
         if (isRemoteSendAllowed())
             if (!sendLocalChanges(syncResult)) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges failed - return false" );
+
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "Set local changes failed");
                 }
@@ -706,6 +713,8 @@ public class NGWVectorLayer
 
     public boolean sendLocalChanges(SyncResult syncResult)
     {
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges START" );
+
         String changeTableName = getChangeTableName();
         long changesCount = FeatureChanges.getChangeCount(changeTableName);
         if (Constants.DEBUG_MODE) {
@@ -714,6 +723,7 @@ public class NGWVectorLayer
 
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges changesCount " + changesCount);
         if (0 == changesCount) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges 0 - EXIT" );
             return true;
         }
 
@@ -775,11 +785,15 @@ public class NGWVectorLayer
                         }
 
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: feature add start featureID = "  + changeFeatureId );
+
                         if (addFeatureOnServer(changeFeatureId, syncResult)) {
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeChangesToLast(changeTableName, changeFeatureId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: feature add FAILED featureID = "  + changeFeatureId );
+
                             isError = true;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed addFeatureOnServer() failed");
@@ -787,11 +801,15 @@ public class NGWVectorLayer
                         }
 
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_CHANGED)) {
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: feature change start featureID = "  + changeFeatureId );
+
                         if (changeFeatureOnServer(changeFeatureId, syncResult)) {
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeChangesToLast(changeTableName, changeFeatureId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: feature change FAILED featureID = "  + changeFeatureId );
+
                             isError = true;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed changeFeatureOnServer() failed");
@@ -804,9 +822,12 @@ public class NGWVectorLayer
                 else { // 0 != (changeOperation & CHANGE_OPERATION_ATTACH)
 
                     if (changeAttachOperation == Constants.CHANGE_OPERATION_DELETE) {
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttacheDelete start");
+
                         if (deleteAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                         } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttacheDelete FAILED");
                             isError = true;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed deleteAttachOnServer() failed");
@@ -814,12 +835,17 @@ public class NGWVectorLayer
                         }
 
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_NEW) {
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachNew start with Fid =" + changeFeatureId + " attachId= "+ changeAttachId);
+
                         if (sendAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeAttachChangesToLast(changeTableName,
                                     changeFeatureId, changeAttachId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachNew FAILED");
+
                             isError = true;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
@@ -827,11 +853,14 @@ public class NGWVectorLayer
                         }
 
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_CHANGED) {
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachChange start with Fid =" + changeFeatureId + " attachId= "+ changeAttachId);
+
                         if (changeAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
                             FeatureChanges.removeAttachChangesToLast(changeTableName,
                                     changeFeatureId, changeAttachId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachChange FAILED");
                             isError = true;
                             if (Constants.DEBUG_MODE) {
                                 Log.d(Constants.TAG, "proceed changeAttachOnServer() failed");
@@ -979,6 +1008,8 @@ public class NGWVectorLayer
             HttpResponse response = sendAttachOnServer(featureId, attach);
 
             if (!response.isOk()) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer  FAILED with " + response.getResponseBody());
+
                 log(syncResult, response.getResponseCode() + "");
                 return false;
             }
@@ -990,6 +1021,8 @@ public class NGWVectorLayer
 
             response = sendFeatureAttachOnServer(result, featureId, attach);
             if (!response.isOk()) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendFeatureAttachOnServer  FAILED with " + response.getResponseBody());
+
                 log(syncResult, response.getResponseCode() + "");
                 return false;
             }
@@ -997,6 +1030,8 @@ public class NGWVectorLayer
             // set new local id for attach
             result = new JSONObject(response.getResponseBody());
             if (!result.has(Constants.JSON_ID_KEY)) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: set new local id for attach  FAILED - no Constants.JSON_ID_KEY, result json =  " + result.toString());
+
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not ID key, result: " + result.toString());
                 }
@@ -1009,15 +1044,20 @@ public class NGWVectorLayer
 
             return true;
         } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IOException " + e.getMessage());
+
             log(e, "sendAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numInserts++;
             return false;
         }  catch (JSONException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer JSONException " + e.getMessage());
             log(e, "sendAttachOnServer JSONException");
             syncResult.stats.numParseExceptions++;
             return false;
         } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IllegalStateException " + e.getMessage());
+
             log(e, "sendAttachOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
@@ -1039,6 +1079,7 @@ public class NGWVectorLayer
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
             }
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer  proceedAttach FAILED with result " + result.toString());
             syncResult.stats.numParseExceptions++;
             return false;
         }
@@ -1056,6 +1097,7 @@ public class NGWVectorLayer
     }
 
     protected HttpResponse sendFeatureAttachOnServer(JSONObject result, long featureId, AttachItem attach) throws JSONException, IOException {
+
         // add attachment to row
         JSONObject postJsonData = new JSONObject();
         //JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
@@ -1073,6 +1115,8 @@ public class NGWVectorLayer
         // upload file
         String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId);
 
+        HyperLog.v(Constants.TAG, "sendFeatureAttachOnServer start url = " + url + " data" + postload);
+
         // update record in NGW
         return NetworkUtil.post(url, postload, accountData.login, accountData.password, false);
     }
@@ -1088,6 +1132,9 @@ public class NGWVectorLayer
 
         // upload file
         String url = NGWUtil.getFileUploadUrl(accountData.url);
+
+        HyperLog.v(Constants.TAG, "sendAttachOnServer start url = " + url + " filename = "+ fileName + " filepath=" + filePath);
+
         return NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login, accountData.password, false);
     }
 
@@ -1203,8 +1250,9 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: getChangesFromServer " + getName());
         if (!mNet.isNetworkAvailable()) {
-            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " network is unavailable");
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " network is unavailable -stop getChangesFromServer");
             return true;
         }
 
@@ -1216,10 +1264,15 @@ public class NGWVectorLayer
         List<Long> deleteItems = new ArrayList<>();
 
         ExistFeatureResult result =  getFeatures(syncResult, mTracked);
-        if (result == null)
+        if (result == null) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " null from getFeatures - stop getChangesFromServer");
+
             return false;
+        }
 
         if (result.code == 404){
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " 404 from getFeatures - stop getChangesFromServer");
+
             clearLayerSync(this);
             return false;
         }
@@ -1296,7 +1349,7 @@ public class NGWVectorLayer
                             compareFeature(cursor, authority, remoteFeature, changeTableName);
                         }
                     } catch (Exception e) {
-                        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " error " + e.getMessage());
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer Exception error " + e.getMessage());
                         //Log.d(TAG, e.getLocalizedMessage());
                     } finally {
                         if (null != cursor) {
@@ -1328,16 +1381,17 @@ public class NGWVectorLayer
                         }
                     }
                 } catch (Exception ex){
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer remove features Exception error " + ex.getMessage());
+
                     Log.e(TAG, "error on query:" + ex.getMessage());
                 }
-
                 HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " delete features " + deleteItems.size());
                 deleteFeatures(deleteItems);
             }
 
             if (!mTracked) {
                 Cursor changeCursor = FeatureChanges.getChanges(changeTableName);
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " changeCursor is " + changeCursor);
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " changeCursorSize is " + changeCursor.getCount());
                 // remove changes already applied on server (delete already deleted id or add already added)
                 if (null != changeCursor) {
                     try {
@@ -1391,7 +1445,7 @@ public class NGWVectorLayer
                             } while (changeCursor.moveToNext());
                         }
                     } catch (Exception e) {
-                        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " error " + e.getMessage());
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer Exception " + e.getMessage());
                         //Log.d(TAG, e.getLocalizedMessage());
                     } finally {
                         changeCursor.close();
@@ -1399,7 +1453,7 @@ public class NGWVectorLayer
                 }
             }
         } catch (SQLiteException | ConcurrentModificationException e) {
-            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " error " + e.getMessage());
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer Exception " + e.getMessage());
             syncResult.stats.numConflictDetectedExceptions++;
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "proceed getChangesFromServer() failed");
@@ -1409,6 +1463,8 @@ public class NGWVectorLayer
         }
 
         getPreferences().edit().putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis()).apply();
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer END");
+
         return true;
     }
 
@@ -1612,7 +1668,6 @@ public class NGWVectorLayer
                     getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
             authenticate(accountData, connection);
         }
-
         return connection;
     }
 
@@ -1703,7 +1758,6 @@ public class NGWVectorLayer
         return new ExistFeatureResult(results, true, 200);
     }
 
-
     protected void readFeatures(JsonReader reader, List<Feature> features) throws IOException, IllegalStateException,
             NumberFormatException, OutOfMemoryError, NGException {
         reader.beginArray();
@@ -1715,7 +1769,6 @@ public class NGWVectorLayer
         }
         reader.endArray();
     }
-
 
     protected boolean addFeatureOnServer(
             long featureId,
@@ -1788,14 +1841,12 @@ public class NGWVectorLayer
         }
     }
 
-
     protected HttpResponse addFeatureOnServer(String payload) throws IOException {
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId) + appendix(),
                          payload, accountData.login, accountData.password, false);
     }
-
 
     protected boolean deleteFeatureOnServer(
             long featureId,
@@ -1808,13 +1859,11 @@ public class NGWVectorLayer
 
         try {
             HttpResponse response = deleteFeatureOnServer(featureId);
-
             if (!response.isOk()) {
                 syncResult.stats.numIoExceptions++;
                 syncResult.stats.numEntries++;
                 return false;
             }
-
             return true;
         } catch (IOException e) {
             log(e, "deleteFeatureOnServer IOException");
@@ -1828,14 +1877,12 @@ public class NGWVectorLayer
         }
     }
 
-
     protected HttpResponse deleteFeatureOnServer(long featureId) throws IOException {
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         return NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
                                    accountData.login, accountData.password, false);
     }
-
 
     protected boolean changeFeatureOnServer(
             long featureId,

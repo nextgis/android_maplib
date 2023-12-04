@@ -33,6 +33,7 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.hypertrack.hyperlog.BuildConfig;
+import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 
 import java.io.BufferedWriter;
@@ -367,6 +368,9 @@ public class NetworkUtil
     {
         final HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
         if (null == conn) {
+
+            HyperLog.v(Constants.TAG, "HTTP post error null == conn with url " + targetURL);
+
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
             return new HttpResponse(ERROR_CONNECT_FAILED);
@@ -453,11 +457,15 @@ public class NetworkUtil
             boolean readErrorResponseBody)
             throws IOException
     {
+        HyperLog.v(Constants.TAG, "postFile start url = " + targetURL + " filename " + fileName);
+
 
         //------------------ CLIENT REQUEST
         // open a URL connection to the Servlet
         HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
         if (null == conn) {
+            HyperLog.v(Constants.TAG, "postFile getHttpConnection = null  start url = " + targetURL + " filename " + fileName);
+
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "Error get connection object: " + targetURL);
             return  new HttpResponse(ERROR_CONNECT_FAILED);
@@ -493,6 +501,8 @@ public class NetworkUtil
             returnUrl = uploader.getUploadURL().toString();
 
         } catch (ProtocolException exception) {
+            HyperLog.v(Constants.TAG, "postFile upload fail ProtocolException " + exception.getMessage());
+
             return new HttpResponse(0);
         }
 
@@ -507,10 +517,15 @@ public class NetworkUtil
                     responseS.setOk(true);
                     return  responseS;
                 } catch (Exception ex){
+                    HyperLog.v(Constants.TAG, "postFile Exception " + ex.getMessage() );
+
                     Log.e("ff", ex.getMessage());
                 }
                 return response;
             }
+        }else {
+            HyperLog.v(Constants.TAG, "postFile returnUrl =0  EXIT " );
+
         }
         return new HttpResponse(200);
     }

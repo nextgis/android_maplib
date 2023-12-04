@@ -198,7 +198,7 @@ public class SyncAdapter
         Intent finish = new Intent(SYNC_FINISH);
         if (!TextUtils.isEmpty(mError))
             finish.putExtra(EXCEPTION, mError);
-        HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_FINISH is sent / mError is " + mError);
+        HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_FINISH is sent / mError is " + (TextUtils.isEmpty(mError) ? null:mError));
         getContext().sendBroadcast(finish);
     }
 
@@ -208,17 +208,19 @@ public class SyncAdapter
             String authority,
             SyncResult syncResult)
     {
+        HyperLog.v(Constants.TAG, "SyncAdapter: StartSynchronization");
         HyperLog.v(Constants.TAG, "SyncAdapter: total layers for sync in " + layerGroup + " is " + layerGroup.getLayerCount());
         for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             if (isCanceled()) {
+                HyperLog.v(Constants.TAG, "SyncAdapter: Sync canceled");
                 return;
             }
             ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
-                HyperLog.v(Constants.TAG, "SyncAdapter: " + layer + " is a layer group");
+                HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a layer group");
                 sync((LayerGroup) layer, authority, syncResult);
             } else if (layer instanceof INGWLayer) {
-                HyperLog.v(Constants.TAG, "SyncAdapter: " + layer + " is a NGW layer");
+                HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a NGW layer");
                 INGWLayer ngwLayer = (INGWLayer) layer;
                 String accountName = ngwLayer.getAccountName();
                 if (!mVersions.containsKey(accountName))
@@ -227,9 +229,10 @@ public class SyncAdapter
                 Pair<Integer, Integer> ver = mVersions.get(accountName);
                 ngwLayer.sync(authority, ver, syncResult);
             } else if (layer instanceof TrackLayer) {
-                HyperLog.v(Constants.TAG, "SyncAdapter: " + layer + " is a tracking layer");
+                HyperLog.v(Constants.TAG, "SyncAdapter: start sync" + layer.getName() + " is a tracking layer");
                 ((TrackLayer) layer).sync();
             }
+            HyperLog.v(Constants.TAG, "SyncAdapter: Sync Ended");
         }
     }
 

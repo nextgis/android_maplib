@@ -2210,8 +2210,6 @@ public class VectorLayer
             save();
             notifyLayerChanged();
         }
-        mCache.save(new File(mPath, RTREE));
-        // save cache changes after del
     }
 
 
@@ -2610,26 +2608,6 @@ public class VectorLayer
         return attachIds.size() > 0;
     }
 
-
-    public Map<Long, Feature> getFeatures(){
-
-        Cursor cursor = query(null, null, null, null, null);
-        if (null == cursor) {
-            return null;
-        }
-
-        Map<Long, Feature> featureListMap = new HashMap<>();
-        final List<Field> fields = getFields();
-        while (cursor.moveToNext()) {
-            Feature feature1 = new Feature(cursor.getLong(0), fields);
-            feature1.fromCursor(cursor);
-            featureListMap.put(feature1.getId(), feature1);
-        }
-
-        cursor.close();
-
-        return featureListMap;
-    }
 
     public Feature getFeature(long featureId)
     {
