@@ -30,4 +30,11 @@
     <string name="password">Password</string>
     <string name="connection_error">Cannot create a connection</string>
     <string name="empty_field">Field should not be empty</string>
+
+    <string name="background_location_message">NextGIS app needs background location permission to collect tracks continuously even when the app is not in
+        use. Otherwise the track will be collected only when the app in foreground. Please select \'%s\'.</string>
+    <string name="background_location_always">Allow all the time</string>
+    <string name="background_location">Background location usage</string>
+    <string name="action_settings">Settings</string>
+
 </resources>

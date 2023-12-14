@@ -131,21 +131,21 @@ task copyFiles() {
     gdalFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/gdal"
-            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/x86_64/data/$name"
+            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/arm64-v8a/data/$name"
         }
     }
 
     projFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/proj"
-            from "$projectDir/.cxx/Debug/"+ generatedFolderName + "/x86_64/data/$name"
+            from "$projectDir/.cxx/Debug/"+ generatedFolderName + "/arm64-v8a/data/$name"
         }
     }
 
     sslFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/certs"
-            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/x86_64/data/$name"
+            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/arm64-v8a/data/$name"
 
         }
     }

@@ -22,6 +22,7 @@
 package com.nextgis.maplib
 
 import android.os.Parcelable
+import android.util.Log
 import kotlinx.parcelize.Parcelize
 import java.text.SimpleDateFormat
 import java.util.*
@@ -175,6 +176,11 @@ open class Track(private val handle: Long) {
      * @return True on success.
      */
     fun addPoint(name: String, location: Location, startTrack: Boolean, startSegment: Boolean) : Boolean {
+        if (startTrack)
+            Log.e("MPLB_TRACK", "add point startTrack true" )
+        if (startSegment)
+            Log.e("MPLB_TRACK", "add point startSegment true" )
+
         return API.trackAddPointInt(handle, name, location.longitude, location.latitude, location.altitude, location.accuracy,
             location.speed, location.course, location.time, location.satelliteCount, startTrack, startSegment)
     }

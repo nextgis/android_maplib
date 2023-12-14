@@ -24,14 +24,17 @@ package com.nextgis.maplib.service
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.GnssStatus
 import android.location.GnssStatus.Callback
@@ -40,7 +43,10 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.*
 import android.preference.PreferenceManager
+import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationCompat
 import com.nextgis.maplib.*
 import java.io.Serializable
@@ -128,11 +134,14 @@ class TrackerService : Service() {
     // See: https://codelabs.developers.google.com/codelabs/background-location-updates-android-o/index.html
     private val mBroadCastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            Log.e("TRACKK", "onReceive mBroadCastReceiver")
             when (intent?.action) {
                 MessageType.PROCESS_LOCATION_UPDATES.code -> {
                     if(intent.hasExtra(LocationManager.KEY_LOCATION_CHANGED)) {
                         val location = intent.extras?.get(LocationManager.KEY_LOCATION_CHANGED) as? android.location.Location
                         if(location != null) {
+                            Log.e("TRACKK", "location != null")
+
                             processLocationChanges(location)
                         }
                     }
@@ -237,7 +246,8 @@ class TrackerService : Service() {
 
         // Add location to DB
         if(mTracksTable?.addPoint(mTrackName, location, mStartNewTrack, newSegment) == false) {
-            printError("Add track point failed. " + API.lastError())
+            Log.e("ERROR","Add track point failed. " + API.lastError())
+            Toast.makeText(applicationContext, "", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -270,6 +280,8 @@ class TrackerService : Service() {
     }
 
     override fun onCreate() {
+        Log.e("TRACKK", "onCreate()")
+
         super.onCreate()
 
         mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -287,6 +299,8 @@ class TrackerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        Log.e("TRACKK", "onStartCommand()")
+
 
         // Get or create tracks table.
         if(intent?.hasExtra("STORE_NAME") == true && mTracksTable == null) {
@@ -331,6 +345,8 @@ class TrackerService : Service() {
     }
 
     fun removeDelegate(delegate: TrackerDelegate?) {
+         Log.e("TRACKK", "removeDelegate: " + delegate.toString())
+
         if (delegate == null) {
             return
         }
@@ -349,6 +365,7 @@ class TrackerService : Service() {
     }
 
     override fun onDestroy() {
+        Log.e("TRACKK", "Destroy()")
         // The service is no longer used and is being destroyed
         stop()
         printMessage("Destroy tracking service")
@@ -356,6 +373,7 @@ class TrackerService : Service() {
 
     @Suppress("DEPRECATION")
     private fun stop() {
+        Log.e("TRACKK", "stop()")
         if(mStatus != Status.RUNNING) {
             status()
             return
@@ -476,6 +494,7 @@ class TrackerService : Service() {
 
     @Suppress("DEPRECATION")
     private fun start() {
+        Log.e("TRACKK", "start()")
         if(mStatus == Status.RUNNING) {
             status()
             return
@@ -559,5 +578,87 @@ class TrackerService : Service() {
         mNotificationManager?.createNotificationChannel(chan)
         return channelId
     }
+
+    public fun getStatus():Status{
+        return mStatus
+    }
+
+    interface BackgroundPermissionCallback {
+        fun beforeAndroid10(hasBackgroundPermission: Boolean)
+        fun onAndroid10(hasBackgroundPermission: Boolean)
+        fun afterAndroid10(hasBackgroundPermission: Boolean)
+    }
+
+    companion object {
+        // perm
+        open fun showBackgroundDialog(context: Activity, listener: BackgroundPermissionCallback) {
+            var okButton = R.string.ok
+            var backgroundPermissionTitle: CharSequence =
+                context.getString(R.string.background_location_always)
+            if (Build.VERSION.SDK_INT >= 30) {
+                backgroundPermissionTitle = context.packageManager.backgroundPermissionOptionLabel
+            }
+            val message =
+                context.getString(R.string.background_location_message, backgroundPermissionTitle)
+            val hasBackground: Boolean = hasBackgroundLocationPermissions(context)
+            val hasLocation: Boolean = hasLocationPermissions(context)
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                if (hasBackground) {
+                    listener.onAndroid10(true)
+                    return
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (hasBackground) {
+                    listener.afterAndroid10(true)
+                    return
+                }
+                okButton = R.string.action_settings
+            } else {
+                listener.beforeAndroid10(hasLocation)
+                return
+            }
+            val builder = AlertDialog.Builder(context)
+            builder.setTitle(R.string.background_location)
+                .setMessage(message)
+                .setPositiveButton(okButton,
+                    DialogInterface.OnClickListener { dialogInterface, i ->
+                        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                            listener.onAndroid10(false)
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            listener.afterAndroid10(false)
+                        }
+                    })
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+
+
+
+
+        fun hasLocationPermissions(context: Context?): Boolean {
+            val coarse = Manifest.permission.ACCESS_COARSE_LOCATION
+            val fine = Manifest.permission.ACCESS_FINE_LOCATION
+            val hasCoarse: Boolean =
+                hasPermission(context, coarse)
+            val hasFine: Boolean = hasPermission(context, fine)
+            return hasCoarse && hasFine
+        }
+
+        fun hasBackgroundLocationPermissions(context: Context?): Boolean {
+            val background = Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            return hasPermission(context, background)
+        }
+
+        fun hasPermission(context: Context?, permission: String): Boolean {
+            val pm = context?.packageManager
+            if (pm == null) {
+                return false
+            }
+            val hasPerm = pm.checkPermission(permission, context.packageName)
+            return hasPerm == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+
 }
 
