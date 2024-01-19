@@ -1045,6 +1045,7 @@ object API {
             trackAddPoint(handle, name, x, y, z, acc, speed, course, timeStamp / 1000, satCount, startTrack, startSegment)
 
     internal fun trackDeletePointsInt(handle: Long, start: Long, stop: Long) : Boolean = trackDeletePoints(handle, start / 1000, stop / 1000)
+    internal fun addNotifyFunctionInt(notifyType: Int) = addNotifyFunction(notifyType)
 
     /*
      * A native method that is implemented by the 'ngstore' native library,
@@ -1388,4 +1389,5 @@ object API {
                                        speed: Float, course: Float, timeStamp: Long, satCount: Int, startTrack: Boolean,
                                        startSegment: Boolean) : Boolean
     private external fun trackDeletePoints(handle: Long, start: Long, stop: Long) : Boolean
+    private external fun addNotifyFunction(notifyType: Int)
 }
