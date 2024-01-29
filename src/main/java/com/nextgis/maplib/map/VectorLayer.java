@@ -209,7 +209,7 @@ public class VectorLayer
     protected static String     mAuthority;
     protected static UriMatcher mUriMatcher;
 
-    protected Map<String, Field> mFields;
+    protected LinkedHashMap<String, Field> mFields;
 
     protected boolean mCacheLoaded, mIsCacheRebuilding;
     protected int     mGeometryType;
@@ -776,7 +776,7 @@ public class VectorLayer
         mIsEditable = jsonObject.optBoolean(JSON_EDITABLE_KEY, true);
 
         if (jsonObject.has(JSON_FIELDS_KEY)) {
-            mFields = new HashMap<>();
+            mFields = new LinkedHashMap<>();
             JSONArray fields = jsonObject.getJSONArray(JSON_FIELDS_KEY);
             for (int i = 0; i < fields.length(); i++) {
                 Field field = new Field();
@@ -2210,6 +2210,8 @@ public class VectorLayer
             save();
             notifyLayerChanged();
         }
+        mCache.save(new File(mPath, RTREE));
+
     }
 
 
@@ -2608,6 +2610,22 @@ public class VectorLayer
         return attachIds.size() > 0;
     }
 
+    public final  Map<Long, Feature> getFeatures(){
+        final Cursor cursor = query(null, null, null, null, null);
+        if (null == cursor) {
+            return null;
+        }
+
+        final Map<Long, Feature> featureListMap = new HashMap<>();
+        final List<Field> fields = getFields();
+        while (cursor.moveToNext()) {
+            final Feature feature1 = new Feature(cursor.getLong(0), fields);
+            feature1.fromCursor(cursor);
+            featureListMap.put(feature1.getId(), feature1);
+        }
+        cursor.close();
+        return featureListMap;
+    }
 
     public Feature getFeature(long featureId)
     {

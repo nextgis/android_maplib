@@ -243,7 +243,10 @@ public class TMSRenderer
 
         //synchronized (lock) {
             mDrawThreadPool = new ThreadPoolExecutor(
-                    coreCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+                    coreCount,
+                    threadCount,
+                    KEEP_ALIVE_TIME,
+                    KEEP_ALIVE_TIME_UNIT,
                     new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
             {
                 @Override

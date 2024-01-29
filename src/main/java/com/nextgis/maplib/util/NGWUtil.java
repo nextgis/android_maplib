@@ -30,7 +30,7 @@ import android.util.JsonToken;
 import android.util.Log;
 import android.util.Pair;
 
-import com.nextgis.maplib.R;
+import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.Field;
@@ -155,6 +155,8 @@ public class NGWUtil
                 || responseCode == HttpURLConnection.HTTP_MOVED_PERM
                 || responseCode == HttpURLConnection.HTTP_OK)) {
             Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " + responseCode);
+            HyperLog.v(Constants.TAG, "NGWUtil: getConnectionCookie error: url: " + sUrl +
+                    " responseCode: " + responseCode);
             return null;
         }
 
