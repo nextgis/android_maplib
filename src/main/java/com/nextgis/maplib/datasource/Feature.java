@@ -46,6 +46,8 @@ import java.util.TimeZone;
 
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
+import static com.nextgis.maplib.util.LayerUtil.containsCaseInsensitive;
+import static com.nextgis.maplib.util.LayerUtil.unwrapQuotation;
 
 
 public class Feature
@@ -322,22 +324,27 @@ public class Feature
         for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
 
+            String name = field.getName();
+            if (  containsCaseInsensitive( unwrapQuotation(name), Constants.VECTOR_FORBIDDEN_FIELDS))
+                name = "'\"" + unwrapQuotation(name) + "\"'";
+
+
             if (!isValuePresent(i)) {
-                values.putNull(field.getName());
+                values.putNull(name);
                 continue;
             }
 
             switch (field.getType()) {
                 case FTString:
-                    values.put(field.getName(), getFieldValueAsString(i));
+                    values.put(name, getFieldValueAsString(i));
                     break;
 
                 case FTInteger:
                     Object intVal = getFieldValue(i);
                     if (intVal instanceof Integer) {
-                        values.put(field.getName(), (int) intVal);
+                        values.put(name, (int) intVal);
                     } else if (intVal instanceof Long) {
-                        values.put(field.getName(), (long) intVal);
+                        values.put(name, (long) intVal);
                     } else {
                         Log.d(TAG, "skip value: " + intVal.toString());
                     }
@@ -346,9 +353,9 @@ public class Feature
                 case FTReal:
                     Object realVal = getFieldValue(i);
                     if (realVal instanceof Double) {
-                        values.put(field.getName(), (double) realVal);
+                        values.put(name, (double) realVal);
                     } else if (realVal instanceof Float) {
-                        values.put(field.getName(), (float) realVal);
+                        values.put(name, (float) realVal);
                     } else {
                         Log.d(TAG, "skip value: " + realVal.toString());
                     }
@@ -360,12 +367,12 @@ public class Feature
                     Object dateVal = getFieldValue(i);
                     if (dateVal instanceof Date) {
                         Date date = (Date) dateVal;
-                        values.put(field.getName(), date.getTime());
+                        values.put(name, date.getTime());
                     } else if (dateVal instanceof Long) {
-                        values.put(field.getName(), (long) dateVal);
+                        values.put(name, (long) dateVal);
                     } else if (dateVal instanceof Calendar) {
                         Calendar cal = (Calendar) dateVal;
-                        values.put(field.getName(), cal.getTimeInMillis());
+                        values.put(name, cal.getTimeInMillis());
                     } else {
                         Log.d(TAG, "skip value: " + dateVal.toString());
                     }

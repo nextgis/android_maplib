@@ -46,8 +46,16 @@ public class LayerUtil {
         return (false);
     }
 
+    public static String unwrapQuotation(final String source){
+        String result = source;
+        while (result.length() > 2 && result.charAt(0) == '\"' && result.charAt(result.length()-1) == '\"')
+            result = result.substring(1, result.length() -1);
+        return result;
+    }
+
     public static boolean isFieldNameValid(String fieldName){
-        return !containsCaseInsensitive(fieldName, Constants.VECTOR_FORBIDDEN_FIELDS);
+        return true;
+        //return !containsCaseInsensitive(fieldName, Constants.VECTOR_FORBIDDEN_FIELDS);
     }
 
     public static String normalizeFieldName(String fieldName) {
@@ -56,11 +64,14 @@ public class LayerUtil {
         if (Character.isDigit(result.charAt(0)))
             result = "_" + result;
 
-        for(char testChar : VECTOR_FORBIDDEN_CHARS)
-            result = result.replace(testChar, '_');
+//        for(char testChar : VECTOR_FORBIDDEN_CHARS)
+//            result = result.replace(testChar, '_');
 
         if(result.equals(Constants.FIELD_ID))
             return "_fixed_id";
+
+        if (containsCaseInsensitive(result, Constants.VECTOR_FORBIDDEN_FIELDS))
+            result = "\"" + result + "\"";
 
         return result;
     }

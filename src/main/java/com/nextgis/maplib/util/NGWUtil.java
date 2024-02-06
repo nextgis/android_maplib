@@ -72,6 +72,8 @@ import static com.nextgis.maplib.util.Constants.JSON_DISPLAY_NAME;
 import static com.nextgis.maplib.util.Constants.JSON_ID_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_RESOURCE_KEY;
 import static com.nextgis.maplib.util.Constants.TAG;
+import static com.nextgis.maplib.util.LayerUtil.containsCaseInsensitive;
+import static com.nextgis.maplib.util.LayerUtil.unwrapQuotation;
 
 
 public class NGWUtil
@@ -444,6 +446,8 @@ public class NGWUtil
             String type = fieldJSONObject.getString("datatype");
             String alias = fieldJSONObject.getString("display_name");
             String name = fieldJSONObject.getString("keyname");
+            if (containsCaseInsensitive(name, Constants.VECTOR_FORBIDDEN_FIELDS))
+                name = "\"" + name + "\"";
 
             int nType = LayerUtil.stringToType(type);
             if (Constants.NOT_FOUND != nType) {
@@ -974,7 +978,8 @@ public class NGWUtil
             JSONArray fields = new JSONArray();
             for (Field field : layer.getFields()) {
                 JSONObject current = new JSONObject();
-                current.put(NGWKEY_KEYNAME, field.getName());
+                String name = unwrapQuotation(field.getName());
+                current.put(NGWKEY_KEYNAME, name);
                 current.put(NGWKEY_DISPLAY_NAME, field.getAlias());
                 current.put(NGWKEY_DATATYPE, LayerUtil.typeToString(field.getType()));
                 fields.put(current);

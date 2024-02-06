@@ -1955,6 +1955,15 @@ public class NGWVectorLayer
         return NetworkUtil.put(url, payload, accountData.login, accountData.password, false);
     }
 
+    private String unNormalizeName(String name){
+        if (!TextUtils.isEmpty(name)  && name.length() > 2 ){
+            if (name.charAt(0) == '\"' && name.charAt(name.length()-1) == '\"'){
+                name = name.substring(1, name.length()-1);
+                return name;
+            }
+        }
+        return name;
+    }
 
     protected String cursorToJson(Cursor cursor)
             throws JSONException, IOException
@@ -1967,6 +1976,8 @@ public class NGWVectorLayer
                 if (name.equals(Constants.FIELD_ID) || name.equals(Constants.FIELD_GEOM)) {
                     continue;
                 }
+
+                name = unNormalizeName(name);
 
                 Field field = mFields.get(cursor.getColumnName(i));
                 if (null == field) {
