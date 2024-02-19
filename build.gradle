@@ -1,16 +1,179 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+/*
+ * Project: NextGIS Mobile SDK
+ * Author:  Dmitry Baryshnikov, dmitry.baryshnikov@nextgis.com
+ *
+ * Created by Dmitry Baryshnikov on 14.08.18 20:59.
+ * Copyright (c) 2018-2019 NextGIS, info@nextgis.com.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 plugins {
-//    id 'com.android.application' version '7.2.1' apply false
-    id 'com.android.library' version '7.2.1' apply false
-    id 'org.jetbrains.kotlin.android' version '1.8.20' apply false
-    id 'org.jetbrains.dokka' version '1.8.10'
-
-    id "io.github.gradle-nexus.publish-plugin" version "1.3.0"
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-parcelize'
+    id 'org.jetbrains.dokka'
+    id 'maven-publish'
+    id 'signing'
 }
 
-apply from: "${rootDir}/scripts/publish-root.gradle"
+def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
+def gdalFiles = [ "cubewerx_extra.wkt", "ecw_cs.wkt", "ellipsoid.csv", "epsg.wkt", "esri_StatePlane_extra.wkt", "gdalvrt.xsd", "gml_registry.xml", "gmlasconf.xml", "gmlasconf.xsd", "gt_datum.csv", "gt_ellips.csv", "ogrvrt.xsd", "stateplane.csv" ]
+def sslFiles = ["cert.pem"]
+def projFiles = ["proj.db"]
+def buildConfig = android.defaultPublishConfig.toString()
+def buildConfigUpper = buildConfig.substring(0, 1).toUpperCase() +
+        buildConfig.substring(1, buildConfig.length())
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+ext {
+    // group id
+    PUBLISH_GROUP_ID = 'io.github.nextgis'
+    // текущая версия библиотеки
+    PUBLISH_VERSION = '3.7.2'
+    // artifact id библиотеки
+    PUBLISH_ARTIFACT_ID = 'maplib'
+}
+
+//apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
+
+
+android {
+
+    namespace 'com.nextgis.maplib'
+
+    defaultConfig {
+        minSdkVersion 21
+        compileSdk 33
+        targetSdk 33
+        versionCode 20
+        versionName '3.7.2'
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters = androidAbis
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11 -frtti"
+                arguments "-DSUPRESS_VERBOSE_OUTPUT=OFF",
+                        "-DANDROID_TOOLCHAIN=clang",
+                        "-DANDROID_STL=c++_static",
+                        "-DANDROID_CPP_FEATURES=rtti", //exceptions
+//                        "-GAndroid Gradle - Unix Makefiles",
+//                        "-DCMAKE_MAKE_PROGRAM=make",
+                        "-DBUILD_SHARED_LIBS=ON",
+                        "-DBUILD_STATIC_LIBS=OFF",
+                        "-DBUILD_TARGET_PLATFORM=ANDROID"
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
+
+        }
+        debug {
+            buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "${projectDir}/src/main/ngstore/CMakeLists.txt"
+        }
+    }
+    productFlavors {
+    }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+        test.java.srcDirs += 'src/test/kotlin'
+        androidTest.java.srcDirs += 'src/androidTest/kotlin'
+    }
+//    dokka { // Needed for bintray
+//        outputFormat = 'javadoc'
+//        outputDirectory = "$buildDir/docs/javadoc"
+////        sourceDirs = files('src/main/kotlin')
+//    }
+    dataBinding {
+        enabled = true
+    }
+    buildFeatures {
+        viewBinding = true
+    }
+    ndkVersion '25.2.9519653'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = 17
+    }
+}
+
+task copyFiles() {
+    description "Copy assets to ${projectDir}/src/main/assets"
+    dependsOn tasks.findAll { task -> task.name.contains("externalNativeBuild${buildConfigUpper}") }
+
+    def generatedFolderName = "2w1q1o6u"
+
+    gdalFiles.each { name ->
+        copy {
+            into "$projectDir/src/main/assets/gdal"
+            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/arm64-v8a/data/$name"
+        }
+    }
+
+    projFiles.each { name ->
+        copy {
+            into "$projectDir/src/main/assets/proj"
+            from "$projectDir/.cxx/Debug/"+ generatedFolderName + "/arm64-v8a/data/$name"
+        }
+    }
+
+    sslFiles.each { name ->
+        copy {
+            into "$projectDir/src/main/assets/certs"
+            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/arm64-v8a/data/$name"
+
+        }
+    }
+}
+
+// temporary disable cmake build
+//tasks.matching { it.name.contains('externalNativeBuild') }.all {
+//    it.enabled = false
+//}
+
+tasks.matching { it.name == 'externalNativeBuild' }.all {
+    it.dependsOn(copyFiles)
+}
+
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20"
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation "androidx.core:core-ktx:1.10.1"
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'io.sentry:sentry-android:1.7.30'
+    implementation 'org.slf4j:slf4j-nop:1.8.0-beta4'
+    implementation 'com.google.android.material:material:1.9.0'
 }

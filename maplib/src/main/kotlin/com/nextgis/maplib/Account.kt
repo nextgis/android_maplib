@@ -28,6 +28,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
+import androidx.annotation.MainThread
 
 /**
  * Class for NextGIS Account operations. It's expected that application authorised in nextgis.com and

@@ -37,7 +37,7 @@
             android:paddingEnd="16dp"
             android:singleLine="true"
             android:text="@{fragment.path}"
-            android:textColor="#8018262c"
+            android:textColor="#000000"
             android:textSize="14sp"
             tools:text="ROOT/" />
 
