@@ -123,8 +123,10 @@ public class SyncAdapter
             ContentProviderClient contentProviderClient,
             SyncResult syncResult)
     {
+
+        ((IGISApplication)getContext().getApplicationContext()).stopHandler();
+        HyperLog.v(Constants.TAG, "SyncAdapter: onPerformSync for" + account.name + " ngw part start");
         Log.d(TAG, "onPerformSync");
-        HyperLog.v(Constants.TAG, "SyncAdapter: onPerformSync");
 
         MapContentProviderHelper mapContentProviderHelper =(MapContentProviderHelper) MapBase.getInstance();
         getContext().sendBroadcast(new Intent(SYNC_START));
@@ -232,7 +234,7 @@ public class SyncAdapter
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync" + layer.getName() + " is a tracking layer");
                 ((TrackLayer) layer).sync();
             }
-            HyperLog.v(Constants.TAG, "SyncAdapter: Sync Ended");
+            HyperLog.v(Constants.TAG, "SyncAdapter: Sync Ended for " + layer.getName() + " layer");
         }
     }
 

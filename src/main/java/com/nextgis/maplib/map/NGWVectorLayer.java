@@ -106,6 +106,7 @@ import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
+import static com.nextgis.maplib.util.NetworkUtil.configureSSLdefault;
 import static com.nextgis.maplib.util.NetworkUtil.getUserAgent;
 
 import io.tus.java.client.ProtocolException;
@@ -460,7 +461,7 @@ public class NGWVectorLayer
 
                 createFeatureBatch(feature, db);
             } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException |
-             NGException e) {
+                     NGException e) {
                 e.printStackTrace();
                 if (e instanceof NGException && ((NGException) e).getMessage() != null )
                     throw new NGException(((NGException) e).getMessage());
@@ -880,7 +881,7 @@ public class NGWVectorLayer
             }
 
         } catch (SQLiteException e) {
-            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " error " + e.getMessage());
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " SQLiteException " + e.getMessage());
             isError = true;
             syncResult.stats.numConflictDetectedExceptions++;
             if (Constants.DEBUG_MODE) {
@@ -899,6 +900,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachOnServer !mNet.isNetworkAvailable()");
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -918,21 +920,28 @@ public class NGWVectorLayer
             HttpResponse response = changeAttachOnServer(featureId, attachId, putData.toString());
 
             if (!response.isOk()) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachOnServer !response.isOk()");
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: response code: " + response.getResponseCode());
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: response message: " + response.getResponseMessage());
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: response body: " + response.getResponseBody());
                 log(syncResult, response.getResponseCode() + "");
                 return false;
             }
 
             return true;
         } catch (JSONException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: JSONException " + e.getMessage());
             log(e, "changeAttachOnServer JSONException");
             syncResult.stats.numParseExceptions++;
             return false;
         } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: IOException " + e.getMessage());
             log(e, "changeAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numUpdates++;
             return false;
         } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: IllegalStateException " + e.getMessage());
             log(e, "changeAttachOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
@@ -944,9 +953,8 @@ public class NGWVectorLayer
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
         String url = NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId) + attachId;
         return NetworkUtil.put(url, putData, accountData.login,
-                                                accountData.password, false);
+                accountData.password, false);
     }
-
 
     private boolean deleteAttachOnServer(
             long featureId,
@@ -969,23 +977,24 @@ public class NGWVectorLayer
 
             return true;
         } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "deleteAttachOnServer IOException: " + e.getMessage());
             log(e, "deleteAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numDeletes++;
             return false;
         } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "deleteAttachOnServer IllegalStateException: " + e.getMessage());
             log(e, "deleteAttachOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
         }
     }
 
-
     protected HttpResponse deleteAttachOnServer(long featureId, long attachId) throws IOException {
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         return NetworkUtil.delete(NGWUtil.getFeatureAttachmentUrl(accountData.url, mRemoteId, featureId)
-                        + attachId, accountData.login, accountData.password, false);
+                + attachId, accountData.login, accountData.password, false);
     }
 
 
@@ -1008,8 +1017,7 @@ public class NGWVectorLayer
             HttpResponse response = sendAttachOnServer(featureId, attach);
 
             if (!response.isOk()) {
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer  FAILED with " + response.getResponseBody());
-
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
                 log(syncResult, response.getResponseCode() + "");
                 return false;
             }
@@ -1045,7 +1053,6 @@ public class NGWVectorLayer
             return true;
         } catch (IOException e) {
             HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IOException " + e.getMessage());
-
             log(e, "sendAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numInserts++;
@@ -1227,23 +1234,23 @@ public class NGWVectorLayer
     // true - 404 was and proceed, false - no 404 happen
     public void clearLayerSync(final NGWVectorLayer ngwVectorLayer) {
 
-                    // 404 response  on get feature - reature not on server (deleted)
-                    // need to turn off sync,
-                    ngwVectorLayer.setSyncType(Constants.SYNC_NONE);
-                    ngwVectorLayer.toVectorLayer(ngwVectorLayer.getUniqId());
+        // 404 response  on get feature - reature not on server (deleted)
+        // need to turn off sync,
+        ngwVectorLayer.setSyncType(Constants.SYNC_NONE);
+        ngwVectorLayer.toVectorLayer(ngwVectorLayer.getUniqId());
 
 
-                    String message = String.format(getContext().getString(R.string.warning_layer_not_exist),
-                            ngwVectorLayer.getName());
-                    String title = getContext().getString(R.string.warning_layer_not_exist_title);
+        String message = String.format(getContext().getString(R.string.warning_layer_not_exist),
+                ngwVectorLayer.getName());
+        String title = getContext().getString(R.string.warning_layer_not_exist_title);
 
-                    Intent msg = new Intent(MESSAGE_ALERT_INTENT);
-                    msg.putExtra(MESSAGE_EXTRA, message);
-                    msg.putExtra(MESSAGE_TITLE_EXTRA, title);
-                    getContext().sendBroadcast(msg);
+        Intent msg = new Intent(MESSAGE_ALERT_INTENT);
+        msg.putExtra(MESSAGE_EXTRA, message);
+        msg.putExtra(MESSAGE_TITLE_EXTRA, title);
+        getContext().sendBroadcast(msg);
 
-                    com.nextgis.maplib.datasource.ngw.SyncAdapter.showNotify(getContext(), message, title);
-                    return;
+        com.nextgis.maplib.datasource.ngw.SyncAdapter.showNotify(getContext(), message, title);
+        return;
     }
 
     public boolean getChangesFromServer(
@@ -1663,6 +1670,7 @@ public class NGWVectorLayer
 
         if (connection.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM && url.getProtocol().equals("http")) {
             url = new URL(url.toString().replace("http", "https"));
+            configureSSLdefault();
             connection = (HttpsURLConnection) url.openConnection();
             connection.setRequestProperty("User-Agent",
                     getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
@@ -1687,13 +1695,15 @@ public class NGWVectorLayer
 
         try {
             HttpURLConnection urlConnection = getConnection(accountData);
-            Log.d(TAG, "url: " + urlConnection.getURL().toString());
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "url: " + urlConnection.getURL().toString());
 
             int code = urlConnection.getResponseCode();
             if (code == 404){
                 return new ExistFeatureResult(null, false, 404);
             }
-            Log.d(TAG, "code: " + code);
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "code: " + code);
 
             InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
                     urlConnection.getContentLength());
@@ -1776,6 +1786,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
+            HyperLog.v(Constants.TAG, "addFeatureOnServer !mNet.isNetworkAvailable() no network!!! ");
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -1787,6 +1798,8 @@ public class NGWVectorLayer
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
             }
+            HyperLog.v(Constants.TAG, "addFeatureOnServer return true - just remove buggy data ");
+
             return true; //just remove buggy data
         }
 
@@ -1802,6 +1815,9 @@ public class NGWVectorLayer
                 HttpResponse response = addFeatureOnServer(payload);
 
                 if (!response.isOk()) {
+                    HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, body: " + response.getResponseBody());
+                    HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, code: " + response.getResponseCode());
+                    HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, message: " + response.getResponseMessage());
                     log(syncResult, response.getResponseCode() + "");
                     return false;
                 }
@@ -1815,24 +1831,31 @@ public class NGWVectorLayer
 
                 return true;
             } else {
-                Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
+                if (Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
+                HyperLog.v(Constants.TAG, "addFeatureOnServer Get cursor failed // just remove buggy data") ;
+
                 return true; //just remove buggy data
             }
 
         } catch (JSONException e) {
+            HyperLog.v(Constants.TAG, "addFeatureOnServer JSONException: " + e.getMessage());
             log(e, "addFeatureOnServer JSONException");
             syncResult.stats.numParseExceptions++;
             return false;
         } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "addFeatureOnServer IOException: " + e.getMessage());
             log(e, "addFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numInserts++;
             return false;
         } catch (SQLiteConstraintException e) {
+            HyperLog.v(Constants.TAG, "addFeatureOnServer SQLiteConstraintException: " + e.getMessage());
             log(e, "addFeatureOnServer SQLiteConstraintException");
             syncResult.stats.numConflictDetectedExceptions++;
             return false;
         } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "addFeatureOnServer IllegalStateException: " + e.getMessage());
             log(e, "addFeatureOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
@@ -1845,7 +1868,7 @@ public class NGWVectorLayer
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId) + appendix(),
-                         payload, accountData.login, accountData.password, false);
+                payload, accountData.login, accountData.password, false);
     }
 
     protected boolean deleteFeatureOnServer(
@@ -1853,6 +1876,7 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
+            HyperLog.v(Constants.TAG, "deleteFeatureOnServer !mNet.isNetworkAvailable()");
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -1860,17 +1884,24 @@ public class NGWVectorLayer
         try {
             HttpResponse response = deleteFeatureOnServer(featureId);
             if (!response.isOk()) {
+                HyperLog.v(Constants.TAG, "deleteFeatureOnServer !response.isOk()");
+                HyperLog.v(Constants.TAG, "deleteFeatureOnServer response code: " + response.getResponseCode());
+                HyperLog.v(Constants.TAG, "deleteFeatureOnServer response message: " + response.getResponseMessage());
+                HyperLog.v(Constants.TAG, "deleteFeatureOnServer response body: " + response.getResponseBody());
+
                 syncResult.stats.numIoExceptions++;
                 syncResult.stats.numEntries++;
                 return false;
             }
             return true;
         } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "deleteFeatureOnServer  IOException: " + e.getMessage());
             log(e, "deleteFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numDeletes++;
             return false;
         } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "deleteFeatureOnServer  IllegalStateException: " + e.getMessage());
             log(e, "deleteFeatureOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
@@ -1881,7 +1912,7 @@ public class NGWVectorLayer
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         return NetworkUtil.delete(NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId),
-                                   accountData.login, accountData.password, false);
+                accountData.login, accountData.password, false);
     }
 
     protected boolean changeFeatureOnServer(
@@ -1890,6 +1921,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
+            HyperLog.v(Constants.TAG, "changeFeatureOnServer !mNet.isNetworkAvailable()");
             syncResult.stats.numIoExceptions++;
             return false;
         }
@@ -1919,25 +1951,35 @@ public class NGWVectorLayer
                 HttpResponse response = changeFeatureOnServer(featureId, payload);
 
                 if (!response.isOk()) {
+                    HyperLog.v(Constants.TAG, "changeFeatureOnServer !response.isOk()");
+                    HyperLog.v(Constants.TAG, "changeFeatureOnServer response not OK, body: " + response.getResponseBody());
+                    HyperLog.v(Constants.TAG, "changeFeatureOnServer response not OK, code: " + response.getResponseCode());
+                    HyperLog.v(Constants.TAG, "changeFeatureOnServer response not OK, message: " + response.getResponseMessage());
+
                     log(syncResult, response.getResponseCode() + "");
                     return false;
                 }
 
                 return true;
             } else {
-                Log.d(Constants.TAG, "changeFeatureOnServer(), empty cursor for uri: " + uri);
+                HyperLog.v(Constants.TAG, "changeFeatureOnServer empty cursor for uri: " + uri);
+                if (Constants.DEBUG_MODE)
+                    Log.d(Constants.TAG, "changeFeatureOnServer(), empty cursor for uri: " + uri);
                 return true; //just remove buggy data
             }
         } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "changeFeatureOnServer IllegalStateException: " + e.getMessage());
             log(e, "changeFeatureOnServer IllegalStateException");
             syncResult.stats.numAuthExceptions++;
             return false;
         } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "changeFeatureOnServer IOException: " + e.getMessage());
             log(e, "changeFeatureOnServer IOException");
             syncResult.stats.numIoExceptions++;
             syncResult.stats.numUpdates++;
             return false;
         } catch (JSONException e) {
+            HyperLog.v(Constants.TAG, "changeFeatureOnServer JSONException: " + e.getMessage());
             log(e, "changeFeatureOnServer JSONException");
             syncResult.stats.numParseExceptions++;
             return false;

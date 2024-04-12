@@ -181,4 +181,11 @@ public interface IGISApplication
      * Get LayerFactory
      */
     LayerFactory getLayerFactory();
+
+
+
+
+    void stopHandler();
+
+    void startRunnable (final Runnable externalRunnable);
 }

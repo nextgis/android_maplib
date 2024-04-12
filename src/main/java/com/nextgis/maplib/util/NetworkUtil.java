@@ -45,6 +45,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -55,6 +58,11 @@ import io.tus.java.client.TusClient;
 import io.tus.java.client.TusUpload;
 import io.tus.java.client.TusUploader;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
@@ -167,8 +175,10 @@ public class NetworkUtil
         URL url = new URL(targetURL);
         // Open a HTTP connection to the URL
         HttpURLConnection result = null;
-        if (targetURL.startsWith("https://"))
-             result = (HttpsURLConnection) url.openConnection();
+        if (targetURL.startsWith("https://")) {
+            //configureSSLdefault();
+            result = (HttpsURLConnection) url.openConnection();
+        }
         else
             result= (HttpURLConnection) url.openConnection();
         result.setRequestProperty("User-Agent",getUserAgent(Constants.MAPLIB_USER_AGENT_PART));
@@ -558,5 +568,61 @@ public class NetworkUtil
             default:
                 return context.getString(R.string.error_500);
         }
+    }
+
+    public static void configureAllTrustSSLCert(){
+
+        try {
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+
+        } catch (Exception ex){
+            Log.e("ssl_trust_store_error", ex.getMessage());
+        }
+    }
+
+    public static void configureSSLdefault(){
+        //configureAllTrustSSLCert();
+
+//        try {
+//            SSLContext sslContext = null;
+//
+//            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+//            // Load the CA certificates into the KeyStore
+//            // This is a simplified example; you'll need to handle exceptions and possibly convert certificates to the correct format
+//            keyStore.load(null, null);
+//            // Create a TrustManager that trusts the certificates in the KeyStore
+//            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+//            tmf.init(keyStore);
+//            TrustManager[] trustManagers = tmf.getTrustManagers();
+//
+//            // Step 3: Configure the SSL Context
+//            sslContext = SSLContext.getInstance("TLS");
+//            sslContext.init(null, trustManagers, new SecureRandom());
+//            if (sslContext != null)
+//                HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+//            else
+//                Log.e("ssl_trust_store_error", "sslContext is NULL!!!!");
+//
+//        } catch (Exception ex){
+//            Log.e("ssl_trust_store_error", ex.getMessage());
+//        }
     }
 }

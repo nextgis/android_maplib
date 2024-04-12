@@ -42,7 +42,8 @@ public class FeatureChanges
 {
     public static void initialize(String tableName)
     {
-        Log.d(TAG, "init the change log for the layer " + tableName);
+        if (Constants.DEBUG_MODE)
+            Log.d(TAG, "init the change log for the layer " + tableName);
 
         String sqlCreateTable = "CREATE TABLE IF NOT EXISTS " + tableName + " ( ";
         sqlCreateTable += FIELD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, ";
@@ -52,7 +53,8 @@ public class FeatureChanges
         sqlCreateTable += FIELD_ATTACH_OPERATION + " INTEGER";
         sqlCreateTable += " );";
 
-        Log.d(TAG, "create the layer change table: " + sqlCreateTable);
+        if (Constants.DEBUG_MODE)
+            Log.d(TAG, "create the layer change table: " + sqlCreateTable);
 
         // create table
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
