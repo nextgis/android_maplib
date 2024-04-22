@@ -73,7 +73,7 @@ class Account(clientId: String, accessToken: String, updateToken: String,
      */
     val supported: Boolean get() = API.accountSupportedGetInt()
 
-    private val auth = Auth("https://my.nextgis.com/api/v1",
+    public val auth = Auth("https://my.nextgis.com/api/v1",
         "https://my.nextgis.com/oauth2/token/",
             accessToken,
         updateToken,

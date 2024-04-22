@@ -83,9 +83,17 @@ class AddInstanceActivity : AppCompatActivity() {
         }
 
         API.getCatalog()?.let {
+            var name = ""
+            name = instance.get().url
+            if (name.startsWith("http://") || name.startsWith("https://")){
+                name = name.replace("https://", "")
+                name = name.replace("http://", "")
+            }
+
             val connection = NGWConnectionDescription(instance.get().url, instance.get().login, instance.get().password, false)
             if (connection.check()) {
-                it.createConnection(instance.get().url, connection)
+
+                it.createConnection(name, connection)
                 setResult(Activity.RESULT_OK)
                 finish()
             } else {

@@ -122,6 +122,11 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             return
         }
 
+        if (file.type == 3007) { // polygon multiple
+            (activity as? PickerActivity)?.onLayerSelected(file)
+            return
+        }
+
         if (file.type == -999) {
             stack.pop()
             if (stack.size == 0) {
