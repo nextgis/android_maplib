@@ -88,6 +88,9 @@
     <string name="error_401">Требуется авторизация</string>
     <string name="error_network_unavailable">Нет соединения с сетью</string>
     <string name="error_auth">Неверный логин или пароль</string>
+    <string name="error_auth_and_forbidden">Неверный логин или пароль / нет прав доступа</string>
+    <string name="error_forbidden">Ошибка парсинга / нет прав доступа</string>
+
     <string name="sync_error_conflict">Обнаружены конфликты</string>
     <string name="sync_error_io">Неизвестная ошибка</string>
     <string name="sync_error_parse">Ошибка сервера NetGIS Web</string>

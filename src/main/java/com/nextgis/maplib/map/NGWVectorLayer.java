@@ -1702,6 +1702,10 @@ public class NGWVectorLayer
             if (code == 404){
                 return new ExistFeatureResult(null, false, 404);
             }
+
+//            if (code == 403){
+//                return new ExistFeatureResult(null, false, 404);
+//            }
             if (Constants.DEBUG_MODE)
                 Log.d(TAG, "code: " + code);
 

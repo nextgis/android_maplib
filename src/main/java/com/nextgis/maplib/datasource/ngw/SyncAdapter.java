@@ -164,7 +164,7 @@ public class SyncAdapter
         if (syncResult.stats.numAuthExceptions > 0) {
             if (mError.length() > 0)
                 mError += "\r\n";
-            mError += getContext().getString(R.string.error_auth);
+            mError += getContext().getString(R.string.error_auth_and_forbidden);
         }
         if (syncResult.stats.numConflictDetectedExceptions > 0) {
             if (mError.length() > 0)

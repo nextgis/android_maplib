@@ -82,6 +82,9 @@
     <string name="sync_error_server">Server error</string>
     <string name="sync_finished">Sync finished</string>
     <string name="error_auth">Incorrect login or password</string>
+    <string name="error_auth_and_forbidden">Incorrect login or password / no access rights</string>
+    <string name="error_forbidden">Error on parse data / no access rights</string>
+
     <string name="sync_error_parse">NextGIS Web server error</string>
     <string name="sync_error_conflict">Conflicts found</string>
     <string name="text">Text</string>

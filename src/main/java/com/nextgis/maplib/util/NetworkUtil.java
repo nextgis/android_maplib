@@ -398,6 +398,7 @@ public class NetworkUtil
         os.close();
 
         HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
+        // no perm 403 - need add
         if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
             targetURL = targetURL.replace("http", "https");
             return post(targetURL, payload, username, password, readErrorResponseBody);
