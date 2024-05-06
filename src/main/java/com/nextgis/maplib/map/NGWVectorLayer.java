@@ -79,6 +79,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ConcurrentModificationException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -105,6 +106,7 @@ import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
+import static com.nextgis.maplib.util.MapUtil.convertTime;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
 import static com.nextgis.maplib.util.NetworkUtil.configureSSLdefault;
 import static com.nextgis.maplib.util.NetworkUtil.getUserAgent;
@@ -2069,14 +2071,32 @@ public class NGWVectorLayer
                         valueObject.put(name, jsonDate);
                         break;
                     case GeoConstants.FTTime:
+
+
+                        Log.e("TTIIMMMEE", "cursorToJson " );
+
                         TimeZone timeZoneT = TimeZone.getDefault();
-                        timeZoneT.setRawOffset(0); // set to UTC
+
+                        TimeZone timeZoneUTC = TimeZone.getDefault();
+                        timeZoneUTC.setRawOffset(0); // set to UTC
+
+                        // time on device
+                        Date currentTime = new Date(cursor.getLong(i));
+
+                        // convert time to UTC zone time
+                        Date targetTime = convertTime(currentTime, timeZoneT, timeZoneUTC);
+
                         Calendar calendarT = Calendar.getInstance(timeZoneT);
-                        calendarT.setTimeInMillis(cursor.getLong(i));
+                        calendarT.setTimeInMillis(targetTime.getTime());
+
                         JSONObject jsonTime = new JSONObject();
                         jsonTime.put("hour", calendarT.get(Calendar.HOUR_OF_DAY));
                         jsonTime.put("minute", calendarT.get(Calendar.MINUTE));
                         jsonTime.put("second", calendarT.get(Calendar.SECOND));
+
+                        Log.e("TTIIMMMEE", "cursorToJson timestamp:" +  targetTime.getTime());
+                        Log.e("TTIIMMMEE", "cursorToJson json result:" +  jsonTime.toString());
+
                         valueObject.put(name, jsonTime);
                         break;
                     default:

@@ -74,6 +74,7 @@ import static com.nextgis.maplib.util.Constants.JSON_RESOURCE_KEY;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.LayerUtil.containsCaseInsensitive;
 import static com.nextgis.maplib.util.LayerUtil.unwrapQuotation;
+import static com.nextgis.maplib.util.MapUtil.convertTime;
 
 
 public class NGWUtil
@@ -589,18 +590,21 @@ public class NGWUtil
     {
         String dateOrTime = reader.nextString();
 
-        int nYear = 1900;
+        int nYear = 1970;
         int nMonth = 1;
         int nDay = 1;
         int nHour = 0;
         int nMinute = 0;
         int nSecond = 0; // init data
 
+        TimeZone gmtTimeZone = TimeZone.getTimeZone("GMT");
+        gmtTimeZone.setRawOffset(0);
+
         if (type ==  GeoConstants.FTDate){ // date only in yyyy-MM-dd format
 
             final String ISO8601DATEFORMAT = "yyyy-MM-dd";
             SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601DATEFORMAT, Locale.getDefault());
-            dateformat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            dateformat.setTimeZone(gmtTimeZone);
             Calendar calendar = new GregorianCalendar() ;
 
             try {
@@ -621,13 +625,30 @@ public class NGWUtil
 
             final String ISO8601TIMEFORMAT = "HH:mm:ss";
             SimpleDateFormat dateformat = new SimpleDateFormat(ISO8601TIMEFORMAT, Locale.getDefault());
-            dateformat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            dateformat.setTimeZone(gmtTimeZone);
 
             try {
+                Log.e("TTIIMMMEE", "readNGWDateOrTime qdateOrTime: " + dateOrTime);
+
                 Date date = dateformat.parse(dateOrTime);
-                nHour = date.getHours();
-                nMinute = date.getMinutes();
-                nSecond = date.getSeconds();
+
+                Date targetTime = convertTime(date, TimeZone.getDefault(), gmtTimeZone);
+
+                Calendar calendarT = Calendar.getInstance(TimeZone.getDefault());
+                calendarT.setTimeInMillis(targetTime.getTime());
+
+
+                nHour = calendarT.get(Calendar.HOUR_OF_DAY);
+                nMinute = calendarT.get(Calendar.MINUTE);
+                nSecond = calendarT.get(Calendar.SECOND);
+
+//                nHour = date.getHours();
+//                nMinute = date.getMinutes();
+//                nSecond = date.getSeconds();
+
+                Log.e("TTIIMMMEE", "readNGWDateOrTime qst result H:m:s: " + nHour + ":" + nMinute +":"+ nSecond);
+
+
 
             } catch (ParseException e) {
                 e.printStackTrace();
@@ -635,10 +656,15 @@ public class NGWUtil
         }
 
         TimeZone timeZone = TimeZone.getDefault();
+        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset: " + timeZone.getRawOffset());
+
         timeZone.setRawOffset(0); // set to UTC
-        Calendar calendar = new GregorianCalendar(timeZone);
+        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset after 0: " + timeZone.getRawOffset());
+        Calendar calendar = Calendar.getInstance(timeZone);
         calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
         calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
+
+        Log.e("TTIIMMMEE", "readNGWDateOrTime calendar.getTimeInMillis(): " + calendar.getTimeInMillis());
 
         feature.setFieldValue(fieldName, calendar.getTimeInMillis());
     }

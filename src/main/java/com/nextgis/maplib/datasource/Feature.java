@@ -48,6 +48,7 @@ import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 import static com.nextgis.maplib.util.LayerUtil.containsCaseInsensitive;
 import static com.nextgis.maplib.util.LayerUtil.unwrapQuotation;
+import static com.nextgis.maplib.util.MapUtil.convertTime;
 
 
 public class Feature
@@ -234,8 +235,42 @@ public class Feature
                 break;
             case FTTime:
                 if (val instanceof Long) {
+
+                    Log.e("TTIIMMMEE", "getFieldValueAsString feature time convert");
+                    Log.e("TTIIMMMEE", "getFieldValueAsString value to convert: " + val);
+                    /*
+                     Log.e("TTIIMMMEE", "feature time convert");
+                    Log.e("TTIIMMMEE", "value to convert: " + val);
+
+
+
+                    TimeZone timeZoneT = TimeZone.getDefault();
+
+                    TimeZone timeZoneUTC = TimeZone.getDefault();
+                    timeZoneUTC.setRawOffset(0); // set to UTC
+
+                    // time on device
+                    Date currentTime = new Date((Long)val);
+
+                    // convert time to UTC zone time
+                    Date targetTime = convertTime(currentTime, timeZoneT, timeZoneUTC);
+
+                    Calendar calendarT = Calendar.getInstance(timeZoneT);
+                    calendarT.setTimeInMillis(targetTime.getTime());
+
+                    String result = calendarT.get(Calendar.HOUR_OF_DAY) + ":" +
+                        calendarT.get(Calendar.MINUTE) + ":" +
+                        calendarT.get(Calendar.SECOND);
+
+                    return result;
+                    * */
+
+
                     DateFormat dateFormat = DateFormat.getTimeInstance();
-                    return dateFormat.format(new Date((Long) val));
+                    String result =  dateFormat.format(new Date((Long) val));
+                    Log.e("TTIIMMMEE", "getFieldValueAsString result : " + result);
+
+                    return result;
                 }
                 break;
             case FTDateTime:
@@ -418,11 +453,21 @@ public class Feature
                         case FTDate:
                         case FTTime:
                         case FTDateTime:
+
+                            Log.e("TTIIMMMEE", "fromCursor getTime");
+                            Log.e("TTIIMMMEE", "fromCursor long value: "  + cursor.getLong(index));
+
                             TimeZone timeZone = TimeZone.getDefault();
                             timeZone.setRawOffset(0); // set to UTC
                             Calendar calendar = Calendar.getInstance(timeZone);
                             calendar.setTimeInMillis(cursor.getLong(index));
                             setFieldValue(i, calendar.getTimeInMillis());
+                            Log.e("TTIIMMMEE", "fromCursor from calendar: "  + calendar.getTimeInMillis());
+
+                            Log.e("TTIIMMMEE", "getted value: "  + calendar.getTimeInMillis());
+
+
+
                             break;
                         default:
                             break;

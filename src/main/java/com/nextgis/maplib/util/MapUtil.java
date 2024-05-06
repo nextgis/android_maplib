@@ -39,8 +39,10 @@ import com.nextgis.maplib.datasource.TileItem;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -319,5 +321,13 @@ public class MapUtil {
         }
 
         return false;
+    }
+
+    public final static Date convertTime(final Date currentTime, TimeZone sourceTimeZone, TimeZone targetTimeZone) {
+        // Разница между временными зонами в миллисекундах
+        int timeZoneOffset = targetTimeZone.getRawOffset() - sourceTimeZone.getRawOffset();
+
+        // Конвертировать время из одной зоны в другую
+        return new Date(currentTime.getTime() + timeZoneOffset);
     }
 }
