@@ -66,6 +66,8 @@ import javax.net.ssl.X509TrustManager;
 
 import static com.nextgis.maplib.util.Constants.TAG;
 
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+
 import org.json.JSONObject;
 
 
@@ -399,6 +401,10 @@ public class NetworkUtil
 
         HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
         // no perm 403 - need add
+        if (response.mResponseCode == HTTP_FORBIDDEN){ // 403
+
+        }
+
         if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
             targetURL = targetURL.replace("http", "https");
             return post(targetURL, payload, username, password, readErrorResponseBody);

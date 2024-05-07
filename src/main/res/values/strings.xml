@@ -106,4 +106,6 @@
     <string name="warning_layer_not_exist">Layer \'%s\' does not exists on server. Sync for layer is turn to off</string>
 
     <string name="error_account_add_error">Cannot add Account - some error happen</string>
+    <string name="error_no_access_403">No access right for operation</string>
+
 </resources>

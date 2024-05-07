@@ -123,6 +123,8 @@ public class SyncAdapter
             ContentProviderClient contentProviderClient,
             SyncResult syncResult)
     {
+        ((IGISApplication)getContext().getApplicationContext()).setError(
+                null,null,0);
 
         ((IGISApplication)getContext().getApplicationContext()).stopHandler();
         HyperLog.v(Constants.TAG, "SyncAdapter: onPerformSync for" + account.name + " ngw part start");

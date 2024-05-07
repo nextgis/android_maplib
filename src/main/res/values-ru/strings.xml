@@ -104,5 +104,6 @@
     <string name="warning_layer_not_exist_title">Проблема с синхронизацией слоя</string>
     <string name="warning_layer_not_exist">Слой: \'%s\' отсутсвует на сервере. Синхронизация для слоя выключена.</string>
     <string name="error_account_add_error">Не удалось добавить аккаунт, какая-то ошибка</string>
+    <string name="error_no_access_403">Нет прав для операции</string>
 
 </resources>

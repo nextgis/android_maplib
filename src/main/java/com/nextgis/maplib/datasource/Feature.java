@@ -26,6 +26,7 @@ package com.nextgis.maplib.datasource;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.util.Log;
+import com.nextgis.maplib.BuildConfig;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
@@ -535,7 +536,8 @@ public class Feature
         }
 
         //compare geometry
-        Log.d(TAG, "Feature id:" + mId + " compare geometry");
+        if (BuildConfig.DEBUG)
+            Log.d(TAG, "Feature id:" + mId + " compare geometry");
         if (null == mGeometry) {
             return null == f.getGeometry();
         }

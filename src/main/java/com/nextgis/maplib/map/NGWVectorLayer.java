@@ -1820,7 +1820,16 @@ public class NGWVectorLayer
                 // post to NGW
                 HttpResponse response = addFeatureOnServer(payload);
 
+
+                // add 403 processinge
                 if (!response.isOk()) {
+                    if (response.getResponseCode() == 403){
+                        // no access right
+                        ((IGISApplication)mContext.getApplicationContext()).setError(
+                                getAccountName(),
+                                getContext().getResources().getString(R.string.error_no_access_403),
+                                403);
+                    }
                     HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, body: " + response.getResponseBody());
                     HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, code: " + response.getResponseCode());
                     HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, message: " + response.getResponseMessage());

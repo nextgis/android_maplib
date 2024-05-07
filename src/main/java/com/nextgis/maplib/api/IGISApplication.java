@@ -188,4 +188,13 @@ public interface IGISApplication
     void stopHandler();
 
     void startRunnable (final Runnable externalRunnable);
+
+
+    public void setError (String account, String errorMessage, int erorrCode);
+
+    public String getAccountError();
+
+    public String getErrorMessage();
+
+    public int getErrorCode();
 }
