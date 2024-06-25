@@ -110,6 +110,7 @@ public interface GeoConstants
     int FTDateTime    = 10;
     int FTDate        = 11;
     int FTTime        = 12;
+    int FTLong        = 13;
 
     /**
      * CRS

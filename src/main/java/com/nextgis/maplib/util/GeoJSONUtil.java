@@ -348,6 +348,8 @@ public class GeoJSONUtil {
                     if (null != number) {
                         if (number instanceof Double)
                             fieldIndex = getOrCreateField(name, GeoConstants.FTReal, layer, feature);
+                        else if (number instanceof Long)
+                            fieldIndex = getOrCreateField(name, GeoConstants.FTLong, layer, feature);
                         else
                             fieldIndex = getOrCreateField(name, GeoConstants.FTInteger, layer, feature);
 

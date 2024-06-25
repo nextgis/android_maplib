@@ -518,6 +518,10 @@ public class NGWUtil
                                 feature.setFieldValue(field.getName(), reader.nextInt());
                                 bAdded = true;
                                 break;
+                            case GeoConstants.FTLong:
+                                feature.setFieldValue(field.getName(), reader.nextLong());
+                                bAdded = true;
+                                break;
                             case GeoConstants.FTString:
                                 feature.setFieldValue(field.getName(), reader.nextString());
                                 bAdded = true;

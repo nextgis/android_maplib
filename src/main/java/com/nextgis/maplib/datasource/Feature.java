@@ -227,6 +227,7 @@ public class Feature
             case FTString:
             case FTReal:
             case FTInteger:
+            case FTLong:
                 return val.toString();
             case FTDate:
                 if (val instanceof Long) {
@@ -386,6 +387,17 @@ public class Feature
                     }
                     break;
 
+                case FTLong:
+                    Object longVal = getFieldValue(i);
+                    if (longVal instanceof Integer) {
+                        values.put(name, (int) longVal);
+                    } else if (longVal instanceof Long) {
+                        values.put(name, (long) longVal);
+                    } else {
+                        Log.d(TAG, "skip value: " + longVal.toString());
+                    }
+                    break;
+
                 case FTReal:
                     Object realVal = getFieldValue(i);
                     if (realVal instanceof Double) {
@@ -445,8 +457,11 @@ public class Feature
                         case FTString:
                             setFieldValue(i, cursor.getString(index));
                             break;
-                        case FTInteger:
+                        case FTLong:
                             setFieldValue(i, cursor.getLong(index));
+                            break;
+                        case FTInteger:
+                            setFieldValue(i, cursor.getInt(index));
                             break;
                         case FTReal:
                             setFieldValue(i, cursor.getDouble(index));
@@ -455,20 +470,11 @@ public class Feature
                         case FTTime:
                         case FTDateTime:
 
-                            Log.e("TTIIMMMEE", "fromCursor getTime");
-                            Log.e("TTIIMMMEE", "fromCursor long value: "  + cursor.getLong(index));
-
                             TimeZone timeZone = TimeZone.getDefault();
                             timeZone.setRawOffset(0); // set to UTC
                             Calendar calendar = Calendar.getInstance(timeZone);
                             calendar.setTimeInMillis(cursor.getLong(index));
                             setFieldValue(i, calendar.getTimeInMillis());
-                            Log.e("TTIIMMMEE", "fromCursor from calendar: "  + calendar.getTimeInMillis());
-
-                            Log.e("TTIIMMMEE", "getted value: "  + calendar.getTimeInMillis());
-
-
-
                             break;
                         default:
                             break;
@@ -516,7 +522,14 @@ public class Feature
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;
                     }
-                } else if (field.getType() == GeoConstants.FTReal) {
+                }
+                else if (field.getType() == FTLong) {
+                    if (!checkIntegerEqual(value, valueOther)) {
+                        Log.d(TAG, value + "<->" + valueOther);
+                        return false;
+                    }
+                }
+                else if (field.getType() == GeoConstants.FTReal) {
                     if (!checkRealEqual(value, valueOther)) {
                         Log.d(TAG, value + "<->" + valueOther);
                         return false;

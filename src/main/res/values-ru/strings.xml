@@ -64,7 +64,8 @@
     <string name="field_name">Имя поля</string>
     <string name="field_type">Тип поля</string>
     <string name="field_type_string">Строка</string>
-    <string name="field_type_int">Целочисленное</string>
+    <string name="field_type_int">Целочисленное (32 бит)</string>
+    <string name="field_type_long">Целочисленное (64 бит)</string>
     <string name="field_type_real">Вещественное</string>
     <string name="field_type_datetime">Дата и Время</string>
     <string name="field_type_date">Дата</string>

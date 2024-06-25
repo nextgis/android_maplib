@@ -1612,7 +1612,7 @@ public class NGWVectorLayer
 
             if (!isChangedLocal) {
                 Iterator<String> iterator =
-                        currentFeature.getAttachments().keySet().iterator();
+                        remoteFeature.getAttachments().keySet().iterator();
 
                 while (iterator.hasNext()) {
                     String attachId = iterator.next();
@@ -2043,10 +2043,13 @@ public class NGWVectorLayer
 
                 switch (field.getType()) {
                     case GeoConstants.FTReal:
-                        valueObject.put(name, cursor.getFloat(i));
+                        valueObject.put(name, cursor.getDouble(i));
                         break;
                     case GeoConstants.FTInteger:
                         valueObject.put(name, cursor.getInt(i));
+                        break;
+                    case GeoConstants.FTLong:
+                        valueObject.put(name, cursor.getLong(i));
                         break;
                     case GeoConstants.FTString:
                         String stringVal = cursor.getString(i);

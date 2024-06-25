@@ -127,6 +127,7 @@ import static com.nextgis.maplib.util.Constants.URI_PARAMETER_TEMP;
 import static com.nextgis.maplib.util.GeoConstants.FTDate;
 import static com.nextgis.maplib.util.GeoConstants.FTDateTime;
 import static com.nextgis.maplib.util.GeoConstants.FTInteger;
+import static com.nextgis.maplib.util.GeoConstants.FTLong;
 import static com.nextgis.maplib.util.GeoConstants.FTReal;
 import static com.nextgis.maplib.util.GeoConstants.FTString;
 import static com.nextgis.maplib.util.GeoConstants.FTTime;
@@ -324,6 +325,7 @@ public class VectorLayer
                     tableCreate += " TEXT";
                     break;
                 case FTInteger:
+                case FTLong:
                     tableCreate += " INTEGER";
                     break;
                 case FTReal:
@@ -528,6 +530,7 @@ public class VectorLayer
             case FTString:
                 fieldCreate += " TEXT";
                 break;
+            case FTLong:
             case FTInteger:
                 fieldCreate += " INTEGER";
                 break;

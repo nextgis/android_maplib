@@ -95,8 +95,9 @@ public class LayerUtil {
             case "STRING":
                 return GeoConstants.FTString;
             case "INTEGER":
-            case "BIGINT":
                 return GeoConstants.FTInteger;
+            case "BIGINT":
+                return GeoConstants.FTLong;
             case "REAL":
                 return GeoConstants.FTReal;
             case "DATETIME":
@@ -116,6 +117,8 @@ public class LayerUtil {
                 return "STRING";
             case GeoConstants.FTInteger:
                 return "INTEGER";
+            case GeoConstants.FTLong:
+                return "BIGINT";
             case GeoConstants.FTReal:
                 return "REAL";
             case GeoConstants.FTDateTime:
@@ -135,6 +138,8 @@ public class LayerUtil {
                 return context.getString(R.string.field_type_string);
             case GeoConstants.FTInteger:
                 return context.getString(R.string.field_type_int);
+            case GeoConstants.FTLong:
+                return context.getString(R.string.field_type_long);
             case GeoConstants.FTReal:
                 return context.getString(R.string.field_type_real);
             case GeoConstants.FTDateTime:
