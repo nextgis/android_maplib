@@ -40,6 +40,8 @@ public interface SettingsConstants
     String KEY_PREF_TRACK_RESTORE           = "track_restore";
     String KEY_PREF_TRACK_SEND              = "track_send";
     String KEY_PREF_UNITS                   = "preferred_units";
+    String KEY_PREF_TRACK_UID_CUSTOM        = "track_uid_custom";
+
 
     String KEY_PREF_SD_CARD_NAME                = "sd_card_name";
 }

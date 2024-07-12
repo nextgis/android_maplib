@@ -75,6 +75,8 @@ public class TrackLayer
     public static final String FIELD_SENT      = "sent";
     public static final String FIELD_SPEED     = "speed";
     public static final String FIELD_ACCURACY  = "accuracy";
+    public static final String FIELD_BEARING  = "bearing";
+
 
     static final String DB_CREATE_TRACKS      =
             "CREATE TABLE IF NOT EXISTS " + TABLE_TRACKS + " (" +
@@ -93,6 +95,7 @@ public class TrackLayer
             FIELD_SAT + " INTEGER, " +
             FIELD_SPEED + " REAL, " +
             FIELD_ACCURACY + " REAL, " +
+            FIELD_BEARING + " REAL, " +
             FIELD_TIMESTAMP + " INTEGER NOT NULL, " +
             FIELD_SENT + " INTEGER NOT NULL, " +
             FIELD_SESSION + " INTEGER NOT NULL, FOREIGN KEY(" + FIELD_SESSION + ") REFERENCES " +

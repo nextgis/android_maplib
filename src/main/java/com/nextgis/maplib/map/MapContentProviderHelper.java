@@ -53,7 +53,7 @@ public class MapContentProviderHelper
     protected DatabaseHelper mDatabaseHelper;
 
     protected static final String DBNAME           = "layers";
-    protected static final int    DATABASE_VERSION = 4;
+    protected static final int    DATABASE_VERSION = 5;
 
 
     public MapContentProviderHelper(
@@ -137,6 +137,11 @@ public class MapContentProviderHelper
             sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKPOINTS + " add column " + TrackLayer.FIELD_ACCURACY + " real;");
             sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKPOINTS + " add column " + TrackLayer.FIELD_SPEED + " real;");
         }
+
+        if (oldVersion <= 4 && tableExists) {
+            sqLiteDatabase.execSQL("alter table " + TrackLayer.TABLE_TRACKPOINTS + " add column " + TrackLayer.FIELD_BEARING + " real;");
+        }
+
     }
 
     public SQLiteDatabase getDatabase(boolean readOnly)
