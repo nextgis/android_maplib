@@ -28,7 +28,8 @@ plugins {
     id 'signing'
 }
 
-def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
+//def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
+def androidAbis = [ "arm64-v8a"] //
 def gdalFiles = [ "cubewerx_extra.wkt", "ecw_cs.wkt", "ellipsoid.csv", "epsg.wkt", "esri_StatePlane_extra.wkt", "gdalvrt.xsd", "gml_registry.xml", "gmlasconf.xml", "gmlasconf.xsd", "gt_datum.csv", "gt_ellips.csv", "ogrvrt.xsd", "stateplane.csv" ]
 def sslFiles = ["cert.pem"]
 def projFiles = ["proj.db"]
@@ -51,10 +52,13 @@ ext {
 android {
 
     namespace 'com.nextgis.maplib'
-    compileSdkVersion 33
+    //android.buildTypes.release.ndk.debugSymbolLevel = { SYMBOL_TABLE  }
+
+
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 33
+        compileSdk 33
+        targetSdk 33
         versionCode 20
         versionName '3.7.2'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -79,8 +83,25 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            externalNativeBuild {
+                cmake {
+                    cppFlags "-std=c++11 -frtti"
+                    arguments "-DSUPRESS_VERBOSE_OUTPUT=OFF",
+                            "-DANDROID_TOOLCHAIN=clang",
+                            "-DANDROID_STL=c++_static",
+                            "-DANDROID_CPP_FEATURES=rtti", //exceptions
+//                        "-GAndroid Gradle - Unix Makefiles",
+//                        "-DCMAKE_MAKE_PROGRAM=make",
+                            "-DBUILD_SHARED_LIBS=ON",
+                            "-DBUILD_STATIC_LIBS=OFF",
+                            "-DBUILD_TARGET_PLATFORM=ANDROID",
+                            "-DCMAKE_BUILD_TYPE=Release"
+                }
+            }
+
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
 
         }
@@ -126,26 +147,30 @@ task copyFiles() {
     description "Copy assets to ${projectDir}/src/main/assets"
     dependsOn tasks.findAll { task -> task.name.contains("externalNativeBuild${buildConfigUpper}") }
 
-    def generatedFolderName = "2w1q1o6u"
+    //def generatedFolderName = "6c1z42j1" // """6c1z42j1"
+    //def generatedFolderName = "RelWithDebInfo/6c1z42j1" // """6c1z42j1"
+
+    def generatedFolderName = "Release/6z6f4j6e" // """6c1z42j1"
+    //def generatedFolderName = "Debug/2w1q1o6u" // """6c1z42j1"
 
     gdalFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/gdal"
-            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/arm64-v8a/data/$name"
+            from "$projectDir/.cxx/"+ generatedFolderName +"/arm64-v8a/data/$name"
         }
     }
 
     projFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/proj"
-            from "$projectDir/.cxx/Debug/"+ generatedFolderName + "/arm64-v8a/data/$name"
+            from "$projectDir/.cxx/"+ generatedFolderName + "/arm64-v8a/data/$name"
         }
     }
 
     sslFiles.each { name ->
         copy {
             into "$projectDir/src/main/assets/certs"
-            from "$projectDir/.cxx/Debug/"+ generatedFolderName +"/arm64-v8a/data/$name"
+            from "$projectDir/.cxx/"+ generatedFolderName +"/arm64-v8a/data/$name"
 
         }
     }
