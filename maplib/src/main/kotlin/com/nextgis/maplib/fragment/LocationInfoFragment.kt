@@ -39,6 +39,8 @@ import com.nextgis.maplib.formatCoordinate
 import com.nextgis.maplib.service.TrackerDelegate
 import com.nextgis.maplib.service.TrackerService
 import com.nextgis.maplib.startTrackerService
+import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -51,6 +53,8 @@ class LocationInfoFragment : Fragment() {
 
     private var mTrackerService: TrackerService? = null
     private var mIsBound = false
+    private var mIsServiceRunning = false
+
     private val mServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as TrackerService.LocalBinder
@@ -68,6 +72,10 @@ class LocationInfoFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         _binding = LocationInfoBinding.inflate(LayoutInflater.from(context), null, false)
         return binding.root
+    }
+
+    fun  onLocationChanged (location: Location){
+        mTrackerDelegate.onLocationChanged(location)
     }
 
     private val mTrackerDelegate = object : TrackerDelegate {
@@ -90,10 +98,16 @@ class LocationInfoFragment : Fragment() {
             binding.satCountText.text = location.satelliteCount.toString()
 
             binding.altText.text = getString(R.string.location_m_format).format(location.altitude)
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            //sdf.timeZone = TimeZone.getTimeZone("UTC")
+            sdf.timeZone = TimeZone.getDefault()
+            val timeName = sdf.format(Date(location.time));
+            binding.locationTimeText.text=timeName
         }
 
         override fun onStatusChanged(status: TrackerService.Status, trackName: String, trackStartTime: Date) {
-
+            mIsServiceRunning = status == TrackerService.Status.RUNNING
+            binding.serviceStatus.text = if (mIsServiceRunning) "track is writing" else ""
         }
     }
 

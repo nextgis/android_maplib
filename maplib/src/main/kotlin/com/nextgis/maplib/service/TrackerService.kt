@@ -33,7 +33,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.GnssStatus
@@ -41,20 +40,32 @@ import android.location.GnssStatus.Callback
 import android.location.GpsStatus
 import android.location.LocationListener
 import android.location.LocationManager
-import android.os.*
+import android.os.Binder
+import android.os.Build
+import android.os.Bundle
+import android.os.PowerManager
 import android.preference.PreferenceManager
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationCompat
-import com.nextgis.maplib.*
+import com.nextgis.maplib.API
+import com.nextgis.maplib.Constants
+import com.nextgis.maplib.Location
+import com.nextgis.maplib.R
+import com.nextgis.maplib.Track
+import com.nextgis.maplib.checkPermission
+import com.nextgis.maplib.isBetterLocation
+import com.nextgis.maplib.printError
+import com.nextgis.maplib.printMessage
+import com.nextgis.maplib.printWarning
 import java.io.Serializable
 import java.lang.ref.WeakReference
 import java.text.DateFormat.getDateInstance
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
+import java.util.Date
 
 private const val DEFAULT_UPDATE_LOCATION_POINTS = 17 // Any value < 30.
 
@@ -71,7 +82,7 @@ interface TrackerDelegate : Serializable {
  * Service to get location information and store it into trackers table of current store. Also service notifies
  * listeners on location events via local broadcast messages.
  */
-class TrackerService : Service() {
+class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
 
     private var mNotificationManager: NotificationManager? = null
     private var mStatus = Status.UNKNOWN
@@ -84,6 +95,7 @@ class TrackerService : Service() {
     private var mTracksTable: Track? = null
     private var mUpdateOnLocationPoints = DEFAULT_UPDATE_LOCATION_POINTS
     private var mNotifiers = mutableListOf<WeakReference<TrackerDelegate>>()
+    private var trackInProgressName = ""
 
     enum class Command(val code: String) {
         UNKNOWN("com.nextgis.tracker.UNKNOWN"),
@@ -141,7 +153,6 @@ class TrackerService : Service() {
                         val location = intent.extras?.get(LocationManager.KEY_LOCATION_CHANGED) as? android.location.Location
                         if(location != null) {
                             Log.e("TRACKK", "location != null")
-
                             processLocationChanges(location)
                         }
                     }
@@ -182,18 +193,19 @@ class TrackerService : Service() {
                     satelliteCount++
                 }
             }
-
             if(satelliteCount > 0) {
                 mSatelliteCount = satelliteCount
             }
-
-//            printMessage("onSatelliteStatusChanged: Satellite count: $mSatelliteCount")
         }
     }
 
+
+
+
     @SuppressLint("MissingPermission")
     @Suppress("DEPRECATION")
-    private val mGpsStatusListener = GpsStatus.Listener { event ->
+    private val mGpsStatusListener = GpsStatus.Listener {
+        event ->
         if(event == GpsStatus.GPS_EVENT_SATELLITE_STATUS) {
             var satelliteCount = 0
 
@@ -207,12 +219,9 @@ class TrackerService : Service() {
                     }
                 }
             }
-
             if(satelliteCount > 0) {
                 mSatelliteCount = satelliteCount
             }
-
-//                printMessage("onGpsStatusChanged: Satellite count: $mSatelliteCount")
         }
     }
 
@@ -237,6 +246,7 @@ class TrackerService : Service() {
         mCurrentLocation = location
         if(!mSecondPointInTrack && !mStartNewTrack && mDivTrackByDay) {
             val newTrackName = getTrackName()
+            trackInProgressName = newTrackName
             if(newTrackName != mTrackName) {
                 mTrackName = newTrackName
                 mTrackStartTime = Date()
@@ -251,7 +261,7 @@ class TrackerService : Service() {
             return
         }
 
-//            printMessage("Track point added [$location]")
+        printMessage("Track point added [$location]")
         mPointsAdded++
 
         // Send location to listeners
@@ -388,15 +398,23 @@ class TrackerService : Service() {
 
         // Stop tracking
         if(checkPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+            mLocationManager?.removeUpdates(this)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                mLocationManager?.removeUpdates(getPendingIntent())
-                unregisterReceiver(mBroadCastReceiver)
                 mLocationManager?.unregisterGnssStatusCallback(mGnssStatusListener)
-            }
-            else {
-                mLocationManager?.removeUpdates(mGpsLocationListener)
-                mLocationManager?.removeGpsStatusListener(mGpsStatusListener)
-            }
+            } else
+                mLocationManager?.removeGpsStatusListener(this)
+
+
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//                mLocationManager?.removeUpdates(getPendingIntent())
+//                unregisterReceiver(mBroadCastReceiver)
+//                mLocationManager?.unregisterGnssStatusCallback(mGnssStatusListener)
+//            }
+//            else {
+//                mLocationManager?.removeUpdates(mGpsLocationListener)
+//                mLocationManager?.removeGpsStatusListener(mGpsStatusListener)
+//            }
         }
 
         if(checkPermission(this, Manifest.permission.WAKE_LOCK)) {
@@ -472,6 +490,7 @@ class TrackerService : Service() {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentTitle(getString(R.string.track_name).format(mTrackName))
             .setContentText(getString(R.string.track_is_writing).format(writingStr))
+            .setSilent(true)
             .addAction(android.R.drawable.ic_media_pause, getText(R.string.stop), stopIntent)
 
         if(mOpenIntent != null) {
@@ -521,19 +540,25 @@ class TrackerService : Service() {
                 mLostFixTime = minTime * 15
             }
 
-
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val filter = IntentFilter()
-                filter.addAction(MessageType.PROCESS_LOCATION_UPDATES.code)
-                registerReceiver(mBroadCastReceiver, filter)
-                mLocationManager?.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDist, getPendingIntent())
                 mLocationManager?.registerGnssStatusCallback(mGnssStatusListener)
-            }
-            else {
-                mLocationManager?.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDist, mGpsLocationListener, mainLooper)
-                mLocationManager?.addGpsStatusListener(mGpsStatusListener)
-            }
+            } else
+                mLocationManager?.addGpsStatusListener(this)
+
+            val provider = LocationManager.GPS_PROVIDER
+            mLocationManager?.requestLocationUpdates(provider, minTime, minDist, this)
+
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//                val filter = IntentFilter()
+//                filter.addAction(MessageType.PROCESS_LOCATION_UPDATES.code)
+//                registerReceiver(mBroadCastReceiver, filter)
+                //mLocationManager?.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDist, getPendingIntent())
+//                mLocationManager?.registerGnssStatusCallback(mGnssStatusListener)
+//            }
+//            else {
+//                mLocationManager?.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDist, mGpsLocationListener, mainLooper)
+//                mLocationManager?.addGpsStatusListener(mGpsStatusListener)
+//            }
         }
 
         if(checkPermission(this, Manifest.permission.WAKE_LOCK)) {
@@ -547,9 +572,7 @@ class TrackerService : Service() {
         for(notify in mNotifiers) {
             notify.get()?.onStatusChanged(mStatus, mTrackName, mTrackStartTime)
         }
-
         // printMessage("Tracking service status: " + if(mStatus == Status.RUNNING) "running" else "stopped" )
-
         if(mCurrentLocation != null) {
             for(notify in mNotifiers) {
                 notify.get()?.onLocationChanged(mCurrentLocation!!)
@@ -572,7 +595,7 @@ class TrackerService : Service() {
         val channelId = "com.nextgis.tracker"
         val channelName = "NextGIS Tracker"
         val chan = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
-        chan.importance = NotificationManager.IMPORTANCE_LOW
+        //chan.importance = NotificationManager.IMPORTANCE_LOW
         chan.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
         chan.lightColor = Color.TRANSPARENT
         mNotificationManager?.createNotificationChannel(chan)
@@ -659,6 +682,35 @@ class TrackerService : Service() {
         }
     }
 
+    public fun clearTrackNameInProgress(){
+        trackInProgressName = ""
+    }
+
+    override fun onLocationChanged(location: android.location.Location) {
+        processLocationChanges(location)
+
+    }
+
+    override fun onGpsStatusChanged(event: Int) {
+        if(event == GpsStatus.GPS_EVENT_SATELLITE_STATUS) {
+            var satelliteCount = 0
+
+            if (checkPermission(this@TrackerService, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                val satellites = mLocationManager?.getGpsStatus(null)?.satellites
+                if(satellites != null) {
+                    for (sat in satellites) {
+                        if (sat.usedInFix()) {
+                            satelliteCount++
+                        }
+                    }
+                }
+            }
+            if(satelliteCount > 0) {
+                mSatelliteCount = satelliteCount
+            }
+        }
+
+    }
 
 }
 

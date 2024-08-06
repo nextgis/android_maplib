@@ -46,7 +46,8 @@ interface OnFileClickListener {
 /**
  * Adapter for Object files.
  */
-class FilesAdapter(val items: ArrayList<Object>, val listener: OnFileClickListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class FilesAdapter(val items: ArrayList<Object>, val listener: OnFileClickListener)
+    : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
         val binding = ItemFileBinding.inflate(layoutInflater, parent, false)
@@ -65,7 +66,8 @@ class FilesAdapter(val items: ArrayList<Object>, val listener: OnFileClickListen
             val view = (binding.root as? TextView)
             val drawable = ContextCompat.getDrawable(context, typeIcon(repo.type))
             view?.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null)
-            binding.root.setOnClickListener { listener.onFileClick(repo) }
+            binding.root.setOnClickListener {
+                listener.onFileClick(repo) }
             binding.executePendingBindings()
         }
 
@@ -73,10 +75,11 @@ class FilesAdapter(val items: ArrayList<Object>, val listener: OnFileClickListen
             return when (type) {
                 51 -> R.drawable.ic_sd
                 52 -> R.drawable.ic_home
-                53, 74 -> R.drawable.ic_folder
+                53, 74, 3001, 3002 -> R.drawable.ic_folder
                 55 -> R.drawable.ic_zip
-                75 -> R.drawable.ic_map_marker_path
+                75, 3010, 3017 -> R.drawable.ic_map_marker_path
                 -999 -> R.drawable.ic_keyboard_return
+                3007 -> R.drawable.ic_file_document_outline
                 else -> R.drawable.ic_file_document_outline
             }
         }

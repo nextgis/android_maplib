@@ -24,4 +24,7 @@
     <color name="black">#000</color>
     <color name="white">#FFF</color>
     <color name="colorButton">#00b77e</color>
+    <color name="colorTrackProgress">#03a9f4</color>
+    <color name="red">#FF1100</color>
+
 </resources>

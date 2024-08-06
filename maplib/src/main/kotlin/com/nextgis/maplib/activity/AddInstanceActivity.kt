@@ -23,7 +23,9 @@ package com.nextgis.maplib.activity
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
+import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
@@ -31,6 +33,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.nextgis.maplib.*
 import com.nextgis.maplib.databinding.ActivityAddInstanceBinding
 import com.nextgis.maplib.util.NonNullObservableField
+import com.nextgis.maplib.util.runAsync
 import com.nextgis.maplib.util.tint
 
 /**
@@ -39,6 +42,10 @@ import com.nextgis.maplib.util.tint
 class AddInstanceActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddInstanceBinding
     val instance = NonNullObservableField(Instance("", "", "", "", ""))
+    protected val ENDING: String = ".nextgis.com"
+    protected val STARING_S: String = "https://"
+    protected val STARING: String = "http://"
+    public val progress = NonNullObservableField(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,28 +84,55 @@ class AddInstanceActivity : AppCompatActivity() {
      * Validate and save form data to [Instance].
      */
     fun save() {
+
         if (instance.get().url.isBlank() || instance.get().login.isBlank() || instance.get().password.isBlank()) {
             Toast.makeText(this, R.string.empty_field, Toast.LENGTH_SHORT).show()
             return
         }
+        var url = instance.get().url;
+        if (!url.endsWith(ENDING))
+            url += ENDING
 
+        if (url.startsWith(STARING_S))
+                url = url.substring(STARING_S.length, url.length )
+        else if (url.startsWith(STARING))
+            url = url.substring(STARING.length, url.length )
+//        Log.e("DDF", "url is: " + url)
+
+
+        // startProgress
+        //binding.progressarea.visibility = View.VISIBLE
+        Log.e("CCTT", "visible")
+        progress.set(true)
+
+
+        runAsync {
         API.getCatalog()?.let {
-            var name = ""
-            name = instance.get().url
-            if (name.startsWith("http://") || name.startsWith("https://")){
-                name = name.replace("https://", "")
-                name = name.replace("http://", "")
-            }
-
-            val connection = NGWConnectionDescription(instance.get().url, instance.get().login, instance.get().password, false)
+            val connection = NGWConnectionDescription(url, instance.get().login, instance.get().password, false)
             if (connection.check()) {
+                it.createConnection(url, connection)
+                runOnUiThread {
+                    //binding.progressarea.visibility = View.GONE
 
-                it.createConnection(name, connection)
-                setResult(Activity.RESULT_OK)
-                finish()
+                    Log.e("CCTT", "gone")
+                    progress.set(false)
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                }
+
             } else {
-                Toast.makeText(this, getString(R.string.connection_error) + ": " + API.lastError(), Toast.LENGTH_LONG).show()
+                runOnUiThread {
+                    progress.set(false)
+                    //binding.progressarea.visibility = View.GONE
+                    Log.e("CCTT", "gone")
+                    Toast.makeText(
+                        this,
+                        getString(R.string.connection_error) + ": " + API.lastError(),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
+        }
         }
     }
 

@@ -61,7 +61,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
         FC_GPX(517),                    // CAT_FC_GPX
         RASTER_TMS(1011),               // CAT_RASTER_TMS
         TABLE_GPKG(1507),               // CAT_TABLE_GPKG
-        NGW_TRACKER(3018);              // CAT_NGW_TRACKER
+        NGW_TRACKER(3016);              // CAT_NGW_TRACKER
 
         override fun toString(): String {
             return code.toString()

@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.READ_SYNC_STATS" />
@@ -16,6 +18,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- For Sentry -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
 
     <uses-feature android:name="android.hardware.location.gps" />
     <uses-feature android:name="android.hardware.location.network" />
@@ -24,7 +28,8 @@
     <application>
         <service android:name=".service.TrackerService"
                  android:enabled="true"
-                 android:exported="true">
+                 android:exported="true"
+                >
             <intent-filter>
                 <action android:name="com.nextgis.tracker.PROCESS_LOCATION_UPDATES"/>
             </intent-filter>

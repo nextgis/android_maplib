@@ -193,6 +193,6 @@ open class Track(private val handle: Long) {
      * @return True on success.
      */
     fun deletePoints(start: Date, stop: Date) : Boolean {
-        return API.trackDeletePointsInt(handle, start.time, stop.time)
+        return API.trackDeletePointsInt(handle, start.time/1000, stop.time/1000)
     }
 }

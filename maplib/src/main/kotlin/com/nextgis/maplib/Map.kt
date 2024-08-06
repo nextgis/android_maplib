@@ -406,7 +406,6 @@ class MapDocument(val id: Int, val path: String, private var bkColor: RGBA = API
         return when (type) {
             Overlay.Type.EDIT -> EditOverlay(this)
             Overlay.Type.LOCATION -> LocationOverlay(this)
-            //Overlay.Type.TRACK -> TrackOverlay(this)
             else -> null
         }
     }

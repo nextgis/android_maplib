@@ -277,11 +277,6 @@ object Constants {
     object SettingsStrings {
         const val intro_shown = "intro_shown"
         const val ngid_shown = "ngid_shown"
-
-        const val account_login_was_done = "account_login_was_done"
-        const val account_fullName = "account_fullName"
-        const val account_login = "account_login"
-
     }
 
 }

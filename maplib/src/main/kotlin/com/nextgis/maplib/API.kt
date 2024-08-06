@@ -247,10 +247,6 @@ object API {
         addNotifyFunction(ChangeCode.ALL, API::notifyFunction)
         addNotifyFunction(ChangeCode.TOKEN_EXPIRED, API::notifyFunction)
         addNotifyFunction(ChangeCode.TOKEN_CHANGED, API::notifyFunction)
-        addNotifyFunctionInt(ChangeCode.TOKEN_EXPIRED.code)
-        addNotifyFunctionInt(ChangeCode.TOKEN_CHANGED.code)
-
-
 
         // Form default map options
         val activityManager = context.getSystemService(ACTIVITY_SERVICE) as ActivityManager
@@ -600,7 +596,6 @@ object API {
         val function = NotifyFunction(callback, code.code)
         if (notifyFunctions.indexOf(function) == -1) {
             notifyFunctions.add(NotifyFunction(callback, code.code))
-//            addNotifyFunction(code.code)
         }
     }
 
@@ -1049,8 +1044,7 @@ object API {
                                   startSegment: Boolean) : Boolean =
             trackAddPoint(handle, name, x, y, z, acc, speed, course, timeStamp / 1000, satCount, startTrack, startSegment)
 
-    internal fun trackDeletePointsInt(handle: Long, start: Long, stop: Long) : Boolean = trackDeletePoints(handle, start / 1000, stop / 1000)
-    internal fun addNotifyFunctionInt(notifyType: Int) = addNotifyFunction(notifyType)
+    internal fun trackDeletePointsInt(handle: Long, start: Long, stop: Long) : Boolean = trackDeletePoints(handle, start , stop )
 
     /*
      * A native method that is implemented by the 'ngstore' native library,
@@ -1394,7 +1388,4 @@ object API {
                                        speed: Float, course: Float, timeStamp: Long, satCount: Int, startTrack: Boolean,
                                        startSegment: Boolean) : Boolean
     private external fun trackDeletePoints(handle: Long, start: Long, stop: Long) : Boolean
-
-    private external fun addNotifyFunction(notifyType: Int)
-
 }

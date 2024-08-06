@@ -23,6 +23,7 @@ package com.nextgis.maplib.fragment
 
 import android.os.Bundle
 import android.view.*
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,6 +36,8 @@ import com.nextgis.maplib.databinding.FragmentFilePickerBinding
 import com.nextgis.maplib.util.NonNullObservableField
 import com.nextgis.maplib.util.runAsync
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.time.Duration
 
 
 /**
@@ -45,6 +48,7 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
     private var _binding: FragmentFilePickerBinding? = null
     private val binding get() = _binding!!
 
+    private var trackerType = false
     private var root = ""
     private val stack = Stack<Object>()
     val path = NonNullObservableField("/")
@@ -84,8 +88,10 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
 
     /**
      * Refresh contents of current directory.
+     * Refresh contents of current directory.
      */
     fun refresh() {
+
         if (stack.isNotEmpty()) {
             val file = stack.pop()
             file.refresh()
@@ -96,11 +102,53 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
     }
 
 
+    public fun processback(useAdapterChanges:Boolean ) : Boolean {
+
+        if (stack.size > 0) {
+            runAsync {
+                val children = arrayListOf<Object>()
+                actionTop(children, useAdapterChanges)
+            }
+            return true
+        } else
+            return false
+    }
 
     override fun onFileClick(file: Object) {
         (binding.list.adapter as? FilesAdapter)?.items?.clear()
         val children = arrayListOf<Object>()
         // TODO gpkg/ngrc type
+        if (trackerType){
+            if (file.type == 3001 || file.type == 3002){ // folder of tracker group - enter
+                addBack(children)
+                addItems(children, file.children().toList())
+                if (stack.isEmpty() && root.isBlank())
+                    root = file.path.substringBeforeLast("/")
+                stack.add(file)
+                path.set(file.path.replace(root, ""))
+
+                activity?.runOnUiThread {
+                    (binding.list.adapter as? FilesAdapter)?.items?.addAll(children)
+                    binding.list.adapter?.notifyDataSetChanged()
+                }
+
+                return
+            }
+            if (file.type == -999) {
+                runAsync {
+                    actionTop(children, true)
+                }
+                (binding.list.adapter as? FilesAdapter)?.items?.addAll(children)
+                binding.list.adapter?.notifyDataSetChanged()
+            } else {
+                Toast.makeText(context, "Please click on folder or tracker group", Toast.LENGTH_LONG).show()
+                refresh()
+            }
+
+        return
+        }
+
+
         if (file.type == 501) { // shp type
             (activity as? PickerActivity)?.onLayerSelected(file)
             return
@@ -122,22 +170,8 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             return
         }
 
-        if (file.type == 3007) { // polygon multiple
-            (activity as? PickerActivity)?.onLayerSelected(file)
-            return
-        }
-
         if (file.type == -999) {
-            stack.pop()
-            if (stack.size == 0) {
-                (activity as? PickerActivity)?.let { addItems(children, it.root()) }
-                path.set("/")
-            } else {
-                addBack(children)
-                val parent = stack.peek()
-                addItems(children, parent.children().toList())
-                path.set(parent.path.replace(root, ""))
-            }
+            actionTop(children, true)
         } else {
             addBack(children)
             addItems(children, file.children().toList())
@@ -146,8 +180,31 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             stack.add(file)
             path.set(file.path.replace(root, ""))
         }
+
         (binding.list.adapter as? FilesAdapter)?.items?.addAll(children)
         binding.list.adapter?.notifyDataSetChanged()
+    }
+
+    private fun actionTop(children: ArrayList<Object>, useAdapterChanges: Boolean){
+        if (stack.size > 0)
+            stack.pop()
+        if (stack.size == 0) {
+            (activity as? PickerActivity)?.let {
+                addItems(children, it.root())
+            }
+            path.set("/")
+        } else {
+            addBack(children)
+            val parent = stack.peek()
+            addItems(children, parent.children().toList())
+            path.set(parent.path.replace(root, ""))
+        }
+        if (useAdapterChanges){
+            activity?.runOnUiThread{
+                (binding.list.adapter as? FilesAdapter)?.items?.addAll(children)
+                binding.list.adapter?.notifyDataSetChanged()
+            }
+        }
     }
 
     private fun addRoot(parent: PickerActivity?) {
@@ -155,7 +212,9 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
             runAsync {
                 val items = arrayListOf<Object>()
                 addItems(items, it.root())
-                activity?.runOnUiThread { binding.list.adapter = FilesAdapter(items, this@FilePickerFragment) }
+                activity?.runOnUiThread {
+                    binding.list.adapter = FilesAdapter(items, this@FilePickerFragment)
+                }
             }
         }
     }
@@ -165,12 +224,17 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
     }
 
     private fun addItems(children: ArrayList<Object>, items: List<Object>) {
-        children.addAll(items.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }).sortedBy { it.type != 53 || it.type != 74 })
+        children.addAll(items.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            .sortedBy { it.type != 53 || it.type != 74 })
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    public fun setTracker(){
+        trackerType = true
     }
 
 }

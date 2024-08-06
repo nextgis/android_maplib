@@ -19,7 +19,14 @@
   -->
 
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+                name="activity"
+                type="com.nextgis.maplib.activity.AddInstanceActivity" />
+    </data>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -46,11 +53,14 @@
                 android:layout_marginTop="16dp">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/nextgis_url"
-                    android:inputType="textAutoComplete"
-                    android:text="@={activity.instance.url}" />
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/nextgis_url"
+                        android:inputType="textAutoComplete"
+                        android:text="@={activity.instance.url}"
+                        android:drawableRight="@drawable/nextgis_addition"
+                        android:drawableEnd="@drawable/nextgis_addition"
+                        />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -107,12 +117,22 @@
                 app:popupTheme="@style/AppTheme.PopupOverlay"
                 app:theme="@style/AppTheme.Toolbar" />
         </com.google.android.material.appbar.AppBarLayout>
+        <RelativeLayout
+                android:id="@+id/progressarea"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#AA000000"
+                android:visibility="@{activity.progress? 0:8}"
+                >
+            <ProgressBar
+                    style="@style/Widget.AppCompat.ProgressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"/>
+        </RelativeLayout>
+        
+        
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-    <data>
 
-        <variable
-            name="activity"
-            type="com.nextgis.maplib.activity.AddInstanceActivity" />
-    </data>
 </layout>
