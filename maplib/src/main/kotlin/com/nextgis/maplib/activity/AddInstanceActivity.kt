@@ -102,7 +102,7 @@ class AddInstanceActivity : AppCompatActivity() {
 
         // startProgress
         //binding.progressarea.visibility = View.VISIBLE
-        Log.e("CCTT", "visible")
+        //Log.e("CCTT", "visible")
         progress.set(true)
 
 

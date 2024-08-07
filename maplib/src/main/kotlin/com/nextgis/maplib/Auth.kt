@@ -33,7 +33,7 @@ package com.nextgis.maplib
  * @property tokenUpdateFailedCallback function executes if update failed.
  */
 data class Auth(val url: String, private val authServerUrl: String,
-                private val accessToken: String, private val updateToken: String,
+                public val accessToken: String, private val updateToken: String,
                 private val expiresIn: String, private val clientId: String,
                 private val tokenUpdateFailedCallback: (() -> Unit)? = null) {
     init {

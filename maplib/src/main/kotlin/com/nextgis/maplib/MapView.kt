@@ -170,6 +170,7 @@ open class MapView : GLSurfaceView {
         if(showLocation) {
             val position = transformFromGPS(location.longitude, location.latitude)
             val locationOverlay = map?.getOverlay(Overlay.Type.LOCATION) as? LocationOverlay
+            val styleLoc = locationOverlay?.style
             if(locationOverlay != null) {
                 locationOverlay.updateLocation(position, location.bearing, location.accuracy)
                 draw(MapDocument.DrawState.PRESERVED)
@@ -267,7 +268,7 @@ open class MapView : GLSurfaceView {
     /**
      * Show/hide current position on map. The location overlay must be set.
      */
-    var showLocation: Boolean = false
+    var showLocation: Boolean = true
         set(newVal) {
             if(newVal) {
                 // start updating location
