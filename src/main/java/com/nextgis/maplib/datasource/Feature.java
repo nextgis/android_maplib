@@ -364,7 +364,8 @@ public class Feature
             String name = field.getName();
             if (  containsCaseInsensitive( unwrapQuotation(name), Constants.VECTOR_FORBIDDEN_FIELDS))
                 name = "'\"" + unwrapQuotation(name) + "\"'";
-
+//            if (unwrapQuotation(name).contains(" "))
+//                name = "'" + unwrapQuotation(name) + "'";
 
             if (!isValuePresent(i)) {
                 values.putNull(name);
