@@ -65,7 +65,7 @@
     <string name="field_name">Field name</string>
     <string name="field_type">Field type</string>
     <string name="field_type_string">String</string>
-    <string name="field_type_int">Integer(32 bit)</string>
+    <string name="field_type_int">Integer (32 bit)</string>
     <string name="field_type_long">Integer (64 bit)</string>
     <string name="field_type_real">Real</string>
     <string name="field_type_datetime">Date &amp; Time</string>
