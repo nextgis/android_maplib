@@ -632,7 +632,7 @@ public class NGWUtil
             dateformat.setTimeZone(gmtTimeZone);
 
             try {
-                Log.e("TTIIMMMEE", "readNGWDateOrTime qdateOrTime: " + dateOrTime);
+//                Log.e("TTIIMMMEE", "readNGWDateOrTime qdateOrTime: " + dateOrTime);
 
                 Date date = dateformat.parse(dateOrTime);
 
@@ -650,7 +650,7 @@ public class NGWUtil
 //                nMinute = date.getMinutes();
 //                nSecond = date.getSeconds();
 
-                Log.e("TTIIMMMEE", "readNGWDateOrTime qst result H:m:s: " + nHour + ":" + nMinute +":"+ nSecond);
+//                Log.e("TTIIMMMEE", "readNGWDateOrTime qst result H:m:s: " + nHour + ":" + nMinute +":"+ nSecond);
 
 
 
@@ -660,15 +660,15 @@ public class NGWUtil
         }
 
         TimeZone timeZone = TimeZone.getDefault();
-        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset: " + timeZone.getRawOffset());
+//        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset: " + timeZone.getRawOffset());
 
         timeZone.setRawOffset(0); // set to UTC
-        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset after 0: " + timeZone.getRawOffset());
+//        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset after 0: " + timeZone.getRawOffset());
         Calendar calendar = Calendar.getInstance(timeZone);
         calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
         calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
 
-        Log.e("TTIIMMMEE", "readNGWDateOrTime calendar.getTimeInMillis(): " + calendar.getTimeInMillis());
+//        Log.e("TTIIMMMEE", "readNGWDateOrTime calendar.getTimeInMillis(): " + calendar.getTimeInMillis());
 
         feature.setFieldValue(fieldName, calendar.getTimeInMillis());
     }

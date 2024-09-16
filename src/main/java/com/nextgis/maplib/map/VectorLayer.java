@@ -3203,7 +3203,7 @@ public class VectorLayer
                 FileUtil.writeToFile(getFileName(), rootConfig.toString());
                 MapBase map = MapDrawable.getInstance();
                 map.load();
-                new Sync().execute();
+                new Sync().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             } catch (IOException | JSONException ignored) { }
         }
     }

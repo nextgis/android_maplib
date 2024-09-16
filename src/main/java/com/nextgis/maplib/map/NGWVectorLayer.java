@@ -2085,7 +2085,7 @@ public class NGWVectorLayer
                     case GeoConstants.FTTime:
 
 
-                        Log.e("TTIIMMMEE", "cursorToJson " );
+//                        Log.e("TTIIMMMEE", "cursorToJson " );
 
                         TimeZone timeZoneT = TimeZone.getDefault();
 
@@ -2106,8 +2106,8 @@ public class NGWVectorLayer
                         jsonTime.put("minute", calendarT.get(Calendar.MINUTE));
                         jsonTime.put("second", calendarT.get(Calendar.SECOND));
 
-                        Log.e("TTIIMMMEE", "cursorToJson timestamp:" +  targetTime.getTime());
-                        Log.e("TTIIMMMEE", "cursorToJson json result:" +  jsonTime.toString());
+//                        Log.e("TTIIMMMEE", "cursorToJson timestamp:" +  targetTime.getTime());
+//                        Log.e("TTIIMMMEE", "cursorToJson json result:" +  jsonTime.toString());
 
                         valueObject.put(name, jsonTime);
                         break;

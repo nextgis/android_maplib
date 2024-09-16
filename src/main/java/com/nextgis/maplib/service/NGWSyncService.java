@@ -28,6 +28,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import com.nextgis.maplib.datasource.ngw.SyncAdapter;
@@ -74,7 +75,11 @@ public class NGWSyncService
         intentFilter.addAction(SyncAdapter.SYNC_FINISH);
         intentFilter.addAction(SyncAdapter.SYNC_CANCELED);
         intentFilter.addAction(SyncAdapter.SYNC_CHANGES);
-        registerReceiver(mSyncReceiver, intentFilter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mSyncReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(mSyncReceiver, intentFilter);
+        }
     }
 
 

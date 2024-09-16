@@ -238,8 +238,8 @@ public class Feature
             case FTTime:
                 if (val instanceof Long) {
 
-                    Log.e("TTIIMMMEE", "getFieldValueAsString feature time convert");
-                    Log.e("TTIIMMMEE", "getFieldValueAsString value to convert: " + val);
+//                    Log.e("TTIIMMMEE", "getFieldValueAsString feature time convert");
+//                    Log.e("TTIIMMMEE", "getFieldValueAsString value to convert: " + val);
                     /*
                      Log.e("TTIIMMMEE", "feature time convert");
                     Log.e("TTIIMMMEE", "value to convert: " + val);
@@ -270,7 +270,7 @@ public class Feature
 
                     DateFormat dateFormat = DateFormat.getTimeInstance();
                     String result =  dateFormat.format(new Date((Long) val));
-                    Log.e("TTIIMMMEE", "getFieldValueAsString result : " + result);
+//                    Log.e("TTIIMMMEE", "getFieldValueAsString result : " + result);
 
                     return result;
                 }
@@ -364,8 +364,8 @@ public class Feature
             String name = field.getName();
             if (  containsCaseInsensitive( unwrapQuotation(name), Constants.VECTOR_FORBIDDEN_FIELDS))
                 name = "'\"" + unwrapQuotation(name) + "\"'";
-//            if (unwrapQuotation(name).contains(" "))
-//                name = "'" + unwrapQuotation(name) + "'";
+            if (unwrapQuotation(name).contains(" "))
+                name = "'" + unwrapQuotation(name) + "'";
 
             if (!isValuePresent(i)) {
                 values.putNull(name);
@@ -492,7 +492,7 @@ public class Feature
             return false;
         }
         //compare attributes
-        Log.d(TAG, "Feature id:" + mId + " compare attributes");
+//        Log.d(TAG, "Feature id:" + mId + " compare attributes");
         for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
 
@@ -550,8 +550,8 @@ public class Feature
         }
 
         //compare geometry
-        if (BuildConfig.DEBUG)
-            Log.d(TAG, "Feature id:" + mId + " compare geometry");
+//        if (BuildConfig.DEBUG)
+//            Log.d(TAG, "Feature id:" + mId + " compare geometry");
         if (null == mGeometry) {
             return null == f.getGeometry();
         }

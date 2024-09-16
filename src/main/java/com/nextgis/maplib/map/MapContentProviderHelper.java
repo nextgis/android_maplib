@@ -31,6 +31,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
@@ -83,15 +84,19 @@ public class MapContentProviderHelper
 
         // register events from layers modify in services or other applications
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Constants.NOTIFY_DELETE);
-        intentFilter.addAction(Constants.NOTIFY_DELETE_ALL);
-        intentFilter.addAction(Constants.NOTIFY_INSERT);
-        intentFilter.addAction(Constants.NOTIFY_UPDATE);
-        intentFilter.addAction(Constants.NOTIFY_UPDATE_ALL);
-        intentFilter.addAction(Constants.NOTIFY_UPDATE_FIELDS);
-        intentFilter.addAction(Constants.NOTIFY_FEATURE_ID_CHANGE);
+        intentFilter.addAction(NOTIFY_DELETE);
+        intentFilter.addAction(NOTIFY_DELETE_ALL);
+        intentFilter.addAction(NOTIFY_INSERT);
+        intentFilter.addAction(NOTIFY_UPDATE);
+        intentFilter.addAction(NOTIFY_UPDATE_ALL);
+        intentFilter.addAction(NOTIFY_UPDATE_FIELDS);
+        intentFilter.addAction(NOTIFY_FEATURE_ID_CHANGE);
 
-        context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter, Context.RECEIVER_EXPORTED);
+        } else {
+            context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
+        }
     }
 
     @Override
