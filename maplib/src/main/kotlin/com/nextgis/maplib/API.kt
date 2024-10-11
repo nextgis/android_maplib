@@ -30,11 +30,17 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import com.nextgis.maplib.util.decrypt
 import com.nextgis.maplib.util.encrypt
+import io.sentry.Hint
+import io.sentry.Sentry
+import io.sentry.Sentry.OptionsConfiguration
+import io.sentry.SentryEvent
+import io.sentry.SentryLevel
+import io.sentry.SentryOptions.BeforeSendCallback
+import io.sentry.android.core.SentryAndroid
+import io.sentry.android.core.SentryAndroidOptions
 import java.io.File
 import java.io.IOException
-import io.sentry.Sentry
-import io.sentry.android.AndroidSentryClientFactory
-import java.lang.Exception
+
 
 /**
  * Operation status codes enumeration.
@@ -109,7 +115,7 @@ object API {
             "VIEWPORT_REDUCE_FACTOR" to "1.0" // Reduce viewport width and height to decrease memory usage
     )
     private var lastStoreName = Constants.Store.name
-    var hasSentry = false
+    var hasSentry = true
 
     /**
      * Use to load the 'ngstore' library on application startup.
@@ -169,7 +175,20 @@ object API {
         }
 
         if(sentryDSN.isNotEmpty()) {
-            Sentry.init(sentryDSN, AndroidSentryClientFactory(context))
+            SentryAndroid.init(context) { options ->
+                options.dsn = sentryDSN
+                // Add a callback that will be used before the event is sent to Sentry.
+                // With this callback, you can modify the event or, when returning null, also discard the event.
+                options.beforeSend =
+                    BeforeSendCallback { event: SentryEvent, hint: Hint ->
+                        if (SentryLevel.DEBUG == event.level) {
+                            event
+                        } else {
+                            event
+                        }
+                    }
+            }
+            //Sentry.init(sentryDSN, AndroidSentryClientFactory(context))
             hasSentry = true
         }
 
@@ -196,7 +215,7 @@ object API {
             }
         } catch (exception: Exception) {
             if (hasSentry)
-                Sentry.capture("Cannot encrypt/decrypt cryptKey: " + exception.message)
+                Sentry.captureMessage("Cannot encrypt/decrypt cryptKey: " + exception.message)
             cryptKey = generatePrivateKey()
         }
 

@@ -21,6 +21,8 @@
 
 package com.nextgis.maplib
 
+import android.util.Log
+
 
 /**
  * NGWConnectionDescription NextGIS Web connection description.
@@ -30,7 +32,9 @@ package com.nextgis.maplib
  * @property password NextGIS Web password.
  * @property isGuest If true this is anonymous access.
  */
-class NGWConnectionDescription(url: String, login: String, password : String = "", isGuest : Boolean = true) : ConnectionDescription(Object.Type.CONTAINER_NGW, mapOf("url" to url, "login" to login, "password" to password, "is_guest" to if (isGuest) "yes" else "no"))
+class NGWConnectionDescription(url: String, login: String, password : String = "", isGuest : Boolean = true)
+    : ConnectionDescription(Object.Type.CONTAINER_NGW,
+    mapOf("url" to url, "login" to login, "password" to password, "is_guest" to if (isGuest) "yes" else "no"))
 
 /**
  * NGWConnection NextGIS Web connection.
@@ -147,7 +151,12 @@ class NGWTrackerGroup(copyFrom: Object): Object(copyFrom) {
             "TRACKER_DESCRIPTION" to tracker_description,
             "TRACKER_TYPE" to "ng_mobile",
             "TRACKER_FUEL" to ""
+            //"is_registered" to "null"
         )
+
+        Log.e("TTRRAACCKKEERR", "tracker create name:" + name )
+        Log.e("TTRRAACCKKEERR", "tracker create options:" + options.toString() )
+
 
         return create(name, options)
     }

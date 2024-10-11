@@ -23,6 +23,8 @@ package com.nextgis.maplib.util
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.view.View
 import androidx.annotation.ColorRes
@@ -60,6 +62,32 @@ fun FloatingActionButton.tint(@ColorRes resId: Int) {
 fun View.tint(@ColorRes resId: Int) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         this.backgroundTintList = ColorStateList.valueOf(this.context.getColorCompat(resId))
+}
+
+fun isInternetAvailable(context: Context): Boolean {
+    val connectivityManager = ContextCompat.getSystemService(
+        context,
+        ConnectivityManager::class.java
+    ) as ConnectivityManager
+
+    val activeNetwork = connectivityManager.activeNetworkInfo
+    var hasInternetCapability = false
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+        if (capabilities != null) {
+            hasInternetCapability = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }
+    } else {
+        // Pre API 23
+        hasInternetCapability = activeNetwork?.isConnectedOrConnecting == true &&
+                activeNetwork?.type == ConnectivityManager.TYPE_WIFI ||
+                activeNetwork?.type == ConnectivityManager.TYPE_MOBILE
+    }
+
+    return activeNetwork != null && hasInternetCapability
 }
 
 /**

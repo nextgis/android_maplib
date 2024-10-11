@@ -17,6 +17,7 @@
     <string name="altitude">Altitude</string>
     <string name="satellite_count">Satellite count</string>
     <string name="current_location">Current location</string>
+    <string name="current_status">Status</string>
     <string name="nextgis">NextGIS</string>
     <string name="refresh">Refresh</string>
     <string name="back">Back</string>
@@ -36,5 +37,6 @@
     <string name="background_location_always">Allow all the time</string>
     <string name="background_location">Background location usage</string>
     <string name="action_settings">Settings</string>
+    <string name="share_gpx_preparing">Prepare GPX data...</string>
 
 </resources>

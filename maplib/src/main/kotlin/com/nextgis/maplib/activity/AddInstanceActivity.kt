@@ -25,12 +25,15 @@ import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
-import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.nextgis.maplib.*
+import com.nextgis.maplib.API
+import com.nextgis.maplib.Constants
+import com.nextgis.maplib.Instance
+import com.nextgis.maplib.NGWConnectionDescription
+import com.nextgis.maplib.R
 import com.nextgis.maplib.databinding.ActivityAddInstanceBinding
 import com.nextgis.maplib.util.NonNullObservableField
 import com.nextgis.maplib.util.runAsync
@@ -97,24 +100,26 @@ class AddInstanceActivity : AppCompatActivity() {
                 url = url.substring(STARING_S.length, url.length )
         else if (url.startsWith(STARING))
             url = url.substring(STARING.length, url.length )
-//        Log.e("DDF", "url is: " + url)
-
 
         // startProgress
-        //binding.progressarea.visibility = View.VISIBLE
-        //Log.e("CCTT", "visible")
         progress.set(true)
 
-
         runAsync {
+            // delete all current connections
+            API.getCatalog()?.children()?.let {
+                for (child in it)
+                    if (child.type == 72) {
+                        Log.e(Constants.tag, "Deleted instance: " + child.path)
+                        val result = child.delete()
+                        Log.e(Constants.tag, "result Deleted instance: " + ( if (result)  "true" else "false"))
+                    }
+            }
+
         API.getCatalog()?.let {
             val connection = NGWConnectionDescription(url, instance.get().login, instance.get().password, false)
             if (connection.check()) {
                 it.createConnection(url, connection)
                 runOnUiThread {
-                    //binding.progressarea.visibility = View.GONE
-
-                    Log.e("CCTT", "gone")
                     progress.set(false)
                     setResult(Activity.RESULT_OK)
                     finish()
@@ -123,7 +128,6 @@ class AddInstanceActivity : AppCompatActivity() {
             } else {
                 runOnUiThread {
                     progress.set(false)
-                    //binding.progressarea.visibility = View.GONE
                     Log.e("CCTT", "gone")
                     Toast.makeText(
                         this,
@@ -138,5 +142,6 @@ class AddInstanceActivity : AppCompatActivity() {
 
     companion object {
         const val ADD_INSTANCE_REQUEST = 145
+        const val ADD_INSTANCE_TO_CREATE_TRACKER_REQUEST = 146
     }
 }

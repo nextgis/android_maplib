@@ -172,7 +172,8 @@ internal fun toArrayOfCStrings(values: Map<String, String?>?) : Array<String> {
 fun printError(message: String) {
     Log.e(Constants.tag, message)
     if(API.hasSentry) {
-        Sentry.capture("Error: $message")
+        Sentry.captureMessage("Error: $message")
+        //Sentry.capture("Error: $message")
     }
 }
 
@@ -185,9 +186,9 @@ fun printMessage(message: String) {
     if (Constants.debugMode) {
         Log.i(Constants.tag, message)
 
-        if(API.hasSentry) {
-            Sentry.capture("Info: $message")
-        }
+//        if(API.hasSentry) {
+//            Sentry.captureMessage("Info: $message")
+//        }
     }
 }
 
@@ -200,9 +201,9 @@ fun printWarning(message: String) {
     if (Constants.debugMode) {
         Log.w(Constants.tag, message)
 
-        if(API.hasSentry) {
-            Sentry.capture("Warning: $message")
-        }
+//        if(API.hasSentry) {
+//            Sentry.captureMessage("Warning: $message")
+//        }
     }
 }
 
@@ -234,7 +235,7 @@ internal fun isMapIdValid(mapId: Int) : Boolean {
 
 object Constants {
     const val tag = "com.nextgis.maplib"
-    const val debugMode = false // true //
+    const val debugMode =  true //
     const val refreshTime = 330L
     const val bigValue = 10000000.0
     const val bufferSize = 1024
@@ -269,6 +270,9 @@ object Constants {
         const val lastSyncTimestampKey = "lastSyncTimestampKey"
         const val exceptionKey = "exception"
         const val cryptKey = "CRYPT_KEY"
+        const val webGisNameKey = "webGisNameKey"
+
+        //const val trackInProgress = "track_inProgress"
     }
 
     const val tmpDirCatalogPath = "ngc://Local connections/Home/tmp"

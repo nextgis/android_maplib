@@ -146,7 +146,7 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
     // See: https://codelabs.developers.google.com/codelabs/background-location-updates-android-o/index.html
     private val mBroadCastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.e("TRACKK", "onReceive mBroadCastReceiver")
+//            Log.e("TRACKK", "onReceive mBroadCastReceiver")
             when (intent?.action) {
                 MessageType.PROCESS_LOCATION_UPDATES.code -> {
                     if(intent.hasExtra(LocationManager.KEY_LOCATION_CHANGED)) {
@@ -198,8 +198,6 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
             }
         }
     }
-
-
 
 
     @SuppressLint("MissingPermission")
@@ -290,7 +288,7 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
     }
 
     override fun onCreate() {
-        Log.e("TRACKK", "onCreate()")
+//        Log.e("TRACKK", "onCreate()")
 
         super.onCreate()
 
@@ -309,7 +307,7 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        Log.e("TRACKK", "onStartCommand()")
+//        Log.e("TRACKK", "onStartCommand()")
 
 
         // Get or create tracks table.
@@ -355,7 +353,7 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
     }
 
     fun removeDelegate(delegate: TrackerDelegate?) {
-         Log.e("TRACKK", "removeDelegate: " + delegate.toString())
+//         Log.e("TRACKK", "removeDelegate: " + delegate.toString())
 
         if (delegate == null) {
             return
@@ -375,19 +373,21 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
     }
 
     override fun onDestroy() {
-        Log.e("TRACKK", "Destroy()")
+//        Log.e("TRACKK", "Destroy()")
         // The service is no longer used and is being destroyed
         stop()
-        printMessage("Destroy tracking service")
+//        printMessage("Destroy tracking service")
     }
 
     @Suppress("DEPRECATION")
     private fun stop() {
-        Log.e("TRACKK", "stop()")
+//        Log.e("TRACKK", "stop()")
         if(mStatus != Status.RUNNING) {
             status()
             return
         }
+//        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+//        sharedPreferences.edit().putBoolean(trackInProgress, false).apply()
 
         mStatus = Status.STOPPED
         status()
@@ -513,7 +513,7 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
 
     @Suppress("DEPRECATION")
     private fun start() {
-        Log.e("TRACKK", "start()")
+//        Log.e("TRACKK", "start()")
         if(mStatus == Status.RUNNING) {
             status()
             return
@@ -527,6 +527,11 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
             mTrackName = getTrackName()
             mTrackStartTime = Date()
             mStartNewTrack = true
+
+//            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+//            sharedPreferences.edit().putBoolean(trackInProgress, true).apply()
+
+
             status()
 
             prepareStart()

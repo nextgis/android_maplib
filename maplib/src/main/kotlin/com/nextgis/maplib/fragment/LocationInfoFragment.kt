@@ -27,10 +27,12 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.nextgis.maplib.Constants
 import com.nextgis.maplib.Location
 import com.nextgis.maplib.R
 import com.nextgis.maplib.databinding.FragmentFilePickerBinding
@@ -106,8 +108,10 @@ class LocationInfoFragment : Fragment() {
         }
 
         override fun onStatusChanged(status: TrackerService.Status, trackName: String, trackStartTime: Date) {
+            val sharedPrefMain = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val syncPart = if (sharedPrefMain.getBoolean(Constants.Settings.sendTracksToNGWKey, false)) " and syncing ..." else " ..."
             mIsServiceRunning = status == TrackerService.Status.RUNNING
-            binding.serviceStatus.text = if (mIsServiceRunning) "track is writing" else ""
+            binding.serviceStatus.text = if (mIsServiceRunning) "Collecting tracking data" + syncPart else "Stand by. Tap play to start collecting tracking data."
         }
     }
 

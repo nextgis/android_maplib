@@ -27,6 +27,7 @@ import android.content.*
 import android.os.Bundle
 import android.content.Intent
 import android.preference.PreferenceManager
+import android.util.Log
 
 
 internal class SyncAdapter @JvmOverloads constructor(context: Context, autoInitialize: Boolean,
@@ -67,6 +68,7 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
             val store = API.getStore(API.getLastStoreName())
             val tracksTable = store?.trackTable()
             tracksTable?.sync()
+            Log.e("TRACKK", "onPerformSync tracksTable?.sync()")
 
             errorMessage = appendErrorMessage(errorMessage, API.lastError())
             if(!errorMessage.isEmpty()) {

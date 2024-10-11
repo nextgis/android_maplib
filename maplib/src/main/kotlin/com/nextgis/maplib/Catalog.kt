@@ -21,6 +21,8 @@
 
 package com.nextgis.maplib
 
+import android.util.Log
+
 internal data class CatalogObjectInfo(val name: String, val type: Int, val handle: Long)
 
 /**
@@ -138,6 +140,9 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      * @return Array of catalog object class instances.
      */
     fun children(filter: Array<Type> = emptyArray()) : Array<Object> {
+
+        Log.e("TTRRAACCKKEERR", "children start")
+
         val out: MutableList<Object> = mutableListOf()
         val queryResult: Array<CatalogObjectInfo>
         queryResult = if (filter.isEmpty()) {
@@ -147,9 +152,9 @@ open class Object(val name: String, val type: Int, val path: String, internal va
             for (value in filter) filterArray.add(value.code)
             API.catalogObjectQueryMultiFilterInt(handle, filterArray.toTypedArray())
         }
+        Log.e("TTRRAACCKKEERR", "catalogObjectQueryInt queryResult: " + queryResult.size + " " + queryResult.toString() )
         for(catalogItem in queryResult) {
             printMessage("Name: ${catalogItem.name}, type: ${catalogItem.type}, handle: ${catalogItem.handle}")
-
             out.add(Object(catalogItem.name, catalogItem.type,
                     API.catalogObjectPathInt(catalogItem.handle), catalogItem.handle))
         }
@@ -189,6 +194,7 @@ open class Object(val name: String, val type: Int, val path: String, internal va
      */
     fun create(name: String, options: Map<String, String> = mapOf()) : Object? {
         val newHandle = API.catalogObjectCreateInt(handle, name, toArrayOfCStrings(options))
+        Log.e("TTRRAACCKKEERR", "handle: " + handle )
         if(newHandle != 0L) {
             return Object(newHandle)
         }
