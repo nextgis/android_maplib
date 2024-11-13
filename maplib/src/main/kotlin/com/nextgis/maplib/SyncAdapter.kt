@@ -52,6 +52,7 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
     override fun onPerformSync(account: Account?, extras: Bundle?, authority: String?, provider: ContentProviderClient?,
                                syncResult: SyncResult?) {
         printMessage("onPerformSync")
+        Log.e("SSYNC", "onPerformSync ADAPTER")
 
         API.init(context)
         context.sendBroadcast(Intent(SyncEvent.START.code))
@@ -90,5 +91,7 @@ internal class SyncAdapter @JvmOverloads constructor(context: Context, autoIniti
         }
         context.sendBroadcast(finish)
     }
+
+
 
 }

@@ -108,10 +108,15 @@ class LocationInfoFragment : Fragment() {
         }
 
         override fun onStatusChanged(status: TrackerService.Status, trackName: String, trackStartTime: Date) {
+            val  collectPart1 = getString(R.string.status_part1)
+            val  collectPart2 = getString(R.string.status_part2)
+            val  collectStandBy = getString(R.string.status_standby)
+
             val sharedPrefMain = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            val syncPart = if (sharedPrefMain.getBoolean(Constants.Settings.sendTracksToNGWKey, false)) " and syncing ..." else " ..."
+            val syncPart = if (sharedPrefMain.getBoolean(Constants.Settings.sendTracksToNGWKey, false)) " "+ collectPart2 else " ..."
             mIsServiceRunning = status == TrackerService.Status.RUNNING
-            binding.serviceStatus.text = if (mIsServiceRunning) "Collecting tracking data" + syncPart else "Stand by. Tap play to start collecting tracking data."
+
+            binding.serviceStatus.text = if (mIsServiceRunning) collectPart1 + syncPart else collectStandBy
         }
     }
 

@@ -106,16 +106,33 @@ class AddInstanceActivity : AppCompatActivity() {
 
         runAsync {
             // delete all current connections
+//            API.getCatalog()?.children()?.let {
+//                for (child in it)
+//                    if (child.type == 72) {
+//                        Log.e(Constants.tag, "Deleted instance: " + child.path)
+//                        val result = child.delete()
+//                        Log.e(Constants.tag, "result Deleted instance: " + ( if (result)  "true" else "false"))
+//                    }
+//            }
+
             API.getCatalog()?.children()?.let {
                 for (child in it)
                     if (child.type == 72) {
-                        Log.e(Constants.tag, "Deleted instance: " + child.path)
-                        val result = child.delete()
-                        Log.e(Constants.tag, "result Deleted instance: " + ( if (result)  "true" else "false"))
+                        for (child2 in child.children()){
+                            if (!child2.path.contains(url)) {
+                                Log.e(Constants.tag, "Delete instance: " + child2.path)
+                                val result = child2.delete()
+                                child.delete(child2.name)
+                                Log.e(Constants.tag,
+                                    "result of Delete instance: " + (if (result) "true" else "false"))
+                            }
+                        }
+                        child.refresh()
+
                     }
             }
 
-        API.getCatalog()?.let {
+            API.getCatalog()?.let {
             val connection = NGWConnectionDescription(url, instance.get().login, instance.get().password, false)
             if (connection.check()) {
                 it.createConnection(url, connection)

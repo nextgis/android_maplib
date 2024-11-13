@@ -45,6 +45,10 @@ import kotlin.time.Duration
  */
 open class FilePickerFragment : Fragment(), OnFileClickListener {
 
+    companion object{
+        val TAG = "PickerFragment"
+    }
+
     private var _binding: FragmentFilePickerBinding? = null
     private val binding get() = _binding!!
 
@@ -141,7 +145,7 @@ open class FilePickerFragment : Fragment(), OnFileClickListener {
                 (binding.list.adapter as? FilesAdapter)?.items?.addAll(children)
                 binding.list.adapter?.notifyDataSetChanged()
             } else {
-                Toast.makeText(context, "Please click on folder or tracker group", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, R.string.click_folder, Toast.LENGTH_LONG).show()
                 refresh()
             }
 

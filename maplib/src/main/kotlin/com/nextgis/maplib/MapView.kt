@@ -129,9 +129,11 @@ open class MapView : GLSurfaceView {
         }
 
         override fun onProviderEnabled(provider: String) {
+            printMessage("enabled")
         }
 
         override fun onProviderDisabled(provider: String) {
+            printMessage("disabled")
         }
 
         override fun onLocationChanged(location: android.location.Location) {
@@ -151,9 +153,11 @@ open class MapView : GLSurfaceView {
         }
 
         override fun onProviderEnabled(provider: String) {
+            printMessage("enable")
         }
 
         override fun onProviderDisabled(provider: String) {
+            printMessage("disable")
         }
 
         override fun onLocationChanged(location: android.location.Location) {
@@ -196,11 +200,11 @@ open class MapView : GLSurfaceView {
             return true
         }
 
-        override fun onFling(p0: MotionEvent, p1: MotionEvent, p2: Float, p3: Float): Boolean {
+        override fun onFling(p0: MotionEvent?, p1: MotionEvent, p2: Float, p3: Float): Boolean {
             return true
         }
 
-        override fun onScroll(event1: MotionEvent, event2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+        override fun onScroll(event1: MotionEvent?, event2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
             val x = distanceX.toDouble()
             val y = distanceY.toDouble()
 

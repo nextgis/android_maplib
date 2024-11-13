@@ -57,10 +57,9 @@ android {
 
     defaultConfig {
         minSdkVersion 21
-        compileSdk 33
-        targetSdk 33
-        versionCode 20
-        versionName '3.7.2'
+        compileSdk 34
+        targetSdk 34
+        versionCode=1.0
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters = androidAbis
@@ -100,7 +99,7 @@ android {
                 }
             }
 
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
 
@@ -150,7 +149,7 @@ task copyFiles() {
     //def generatedFolderName = "6c1z42j1" // """6c1z42j1"
     //def generatedFolderName = "RelWithDebInfo/6c1z42j1" // """6c1z42j1"
 
-    //def generatedFolderName = "Release/6z6f4j6e" // """6c1z42j1"
+    //def generatedFolderName = "Release/3x3c6n2p" // """6c1z42j1"
     def generatedFolderName = "Debug/2w1q1o6u" // """6c1z42j1"
 
     gdalFiles.each { name ->
@@ -188,18 +187,18 @@ tasks.matching { it.name == 'externalNativeBuild' }.all {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.20"
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    implementation "androidx.core:core-ktx:1.10.1"
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     //implementation 'io.sentry:sentry-android:1.7.30'
     implementation 'org.slf4j:slf4j-nop:1.8.0-beta4'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation ('io.sentry:sentry-android:7.14.0'){
         exclude group: 'androidx.lifecycle', module: 'lifecycle-viewmodel-ktx'
     }

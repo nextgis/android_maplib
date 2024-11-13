@@ -272,7 +272,13 @@ object Constants {
         const val cryptKey = "CRYPT_KEY"
         const val webGisNameKey = "webGisNameKey"
 
-        //const val trackInProgress = "track_inProgress"
+        const val divTracksByDayKey = "divTracksByDay"
+//        const val restoreTrackAfterRebootKey = "restoreTrackAfterReboot"
+        const val timeIntervalKey = "timeInterval"
+        const val minDistanceKey  = "minDistance"
+        const val sendIntervalKey = "sendInterval"
+
+        const val trackInProgress = "track_in_progress"
     }
 
     const val tmpDirCatalogPath = "ngc://Local connections/Home/tmp"
