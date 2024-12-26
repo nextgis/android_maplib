@@ -25,10 +25,16 @@
     <uses-feature android:name="android.hardware.location.network" />
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+
+
     <application>
         <service android:name=".service.TrackerService"
                  android:enabled="true"
                  android:exported="true"
+                android:foregroundServiceType="location"
                 >
             <intent-filter>
                 <action android:name="com.nextgis.tracker.PROCESS_LOCATION_UPDATES"/>
@@ -38,7 +44,10 @@
         <service
                 android:name=".service.AuthenticatorService"
                 android:enabled="true"
-                android:exported="true">
+                android:exported="true"
+                android:foregroundServiceType="dataSync"
+
+                >
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator"/>
             </intent-filter>

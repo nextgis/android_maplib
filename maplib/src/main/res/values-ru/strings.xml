@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Project:  NextGIS Tracker
+  ~ Purpose:  Software tracker for nextgis.com cloud
+  ~ Author:   Dmitry Baryshnikov <dmitry.baryshnikov@nextgis.com>
+  ~ *****************************************************************************
+  ~ Copyright (c) 2018-2024 NextGIS <info@nextgis.com>
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">MapLib</string>
+    <string name="location_m_format">%.1f m</string>
+    <string name="location_km_hr_format">%.1f km/hr</string>
+    <string name="location_coordinates">%1$s Lat  %2$s Lon</string>
+    <string name="track_name">Трек %s</string>
+    <string name="track_is_writing">Трек пишется %s …</string>
+    <string name="track_is_writing_long">около %1$d дней, %2$d часов, %3$d минут</string>
+    <string name="track_is_writing_short">около %1$d часов, %2$d минут</string>
+    <string name="track_is_writing_supershort">около %d минут</string>
+    <string name="stop">Стоп</string>
+    <string name="open">Открыть</string>
+    <string name="speed">Скорость</string>
+    <string name="accuracy">Точность</string>
+    <string name="three_dots">…</string>
+    <string name="signal_source">Истояник сигнала</string>
+    <string name="altitude">Высота</string>
+    <string name="satellite_count">Количество спутников</string>
+    <string name="current_location">Текущее местоположение</string>
+    <string name="current_status">Статус</string>
+    <string name="nextgis">NextGIS</string>
+    <string name="refresh">Обновить</string>
+    <string name="back">Назад</string>
+    <string name="ok">ОК</string>
+    <string name="cancel">Отмена</string>
+    <string name="add_account">Добавить аккаунт</string>
+    <string name="choose_account">Выбрать аккаунт</string>
+    <string name="nextgis_url">Адрес Веб ГИС</string>
+    <string name="account">Аккаунт</string>
+    <string name="login">Логин Веб ГИС</string>
+    <string name="password">Пароль</string>
+    <string name="connection_error">Невозможно создать соединение</string>
+    <string name="empty_field">Поле не должно быть пустым</string>
+
+    <string name="background_location_message">NextGIS app собирает данные о местоположении, что позволяет непрерывно собирать треки в фоновом режиме, даже когда приложение закрыто или не используется. В противном случае трек будет собираться только тогда, когда приложение находится на переднем плане. Пожалуйста, выберите \'%s\'.</string>
+    <string name="background_location_always">Всё время</string>
+    <string name="background_location">Использование местоположения в фоновом режиме</string>
+    <string name="action_settings">Настройки</string>
+    <string name="share_gpx_preparing">Готовим данные GPX...</string>
+
+    <string name="status_part1">Сбор данных местоположения</string>
+    <string name="status_part2"> и синхронизация ...</string>
+    <string name="status_standby">Ожидание. Нажмите Старт, чтобы начать сбор данных местоположения.</string>
+    <string name="click_folder">Пожалуйста, выберите папку или группу трекеров</string>
+
+    <string name="track_sync_description"><![CDATA[Ваши треки можно автоматически синхронизировать с облаком. Введите параметры подключения. Если у вас нет своей Веб ГИС, <a href="https://my.nextgis.com/signup/?next=/webgis/">создайте</a>]]></string>
+
+</resources>

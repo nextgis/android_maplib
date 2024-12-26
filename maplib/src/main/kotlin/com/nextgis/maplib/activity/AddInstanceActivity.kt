@@ -23,10 +23,13 @@ package com.nextgis.maplib.activity
 
 import android.app.Activity
 import android.os.Bundle
+import android.text.Html
+import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.MenuItem
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.nextgis.maplib.API
@@ -58,6 +61,13 @@ class AddInstanceActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+
+        if (true) {
+            val descrText = getString(R.string.track_sync_description)
+            binding.trackCreateDescr.text = Html.fromHtml(descrText)
+            binding.trackCreateDescr.movementMethod = LinkMovementMethod.getInstance()
+        }
 
         binding.apply {
             activity = this@AddInstanceActivity
@@ -119,13 +129,17 @@ class AddInstanceActivity : AppCompatActivity() {
                 for (child in it)
                     if (child.type == 72) {
                         for (child2 in child.children()){
-                            if (!child2.path.contains(url)) {
-                                Log.e(Constants.tag, "Delete instance: " + child2.path)
-                                val result = child2.delete()
-                                child.delete(child2.name)
-                                Log.e(Constants.tag,
-                                    "result of Delete instance: " + (if (result) "true" else "false"))
-                            }
+
+                            val result = child2.delete()
+                            child.delete(child2.name)
+
+//                            if (!child2.path.contains(url)) {
+//                                Log.e(Constants.tag, "Delete instance: " + child2.path)
+//                                val result = child2.delete()
+//                                child.delete(child2.name)
+//                                Log.e(Constants.tag,
+//                                    "result of Delete instance: " + (if (result) "true" else "false"))
+//                            }
                         }
                         child.refresh()
 

@@ -39,4 +39,12 @@
     <string name="action_settings">Settings</string>
     <string name="share_gpx_preparing">Prepare GPX data...</string>
 
+    <string name="status_part1">Collecting tracking data</string>
+    <string name="status_part2"> and syncing ...</string>
+    <string name="status_standby">Stand by. Tap play to start collecting tracking data.</string>
+    <string name="click_folder">Please click on folder or tracker group</string>
+
+
+    <string name="track_sync_description"><![CDATA[You can sync your tracking data with the cloud. Enter your Web GIS credentials. If you don\'t have it, <a href=\"https://my.nextgis.com/signup/?next=/webgis\">create your Web GIS</a>.]]></string>
+
 </resources>

@@ -40,6 +40,16 @@
             android:padding="16dp">
 
             <TextView
+                    android:id="@+id/trackCreateDescr"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/track_sync_description"
+                    android:layout_marginBottom="16dp"
+                    android:linksClickable="true"
+
+                    />
+
+            <TextView
                 style="@style/TextAppearance.MaterialComponents.Subtitle2"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

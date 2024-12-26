@@ -246,13 +246,13 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
                 return
             }
         }
-        var newSegment = false
-        if(mCurrentLocation != null) {
-            // For a long time delay create new track segment.
-            if(location.time - mCurrentLocation!!.time > mLostFixTime) {
-                newSegment = true
-            }
-        }
+        //var newSegment = false
+//        if(mCurrentLocation != null) {
+//            // For a long time delay create new track segment.
+////            if(location.time - mCurrentLocation!!.time > mLostFixTime) {
+////                newSegment = true
+////            }
+//        }
 
         mCurrentLocation = location
         if(!mSecondPointInTrack && !mStartNewTrack && mDivTrackByDay) {
@@ -267,7 +267,7 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
         }
 
         // Add location to DB
-        if(mTracksTable?.addPoint(mTrackName, location, mStartNewTrack, newSegment) == false) {
+        if(mTracksTable?.addPoint(mTrackName, location, mStartNewTrack, false) == false) {
             Log.e("ERROR","Add track point failed. " + API.lastError())
             Toast.makeText(applicationContext, "", Toast.LENGTH_SHORT).show()
             return
