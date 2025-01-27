@@ -55,6 +55,7 @@ import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.DatabaseContext;
 import com.nextgis.maplib.util.ExistFeatureResult;
+import com.nextgis.maplib.util.FeatureAttachments;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.HttpResponse;
@@ -240,11 +241,14 @@ public class NGWVectorLayer
     }
 
 
-    public String getChangeTableName()
-    {
+    public String getChangeTableName()    {
         return mPath.getName() + Constants.CHANGES_NAME_POSTFIX;
     }
 
+
+    public String getAttachmentsTableName()    {
+        return mPath.getName() + Constants.ATTACHMENTS_NAME_POSTFIX;
+    }
 
     @Override
     public JSONObject toJSON()
@@ -514,6 +518,7 @@ public class NGWVectorLayer
 
         super.create(geometryType, fields);
         FeatureChanges.initialize(getChangeTableName());
+        FeatureAttachments.initialize(getAttachmentsTableName());
     }
 
 
@@ -1049,8 +1054,12 @@ public class NGWVectorLayer
                 return false;
             }
 
-            long newAttachId = result.getLong(Constants.JSON_ID_KEY);
-            setNewAttachId("" + featureId, attach, "" + newAttachId);
+            // need delete attach locally ?
+            FeatureChanges.removeAttachChanges(getChangeTableName(), featureId, attachId);
+            deleteAttach(String.valueOf(featureId), String.valueOf(attachId));
+//            long newAttachId = result.getLong(Constants.JSON_ID_KEY);
+//            setNewAttachId("" + featureId, attach, "" + newAttachId);
+            // now sended attach deleted from device - it becomes online attach
 
             return true;
         } catch (IOException e) {
@@ -1554,6 +1563,19 @@ public class NGWVectorLayer
         boolean eqData = remoteFeature.equalsData(currentFeature);
         boolean eqAttach = remoteFeature.equalsAttachments(currentFeature);
 
+        // delete all online attachments
+        FeatureAttachments.deleteAllAttachments(getAttachmentsTableName(), remoteFeature.getId());
+
+        // put all to db
+        for (AttachItem item: remoteFeature.getAttachments().values()){
+            FeatureAttachments.add( getAttachmentsTableName(), remoteFeature.getId(), Long.valueOf(item.getAttachId()),
+                    item.getDescription(), item.getDisplayName(),item.getMimetype());
+        }
+
+
+
+
+
         //process data
         if (eqData) {
             //remove from changes
@@ -1612,7 +1634,7 @@ public class NGWVectorLayer
 
             if (!isChangedLocal) {
                 Iterator<String> iterator =
-                        remoteFeature.getAttachments().keySet().iterator();
+                        currentFeature.getAttachments().keySet().iterator();
 
                 while (iterator.hasNext()) {
                     String attachId = iterator.next();
@@ -1962,7 +1984,7 @@ public class NGWVectorLayer
                     Log.d(Constants.TAG, "payload: " + payload);
                 }
 
-                // change on server
+                // change on server ERRROR
                 HttpResponse response = changeFeatureOnServer(featureId, payload);
 
                 if (!response.isOk()) {
@@ -2220,6 +2242,7 @@ public class NGWVectorLayer
             throws SQLiteException
     {
         FeatureChanges.delete(getChangeTableName());
+        FeatureAttachments.delete(getAttachmentsTableName());
 
         return super.delete();
     }

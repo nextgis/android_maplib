@@ -28,6 +28,7 @@ android {
         minSdkVersion 26
         compileSdk 34
         targetSdkVersion 34
+        versionName '2.8.0'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
@@ -50,15 +51,20 @@ android {
         targetCompatibility "17"
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_16
+        targetCompatibility JavaVersion.VERSION_16
     }
     namespace 'com.nextgis.maplib'
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.github.barsrb:hyperlog-android:master-SNAPSHOT'
+    implementation ("com.solusguard.hyperlog:hyperlog:1.1.0"){
+        exclude group: 'com.android.volley', module: 'volley'
+    }
+    implementation 'com.android.volley:volley:1.2.1'
+
+
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'io.tus.java.client:tus-java-client:0.4.5'
     implementation 'io.tus.android.client:tus-android-client:0.1.10'

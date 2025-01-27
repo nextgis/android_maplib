@@ -338,7 +338,7 @@ public class TMSRenderer
                 mDrawThreadPool.shutdownNow();
                 try {
                     mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
-                    //mDrawThreadPool.purge();
+                    mDrawThreadPool.purge();
                 } catch (InterruptedException e) {
                     //e.printStackTrace();
                 }

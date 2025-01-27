@@ -52,7 +52,7 @@ public class Connection
     protected String        mPassword;
     protected String        mURL;
     protected boolean       mIsConnected;
-    protected String        mCookie;
+    protected TokenContainer        mCookie;
     protected List<Integer> mSupportedTypes;
     protected ResourceGroup mRootResource;
     protected int           mId;
@@ -103,7 +103,7 @@ public class Connection
             try {
                 AtomicReference<String> reference = new AtomicReference<>(mURL);
                 mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword, true);
-                if (null == mCookie) {
+                if (null == mCookie || null == mCookie.token) {
                     return false;
                 }
             } catch (IOException e) {
@@ -142,7 +142,7 @@ public class Connection
     }
 
 
-    public String getCookie()
+    public TokenContainer getCookie()
     {
         return mCookie;
     }
@@ -327,7 +327,7 @@ public class Connection
         parcel.writeString(mPassword);
         parcel.writeString(mURL);
         parcel.writeByte(mIsConnected ? (byte) 1 : (byte) 0);
-        parcel.writeString(mCookie);
+        parcel.writeString(mCookie == null?  null : mCookie.token);
         parcel.writeInt(mId);
         parcel.writeInt(mSupportedTypes.size());
         for (Integer type : mSupportedTypes) {
@@ -360,7 +360,9 @@ public class Connection
         mPassword = in.readString();
         mURL = in.readString();
         mIsConnected = in.readByte() == 1;
-        mCookie = in.readString();
+        if (mCookie == null)
+            mCookie = new TokenContainer(null, 200);
+        mCookie.setToken(in.readString());
         mId = in.readInt();
         int count = in.readInt();
         mSupportedTypes = new ArrayList<>();

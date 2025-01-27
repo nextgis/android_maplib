@@ -40,6 +40,7 @@ import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.INGWResource;
 import com.nextgis.maplib.datasource.ngw.Resource;
 import com.nextgis.maplib.datasource.ngw.ResourceGroup;
+import com.nextgis.maplib.datasource.ngw.TokenContainer;
 import com.nextgis.maplib.map.NGWLookupTable;
 import com.nextgis.maplib.map.VectorLayer;
 
@@ -116,7 +117,7 @@ public class NGWUtil
      * NGW API Functions
      */
 
-    public static String getConnectionCookie(
+    public static TokenContainer getConnectionCookie(
             AtomicReference<String> reference,
             String login,
             String password,
@@ -160,13 +161,13 @@ public class NGWUtil
             Log.d(TAG, "Problem execute post: " + sUrl + " HTTP response: " + responseCode);
             HyperLog.v(Constants.TAG, "NGWUtil: getConnectionCookie error: url: " + sUrl +
                     " responseCode: " + responseCode);
-            return null;
+            return new TokenContainer(null, responseCode);
         }
 
         String headerName;
         for (int i = 1; (headerName = conn.getHeaderFieldKey(i)) != null; i++) {
             if (headerName.toLowerCase().equals("set-cookie")) {
-                return conn.getHeaderField(i);
+                return new TokenContainer(conn.getHeaderField(i), responseCode);
             }
         }
 
@@ -405,10 +406,10 @@ public class NGWUtil
             String where)
     {
         if (TextUtils.isEmpty(where))
-            return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=";
-        return getFeaturesUrl(server, remoteId) + "?" + where + "&dt_format=iso&?extensions=";
+            return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=attachment";
+        //return getFeaturesUrl(server, remoteId) + "?" + where + "&dt_format=iso&?extensions=";
 
-        // return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=attachment";
+        return getFeaturesUrl(server, remoteId) + "?dt_format=iso&extensions=attachment";
         //  keeps attachment after sync  - but delete attach manualy  not work  on sync changes to  server - tryes to delete all
     }
 

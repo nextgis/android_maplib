@@ -39,11 +39,14 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Toast;
 
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
@@ -72,6 +75,7 @@ import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.display.Style;
 import com.nextgis.maplib.util.AttachItem;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.FeatureAttachments;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
@@ -122,6 +126,7 @@ import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.Constants.URI_ATTACH;
+import static com.nextgis.maplib.util.Constants.URI_PARAMETER_ATTACH_NOFILE;
 import static com.nextgis.maplib.util.Constants.URI_PARAMETER_NOT_SYNC;
 import static com.nextgis.maplib.util.Constants.URI_PARAMETER_TEMP;
 import static com.nextgis.maplib.util.GeoConstants.FTDate;
@@ -224,7 +229,7 @@ public class VectorLayer
      */
     protected IGeometryCache mCache;
     protected List<Long>     mIgnoreFeatures;
-
+    final IGISApplication application;
 
     public VectorLayer(
             Context context,
@@ -240,7 +245,7 @@ public class VectorLayer
         mCacheLoaded = false;
         mGeometryType = GTNone;
 
-        IGISApplication application = (IGISApplication) context;
+        application = (IGISApplication) context;
 
         if (null == mAuthority) {
             mAuthority = application.getAuthority();
@@ -258,10 +263,8 @@ public class VectorLayer
 
             mUriMatcher.addURI(mAuthority, "*", TYPE_TABLE);          //get all rows
             mUriMatcher.addURI(mAuthority, "*/#", TYPE_FEATURE); //get single row
-            mUriMatcher.addURI(
-                    mAuthority, "*/#/" + URI_ATTACH, TYPE_ATTACH);      //get attaches for row
-            mUriMatcher.addURI(
-                    mAuthority, "*/#/" + URI_ATTACH + "/#", TYPE_ATTACH_ID); //get attach by id
+            mUriMatcher.addURI(mAuthority, "*/#/" + URI_ATTACH, TYPE_ATTACH);      //get attaches for row
+            mUriMatcher.addURI(mAuthority, "*/#/" + URI_ATTACH + "/#", TYPE_ATTACH_ID); //get attach by id
         }
 
         mCache = createNewCache();
@@ -485,7 +488,6 @@ public class VectorLayer
         return rowId;
     }
 
-
     public void createFeatureBatch(
             final Feature feature,
             final SQLiteDatabase db)
@@ -496,12 +498,64 @@ public class VectorLayer
         }
 
         final ContentValues values = getFeatureContentValues(feature);
-
         long rowId = db.insert(mPath.getName(), "", values);
         if (rowId != Constants.NOT_FOUND) {
             //update bbox
             cacheGeometryEnvelope(rowId, feature.getGeometry());
+            // add attach info
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    for ( String key :  feature.getAttachments().keySet()){
+                        final AttachItem item = feature.getAttachments().get(key);
+                        putOneAttachment(item, feature);
+                    }
+                }
+            }, 500);
         }
+    }
+
+    protected void putOneAttachment(AttachItem item, Feature feature) {
+        Context context = getContext();
+            Uri uri = Uri.parse("content://" + application.getAuthority() + "/" +
+                    getPath().getName() + "/" +  feature.getId() + "/" + Constants.URI_ATTACH);
+        uri = uri.buildUpon()
+                .appendQueryParameter(URI_PARAMETER_ATTACH_NOFILE, Boolean.TRUE.toString())
+                .build();
+            // path is  /storage/emulated/0/DCIM/NextGIS/1732860361181.jpg
+            String comment = item.getDescription();
+                //String[] segments = path.split("/");
+                //String name = segments.length > 0 ? segments[segments.length - 1] : "image.jpg";
+                String name = item.getDisplayName();
+                if (name.contains("%3A"))
+                    name = name.split("%3A")[1];
+                if (!name.contains("."))
+                    name = name + ".jpg";
+
+                ContentValues values = new ContentValues();
+
+                values.put(VectorLayer.ATTACH_DISPLAY_NAME, name);
+                if (comment != null && !comment.isEmpty())
+                    values.put(VectorLayer.ATTACH_DESCRIPTION, comment);
+                values.put(VectorLayer.ATTACH_MIME_TYPE, item.getMimetype() ); //"image/jpeg");
+                values.put(VectorLayer.ATTACH_ID, item.getAttachId() );
+
+
+                Log.e(TAG, "insert " + uri.toString() + " values: " + values.toString());
+
+                Uri result = context.getContentResolver().insert(uri, values);  //uri content://com.nextgis.mobile.provider.debug/layer_20241129144701242/1/attach
+                Log.e(TAG, result == null ? "resul isNULL" : "result " + result.toString());
+
+//                if (result == null) {
+//                    Toast.makeText(this, getText(com.keenfin.easypicker.R.string.photo_fail_attach), Toast.LENGTH_SHORT).show();
+//                    Log.d(TAG, "attach insert failed");
+//                } else {
+//                    if (copyToStream(result, path))
+//                        total++;
+//                    Log.d(TAG, "attach insert success: " + result.toString());
+//                }
+        // копирование пока не делаем
+
     }
 
 
@@ -1274,8 +1328,7 @@ public class VectorLayer
 
     protected long insertAttach(
             String featureId,
-            ContentValues contentValues)
-    {
+            ContentValues contentValues) {
         if (contentValues.containsKey(ATTACH_DISPLAY_NAME) && contentValues.containsKey(
                 ATTACH_MIME_TYPE)) {
             //get attach path
@@ -1337,9 +1390,12 @@ public class VectorLayer
         // http://stackoverflow.com/a/24055457
         String tempParam = uri.getQueryParameter(URI_PARAMETER_TEMP);
         String notSyncParam = uri.getQueryParameter(URI_PARAMETER_NOT_SYNC);
+        String attachFromWeb = uri.getQueryParameter(URI_PARAMETER_ATTACH_NOFILE);
 
         Boolean tempFlag = null == tempParam ? null : Boolean.parseBoolean(tempParam);
         Boolean notSyncFlag = null == notSyncParam ? null : Boolean.parseBoolean(notSyncParam);
+        Boolean attachFromWebB = null != attachFromWeb && Boolean.parseBoolean(attachFromWeb);
+
         boolean hasNotFlags =
                 (null == tempFlag || !tempFlag) && (null == notSyncFlag || !notSyncFlag);
 
@@ -1377,34 +1433,45 @@ public class VectorLayer
                 return null;
 
             case TYPE_ATTACH:
-                List<String> pathSegments = uri.getPathSegments();
-                String featureId = pathSegments.get(pathSegments.size() - 2);
-                long attachIdL = insertAttach(featureId, contentValues);
-                if (attachIdL != NOT_FOUND) {
-                    Uri resultUri = ContentUris.withAppendedId(uri, attachIdL);
-                    String fragment = uri.getFragment();
-                    boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
-                    if (bFromNetwork) {
-                        getContext().getContentResolver().notifyChange(resultUri, null, false);
+                if (attachFromWebB){
+                    List<String> pathSegments = uri.getPathSegments();
+                    String featureId = pathSegments.get(pathSegments.size() - 2);
+                    long featureIdL = Long.parseLong(featureId);
 
-                    } else {
-                        long featureIdL = Long.parseLong(featureId);
+                    String displayName = contentValues.getAsString(ATTACH_DISPLAY_NAME);
+                    String mimeType = contentValues.getAsString(ATTACH_MIME_TYPE);
+                    String description = contentValues.getAsString(ATTACH_DESCRIPTION);
+                    String mAttachId = contentValues.getAsString(ATTACH_ID);
+                    long attachIdL = Long.parseLong(mAttachId);
 
-                        if (null != tempFlag) {
-                            setAttachTempFlag(featureIdL, attachIdL, tempFlag);
+                    NGWVectorLayer layer = (NGWVectorLayer) MapDrawable.getInstance().getLayerByPathName(getPath().getName());
+                    FeatureAttachments.add(layer.getAttachmentsTableName(), featureIdL, attachIdL,
+                            description, displayName,mimeType);
+                } else {
+                    List<String> pathSegments = uri.getPathSegments();
+                    String featureId = pathSegments.get(pathSegments.size() - 2);
+                    long attachIdL = insertAttach(featureId, contentValues);
+                    if (attachIdL != NOT_FOUND) {
+                        Uri resultUri = ContentUris.withAppendedId(uri, attachIdL);
+                        String fragment = uri.getFragment();
+                        boolean bFromNetwork = null != fragment && fragment.equals(NO_SYNC);
+                        if (bFromNetwork) {
+                            getContext().getContentResolver().notifyChange(resultUri, null, false);
+                        } else {
+                            long featureIdL = Long.parseLong(featureId);
+                            if (null != tempFlag) {
+                                setAttachTempFlag(featureIdL, attachIdL, tempFlag);
+                            }
+                            if (null != notSyncFlag) {
+                                setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
+                            }
+                            if (hasNotFlags) {
+                                addChange(featureIdL, attachIdL, CHANGE_OPERATION_NEW);
+                            }
+                            getContext().getContentResolver().notifyChange(resultUri, null, true);
                         }
-
-                        if (null != notSyncFlag) {
-                            setAttachNotSyncFlag(featureIdL, attachIdL, notSyncFlag);
-                        }
-
-                        if (hasNotFlags) {
-                            addChange(featureIdL, attachIdL, CHANGE_OPERATION_NEW);
-                        }
-
-                        getContext().getContentResolver().notifyChange(resultUri, null, true);
+                        return resultUri;
                     }
-                    return resultUri;
                 }
                 return null;
 
@@ -3230,6 +3297,7 @@ public class VectorLayer
             try {
                 NGWVectorLayer layer = (NGWVectorLayer) MapDrawable.getInstance().getLayerByPathName(getPath().getName());
                 FeatureChanges.initialize(layer.getChangeTableName());
+                FeatureAttachments.initialize(layer.getAttachmentsTableName());
                 List<Long> ids = query(null);
                 for (Long id : ids) {
                     Feature feature = getFeatureWithAttaches(id);

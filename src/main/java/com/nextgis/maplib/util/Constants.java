@@ -161,6 +161,10 @@ public interface Constants
     String FIELD_OPERATION        = "operation";
     String FIELD_ATTACH_ID        = "attach_id";
     String FIELD_ATTACH_OPERATION = "attach_operation";
+    String FIELD_ATTACH_DESCRIPTION        = "attach_description";
+    String FIELD_ATTACH_DISPLAYNAME        = "attach_displayname";
+    String FIELD_ATTACH_MIMETYPE        = "attach_mimetype";
+
 
     String ATTRIBUTES_ONLY = "attributes_only";
 
@@ -208,7 +212,7 @@ public interface Constants
     long     DEFAULT_TILE_MAX_AGE = ONE_WEEK;
     long     ONE_YEAR             = ONE_DAY * 365;
     int      KEEP_ALIVE_TIME      = 35;
-    int      TERMINATE_TIME       = 350;
+    int      TERMINATE_TIME       = 700;
     TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.MILLISECONDS;
 
     int  SYNC_NONE           = 1 << 0;
@@ -226,8 +230,11 @@ public interface Constants
     String URI_PARAMETER_LIMIT    = "limit";
     String URI_PARAMETER_TEMP     = "temp";
     String URI_PARAMETER_NOT_SYNC = "not_sync";
+    String URI_PARAMETER_ATTACH_NOFILE = "attach_web_located";
 
     String CHANGES_NAME_POSTFIX      = "_changes";
+    String ATTACHMENTS_NAME_POSTFIX      = "_attachments";
+
     int    CHANGE_OPERATION_TEMP     = 1;
     int    CHANGE_OPERATION_NEW      = 1 << 1; // 2
     int    CHANGE_OPERATION_CHANGED  = 1 << 2; // 4
