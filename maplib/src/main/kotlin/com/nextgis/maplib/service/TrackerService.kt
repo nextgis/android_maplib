@@ -388,7 +388,6 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
         }
     }
 
-
     fun onSync(){
         printMessage("onPerformSync")
         Log.e("SSYNC", "onPerformSync")
@@ -396,7 +395,6 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
         API.init(baseContext)
 
         // Execute sync operations here
-
         // TODO: Sync vector layers
 
         // Sync tracks
@@ -405,11 +403,6 @@ class TrackerService : Service() ,  LocationListener, GpsStatus.Listener {
         tracksTable?.sync()
         Log.e("TRACKK", "onPerformSync tracksTable?.sync()")
 
-//        with(settings.edit()) {
-//            putLong(Constants.Settings.lastSyncTimestampKey + "_" + account?.name.hashCode(), System.currentTimeMillis())
-//            putLong(Constants.Settings.lastSyncTimestampKey, System.currentTimeMillis())
-//            apply()
-//        }
     }
 
     fun addDelegate(delegate: TrackerDelegate?) {

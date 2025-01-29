@@ -20,3 +20,8 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -dontwarn java.lang.invoke.StringConcatFactory
+-keep class com.nextgis.maplib.** { *; }
+-keepclassmembers class com.nextgis.maplib.** {
+        <fields>;
+         <methods>;
+ }

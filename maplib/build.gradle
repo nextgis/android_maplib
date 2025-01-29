@@ -29,7 +29,7 @@ plugins {
 }
 
 //def androidAbis = ["armeabi-v7a", "arm64-v8a", "x86_64", "x86"] //
-def androidAbis = [ "arm64-v8a", "x86_64"] //
+def androidAbis = ["armeabi-v7a",  "arm64-v8a", "x86_64"]
 def gdalFiles = [ "cubewerx_extra.wkt", "ecw_cs.wkt", "ellipsoid.csv", "epsg.wkt", "esri_StatePlane_extra.wkt", "gdalvrt.xsd", "gml_registry.xml", "gmlasconf.xml", "gmlasconf.xsd", "gt_datum.csv", "gt_ellips.csv", "ogrvrt.xsd", "stateplane.csv" ]
 def sslFiles = ["cert.pem"]
 def projFiles = ["proj.db"]
@@ -48,15 +48,13 @@ ext {
 
 //apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
 
-
 android {
 
     namespace 'com.nextgis.maplib'
     //android.buildTypes.release.ndk.debugSymbolLevel = { SYMBOL_TABLE  }
 
-
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 26
         compileSdk 34
         targetSdk 34
         versionCode=1.0
@@ -102,7 +100,6 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
-
         }
         debug {
             buildConfigField("long", "VERSION_CODE1", "${defaultConfig.versionCode}")
@@ -146,11 +143,9 @@ task copyFiles() {
     description "Copy assets to ${projectDir}/src/main/assets"
     dependsOn tasks.findAll { task -> task.name.contains("externalNativeBuild${buildConfigUpper}") }
 
-    //def generatedFolderName = "6c1z42j1" // """6c1z42j1"
     //def generatedFolderName = "RelWithDebInfo/6c1z42j1" // """6c1z42j1"
-
-    //def generatedFolderName = "Release/3x3c6n2p" // """6c1z42j1"
-    def generatedFolderName = "Debug/2w1q1o6u" // """6c1z42j1"
+    def generatedFolderName = "Release/3x3c6n2p" // """6c1z42j1"
+    //def generatedFolderName = "Debug/6m19103y" // """6c1z42j1"
 
     gdalFiles.each { name ->
         copy {
@@ -187,7 +182,7 @@ tasks.matching { it.name == 'externalNativeBuild' }.all {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.20"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20"
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'
