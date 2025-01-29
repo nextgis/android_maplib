@@ -41,7 +41,7 @@ ext {
     // group id
     PUBLISH_GROUP_ID = 'io.github.nextgis'
     // текущая версия библиотеки
-    PUBLISH_VERSION = '3.7.2'
+    PUBLISH_VERSION = '3.7.3'
     // artifact id библиотеки
     PUBLISH_ARTIFACT_ID = 'maplib'
 }
