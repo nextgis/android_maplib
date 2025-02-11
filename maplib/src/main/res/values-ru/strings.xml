@@ -26,10 +26,13 @@
     <string name="location_coordinates">%1$s Lat  %2$s Lon</string>
     <string name="track_name">Трек %s</string>
     <string name="track_is_writing">Трек пишется %s …</string>
+    <string name="track_is_paused">Запись трека на паузе. Нажмите Старт чтобы продолжить или стоп, чтобы остановить.</string>
     <string name="track_is_writing_long">около %1$d дней, %2$d часов, %3$d минут</string>
     <string name="track_is_writing_short">около %1$d часов, %2$d минут</string>
     <string name="track_is_writing_supershort">около %d минут</string>
+    <string name="start">Старт</string>
     <string name="stop">Стоп</string>
+    <string name="pause">Пауза</string>
     <string name="open">Открыть</string>
     <string name="speed">Скорость</string>
     <string name="accuracy">Точность</string>

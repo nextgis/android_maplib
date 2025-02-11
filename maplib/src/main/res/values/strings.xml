@@ -5,10 +5,13 @@
     <string name="location_coordinates">%1$s Lat  %2$s Lon</string>
     <string name="track_name">Track %s</string>
     <string name="track_is_writing">Track is writing %s …</string>
+    <string name="track_is_paused">Track writing is paused. Press start to continue or stop to stop.</string>
     <string name="track_is_writing_long">about %1$d days, %2$d hours, %3$d minutes</string>
     <string name="track_is_writing_short">about %1$d hours, %2$d minutes</string>
     <string name="track_is_writing_supershort">about %d minutes</string>
+    <string name="start">Start</string>
     <string name="stop">Stop</string>
+    <string name="pause">Pause</string>
     <string name="open">Open</string>
     <string name="speed">Speed</string>
     <string name="accuracy">Accuracy</string>

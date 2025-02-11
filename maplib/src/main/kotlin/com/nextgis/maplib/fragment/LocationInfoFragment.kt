@@ -116,7 +116,19 @@ class LocationInfoFragment : Fragment() {
             val syncPart = if (sharedPrefMain.getBoolean(Constants.Settings.sendTracksToNGWKey, false)) " "+ collectPart2 else " ..."
             mIsServiceRunning = status == TrackerService.Status.RUNNING
 
-            binding.serviceStatus.text = if (mIsServiceRunning) collectPart1 + syncPart else collectStandBy
+            val mIsPauseStatus = status == TrackerService.Status.PAUSED
+
+            var textToDisplay = ""
+            if (mIsServiceRunning)
+                textToDisplay =  collectPart1 + syncPart
+            else if (mIsPauseStatus)
+                textToDisplay = getString(R.string.track_is_paused)
+            else
+                textToDisplay = collectStandBy
+
+            val resultToDisplay = textToDisplay
+
+            binding.serviceStatus.text = resultToDisplay
         }
     }
 

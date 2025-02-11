@@ -145,7 +145,7 @@
             />
 
     <TextView
-            android:text=""
+            android:text="лыфвавпвапвапвфпфа фа пф п фв ыпыфвы фпфывп фвы пвыфп фыв п"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/serviceStatus"
