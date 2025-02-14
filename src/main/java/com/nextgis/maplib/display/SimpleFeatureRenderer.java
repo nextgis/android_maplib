@@ -82,7 +82,7 @@ public class SimpleFeatureRenderer
     @Override
     public void runDraw(final GISDisplay display)
     {
-        long startTime;
+        long startTime = 0;
         if(Constants.DEBUG_MODE) {
             startTime = System.currentTimeMillis();
         }

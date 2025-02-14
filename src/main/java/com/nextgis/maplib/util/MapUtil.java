@@ -27,21 +27,27 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.nextgis.maplib.R;
+import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.TileItem;
 
+import org.json.JSONException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
@@ -329,5 +335,20 @@ public class MapUtil {
 
         // Конвертировать время из одной зоны в другую
         return new Date(currentTime.getTime() + timeZoneOffset);
+    }
+
+
+    static public void logFeatures(HashMap<Integer, List<Feature>> results){
+        Log.e("RREESS", "results");
+        for ( Map.Entry feature: results.entrySet()){
+            Log.e("RREESS", "key" + feature.getKey());
+            try {
+                Log.e("RREESS", "feature" + ((Feature) feature.getValue()).toJSON().toString());
+            } catch (JSONException ex){
+                Log.e("RREESS", "feature key"  + feature.getKey() + " EXCEPTION!!! " + ex.toString());
+            }
+
+        }
+
     }
 }

@@ -59,6 +59,7 @@ import com.nextgis.maplib.util.FeatureAttachments;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.HttpResponse;
+import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -1793,6 +1794,7 @@ public class NGWVectorLayer
             return new ExistFeatureResult(null, false, 0);
         }
 
+        //MapUtil.logFeatures(results);
         return new ExistFeatureResult(results, true, 200);
     }
 

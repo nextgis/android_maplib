@@ -115,7 +115,7 @@ public class GeoMultiLineString
         int pos = wkt.indexOf("(");
         while (pos != Constants.NOT_FOUND) {
             wkt = wkt.substring(pos + 1, wkt.length());
-            pos = wkt.indexOf(")") - 1;
+            pos = wkt.indexOf(")") ;
             if (pos < 1) {
                 return;
             }

@@ -34,7 +34,7 @@ public interface Constants
     String  PREFERENCES        = "nextgismobile";
     String  SUPPORT            = "support.bin";
     int     NOT_FOUND          = -1;
-    boolean DEBUG_MODE         = false;
+    boolean DEBUG_MODE         = BuildConfig.DEBUG;
 
     int NGW_v3 = 3;
 

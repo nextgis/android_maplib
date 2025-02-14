@@ -209,7 +209,7 @@ public class TMSRenderer
     public void runDraw(final GISDisplay display)
             throws NullPointerException
     {
-        long startTime;
+        long startTime=0;
         if(Constants.DEBUG_MODE) {
             startTime = System.currentTimeMillis();
         }
