@@ -28,7 +28,6 @@ android {
         minSdkVersion 26
         compileSdk 34
         targetSdkVersion 34
-        versionName '2.8.0'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
@@ -47,8 +46,8 @@ android {
         buildConfig = true
     }
     compileOptions {
-        sourceCompatibility "17"
-        targetCompatibility "17"
+        sourceCompatibility "21"
+        targetCompatibility "21"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_16
