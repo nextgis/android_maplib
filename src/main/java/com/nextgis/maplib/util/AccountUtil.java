@@ -54,6 +54,8 @@ import static com.nextgis.maplib.util.Constants.TAG;
 
 public class AccountUtil {
     public static boolean isProUser(Context context) {
+        return true; // pro always
+        /*
         File support = context.getExternalFilesDir(null);
         if (support == null)
             support = new File(context.getFilesDir(), SUPPORT);
@@ -83,6 +85,7 @@ public class AccountUtil {
         }
 
         return false;
+        */
     }
 
     public static String getNGUID(Context context) {

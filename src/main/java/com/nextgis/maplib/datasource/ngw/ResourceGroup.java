@@ -111,6 +111,12 @@ public class ResourceGroup extends Resource {
                 layer.fillStyles();
                 resource = layer;
                 break;
+
+//            case Connection.NGWResourceTypeCollector:
+//                CollectorResource collectorResource = new CollectorResource(data, mConnection);
+//                resource = collectorResource;
+//                break;
+
             case Connection.NGWResourceTypeWMSClient:
                 resource = new LayerWithStyles(data, mConnection);
                 break;
@@ -185,6 +191,11 @@ public class ResourceGroup extends Resource {
                     layer.setParent(this);
                     mChildren.add(layer);
                     break;
+
+//                case Connection.NGWResourceTypeCollector:
+//                    CollectorResource collectorResource =  in.readParcelable(CollectorResource.class.getClassLoader());
+//                    mChildren.add(collectorResource);
+//                    break;
                 case Connection.NGWResourceTypeLookupTable:
                     ResourceWithoutChildren resourceWoChildren = in.readParcelable(ResourceWithoutChildren.class.getClassLoader());
                     resourceWoChildren.setParent(this);

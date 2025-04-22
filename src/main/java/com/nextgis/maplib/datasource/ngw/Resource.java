@@ -69,22 +69,21 @@ public abstract class Resource
 
         mConnection = connection;
         try {
-            JSONObject JSONResource = json.getJSONObject("resource");
-
-            mHasChildren = JSONResource.getBoolean("children");
-            if (JSONResource.has("description")) {
-                mDescription = JSONResource.getString("description");
+            JSONObject jsonResource = json.getJSONObject("resource");
+            mHasChildren = jsonResource.getBoolean("children");
+            if (jsonResource.has("description")) {
+                mDescription = jsonResource.getString("description");
             }
 
-            mName = JSONResource.getString("display_name");
-            mRemoteId = JSONResource.getLong("id");
-            mType = mConnection.getType(JSONResource.getString("cls"));
+            mName = jsonResource.getString("display_name");
+            mRemoteId = jsonResource.getLong("id");
+            mType = mConnection.getType(jsonResource.getString("cls"));
 
-            if (JSONResource.has("keyname")) {
-                mKeyName = JSONResource.getString("keyname");
+            if (jsonResource.has("keyname")) {
+                mKeyName = jsonResource.getString("keyname");
             }
-            if (JSONResource.has("owner_user")) {
-                JSONObject jsonObjectOwnerUser = JSONResource.getJSONObject("owner_user");
+            if (jsonResource.has("owner_user")) {
+                JSONObject jsonObjectOwnerUser = jsonResource.getJSONObject("owner_user");
                 if (jsonObjectOwnerUser.has("id") && !jsonObjectOwnerUser.isNull("id")) {
                     mOwnerId = jsonObjectOwnerUser.getLong("id");
                 }
