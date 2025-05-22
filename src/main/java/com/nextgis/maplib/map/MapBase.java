@@ -94,14 +94,22 @@ public class MapBase
 
 
     @Override
-    public boolean delete()
+    public boolean delete(boolean keepTrack)
     {
+        ILayer trackLayer = null;
         for (ILayer layer : mLayers) {
-            layer.setParent(null);
-            layer.delete();
+            if (!(layer instanceof TrackLayer)) {
+                layer.setParent(null);
+                layer.delete(true);
+            } else {
+                trackLayer = layer;
+            }
         }
 
+
         mLayers.clear();
+        if (keepTrack && mLayers != null)
+            mLayers.add(trackLayer);
 
         return FileUtil.deleteRecursive(getFileName());
     }

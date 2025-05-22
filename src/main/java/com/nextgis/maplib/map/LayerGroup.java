@@ -24,7 +24,9 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import com.nextgis.maplib.api.ILayer;
@@ -34,6 +36,8 @@ import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.FileUtil;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,6 +50,8 @@ import java.util.List;
 import java.util.Random;
 
 import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP;
+import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 
 
 public class LayerGroup
@@ -190,6 +196,10 @@ public class LayerGroup
         }
     }
 
+    public List<ILayer> getLayers(){
+        return mLayers;
+    }
+
 
     /**
      * Create existed layer from path and add it to the map
@@ -234,6 +244,62 @@ public class LayerGroup
         }
     }
 
+
+    public void replaceAllLayers(ArrayList<ILayer> newList)
+    {
+        ILayer trackLayer = null;
+        synchronized (this) {
+            for (ILayer layer : mLayers){
+                if (layer instanceof  TrackLayer){
+                    trackLayer = layer;
+                    break;
+                }
+            }
+
+            mLayers.clear();
+
+            if (trackLayer != null)
+                newList.add(trackLayer);
+
+            mLayers.addAll(newList);
+
+        }
+
+
+//        //save changes to file
+//        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+//
+//        File defaultPath = getContext().getExternalFilesDir(KEY_PREF_MAP);
+////        if (defaultPath == null) {
+////            defaultPath = new File(getFilesDir(), KEY_PREF_MAP);
+////        }
+//
+//        String KEY_PREF_MAP_NAME             = "map_name";
+//        String mapPath = mSharedPreferences.getString(KEY_PREF_MAP_PATH, defaultPath.getPath());
+//        String mapName = mSharedPreferences.getString(KEY_PREF_MAP_NAME, "default");
+//
+//        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+//
+//
+//        JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
+//        final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LAYERS_KEY);
+//
+//        for (int i = 0; i < jsonArray.length(); i++) {
+//            JSONObject jsonLayer = jsonArray.getJSONObject(i);
+//            String sPath = jsonLayer.getString(JSON_PATH_KEY);
+//            File inFile = new File(getPath(), sPath);
+//            if (inFile.exists()) {
+//                ILayer layer = mLayerFactory.createLayer(mContext, inFile);
+//                if (null != layer && layer.load()) {
+//                    addLayer(layer);
+//                }
+//            }
+//        }
+//
+//        * */
+
+
+    }
 
     public int removeLayer(ILayer layer)
     {
@@ -380,13 +446,13 @@ public class LayerGroup
 
 
     @Override
-    public boolean delete()
+    public boolean delete(boolean keepTrack)
     {
         for (ILayer layer : mLayers) {
             layer.setParent(null);
-            layer.delete();
+            layer.delete(keepTrack);
         }
-        return super.delete();
+        return super.delete(keepTrack);
     }
 
 

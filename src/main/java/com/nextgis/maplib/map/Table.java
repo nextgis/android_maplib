@@ -91,7 +91,7 @@ public class Table implements ILayer, IJSONStore {
 
 
     @Override
-    public boolean delete()
+    public boolean delete(boolean keepTrack)
     {
         FileUtil.deleteRecursive(mPath);
         if (mParent != null && mParent instanceof LayerGroup) {

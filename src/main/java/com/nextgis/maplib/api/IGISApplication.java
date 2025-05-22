@@ -197,4 +197,6 @@ public interface IGISApplication
     public String getErrorMessage();
 
     public int getErrorCode();
+
+    public boolean isCollectorApplication();
 }

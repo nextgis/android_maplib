@@ -2240,13 +2240,13 @@ public class NGWVectorLayer
 
 
     @Override
-    public boolean delete()
+    public boolean delete(boolean keepTrack)
             throws SQLiteException
     {
         FeatureChanges.delete(getChangeTableName());
         FeatureAttachments.delete(getAttachmentsTableName());
 
-        return super.delete();
+        return super.delete(keepTrack);
     }
 
 

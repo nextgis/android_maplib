@@ -878,7 +878,7 @@ public class VectorLayer
 
 
     @Override
-    public boolean delete()
+    public boolean delete(boolean keepTrack)
             throws SQLiteException
     {
         try {
@@ -891,7 +891,7 @@ public class VectorLayer
             e.printStackTrace();
         }
 
-        return super.delete();
+        return super.delete(keepTrack);
     }
 
 

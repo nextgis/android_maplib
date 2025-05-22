@@ -67,7 +67,7 @@ public interface ILayer
      * Delete layer
      * @return true on success or false
      */
-    boolean delete();
+    boolean delete(boolean deleteTrack);
 
     /**
      * Get layer path in storage
