@@ -468,6 +468,7 @@ public class NetworkUtil
             String targetURL,
             String fileName,
             File file,
+            long fileLength,
             String fileMime,
             String username,
             String password,

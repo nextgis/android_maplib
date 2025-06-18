@@ -35,6 +35,7 @@ import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.JsonReader;
+import android.util.JsonToken;
 import android.util.Log;
 import android.util.Pair;
 import android.widget.Toast;
@@ -75,6 +76,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -1025,6 +1027,7 @@ public class NGWVectorLayer
             HttpResponse response = sendAttachOnServer(featureId, attach);
 
             if (!response.isOk()) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
                 HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
                 log(syncResult, response.getResponseCode() + "");
                 return false;
@@ -1037,6 +1040,7 @@ public class NGWVectorLayer
 
             response = sendFeatureAttachOnServer(result, featureId, attach);
             if (!response.isOk()) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
                 HyperLog.v(Constants.TAG, "NGWVectorLayer: sendFeatureAttachOnServer  FAILED with " + response.getResponseBody());
 
                 log(syncResult, response.getResponseCode() + "");
@@ -1144,6 +1148,10 @@ public class NGWVectorLayer
         // fill attach info
         String fileName = attach.getDisplayName();
         File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
+        long length = 0;
+        if (filePath.exists())
+            length = filePath.length();
+
         String fileMime = attach.getMimetype();
 
         // get account data
@@ -1154,7 +1162,7 @@ public class NGWVectorLayer
 
         HyperLog.v(Constants.TAG, "sendAttachOnServer start url = " + url + " filename = "+ fileName + " filepath=" + filePath);
 
-        return NetworkUtil.postFile(url, fileName, filePath, fileMime, accountData.login, accountData.password, false);
+        return NetworkUtil.postFile(url, fileName, filePath, length, fileMime, accountData.login, accountData.password, false);
     }
 
     protected void log(SyncResult syncResult, String code) {

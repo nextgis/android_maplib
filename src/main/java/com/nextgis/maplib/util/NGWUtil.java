@@ -125,7 +125,7 @@ public class NGWUtil
             throws IOException
     {
         String sUrl = reference.get();
-        if (!sUrl.startsWith("https")) {
+        if (!sUrl.startsWith("https") && !sUrl.startsWith("http")) {
             sUrl = "https://" + sUrl;
             reference.set(sUrl);
         }

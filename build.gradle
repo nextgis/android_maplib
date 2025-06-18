@@ -64,7 +64,8 @@ dependencies {
 
 
     implementation 'com.google.code.gson:gson:2.8.9'
-    implementation 'io.tus.java.client:tus-java-client:0.4.5'
-    implementation 'io.tus.android.client:tus-android-client:0.1.10'
+
+    implementation 'io.tus.java.client:tus-java-client:0.5.1'
+    implementation 'io.tus.android.client:tus-android-client:0.1.12'
 
 }
