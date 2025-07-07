@@ -541,7 +541,7 @@ public class VectorLayer
                 values.put(VectorLayer.ATTACH_ID, item.getAttachId() );
 
 
-                Log.e(TAG, "insert " + uri.toString() + " values: " + values.toString());
+                //Log.e(TAG, "insert " + uri.toString() + " values: " + values.toString());
 
                 Uri result = context.getContentResolver().insert(uri, values);  //uri content://com.nextgis.mobile.provider.debug/layer_20241129144701242/1/attach
                 Log.e(TAG, result == null ? "resul isNULL" : "result " + result.toString());

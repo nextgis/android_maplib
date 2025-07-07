@@ -32,21 +32,21 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
-import com.hypertrack.hyperlog.BuildConfig;
 import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
 import java.net.URL;
-import java.security.KeyStore;
-import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,9 +59,7 @@ import io.tus.java.client.TusUpload;
 import io.tus.java.client.TusUploader;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import static com.nextgis.maplib.util.Constants.TAG;
@@ -399,7 +397,7 @@ public class NetworkUtil
         writer.close();
         os.close();
 
-        HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
+        HttpResponse response = getHttpResponse(conn, true);
         // no perm 403 - need add
         if (response.mResponseCode == HTTP_FORBIDDEN){ // 403
 
@@ -464,7 +462,7 @@ public class NetworkUtil
     }
 
 
-    public static HttpResponse postFile(
+    public static HttpResponse postFileViaTus(
             String targetURL,
             String fileName,
             File file,
@@ -521,7 +519,8 @@ public class NetworkUtil
         } catch (ProtocolException exception) {
             HyperLog.v(Constants.TAG, "postFile upload fail ProtocolException " + exception.getMessage());
 
-            return new HttpResponse(0);
+            throw new SocketException();
+            //return new HttpResponse(0);
         }
 
         if (! TextUtils.isEmpty(returnUrl) ){
@@ -536,8 +535,7 @@ public class NetworkUtil
                     return  responseS;
                 } catch (Exception ex){
                     HyperLog.v(Constants.TAG, "postFile Exception " + ex.getMessage() );
-
-                    Log.e("ff", ex.getMessage());
+                    Log.e(Constants.TAG, "postFile Exception " + ex.getMessage() );
                 }
                 return response;
             }
@@ -547,6 +545,66 @@ public class NetworkUtil
         }
         return new HttpResponse(200);
     }
+
+    public static HttpResponse postFileOld(
+            String targetURL,
+            String fileName,
+            File file,
+            String fileMime,
+            String username,
+            String password,
+            boolean readErrorResponseBody)
+            throws IOException
+    {
+        final String lineEnd = "\r\n";
+        final String twoHyphens = "--";
+        final String boundary = "**nextgis**";
+
+        //------------------ CLIENT REQUEST
+        FileInputStream fileInputStream = new FileInputStream(file);
+        // open a URL connection to the Servlet
+
+        HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
+        if (null == conn) {
+            if (Constants.DEBUG_MODE)
+                Log.d(TAG, "Error get connection object: " + targetURL);
+            return new HttpResponse(ERROR_CONNECT_FAILED);
+        }
+        conn.setRequestProperty("Connection", "Keep-Alive");
+        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+        // Allow Outputs
+        conn.setDoOutput(true);
+
+        DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+        dos.writeBytes(twoHyphens + boundary + lineEnd);
+        dos.writeBytes(
+                "Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"" +
+                        lineEnd);
+
+        if (!TextUtils.isEmpty(fileMime)) {
+            dos.writeBytes("Content-Type: " + fileMime + lineEnd);
+        }
+
+        dos.writeBytes(lineEnd);
+
+        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+        FileUtil.copyStream(fileInputStream, dos, buffer, Constants.IO_BUFFER_SIZE);
+
+        dos.writeBytes(lineEnd);
+        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+        fileInputStream.close();
+        dos.flush();
+        dos.close();
+
+        HttpResponse response = getHttpResponse(conn, readErrorResponseBody);
+        if (response.mResponseCode == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
+            targetURL = targetURL.replace("http", "https");
+            return postFileOld(targetURL, fileName, file, fileMime, username, password, readErrorResponseBody);
+        }
+        return response;
+    }
+
+
 
     public static String trimSlash(String url) {
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;

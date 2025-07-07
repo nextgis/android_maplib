@@ -35,10 +35,8 @@ import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.JsonReader;
-import android.util.JsonToken;
 import android.util.Log;
 import android.util.Pair;
-import android.widget.Toast;
 
 import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
@@ -60,7 +58,6 @@ import com.nextgis.maplib.util.FeatureAttachments;
 import com.nextgis.maplib.util.FeatureChanges;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.HttpResponse;
-import com.nextgis.maplib.util.MapUtil;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.NetworkUtil;
@@ -76,9 +73,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -88,7 +85,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -114,8 +110,6 @@ import static com.nextgis.maplib.util.MapUtil.convertTime;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
 import static com.nextgis.maplib.util.NetworkUtil.configureSSLdefault;
 import static com.nextgis.maplib.util.NetworkUtil.getUserAgent;
-
-import io.tus.java.client.ProtocolException;
 
 
 public class NGWVectorLayer
@@ -848,7 +842,7 @@ public class NGWVectorLayer
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_NEW) {
                         HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachNew start with Fid =" + changeFeatureId + " attachId= "+ changeAttachId);
 
-                        if (sendAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+                        if (sendAttachOnServer(changeFeatureId, changeAttachId, true, syncResult)) {
 
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeAttachChangesToLast(changeTableName,
@@ -1011,6 +1005,7 @@ public class NGWVectorLayer
     protected boolean sendAttachOnServer(
             long featureId,
             long attachId,
+            boolean useTus,
             SyncResult syncResult)
     {
         if (!mNet.isNetworkAvailable()) {
@@ -1022,20 +1017,43 @@ public class NGWVectorLayer
         if (null == attach) {   //just remove buggy item
             return true;
         }
+        boolean fisrtSendPhase = true;
 
         try {
-            HttpResponse response = sendAttachOnServer(featureId, attach);
+            HttpResponse response;
+            JSONObject result;
+            if (useTus) {
 
-            if (!response.isOk()) {
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
-                log(syncResult, response.getResponseCode() + "");
-                return false;
-            }
+                response = sendAttachOnServerViaTus(featureId, attach);
+                if (!response.isOk()) {
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
+                    log(syncResult, response.getResponseCode() + "");
+                    return false;
+                }
+                fisrtSendPhase = false;
 
-            JSONObject result = new JSONObject(response.getResponseBody());
-            if (!proceedAttach(result, syncResult)) {
-                return false;
+                result = new JSONObject(response.getResponseBody());
+                if (!proceedAttachFromTus(result, syncResult)) {
+                    return false;
+                }
+            } else {
+                fisrtSendPhase = false;
+                response = sendAttachOnServerOldStyle(featureId, attach);
+
+                if (!response.isOk()) {
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
+                    log(syncResult, response.getResponseCode() + "");
+                    return false;
+                }
+                result = new JSONObject(response.getResponseBody());
+
+                if (!proceedAttachOldStyle(result, syncResult)) {
+                    return false;
+                }
+                result = (JSONObject) result.getJSONArray("upload_meta").get(0);
+
             }
 
             response = sendFeatureAttachOnServer(result, featureId, attach);
@@ -1068,6 +1086,11 @@ public class NGWVectorLayer
 
             return true;
         } catch (IOException e) {
+            if (fisrtSendPhase && e instanceof SocketException ){ // try usual way to send attaach
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IOException : SocketException " + e.getMessage());
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: try to send not using TUS ");
+                return sendAttachOnServer(featureId,attachId, false,syncResult);
+            }
             HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IOException " + e.getMessage());
             log(e, "sendAttachOnServer IOException");
             syncResult.stats.numIoExceptions++;
@@ -1088,7 +1111,7 @@ public class NGWVectorLayer
     }
 
 
-    protected boolean proceedAttach(JSONObject result, SyncResult syncResult) throws JSONException {
+    protected boolean proceedAttachFromTus(JSONObject result, SyncResult syncResult) throws JSONException {
         // get attach info // old json  answer
         //        if (!result.has("upload_meta")) {
         //            if (Constants.DEBUG_MODE) {
@@ -1119,6 +1142,30 @@ public class NGWVectorLayer
         return true;
     }
 
+
+    protected boolean proceedAttachOldStyle(JSONObject result, SyncResult syncResult) throws JSONException {
+        // get attach info
+        if (!result.has("upload_meta")) {
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result has not upload_meta, result: " + result.toString());
+            }
+            syncResult.stats.numParseExceptions++;
+            return false;
+        }
+
+        JSONArray uploadMetaArray = result.getJSONArray("upload_meta");
+        if (uploadMetaArray.length() == 0) {
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "Problem sendAttachOnServer(), result upload_meta length() == 0");
+            }
+            syncResult.stats.numParseExceptions++;
+            return false;
+        }
+
+        return true;
+
+    }
+
     protected HttpResponse sendFeatureAttachOnServer(JSONObject result, long featureId, AttachItem attach) throws JSONException, IOException {
 
         // add attachment to row
@@ -1144,7 +1191,7 @@ public class NGWVectorLayer
         return NetworkUtil.post(url, postload, accountData.login, accountData.password, false);
     }
 
-    protected HttpResponse sendAttachOnServer(long featureId, AttachItem attach) throws IOException {
+    protected HttpResponse sendAttachOnServerViaTus(long featureId, AttachItem attach) throws IOException {
         // fill attach info
         String fileName = attach.getDisplayName();
         File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
@@ -1158,11 +1205,35 @@ public class NGWVectorLayer
         AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         // upload file
-        String url = NGWUtil.getFileUploadUrl(accountData.url);
+        String url = NGWUtil.getFileUploadUrlViaTus(accountData.url);
 
         HyperLog.v(Constants.TAG, "sendAttachOnServer start url = " + url + " filename = "+ fileName + " filepath=" + filePath);
 
-        return NetworkUtil.postFile(url, fileName, filePath, length, fileMime, accountData.login, accountData.password, false);
+        return NetworkUtil.postFileViaTus(url, fileName, filePath, length, fileMime, accountData.login, accountData.password, false);
+    }
+
+
+    protected HttpResponse sendAttachOnServerOldStyle(long featureId, AttachItem attach) throws IOException {
+        // fill attach info
+        String fileName = attach.getDisplayName();
+        File filePath = new File(mPath, featureId + File.separator + attach.getAttachId());
+        long length = 0;
+        if (filePath.exists())
+            length = filePath.length();
+
+        String fileMime = attach.getMimetype();
+
+        // get account data
+        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        // upload file
+        String url = NGWUtil.getFileUploadUrlOld(accountData.url);
+
+        HyperLog.v(Constants.TAG, "sendAttachOnServer start url = " + url + " filename = "+ fileName + " filepath=" + filePath);
+
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: start sent attach to " + url);
+
+        return NetworkUtil.postFileOld(url, fileName, filePath, fileMime, accountData.login, accountData.password, false);
     }
 
     protected void log(SyncResult syncResult, String code) {

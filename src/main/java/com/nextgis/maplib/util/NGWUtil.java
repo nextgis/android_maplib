@@ -48,11 +48,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -190,9 +187,14 @@ public class NGWUtil
         return server;//.replace("http://", "https://");
     }
 
-    public static String getFileUploadUrl(String server)
+    public static String getFileUploadUrlViaTus(String server)
     {
         return getServerUrl(server) + "/api/component/file_upload/" + appendix();
+    }
+
+    public static String getFileUploadUrlOld(String server)
+    {
+        return getServerUrl(server) + "/api/component/file_upload/upload" + appendix();
     }
 
 
