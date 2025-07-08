@@ -28,7 +28,7 @@ android {
         minSdkVersion 26
         compileSdk 34
         targetSdkVersion 34
-        versionName '2.12.2'
+        versionName '2.12.3'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {

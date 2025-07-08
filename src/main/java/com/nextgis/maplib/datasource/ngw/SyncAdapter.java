@@ -53,7 +53,9 @@ import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import static android.content.Context.MODE_MULTI_PROCESS;
 import static com.nextgis.maplib.util.Constants.MESSAGE_ALERT_INTENT;
@@ -214,12 +216,27 @@ public class SyncAdapter
     {
         HyperLog.v(Constants.TAG, "SyncAdapter: StartSynchronization");
         HyperLog.v(Constants.TAG, "SyncAdapter: total layers for sync in " + layerGroup + " is " + layerGroup.getLayerCount());
-        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
+
+        List<ILayer> layersToSync = new ArrayList<>();
+        for (int i = 0; i < layerGroup.getLayerCount(); i++){
+            ILayer layer = layerGroup.getLayer(i);
+            boolean exists = false;
+            for (ILayer added : layersToSync){
+                if (added instanceof INGWLayer && layer instanceof INGWLayer &&
+                added.getPath().equals(layer.getPath())){
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists)
+                layersToSync.add(layer);
+        }
+
+        for (ILayer layer : layersToSync) {
             if (isCanceled()) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: Sync canceled");
                 return;
             }
-            ILayer layer = layerGroup.getLayer(i);
             if (layer instanceof LayerGroup) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a layer group");
                 sync((LayerGroup) layer, authority, syncResult);
