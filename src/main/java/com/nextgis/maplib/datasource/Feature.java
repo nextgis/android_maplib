@@ -362,10 +362,17 @@ public class Feature
             Field field = mFields.get(i);
 
             String name = field.getName();
-            if (  containsCaseInsensitive( unwrapQuotation(name), Constants.VECTOR_FORBIDDEN_FIELDS))
-                name = "'\"" + unwrapQuotation(name) + "\"'";
-            if (unwrapQuotation(name).contains(" "))
-                name = "'" + unwrapQuotation(name) + "'";
+
+            String cleanName = unwrapQuotation(name);
+            if (containsCaseInsensitive(cleanName, Constants.VECTOR_FORBIDDEN_FIELDS) || cleanName.contains(" ") || cleanName.matches(".*[^\\w].*")) {
+                name = "\"" + cleanName + "\"";
+            } else {
+                name = cleanName;
+            }
+//            if (  containsCaseInsensitive( unwrapQuotation(name), Constants.VECTOR_FORBIDDEN_FIELDS))
+//                name = "'\"" + unwrapQuotation(name) + "\"'";
+//            if (unwrapQuotation(name).contains(" "))
+//                name = "'" + unwrapQuotation(name) + "'";
 
             if (!isValuePresent(i)) {
                 values.putNull(name);

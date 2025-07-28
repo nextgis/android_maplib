@@ -231,6 +231,11 @@ public class GeoPolygon
         return mOuterRing;
     }
 
+    public List<GeoLinearRing> getInnerRings()
+    {
+        return mInnerRings;
+    }
+
 
     @Override
     public String toWKT(boolean full)

@@ -199,4 +199,13 @@ public interface IGISApplication
     public int getErrorCode();
 
     public boolean isCollectorApplication();
+
+    // part for maplibre interaction
+    public void reloadLayerByID(int id);
+
+    public void deleteLayerByID(int id);
+
+    public void addLayerByID(int id);
+
+
 }
