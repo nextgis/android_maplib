@@ -197,4 +197,13 @@ public interface IGISApplication
     public String getErrorMessage();
 
     public int getErrorCode();
+
+    // part for maplibre interaction 
+    public void reloadLayerByID(int id);
+
+    public void deleteLayerByID(int id);
+
+    public void addLayerByID(int id);
+
+
 }

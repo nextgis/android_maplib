@@ -29,6 +29,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
 import com.nextgis.maplib.datasource.GeoPoint;
@@ -133,6 +134,13 @@ public class MapEventSource
             return;
         }
 
+        try {
+            ((IGISApplication)getContext().getApplicationContext()).addLayerByID(layer.getId());
+        } catch (Exception ex){
+
+        }
+
+
         Bundle bundle = new Bundle();
         bundle.putInt(BUNDLE_ID_KEY, layer.getId());
         bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerAdded);
@@ -153,6 +161,10 @@ public class MapEventSource
     protected void onLayerChanged(ILayer layer)
     {
         super.onLayerChanged(layer);
+
+//        Log.e("MPL_LAYERCHANGED", "onLayerChanged call" + layer.getId());
+//        ((IGISApplication)getContext().getApplicationContext()).reloadLayerByID(layer.getId());
+
         if (mListeners == null) {
             return;
         }
@@ -180,6 +192,9 @@ public class MapEventSource
         if (mListeners == null) {
             return;
         }
+
+        ((IGISApplication)getContext().getApplicationContext()).deleteLayerByID(id);
+
 
         Bundle bundle = new Bundle();
         bundle.putInt(BUNDLE_ID_KEY, id);
@@ -325,6 +340,7 @@ public class MapEventSource
                     switch (resultData.getInt(BUNDLE_TYPE_KEY)) {
                         case EVENT_onLayerAdded:
                             listener.onLayerAdded(resultData.getInt(BUNDLE_ID_KEY));
+
                             break;
                         case EVENT_onLayerDeleted:
                             listener.onLayerDeleted(resultData.getInt(BUNDLE_ID_KEY));

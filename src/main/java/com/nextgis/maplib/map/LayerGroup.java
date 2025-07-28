@@ -484,7 +484,9 @@ public class LayerGroup
     {
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
+            Log.e("MPL_LAYERCHANGED", "layer group onLayerChanged call" + layer.getId());
             group.onLayerChanged(layer);
+
         }
     }
 

@@ -50,14 +50,17 @@ android {
         targetCompatibility "21"
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_16
-        targetCompatibility JavaVersion.VERSION_16
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
     namespace 'com.nextgis.maplib'
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+
+    implementation 'org.maplibre.gl:android-sdk:11.8.5'
+
     implementation 'com.github.barsrb:hyperlog-android:master-SNAPSHOT'
 
     implementation 'com.android.volley:volley:1.2.1'

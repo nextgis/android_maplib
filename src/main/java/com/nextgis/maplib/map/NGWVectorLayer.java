@@ -1269,6 +1269,9 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
+
+        int countChanges = 0;
+        int createNewFeatureCount = 0;
         HyperLog.v(Constants.TAG, "NGWVectorLayer: getChangesFromServer " + getName());
         if (!mNet.isNetworkAvailable()) {
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " network is unavailable -stop getChangesFromServer");
@@ -1279,7 +1282,7 @@ public class NGWVectorLayer
             Log.d(Constants.TAG, "The network is available. Get changes from server");
         }
 
-        List<Feature> features, added = null, deleted = null, changed = null;
+        List<Feature> features, added = new ArrayList<>(), deleted =  new ArrayList<>(), changed =  new ArrayList<>();
         List<Long> deleteItems = new ArrayList<>();
 
         ExistFeatureResult result =  getFeatures(syncResult, mTracked);
@@ -1362,10 +1365,12 @@ public class NGWVectorLayer
 
                             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " createNewFeature is " + createNewFeature);
                             //create new feature with remoteId
-                            if (createNewFeature)
+                            if (createNewFeature) {
                                 createNewFeature(remoteFeature, authority);
+                                createNewFeatureCount++;
+                            }
                         } else {
-                            compareFeature(cursor, authority, remoteFeature, changeTableName);
+                            countChanges = compareFeature(cursor, authority, remoteFeature, changeTableName);
                         }
                     } catch (Exception e) {
                         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer Exception error " + e.getMessage());
@@ -1483,7 +1488,10 @@ public class NGWVectorLayer
 
         getPreferences().edit().putLong(SettingsConstants.KEY_PREF_LAST_SYNC_TIMESTAMP, System.currentTimeMillis()).apply();
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer END");
-
+        // call reload on maplibre if changes > 0
+        if (countChanges>0 || createNewFeatureCount>0 || deleteItems.size()>0 || added.size()>0 || changed.size() >0 ) {
+            ((IGISApplication)getContext().getApplicationContext()).reloadLayerByID(getId());
+        }
         return true;
     }
 
@@ -1555,7 +1563,8 @@ public class NGWVectorLayer
         }
     }
 
-    protected void compareFeature(Cursor cursor, String authority, Feature remoteFeature, String changeTableName) {
+    protected int compareFeature(Cursor cursor, String authority, Feature remoteFeature, String changeTableName) {
+        int count = 0;
         cursor.moveToFirst();
         // with the given ID (remoteFeature.getId()) must be only one feature
         Feature currentFeature = cursorToFeature(cursor);
@@ -1605,7 +1614,7 @@ public class NGWVectorLayer
                         ContentUris.withAppendedId(uri, remoteFeature.getId());
                 updateUri = updateUri.buildUpon().fragment(NO_SYNC).build();
                 //prevent add changes
-                int count = update(updateUri, values, null, null);
+                count = update(updateUri, values, null, null);
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG,
                             "Update feature (" + count + ") from server - " +
@@ -1674,6 +1683,7 @@ public class NGWVectorLayer
                 }
             }
         }
+        return count;
     }
 
 
