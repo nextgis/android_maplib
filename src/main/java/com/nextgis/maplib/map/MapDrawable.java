@@ -27,21 +27,20 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.PointF;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
-import com.nextgis.maplib.datasource.GeoLinearRing;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.display.GISDisplay;
@@ -63,6 +62,17 @@ import java.util.concurrent.RunnableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromLayer;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.createFillLayerForLayer;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.createSourceForLayer;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePolygon;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.getMultiPolygonFeatures;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.getPolygonFeatures;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.namePrefix;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_featureid;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 
@@ -70,6 +80,8 @@ import static java.util.Collections.emptyList;
 
 import androidx.annotation.NonNull;
 
+import org.maplibre.android.annotations.Icon;
+import org.maplibre.android.annotations.IconFactory;
 import org.maplibre.android.geometry.LatLng;
 import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
@@ -78,13 +90,11 @@ import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.PropertyFactory;
+import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.Geometry;
 import org.maplibre.geojson.LineString;
-import org.maplibre.geojson.MultiLineString;
-import org.maplibre.geojson.MultiPoint;
-import org.maplibre.geojson.MultiPolygon;
 import org.maplibre.geojson.Point;
 import org.maplibre.geojson.Polygon;
 
@@ -95,9 +105,6 @@ public class MapDrawable
         MapLibreMap.OnMapLongClickListener,
         MapLibreMap.OnMapClickListener {
 
-    static  String prop_featureid = "featureid";
-    static  String prop_layerid = "layerid";
-    static  String prop_order = "order";
 
     // map  layerID : list of added features for layer
     HashMap<Integer, List<org.maplibre.geojson.Feature>> sourceFeaturesHashMap = new HashMap<Integer, List<org.maplibre.geojson.Feature>>();
@@ -113,6 +120,9 @@ public class MapDrawable
     GeoJsonSource selectedPolySource = null; // choosed source of polygon  //
     GeoJsonSource selectedLineSource = null; // choosed source of polygon  //
     GeoJsonSource selectedDotSource = null; // choosed source of polygon  //
+
+    FeatureCollection markerFeatureCollection = null;
+    GeoJsonSource markerSource = null;
 
     GeoJsonSource editPolySource = null;     // edit layer - of polygon  //
     GeoJsonSource vertexSource = null;      // edit points  //
@@ -187,8 +197,8 @@ public class MapDrawable
 
     public void deleteLayerByID(int id){
         if (maplibreMap.get()!= null) {
-            String sourceId = "polygon-source-" + id;
-            String vectorLayerId = "polygon-layer-" + id;
+            String sourceId = namePrefix + "source-" + id;
+            String vectorLayerId = namePrefix + "layer-" + id;
             if (maplibreMap.get().getStyle().getSource(sourceId)!= null)
                 maplibreMap.get().getStyle().removeSource(sourceId);
             if (maplibreMap.get().getStyle().getLayer(vectorLayerId)!= null)
@@ -200,12 +210,18 @@ public class MapDrawable
     public void addLayerByID(int id){
         if (maplibreMap.get()!= null) {
 
-            List<ILayer> ret = new ArrayList<>();
-            LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, ret);
 
-            for (ILayer iLayer : ret){
-                if (iLayer.getId() == id){
+            //List<ILayer> ret = new ArrayList<>();
+            //LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, ret);
+            ILayer iLayer = LayerGroup.getVectorLayersById(this, id);
+
+            if (iLayer == null)
+                return;
+//            for (ILayer iLayer : ret){
+//                if (iLayer.getId() == id){
+
                     VectorLayer layer = (VectorLayer) iLayer;
+
                     // this layer
                     List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
                     sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
@@ -214,13 +230,12 @@ public class MapDrawable
                     Handler mainHandler = new Handler(Looper.getMainLooper());
 
                     mainHandler.post(() -> {
-
-                        createSourceForLayer(layer.getId(), vectorPolygonFeatures, style);
-                        createFillLayerForLayer(layer.getId(), style);
+                        createSourceForLayer(layer.getId(), layer.getGeometryType(), vectorPolygonFeatures, style, sourceHashMap);
+                        createFillLayerForLayer(layer.getId(), layer.getGeometryType(), style, layersHashMap);
                     });
-                    break;
-                }
-            }
+//                    break;
+//                }
+//            }
             // add edit for polygon
         }
     }
@@ -236,7 +251,9 @@ public class MapDrawable
                 return;
             VectorLayer layer = (VectorLayer) ilayer;
                 if (!layer.isValid()) return;
-                if (layer.getGeometryType() == GeoConstants.GTPolygon) {
+                if (layer.getGeometryType() == GeoConstants.GTPolygon ||
+                        layer.getGeometryType() == GeoConstants.GTMultiPolygon
+                ) {
                     List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
                     sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
                 }
@@ -262,6 +279,8 @@ public class MapDrawable
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler mainHandler = new Handler(Looper.getMainLooper());
 
+        final Map<Integer, Integer> layersType = new HashMap<>();
+
         executor.execute(() -> {
             if (maplibreMap.get() == null || maplibreMapView.get() == null)
                 return;
@@ -273,10 +292,12 @@ public class MapDrawable
                 if (!layer.isValid())
                     continue;
 
-                if (layer.getGeometryType() == GeoConstants.GTPolygon) {
-                    List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
-                    sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
-                }
+                layersType.put(layer.getId(), layer.getGeometryType());
+
+
+                List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
+                sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+
             }
 
             // Switch to main thread
@@ -287,8 +308,8 @@ public class MapDrawable
                         Style style = maplibreMap.get().getStyle();
                         for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : sourceFeaturesHashMap.entrySet()) {
                              // create source and FillLayer put to style
-                            createSourceForLayer(entry.getKey(), entry.getValue(), style);
-                            createFillLayerForLayer(entry.getKey(), style);
+                            createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()), entry.getValue(), style,sourceHashMap);
+                            createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()), style,layersHashMap);
                         }
 
                         // edit layer source
@@ -320,17 +341,51 @@ public class MapDrawable
                         selectedPolySource = new  GeoJsonSource("selected-poly-source", FeatureCollection.fromFeatures(emptyList()));
                         style.addSource(selectedPolySource);
 
-                        LineLayer lineLayer = new LineLayer("selected-polygon-line", "selected-poly-source");
-                        lineLayer.setProperties(
+                        LineLayer lineLayer = new LineLayer("selected-polygon-line", "selected-poly-source")
+                                .withProperties(
                                 PropertyFactory.lineColor(Color.BLUE),
-                                PropertyFactory.lineWidth(2.0f)
-                        );
+                                PropertyFactory.lineWidth(2.0f) );
                         style.addLayer(lineLayer);
+
+
+                        // marker
+                        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor);
+                        // Преобразуем Drawable в Bitmap
+                        final Bitmap bitmap = drawableToBitmap(drawable);
+
+                        // Создаем иконку с помощью IconFactory
+                        final IconFactory iconFactory = IconFactory.getInstance(getContext());
+                        final Icon markerIcon = iconFactory.fromBitmap(bitmap);
+                        String iconId = "marker-icon-selected";
+                        style.addImage(iconId, bitmap);
+
+
+                        // marker layer
+                        markerFeatureCollection = FeatureCollection.fromFeatures(new ArrayList<>());
+                        markerSource = new GeoJsonSource("marker-source", markerFeatureCollection);
+                        style.addSource(markerSource);
+
+                        // Создаем слой SymbolLayer для отображения маркера
+                        SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
+                                .withProperties(
+                                        // Указываем иконку
+                                        org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
+                                        // Устанавливаем точку привязки: "top-left" для левого верхнего угла
+                                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(
+                                                org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT
+                                        )
+                                        // Альтернатива: для смещения иконки ниже/правее используйте:
+                                        // .iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_BOTTOM_RIGHT)
+                                        // или настройте iconOffset для точного смещения, например:
+                                        // .iconOffset(new Float[]{10f, 10f}) // Смещение вправо/вниз на 10 пикселей
+                                );
+
+                        // Добавляем слой на карту
+                        style.addLayer(symbolLayer);
+
 
 //                        selectedLineSource
 //                        selectedDotSource
-
-
                     }
                 });
 
@@ -339,72 +394,6 @@ public class MapDrawable
             });
         });
         executor.shutdown();
-    }
-
-    public void createSourceForLayer(int layerId, final List<org.maplibre.geojson.Feature> layerFeatures, final Style style){
-        GeoJsonSource vectorSource = new GeoJsonSource("polygon-source-" + layerId, FeatureCollection.fromFeatures(layerFeatures));
-        style.addSource(vectorSource);
-        sourceHashMap.put(layerId, vectorSource);
-    }
-
-    public void createFillLayerForLayer(int layerId, final Style style){
-        FillLayer vectorFillLayer = new FillLayer("polygon-layer-" + layerId, "polygon-source-" + layerId)
-                .withProperties(
-                        PropertyFactory.fillColor("#FF00FF"),
-                        PropertyFactory.fillOpacity(0.5f)
-                );
-        style.addLayer(vectorFillLayer);
-        layersHashMap.put(layerId, vectorFillLayer);
-    }
-
-
-    public List<org.maplibre.geojson.Feature> createFeatureListFromLayer(final VectorLayer layer){
-        List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
-        Map<Long, Feature> features = layer.getFeatures();
-        int i = 0;
-        for (Map.Entry<Long, Feature> entry : features.entrySet()) {
-            i++;
-            Long id  = entry.getKey();
-            Feature feature = entry.getValue();
-
-            Log.e("mmppl", "vector iterate feature_ " + id + " " + feature.getId());
-            GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
-
-            org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
-
-            polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
-            polyFeature.addStringProperty(prop_order, String.valueOf(i));
-            polyFeature.addStringProperty(prop_featureid, String.valueOf(id));
-
-            vectorPolygonFeatures.add(polyFeature);
-        }
-        return vectorPolygonFeatures;
-    }
-
-
-    public org.maplibre.geojson.Feature getFeatureFromNGFeaturePolygon(GeoPolygon geoPolygonGeometry){
-
-        List<List<Point>> points = new ArrayList<>();
-        List<Point> outerRing = new ArrayList<>();
-
-        for (GeoPoint item : geoPolygonGeometry.getOuterRing().getPoints()) {
-            double[] lonLat = convert3857To4326(item.getX(), item.getY());
-            outerRing.add(Point.fromLngLat(lonLat[0], lonLat[1]));
-            Log.e("mmppl", "vector add point outerRing " + item.getX() + "  " + item.getY());
-        }
-        points.add(outerRing);
-
-        for (GeoLinearRing innerRing : geoPolygonGeometry.getInnerRings()) {
-            List<Point> newInnerRing = new ArrayList<>();
-            for (GeoPoint itemPoint : innerRing.getPoints()) {
-                double[] lonLat = convert3857To4326(itemPoint.getX(), itemPoint.getY());
-                newInnerRing.add(Point.fromLngLat(lonLat[0], lonLat[1]));
-                Log.e("mmppl", "vector add point InnerRing " + itemPoint.getX() + "  " + itemPoint.getY());
-            }
-            points.add(newInnerRing);
-        }
-        org.maplibre.geojson.Feature polyFeature = org.maplibre.geojson.Feature.fromGeometry(org.maplibre.geojson.Polygon.fromLngLats(points));
-        return polyFeature;
     }
 
 
@@ -422,6 +411,8 @@ public class MapDrawable
                 );
 
                 List<org.maplibre.geojson.Feature> features = maplibreMap.get().queryRenderedFeatures(rect, "vertex-layer");
+                List<org.maplibre.geojson.Feature> featuresMarker = maplibreMap.get().queryRenderedFeatures(rect, "marker-layer");
+
 
                 if (!features.isEmpty()) {
                     int index = -1;
@@ -432,6 +423,7 @@ public class MapDrawable
                     if (index != -1) {
                         selectedVertexIndex = index;
                         isDragging = true;
+                        setMarker(event);
                         return true;
                     }
                 } else {
@@ -450,7 +442,12 @@ public class MapDrawable
                     Point newPoint = Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude());
                     editingVertices.set(selectedVertexIndex, newPoint);
                     updateEditingPolygonAndVertex();
+
+                    if (markerFeatureCollection.features().size() > 0)
+                        hideMarker();
+
                     return true;
+
                 } else {
                     return false;
                 }
@@ -465,8 +462,10 @@ public class MapDrawable
                 double[] points = convert4326To3857(latLng.getLongitude(), latLng.getLatitude());
                 mapFragment.get().processMapClick(points[0], points[1]);
 
-                if (isDragging)
+                if (isDragging) {
                     mapFragment.get().updateGeometryFromMaplibre(editingFeature, originalSelectedFeature);
+                    setMarker(event);
+                }
 
                 isDragging = false;
                 selectedVertexIndex = -1;
@@ -474,6 +473,35 @@ public class MapDrawable
             }
         }
         return false;
+    }
+
+    public void setMarker(MotionEvent motionEvent){
+        android.graphics.PointF screenPoint = new android.graphics.PointF(motionEvent.getX(), motionEvent.getY());
+        LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(screenPoint); // todo add tolerance and rect
+
+        org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
+        markerFeatureCollection = FeatureCollection.fromFeature(feature);
+        markerSource.setGeoJson(markerFeatureCollection);
+
+    }
+
+    public void hideMarker(){
+
+        markerFeatureCollection = FeatureCollection.fromFeatures(emptyList());
+        markerSource.setGeoJson(markerFeatureCollection);
+
+    }
+
+    private static Bitmap drawableToBitmap(Drawable drawable) {
+        Bitmap bitmap = Bitmap.createBitmap(
+                drawable.getIntrinsicWidth(),
+                drawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888
+        );
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
     }
 
 
@@ -523,6 +551,7 @@ public class MapDrawable
 
     @Override
     public boolean onMapClick(@NonNull LatLng latLng) {
+
         return false;
     }
 
@@ -675,7 +704,7 @@ public class MapDrawable
 //        Polygon.
 //        MultiPoint
 //
-//        MultiLineString.fromJson()
+ //        MultiLineString.fromJson()
 //
 //        MultiPolygon.fromPolygons(
 //                Arrays.asList(
@@ -759,20 +788,7 @@ public class MapDrawable
     }
 
 
-    private double[] convert3857To4326(double x, double y) {
-        // Implement your coordinate conversion logic here
-        // This is a placeholder; replace with actual implementation
-        // Example conversion from EPSG:3857 to EPSG:4326
-        double lon = x * 180 / 20037508.34;
-        double lat = Math.toDegrees(Math.atan(Math.sinh(y * Math.PI / 20037508.34)));
-        return new double[]{lon, lat};
-    }
 
-    private double[] convert4326To3857(double lon, double lat) {
-        double x = lon * 20037508.34 / 180;
-        double y = Math.log(Math.tan(Math.PI / 4 + Math.toRadians(lat) / 2)) * 20037508.34 / Math.PI;
-        return new double[]{x, y};
-    }
 
 
     @Override

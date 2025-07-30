@@ -168,6 +168,11 @@ public class LayerGroup
         }
     }
 
+    public static ILayer getVectorLayersById(
+            LayerGroup layerGroup,
+            int id){
+        return layerGroup.getLayerById(id);
+    }
 
     public static void getVectorLayersByType(
             LayerGroup layerGroup,
