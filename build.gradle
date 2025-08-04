@@ -59,7 +59,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation 'org.maplibre.gl:android-sdk:11.8.5'
+    implementation 'org.maplibre.gl:android-sdk:11.13.0'
 
     implementation 'com.github.barsrb:hyperlog-android:master-SNAPSHOT'
 

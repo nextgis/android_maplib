@@ -27,9 +27,11 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -62,6 +64,8 @@ import java.util.concurrent.RunnableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFillLayerForLayer;
@@ -86,6 +90,7 @@ import org.maplibre.android.geometry.LatLng;
 import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Style;
+import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
 import org.maplibre.android.style.layers.LineLayer;
@@ -124,24 +129,29 @@ public class MapDrawable
     FeatureCollection markerFeatureCollection = null;
     GeoJsonSource markerSource = null;
 
-    GeoJsonSource editPolySource = null;     // edit layer - of polygon  //
+    //GeoJsonSource editPolySource = null;     // edit layer - of polygon  //
     GeoJsonSource vertexSource = null;      // edit points  //
 
     List<org.maplibre.geojson.Feature> polygonFeatures = new ArrayList<org.maplibre.geojson.Feature>();  //
 
 
     private Feature  originalSelectedFeature = null;            // original who edit
+
+    private MPLFeaturesUtils.MLGeometryEditClass editingObject = null;    // current edit
+
     private org.maplibre.geojson.Feature  editingFeature = null;    // current edit
     private org.maplibre.geojson.Feature  editingFeatureOriginal = null;
     private org.maplibre.geojson.Feature  viewedFeature = null;   // who looking
     private boolean hasEditeometry = false; // was edit
 
-    private List<org.maplibre.geojson.Point>  editingVertices = new ArrayList<>();    // editing vertices
-    private int selectedVertexIndex = -1;
-    private boolean isDragging = false;
+
 
     private List<Integer> ringSizes = new ArrayList<>();
-    private org.maplibre.geojson.Feature  editedFeatureResult =  null;
+
+    private boolean isDragging = false;
+    private MotionEvent startEvent = null;
+    private PointF deltaPoint = null;
+
 
     protected int  mLimitsType;
     protected RunnableFuture<Void> mDrawThreadTask;
@@ -217,9 +227,6 @@ public class MapDrawable
 
             if (iLayer == null)
                 return;
-//            for (ILayer iLayer : ret){
-//                if (iLayer.getId() == id){
-
                     VectorLayer layer = (VectorLayer) iLayer;
 
                     // this layer
@@ -233,10 +240,6 @@ public class MapDrawable
                         createSourceForLayer(layer.getId(), layer.getGeometryType(), vectorPolygonFeatures, style, sourceHashMap);
                         createFillLayerForLayer(layer.getId(), layer.getGeometryType(), style, layersHashMap);
                     });
-//                    break;
-//                }
-//            }
-            // add edit for polygon
         }
     }
 
@@ -313,43 +316,41 @@ public class MapDrawable
                         }
 
                         // edit layer source
-                        editPolySource = new GeoJsonSource("edit-poly-source", FeatureCollection.fromFeatures(emptyList()));
-                        style.addSource(editPolySource);
+//                        editPolySource = new GeoJsonSource("edit-poly-source", FeatureCollection.fromFeatures(emptyList()));
+//                        style.addSource(editPolySource);
 
 
-                        FillLayer vectorFillLayer = new FillLayer("edit-polygon-layer", "edit-poly-source")
-                                .withProperties(
-                                        PropertyFactory.fillColor("#00FF00"),
-                                        PropertyFactory.fillOpacity(0.6f)
-                                );
-                        style.addLayer(vectorFillLayer);
-
-                        // edit layer source
-                        vertexSource = new  GeoJsonSource("vertex-source", FeatureCollection.fromFeatures(emptyList()));
-                        style.addSource(vertexSource);
-
-                        CircleLayer vertexFillLayer = new CircleLayer("vertex-layer", "vertex-source")
-                                .withProperties(
-                                        PropertyFactory.circleRadius(6f),
-                                        PropertyFactory.circleColor("#FF0000"),
-                                        PropertyFactory.fillOpacity(0.8f)
-                                );
-                        style.addLayer(vertexFillLayer);
-
-
+//                        FillLayer vectorFillLayer = new FillLayer("edit-polygon-layer", "edit-poly-source")
+//                                .withProperties(
+//                                        PropertyFactory.fillColor("#00FF00"),
+//                                        PropertyFactory.fillOpacity(0.6f)
+//                                );
+//                        style.addLayer(vectorFillLayer);
 
                         selectedPolySource = new  GeoJsonSource("selected-poly-source", FeatureCollection.fromFeatures(emptyList()));
                         style.addSource(selectedPolySource);
 
                         LineLayer lineLayer = new LineLayer("selected-polygon-line", "selected-poly-source")
                                 .withProperties(
-                                PropertyFactory.lineColor(Color.BLUE),
-                                PropertyFactory.lineWidth(2.0f) );
+                                        PropertyFactory.lineColor(Expression.get("color")),
+                                        PropertyFactory.lineWidth(2.0f) );
                         style.addLayer(lineLayer);
 
+                        // edit layer source
+                        vertexSource = new  GeoJsonSource("vertex-source", FeatureCollection.fromFeatures(emptyList()));
+                        style.addSource(vertexSource);
 
+                        CircleLayer vertexFillLayer = new CircleLayer("vertex-layer", "vertex-source")
+                                .withProperties(PropertyFactory.circleStrokeWidth(1f),
+                                        PropertyFactory.circleStrokeColor("#000000"));
+                                vertexFillLayer.setProperties(
+                                        PropertyFactory.circleRadius(Expression.get("radius")),
+                                        PropertyFactory.circleColor(Expression.get("color")),
+                                        PropertyFactory.circleOpacity(1.0f));
+
+                        style.addLayer(vertexFillLayer);
                         // marker
-                        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor);
+                        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor_2);
                         // Преобразуем Drawable в Bitmap
                         final Bitmap bitmap = drawableToBitmap(drawable);
 
@@ -403,51 +404,86 @@ public class MapDrawable
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
-                android.graphics.RectF rect = new android.graphics.RectF(
-                        event.getX() - 20,
-                        event.getY() - 20,
-                        event.getX() + 20,
-                        event.getY() + 20
-                );
 
-                List<org.maplibre.geojson.Feature> features = maplibreMap.get().queryRenderedFeatures(rect, "vertex-layer");
+                android.graphics.RectF rect = new android.graphics.RectF(event.getX() - 20,event.getY() - 20,event.getX() + 20,event.getY() + 20);
                 List<org.maplibre.geojson.Feature> featuresMarker = maplibreMap.get().queryRenderedFeatures(rect, "marker-layer");
 
+                if (!featuresMarker.isEmpty()){
+                    // press marker - lock for future move
+                    isDragging = true;
+                    startEvent = event;
+                    return true;
+                }
+
+
+                // no marker  - check vertex press
+                android.graphics.RectF rectVertex = new android.graphics.RectF(event.getX() - 30,event.getY() - 30,event.getX() + 30,event.getY() + 30);
+                List<org.maplibre.geojson.Feature> features = maplibreMap.get().queryRenderedFeatures(rectVertex, "vertex-layer");
 
                 if (!features.isEmpty()) {
+                    org.maplibre.geojson.Feature clickedFeature = null;
+                    // vertes press - change selection
                     int index = -1;
+
                     if (features.get(0).hasNonNullValueForProperty("index")) {
+                        clickedFeature = features.get(0);
                         index = features.get(0).getNumberProperty("index").intValue();
                     }
 
                     if (index != -1) {
-                        selectedVertexIndex = index;
-                        isDragging = true;
-                        setMarker(event);
+                        if (editingObject != null) {
+                            editingObject.updateSelectionVerticeIndex(index);
+                            editingObject.updateEditingPolygonAndVertex();
+                        }
+
+                        Point point = ((Point)clickedFeature.geometry());
+                        setMarker(new LatLng(point.latitude(), point.longitude()));
+
                         return true;
                     }
-                } else {
+                } else { // no select - no touch precess return false
                     return false;
                 }
                 break;
             }
 
             case MotionEvent.ACTION_MOVE: {
+                int selectedVertexIndex = -1;
+                if (editingObject != null )
+                    selectedVertexIndex = editingObject.getSelectedVertexIndex();
+                Log.e("MMVVEE", "ACTION_MOVE");
+                Log.e("MMVVEE", "isDragging " + (isDragging?"true" : "false"));
+                Log.e("MMVVEE", "selectedVertexIndex " + selectedVertexIndex);
                 if (isDragging && selectedVertexIndex != -1) {
                     if (!hasEditeometry) {
                         hasEditeometry = true;
                         mapFragment.get().setHasEdit();
                     }
-                    LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(screenPoint);
-                    Point newPoint = Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude());
-                    editingVertices.set(selectedVertexIndex, newPoint);
-                    updateEditingPolygonAndVertex();
+                    if(deltaPoint == null){
+                        if (editingObject != null){
+                            LatLng latLng = editingObject.getSelectedPoint();
+                            if (latLng != null) {
 
+                                PointF vertex = maplibreMap.get().getProjection().toScreenLocation(latLng);
+                                float dx = startEvent.getX() - vertex.x;
+                                float dy = startEvent.getY() - vertex.y;
+                                deltaPoint = new PointF(dx, dy);
+                            }
+                        }
+                    }
+                    PointF  newShiftedPoint = new PointF(screenPoint.x -deltaPoint.x,screenPoint.y - deltaPoint.y );
+                    LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(newShiftedPoint);
+                    Point newPoint = Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude());
+
+                    if (editingObject != null) {
+                        Log.e("MMVVEE", "(editingObject != null ");
+                        editingObject.updateSelectionVertice(newPoint);
+                        editingObject.updateEditingPolygonAndVertex();
+                    }
+//                    editingVertices.set(selectedVertexIndex, newPoint);
                     if (markerFeatureCollection.features().size() > 0)
                         hideMarker();
-
                     return true;
-
                 } else {
                     return false;
                 }
@@ -456,19 +492,27 @@ public class MapDrawable
             case MotionEvent.ACTION_UP: {
                 v.performClick();
                 v.performLongClick();
-                float x = event.getX();
-                float y = event.getY();
                 LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(screenPoint); // todo add tolerance and rect
                 double[] points = convert4326To3857(latLng.getLongitude(), latLng.getLatitude());
                 mapFragment.get().processMapClick(points[0], points[1]);
 
                 if (isDragging) {
-                    mapFragment.get().updateGeometryFromMaplibre(editingFeature, originalSelectedFeature);
-                    setMarker(event);
+                    if (editingObject != null)
+                        mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+                    LatLng pointReleased = editingObject.getSelectedPoint();
+
+                    if (pointReleased == null)
+                        setMarker(event);
+                    else
+                        setMarker(pointReleased);
                 }
 
                 isDragging = false;
-                selectedVertexIndex = -1;
+                deltaPoint = null;
+                startEvent = null;
+
+
+                //selectedVertexIndex = -1;
                 return false;
             }
         }
@@ -478,18 +522,18 @@ public class MapDrawable
     public void setMarker(MotionEvent motionEvent){
         android.graphics.PointF screenPoint = new android.graphics.PointF(motionEvent.getX(), motionEvent.getY());
         LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(screenPoint); // todo add tolerance and rect
+        setMarker(latLng);
+    }
 
+    public void setMarker(LatLng latLng){
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
         markerFeatureCollection = FeatureCollection.fromFeature(feature);
         markerSource.setGeoJson(markerFeatureCollection);
-
     }
 
     public void hideMarker(){
-
         markerFeatureCollection = FeatureCollection.fromFeatures(emptyList());
         markerSource.setGeoJson(markerFeatureCollection);
-
     }
 
     private static Bitmap drawableToBitmap(Drawable drawable) {
@@ -505,48 +549,47 @@ public class MapDrawable
     }
 
 
-    private void updateEditingPolygonAndVertex() {
-        int start = 0;
-        List<List<Point>> rings = new ArrayList<>();
-
-        for (Integer size : ringSizes) {
-            List<Point> ring = new ArrayList<>(editingVertices.subList(start, start + size));
-            // close ring
-            ring.add(ring.get(0));
-            rings.add(ring);
-            start += size;
-        }
-
-        Polygon polygon = Polygon.fromLngLats(rings);
-
-        org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(polygon);
-
-        if (editingFeature != null) {
-            String order = editingFeature.getStringProperty(prop_order);
-            feature.addStringProperty(prop_order, order);
-        }
-
-        editingFeature = feature;
-        editedFeatureResult = feature;
-        editPolySource.setGeoJson(feature);
-
-        // outline
-        viewedFeature = feature;
-        selectedPolySource.setGeoJson(viewedFeature);
-
-        // vertex without close point via  Stream
-        List<org.maplibre.geojson.Feature> vertexFeatures =
-                IntStream.range(0, editingVertices.size())
-                        .mapToObj(index -> {
-                            Point pt = editingVertices.get(index);
-                            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
-                            f.addNumberProperty("index", index);
-                            return f;
-                        })
-                        .collect(Collectors.toList());
-
-        vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
-    }
+//    private void updateEditingPolygonAndVertex() {
+//        int start = 0;
+//        List<List<Point>> rings = new ArrayList<>();
+//
+//        for (Integer size : ringSizes) {
+//            List<Point> ring = new ArrayList<>(editingVertices.subList(start, start + size));
+//            // close ring
+//            ring.add(ring.get(0));
+//            rings.add(ring);
+//            start += size;
+//        }
+//
+//        Polygon polygon = Polygon.fromLngLats(rings);
+//
+//        org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(polygon);
+//
+//        if (editingFeature != null) {
+//            String order = editingFeature.getStringProperty(prop_order);
+//            feature.addStringProperty(prop_order, order);
+//        }
+//
+//        editingFeature = feature;
+//        editPolySource.setGeoJson(feature);
+//
+//        // outline
+//        viewedFeature = feature;
+//        selectedPolySource.setGeoJson(viewedFeature);
+//
+//        // vertex without close point via  Stream
+//        List<org.maplibre.geojson.Feature> vertexFeatures =
+//                IntStream.range(0, editingVertices.size())
+//                        .mapToObj(index -> {
+//                            Point pt = editingVertices.get(index);
+//                            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
+//                            f.addNumberProperty("index", index);
+//                            return f;
+//                        })
+//                        .collect(Collectors.toList());
+//
+//        vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
+//    }
 
 
     @Override
@@ -590,25 +633,31 @@ public class MapDrawable
         }
 
         if (viewedFeature != null) {
+            viewedFeature.addStringProperty("color", colorLightBlue);
             selectedPolySource.setGeoJson(viewedFeature);
             this.originalSelectedFeature = originalSelectedFeature;
         }
     }
 
 
-    public void startFeatureSelectionForEdit(Integer layerdID, Feature originalSelectedFeature){
+    public void startFeatureSelectionForEdit(Integer layerdID, Integer layerGeoType,
+                                             Feature originalSelectedFeature){
+
         Long selectedFeatureId = originalSelectedFeature.getId();
 
-        if (editingFeature != null  ){
-            Integer lID = Integer.valueOf(editingFeature.getStringProperty(prop_layerid));
-            Long fID = Long.valueOf(editingFeature.getStringProperty(prop_featureid));
+        if (editingObject != null) {
+            if (editingFeature != null  ){
+                Integer lID = Integer.valueOf(editingFeature.getStringProperty(prop_layerid));
+                Long fID = Long.valueOf(editingFeature.getStringProperty(prop_featureid));
 
-            if (layerdID.equals(lID) && selectedFeatureId.equals(fID))
+                if (layerdID.equals(lID) && selectedFeatureId.equals(fID))
+                    return;
+                // need unselect feature
+                unselectFeatureFromEdit(false);
                 return;
-            // need unselect feature
-            unselectFeatureFromEdit(false);
-            return;
+            }
         }
+
 
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerdID);
         org.maplibre.geojson.Feature  editingFeatureTmp = null;
@@ -623,17 +672,25 @@ public class MapDrawable
         if (editingFeatureTmp != null) {
             selectedEditedSource = sourceHashMap.get(layerdID);
             editingFeature = editingFeatureTmp;
+            editingFeature.addStringProperty("color", colorRED);
+            selectedPolySource.setGeoJson(FeatureCollection.fromFeature(editingFeature));
+
             editingFeatureOriginal = editingFeatureTmp;
             polygonFeatures = sourceFeaturesHashMap.get(layerdID);
             this.originalSelectedFeature = originalSelectedFeature;
 
             // choose layer
-            // removeIf requires Java 8+
-            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
-            selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
+            editingObject = MPLFeaturesUtils.createEditObject(layerGeoType,
+                    selectedEditedSource,
+                    editingFeature,
+                    polygonFeatures,
+                    //editPolySource,
+                    selectedPolySource,vertexSource);
+            editingObject.extractVertices(editingFeature,  true);
 
-            editPolySource.setGeoJson(editingFeature);
-            extractVertices(editingFeature);
+            LatLng selectedPoint = editingObject.getSelectedPoint();
+            setMarker(selectedPoint);
+
         }
     }
 
@@ -661,74 +718,76 @@ public class MapDrawable
             polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
             selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
         }
-
-
         editingFeature = null;
         editingFeatureOriginal = null;
-        editPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+        //editPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
         selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+    }
+
+    public void updateMarkerByEditObject(){
+        if (editingObject != null && editingObject.getSelectedPoint() != null){
+
+
+
+            setMarker(editingObject.getSelectedPoint());
+        }
+
+
 
     }
 
     public void replaceGeometryFromHistoryChanges(GeoGeometry newGeometry){
+        int oldIndex = -1;
+        if (editingObject != null && editingObject.getSelectedPoint() != null){
+            oldIndex = editingObject.getSelectedVertexIndex();
+        }
+
         if  (newGeometry == null)
             return;
         if (newGeometry instanceof  GeoPolygon){
              org.maplibre.geojson.Feature featureML = getFeatureFromNGFeaturePolygon((GeoPolygon)newGeometry);
 
-             if(editingFeature != null)
-                copyProperties(editingFeature, featureML);
-            extractVertices(featureML);
-            editPolySource.setGeoJson(featureML);
+             if(editingObject  != null && editingObject.editingFeature != null)
+                copyProperties(editingObject.editingFeature, featureML);
+            //extractVertices(featureML);
+            //editPolySource.setGeoJson(featureML);
             selectedPolySource.setGeoJson(featureML);
-            extractVertices(featureML);
-            editingFeature = featureML;
+            editingObject.extractVertices(featureML,  false);
+            editingObject.editingFeature = featureML;
+        }
+        if (oldIndex != -1) {
+            editingObject.setSelectedVertexIndex(oldIndex);
+            editingObject.updateEditingPolygonAndVertex();
         }
     }
 
     public void  cancelFeatureEdit(boolean backToOriginal){
         unselectFeatureFromEdit(backToOriginal);
-//        polygonFeatures = sourceFeaturesHashMap.get(layerdID);
-//        polygonFeatures.add(editingFeature);
-//        selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
+        hideMarker();
     }
 
     public void unselectFeatureFromView(){
         if (viewedFeature != null) {
             viewedFeature = null;
+
             selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+
         }
-
-
-//        LineString
-//        Polygon.
-//        MultiPoint
-//
- //        MultiLineString.fromJson()
-//
-//        MultiPolygon.fromPolygons(
-//                Arrays.asList(
-//                        Polygon.fromLngLats(polygon1),
-//                        Polygon.fromLngLats(polygon2)
-//                )
-//        );
-
-
     }
 
 
     public void unselectFeatureFromEdit(boolean backToOriginal){
-        if (editingFeature != null) {
-            copyProperties(editingFeatureOriginal, editingFeature);
+        if (editingObject != null && editingObject.editingFeature != null) {
+            copyProperties(editingFeatureOriginal, editingObject.editingFeature);
             hasEditeometry = false;
-            polygonFeatures.add(backToOriginal? editingFeatureOriginal : editingFeature);
+            polygonFeatures.add(backToOriginal? editingFeatureOriginal : editingObject.editingFeature);
             selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
-            selectedPolySource.setGeoJson(backToOriginal? editingFeatureOriginal : editingFeature);
-            editingFeature = null;
+            selectedPolySource.setGeoJson(backToOriginal? editingFeatureOriginal : editingObject.editingFeature);
+            editingObject = null;
             editingFeatureOriginal = null;
-            editPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+            //editPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             vertexSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
-            editingVertices.clear();
+            //editingVertices.clear();
         }
     }
 
@@ -753,34 +812,7 @@ public class MapDrawable
     }
 
 
-    private void extractVertices(org.maplibre.geojson.Feature feature) {
-        List<Point> points = new ArrayList<>();
-        List<Integer> sizes = new ArrayList<>();
 
-        Geometry geometry = feature != null ? feature.geometry() : null;
-        if (geometry instanceof Polygon) {
-            Polygon polygon = (Polygon) geometry;
-            List<List<Point>> coordinates = polygon.coordinates();
-            for (List<Point> ring : coordinates) {
-                List<Point> ringWithoutClosing = ring.subList(0, ring.size() - 1);
-                sizes.add(ringWithoutClosing.size());
-                points.addAll(ringWithoutClosing);
-            }
-        }
-
-        editingVertices = new ArrayList<>(points);
-        ringSizes = sizes; // global var
-
-        List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
-        for (int index = 0; index < editingVertices.size(); index++) {
-            Point pt = editingVertices.get(index);
-            org.maplibre.geojson.Feature vertexFeature = org.maplibre.geojson.Feature.fromGeometry(pt);
-            vertexFeature.addNumberProperty("index", index);
-            vertexFeatures.add(vertexFeature);
-        }
-
-        vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
-    }
 
     public void clearMapListeners(){
         maplibreMap.get().removeOnMapClickListener(this);
@@ -789,13 +821,10 @@ public class MapDrawable
 
 
 
-
-
     @Override
     public void draw(
             Canvas canvas,
-            boolean clearBackground)
-    {
+            boolean clearBackground)    {
         if (mDisplay != null) {
             mDisplay.draw(canvas, clearBackground);
         }
