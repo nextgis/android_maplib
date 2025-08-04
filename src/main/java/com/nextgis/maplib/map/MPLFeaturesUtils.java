@@ -1,5 +1,6 @@
 package com.nextgis.maplib.map;
 
+
 import android.graphics.Color;
 import android.util.Log;
 
@@ -12,6 +13,7 @@ import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.util.GeoConstants;
 
+import org.maplibre.android.geometry.LatLng;
 import org.maplibre.android.maps.Style;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
@@ -20,6 +22,7 @@ import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.sources.GeoJsonSource;
 import org.maplibre.geojson.Feature;
 import org.maplibre.geojson.FeatureCollection;
+import org.maplibre.geojson.Geometry;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
 import org.maplibre.geojson.MultiPoint;
@@ -30,15 +33,206 @@ import org.maplibre.geojson.Polygon;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 //loader for features from NG to maplibre geojson features
 public class MPLFeaturesUtils {
 
+    static public Number pointRaduis = 8;
+    static public Number middleRaduis = 4;
+    static public String colorLightBlue = "#03a9f4";
+    static public String colorRED = "#FF0000";
+
+    static public abstract class MLGeometryEditClass{
+
+        //final GeoJsonSource editPolySource;
+        final org.maplibre.geojson.Feature  originalEditingFeature;
+        org.maplibre.geojson.Feature  editingFeature;
+        final GeoJsonSource selectedPolySource;
+        final GeoJsonSource vertexSource ;      // edit points  //
+        public int selectedVertexIndex = -1;
+
+        public MLGeometryEditClass(int geoType,
+                                   GeoJsonSource selectedEditedSource ,
+                                   org.maplibre.geojson.Feature  editingFeature,
+                                   List<org.maplibre.geojson.Feature> polygonFeatures,
+                                   //GeoJsonSource editPolySource ,
+                                   GeoJsonSource selectedPolySource,
+                                   GeoJsonSource vertexSource){
+            this.originalEditingFeature = editingFeature;
+            //this.editPolySource = editPolySource;
+            this.selectedPolySource = selectedPolySource;
+            this.vertexSource = vertexSource;
+
+        }
+
+        abstract public void extractVertices(org.maplibre.geojson.Feature feature, boolean selectRandomVertex );       // edit points  //);
+        abstract public void updateSelectionVerticeIndex(int id);       // update selection
+        abstract public void updateSelectionVertice( Point newPoint);       // update selection
+        abstract public void updateEditingPolygonAndVertex();
+        abstract public LatLng getSelectedPoint();
+
+        public int getSelectedVertexIndex(){
+            return selectedVertexIndex;
+        }
+
+        public void setSelectedVertexIndex(int i){
+            selectedVertexIndex = i;
+        }
+    }
+
+    static public class PolygonEditClass extends MLGeometryEditClass{
+        private List<org.maplibre.geojson.Point>  editingVertices = new ArrayList<>();    // editing vertices
+        private List<Integer> ringSizes = new ArrayList<>();
+        List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
+
+        public PolygonEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> polygonFeatures,
+                                //GeoJsonSource editPolySource,
+                                GeoJsonSource selectedPolySource,GeoJsonSource vertexSource) {
+            super(geoType, selectedEditedSource, editingFeature, polygonFeatures,
+                    //editPolySource,
+                    selectedPolySource, vertexSource);
+
+            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
+            selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
+
+            editingFeature.addStringProperty("color", colorLightBlue);
+            //editPolySource.setGeoJson(editingFeature);
+//            Feature tmpFeature = Feature.fromGeometry(editingFeature.geometry());
+//            copyProperties(editingFeature, tmpFeature);
+//            editPolySource.setGeoJson(tmpFeature);
+        }
+
+        @Override
+        public void extractVertices(org.maplibre.geojson.Feature feature, boolean selectRandomVertex) {
+            List<Point> points = new ArrayList<>();
+            List<Integer> sizes = new ArrayList<>();
+
+            Geometry geometry = feature != null ? feature.geometry() : null;
+            if (geometry instanceof Polygon) {
+                Polygon polygon = (Polygon) geometry;
+                List<List<Point>> coordinates = polygon.coordinates();
+                for (List<Point> ring : coordinates) {
+                    List<Point> ringWithoutClosing = ring.subList(0, ring.size() - 1);
+                    sizes.add(ringWithoutClosing.size());
+                    points.addAll(ringWithoutClosing);
+                }
+            }
+
+            editingVertices = new ArrayList<>(points);
+            vertexFeatures.clear();
+            ringSizes = sizes; // global var
+
+            for (int index = 0; index < editingVertices.size(); index++) {
+                Point pt = editingVertices.get(index);
+                org.maplibre.geojson.Feature vertexFeature = org.maplibre.geojson.Feature.fromGeometry(pt);
+                vertexFeature.addNumberProperty("index", index);
+                vertexFeature.addNumberProperty("radius", pointRaduis);
+                vertexFeature.addStringProperty("color", colorLightBlue);
+                vertexFeatures.add(vertexFeature);
+            }
+
+            // update selection to 1st
+            vertexFeatures.get(0).addStringProperty("color", colorRED);
+            int firstIndex = vertexFeatures.get(0).getNumberProperty("index").intValue();
+            this.selectedVertexIndex = firstIndex;
+
+            vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
+        }
+
+        @Override
+        public void updateSelectionVerticeIndex(int index) {
+            selectedVertexIndex = index;
+        }
+
+        @Override
+        public void updateSelectionVertice( Point newPoint) {
+            editingVertices.set(selectedVertexIndex, newPoint);
+        }
+
+        @Override
+        public void updateEditingPolygonAndVertex() {
+            int start = 0;
+            List<List<Point>> rings = new ArrayList<>();
+
+            for (Integer size : ringSizes) {
+                List<Point> ring = new ArrayList<>(editingVertices.subList(start, start + size));
+                // close ring
+                ring.add(ring.get(0));
+                rings.add(ring);
+                start += size;
+            }
+
+            Polygon polygon = Polygon.fromLngLats(rings);
+
+            org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(polygon);
+
+            if (originalEditingFeature != null) {
+                String order = originalEditingFeature.getStringProperty(prop_order);
+                feature.addStringProperty(prop_order, order);
+            }
+
+            editingFeature = feature;
+
+            feature.addStringProperty("color", colorRED);
+
+            // outline
+            selectedPolySource.setGeoJson(feature);
+
+            // vertex without close point via  Stream
+            List<org.maplibre.geojson.Feature> vertexFeatures =
+                    IntStream.range(0, editingVertices.size())
+                            .mapToObj(index -> {
+                                Point pt = editingVertices.get(index);
+                                org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
+                                f.addNumberProperty("index", index);
+                                f.addNumberProperty("radius", pointRaduis);
+                                f.addStringProperty("color", index == selectedVertexIndex? colorRED: colorLightBlue );
+                                return f;
+                            })
+                            .collect(Collectors.toList());
+
+            vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
+        }
+
+        @Override
+        public LatLng getSelectedPoint() {
+            if (editingVertices!= null && editingVertices.get(selectedVertexIndex)!= null) {
+                Point point = editingVertices.get(selectedVertexIndex);
+                if (point != null){
+                    return new LatLng(point.latitude(), point.longitude());
+                }
+            }
+            return null;
+        }
+    }
+
     static  String prop_featureid = "featureid";
     static  String prop_layerid = "layerid";
     static  String prop_order = "order";
-
     static String namePrefix = "nglayer-";
+
+    public static MLGeometryEditClass createEditObject(
+            int geoType,
+            GeoJsonSource selectedEditedSource,
+            Feature editingFeature,
+            List<Feature> polygonFeatures,
+            //GeoJsonSource editPolySource,
+            GeoJsonSource selectedPolySource,
+            GeoJsonSource vertexSource){
+
+        if  (geoType == GeoConstants.GTPolygon) {
+            return new PolygonEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
+                    //editPolySource,
+                    selectedPolySource,vertexSource);
+        } else
+            return new PolygonEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
+                    //editPolySource,
+                    selectedPolySource, vertexSource);
+
+    }
 
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFromLayer(final VectorLayer layer){
@@ -242,24 +436,24 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
 
 
-            Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
-            int i = 0;
-            for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
-                i++;
-                Long id = entry.getKey();
-                com.nextgis.maplib.datasource.Feature feature = entry.getValue();
+        Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
+        int i = 0;
+        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+            i++;
+            Long id = entry.getKey();
+            com.nextgis.maplib.datasource.Feature feature = entry.getValue();
 
-                GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
+            GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
 
-                org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
+            org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
 
-                polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
-                polyFeature.addStringProperty(prop_order, String.valueOf(i));
-                polyFeature.addStringProperty(prop_featureid, String.valueOf(id));
+            polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
+            polyFeature.addStringProperty(prop_order, String.valueOf(i));
+            polyFeature.addStringProperty(prop_featureid, String.valueOf(id));
 
-                vectorFeatures.add(polyFeature);
-            }
-            return vectorFeatures;
+            vectorFeatures.add(polyFeature);
+        }
+        return vectorFeatures;
     }
 
     public static org.maplibre.geojson.Feature getFeatureFromNGFeaturePolygon(GeoPolygon geoPolygonGeometry){
@@ -363,8 +557,8 @@ public class MPLFeaturesUtils {
         }  else if ( layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
             newLayer = new LineLayer(namePrefix +"layer-"+ layerId, namePrefix +"source-"+ layerId)
                     .withProperties(
-                    PropertyFactory.lineColor(Color.BLUE),
-                    PropertyFactory.lineWidth(2.0f)  );
+                            PropertyFactory.lineColor(Color.BLUE),
+                            PropertyFactory.lineWidth(2.0f)  );
         }
 
         if (newLayer != null) {
