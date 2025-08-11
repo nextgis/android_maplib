@@ -1,15 +1,17 @@
 package com.nextgis.maplib.map;
 
+import android.graphics.PointF;
 import android.view.MotionEvent;
 
 import com.nextgis.maplib.datasource.Feature;
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
 
 public interface MaplibreMapInteraction {
 
-    public boolean processMapLongClick(double x, double y); // x y  - mercator
+    public boolean processMapLongClick(GeoEnvelope exactEnv,  PointF clickPoint); // x y  - mercator
 
-    public boolean processMapClick(double x, double y);
+    public boolean processMapClick(float x, float y);
 
     public void setHasEdit();
 
