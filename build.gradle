@@ -28,7 +28,6 @@ android {
         minSdkVersion 26
         compileSdk 34
         targetSdkVersion 34
-        versionName '2.12.3'
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
@@ -64,7 +63,7 @@ dependencies {
     implementation 'com.android.volley:volley:1.2.1'
 
 
-    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'com.google.code.gson:gson:2.13.1'
 
     implementation 'io.tus.java.client:tus-java-client:0.5.1'
     implementation 'io.tus.android.client:tus-android-client:0.1.12'
