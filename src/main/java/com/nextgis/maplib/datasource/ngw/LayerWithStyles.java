@@ -138,12 +138,12 @@ public class LayerWithStyles
     }
 
 
-    public static void fillStyles(String url, String user, String pass, Long remoteId, List<Long> styles, List<Long> forms) {
+    public static boolean fillStyles(String url, String user, String pass, Long remoteId, List<Long> styles, List<Long> forms) {
         try {
             String sURL = NGWUtil.getResourceChildrenUrl(url, remoteId);
             HttpResponse response = NetworkUtil.get(sURL, user, pass, false);
             if (!response.isOk())
-                return;
+                return false;
 
             JSONArray children = new JSONArray(response.getResponseBody());
             for (int i = 0; i < children.length(); i++) {
@@ -170,9 +170,14 @@ public class LayerWithStyles
                         forms.add(cRemoteId);
                 }
             }
-        } catch (IOException | JSONException e) {
+        } catch (IOException |  JSONException e) {
             e.printStackTrace();
+
+        } catch (Exception  e) {
+            e.printStackTrace();
+            return false;
         }
+        return true;
     }
 
 
@@ -180,7 +185,7 @@ public class LayerWithStyles
     {
         mStyles = new ArrayList<>();
         mForms = new ArrayList<>();
-        fillStyles(mConnection.getURL(), mConnection.getLogin(), mConnection.getPassword(), mRemoteId, mStyles, mForms);
+        boolean resultFill = fillStyles(mConnection.getURL(), mConnection.getLogin(), mConnection.getPassword(), mRemoteId, mStyles, mForms);
     }
 
 

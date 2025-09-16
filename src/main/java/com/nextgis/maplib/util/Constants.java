@@ -379,4 +379,5 @@ public interface Constants
     String MESSAGE_NOTIFY_INTENT = "com.nextgis.malibui.MESSAGE_NOTIFY";
     String MESSAGE_EXTRA = "message_extra";
     String MESSAGE_TITLE_EXTRA = "message_title_extra";
+    String MESSAGE_EXTRA_IS_PARENTFILL = "message_extra_parentfill";
 }
