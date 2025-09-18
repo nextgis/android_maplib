@@ -22,6 +22,7 @@
   -->
 
 <resources>
+    <string name="error">Error</string>
     <string name="error_crs_unsupported">Unsupported spatial reference</string>
     <string name="error_empty_dataset">Dataset is empty</string>
     <string name="error_network_unavailable">Network is unavailable</string>
@@ -108,5 +109,6 @@
 
     <string name="error_account_add_error">Cannot add Account - some error happen</string>
     <string name="error_no_access_403">No access right for operation</string>
+    <string name="error_select_obj">Error on object select</string>
 
 </resources>

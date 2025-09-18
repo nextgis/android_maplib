@@ -22,6 +22,7 @@
   -->
 
 <resources>
+    <string name="error">Ошибка</string>
     <string name="error_crs_unsupported">Система координат не поддерживается</string>
     <string name="error_empty_dataset">Набор данных пустой</string>
     <string name="error_download_data">Не удалось загрузить данные</string>
@@ -106,5 +107,6 @@
     <string name="warning_layer_not_exist">Слой: \'%s\' отсутсвует на сервере. Синхронизация для слоя выключена.</string>
     <string name="error_account_add_error">Не удалось добавить аккаунт, какая-то ошибка</string>
     <string name="error_no_access_403">Нет прав для операции</string>
+    <string name="error_select_obj">Ошибка при выборе обьекта</string>
 
 </resources>
