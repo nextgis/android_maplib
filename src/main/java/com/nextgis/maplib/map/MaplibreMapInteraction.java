@@ -17,4 +17,6 @@ public interface MaplibreMapInteraction {
 
     public void updateGeometryFromMaplibre(org.maplibre.geojson.Feature feature, Feature originalSelectedFeature );
 
+    public int getSelectedLayerId();
+
 }
