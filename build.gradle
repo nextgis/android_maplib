@@ -26,8 +26,10 @@ apply plugin: 'com.android.library'
 android {
     defaultConfig {
         minSdkVersion 26
-        compileSdk 34
-        targetSdkVersion 34
+        compileSdk 36
+        targetSdkVersion 36
+        versionName '3.0.0'
+
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {

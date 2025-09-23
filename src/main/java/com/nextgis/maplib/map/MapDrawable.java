@@ -68,6 +68,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.nextgis.maplib.map.MPLFeaturesUtils.colorBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
@@ -128,19 +129,13 @@ public class MapDrawable
     // map fill Layer of each added layer
     HashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
 
-    GeoJsonSource selectedEditedSource = null; // choosed  source - from with edit
-
-    GeoJsonSource touchAreaSource = null; // choosed source of polygon  //
-
-    GeoJsonSource selectedPolySource = null; // choosed source of polygon  //
-    //GeoJsonSource selectedLineSource = null; // choosed source of polygon  //
+    GeoJsonSource selectedEditedSource = null; // choosed  source - from with edit (selectable)
+    GeoJsonSource selectedPolySource = null; // choosed source of polygon/line  //
     GeoJsonSource selectedDotSource = null; // choosed source of polygon  //
+    GeoJsonSource vertexSource = null;      // edit points  //
 
     FeatureCollection markerFeatureCollection = null;
-    GeoJsonSource markerSource = null;
-
-    //GeoJsonSource editPolySource = null;     // edit layer - of polygon  //
-    GeoJsonSource vertexSource = null;      // edit points  //
+    GeoJsonSource markerSource = null; // marker source - select point
 
     List<org.maplibre.geojson.Feature> polygonFeatures = new ArrayList<org.maplibre.geojson.Feature>();  //
 
@@ -160,6 +155,7 @@ public class MapDrawable
     private List<Integer> ringSizes = new ArrayList<>();
 
     private boolean isDragging = false;
+    private boolean isSwitchVertex = false;
     private MotionEvent startEvent = null;
     private PointF deltaPoint = null;
 
@@ -326,27 +322,6 @@ public class MapDrawable
                             createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()), style,layersHashMap);
                         }
 
-                        // edit layer source
-//                        editPolySource = new GeoJsonSource("edit-poly-source", FeatureCollection.fromFeatures(emptyList()));
-//                        style.addSource(editPolySource);
-
-
-//                        FillLayer vectorFillLayer = new FillLayer("edit-polygon-layer", "edit-poly-source")
-//                                .withProperties(
-//                                        PropertyFactory.fillColor("#00FF00"),
-//                                        PropertyFactory.fillOpacity(0.6f)
-//                                );
-//                        style.addLayer(vectorFillLayer);
-
-
-//                        touchAreaSource = new  GeoJsonSource("touch-area-source", FeatureCollection.fromFeatures(emptyList()));
-//                        style.addSource(touchAreaSource);
-//
-//                        FillLayer touchFillLayer = new FillLayer("touch-area-layer", "touch-area-source")
-//                                .withProperties(                                        PropertyFactory.fillColor("#444444"),
-//                                        PropertyFactory.fillOpacity(0.6f));
-//                        style.addLayer(touchFillLayer);
-
                         selectedDotSource = new  GeoJsonSource("selected-dot-source", FeatureCollection.fromFeatures(emptyList()));
                         style.addSource(selectedDotSource);
 
@@ -358,7 +333,6 @@ public class MapDrawable
                                 PropertyFactory.circleColor(Expression.get("color")),
                                 PropertyFactory.circleOpacity(1.0f));
                         style.addLayer(selectedDotCircleLayer);
-
 
                         selectedPolySource = new  GeoJsonSource("selected-poly-source", FeatureCollection.fromFeatures(emptyList()));
                         style.addSource(selectedPolySource);
@@ -391,7 +365,6 @@ public class MapDrawable
                         String iconId = "marker-icon-selected";
                         style.addImage(iconId, bitmap);
 
-
                         // marker layer
                         markerFeatureCollection = FeatureCollection.fromFeatures(new ArrayList<>());
                         markerSource = new GeoJsonSource("marker-source", markerFeatureCollection);
@@ -404,8 +377,6 @@ public class MapDrawable
                                                 org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
 
                         style.addLayer(symbolLayer);
-
-
 //                        selectedLineSource
 //                        selectedDotSource
                     }
@@ -418,18 +389,14 @@ public class MapDrawable
         executor.shutdown();
     }
 
-
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         android.graphics.PointF screenPoint = new android.graphics.PointF(event.getX(), event.getY());
-
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
-
                 clickPoint = new PointF(event.getX(), event.getY());
                 android.graphics.RectF rect = new android.graphics.RectF(event.getX() - 20,event.getY() - 20,event.getX() + 20,event.getY() + 20);
                 List<org.maplibre.geojson.Feature> featuresMarker = maplibreMap.get().queryRenderedFeatures(rect, "marker-layer");
-
                 if (!featuresMarker.isEmpty()){
                     // press marker - lock for future move
                     isDragging = true;
@@ -446,6 +413,25 @@ public class MapDrawable
                     // vertes press - change selection
                     int index = -1;
 
+                    // check for middle point click
+                    if (features.get(0).hasNonNullValueForProperty("middle")) {
+                        isSwitchVertex = true;
+                        // need add point
+                        int previndex = features.get(0).getNumberProperty("previndex").intValue();
+                        clickedFeature = features.get(0);
+                        //index = features.get(0).getNumberProperty("index").intValue();
+
+                        if (editingObject != null) {
+                            editingObject.updateSelectionMiddlePoint(features.get(0));
+                            //editingObject.updateSelectionVerticeIndex(index);
+                            editingObject.updateEditingPolygonAndVertex();
+                        }
+                        Point point = ((Point)clickedFeature.geometry());
+                        setMarker(new LatLng(point.latitude(), point.longitude()));
+
+                        return true;
+                    }
+
                     if (features.get(0).hasNonNullValueForProperty("index")) {
                         clickedFeature = features.get(0);
                         index = features.get(0).getNumberProperty("index").intValue();
@@ -455,11 +441,10 @@ public class MapDrawable
                         if (editingObject != null) {
                             editingObject.updateSelectionVerticeIndex(index);
                             editingObject.updateEditingPolygonAndVertex();
+                            editingObject.displayMiddlePoints(false, true);
                         }
-
                         Point point = ((Point)clickedFeature.geometry());
                         setMarker(new LatLng(point.latitude(), point.longitude()));
-
                         return true;
                     }
                 } else { // no select - no touch precess return false
@@ -524,17 +509,20 @@ public class MapDrawable
                         mapFragment.get().processMapClick(screenPoint.x, screenPoint.y);
                 clickPoint = null;
 
-                if (isDragging) {
-                    if (editingObject != null)
+                if (isDragging || isSwitchVertex ) {
+                    if (editingObject != null) {
                         mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
-                    LatLng pointReleased = editingObject.getSelectedPoint();
+                        editingObject.regenerateVertexFeatures();
+                        editingObject.displayMiddlePoints(false, true);
+                        LatLng pointReleased = editingObject.getSelectedPoint();
 
-                    if (pointReleased == null)
+                        if (pointReleased != null)
+                            setMarker(pointReleased);
+                    } else
                         setMarker(event);
-                    else
-                        setMarker(pointReleased);
                 }
                 isDragging = false;
+                isSwitchVertex = false;
                 deltaPoint = null;
                 startEvent = null;
                 return false;
@@ -647,17 +635,19 @@ public class MapDrawable
         }
 
         if (viewedFeature != null) {
-            viewedFeature.addStringProperty("color", colorLightBlue);
+
+            var featureSelected = copyFeature(viewedFeature);
+            featureSelected.addStringProperty("color", colorLightBlue);
 
             int type = ((VectorLayer)getLayer(layerdID)).getGeometryType();
 
             if  (type == GeoConstants.GTPoint || type == GeoConstants.GTMultiPoint) {
-                selectedDotSource.setGeoJson(viewedFeature);
+                selectedDotSource.setGeoJson(featureSelected);
             }
 
             if  (type == GeoConstants.GTPolygon || type == GeoConstants.GTMultiPolygon
              || type == GeoConstants.GTLineString ||type == GeoConstants.GTMultiLineString ) {
-                selectedPolySource.setGeoJson(viewedFeature);
+                selectedPolySource.setGeoJson(featureSelected);
             }
 
             this.originalSelectedFeature = originalSelectedFeature;
@@ -697,13 +687,14 @@ public class MapDrawable
         if (editingFeatureTmp != null) {
             selectedEditedSource = sourceHashMap.get(layerdID);
             editingFeature = editingFeatureTmp;
-            editingFeature.addStringProperty("color", colorRED);
+
 
             int type = ((VectorLayer)getLayer(layerdID)).getGeometryType();
             GeoJsonSource choosed = null;
             if  (type == GeoConstants.GTPoint || type == GeoConstants.GTMultiPoint) {
                 selectedDotSource.setGeoJson(FeatureCollection.fromFeature(editingFeature));
                 choosed = selectedDotSource;
+                editingFeature.addStringProperty("color", colorRED);
             }
 
             if  (type == GeoConstants.GTPolygon || type == GeoConstants.GTMultiPolygon) {
@@ -716,7 +707,8 @@ public class MapDrawable
                 choosed = selectedPolySource;
             }
 
-            editingFeatureOriginal = editingFeatureTmp;
+            editingFeatureOriginal = copyFeature(editingFeatureTmp);
+
             polygonFeatures = sourceFeaturesHashMap.get(layerdID);
             this.originalSelectedFeature = originalSelectedFeature;
 
@@ -727,12 +719,13 @@ public class MapDrawable
                     polygonFeatures,
                     //editPolySource,
                     choosed,
-                    vertexSource);
+                    vertexSource,
+                    markerSource);
             editingObject.extractVertices(editingFeature,  true);
 
             LatLng selectedPoint = editingObject.getSelectedPoint();
             setMarker(selectedPoint);
-
+            editingObject.updateEditingPolygonAndVertex();
         }
     }
 
@@ -783,8 +776,6 @@ public class MapDrawable
         if  (newGeometry == null)
             return;
 
-
-
         if (newGeometry instanceof GeoLineString){
             org.maplibre.geojson.Feature featureML = getFeatureFromNGFeatureLine((GeoLineString)newGeometry);
 
@@ -792,7 +783,6 @@ public class MapDrawable
                 copyProperties(editingObject.editingFeature, featureML);
 
             selectedPolySource.setGeoJson(featureML);
-
             editingObject.extractVertices(featureML,  false);
             editingObject.editingFeature = featureML;
         }
@@ -815,7 +805,6 @@ public class MapDrawable
              if(editingObject  != null && editingObject.editingFeature != null)
                 copyProperties(editingObject.editingFeature, featureML);
 
-
             selectedPolySource.setGeoJson(featureML);
 
             editingObject.extractVertices(featureML,  false);
@@ -826,7 +815,6 @@ public class MapDrawable
 
             if(editingObject  != null && editingObject.editingFeature != null)
                 copyProperties(editingObject.editingFeature, featureML);
-
 
             selectedPolySource.setGeoJson(featureML);
 
@@ -865,15 +853,17 @@ public class MapDrawable
     public void  cancelFeatureEdit(boolean backToOriginal){
         unselectFeatureFromEdit(backToOriginal);
         hideMarker();
+        startFeatureSelectionForView(mapFragment.get().getSelectedLayerId(),originalSelectedFeature );
     }
 
     public void unselectFeatureFromView(){
         if (viewedFeature != null) {
-            viewedFeature = null;
+            //set color back
+            viewedFeature.addStringProperty("color", colorBlue);
 
+            viewedFeature = null;
             selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             selectedDotSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
-
         }
     }
 
@@ -896,7 +886,6 @@ public class MapDrawable
                 choosed = selectedPolySource;
             }
 
-
             if  (editingObject instanceof MPLFeaturesUtils.LineEditClass  ) {
                 choosed = selectedPolySource;
             }
@@ -905,10 +894,18 @@ public class MapDrawable
             choosed.setGeoJson(backToOriginal? editingFeatureOriginal : editingObject.editingFeature);
             editingObject = null;
             editingFeatureOriginal = null;
+            editingFeature = null;
             //editPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             vertexSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             //editingVertices.clear();
         }
+
+    }
+
+    public org.maplibre.geojson.Feature copyFeature(org.maplibre.geojson.Feature from ){
+        org.maplibre.geojson.Feature newFeature = org.maplibre.geojson.Feature.fromGeometry(from.geometry());
+        copyProperties(from, newFeature);
+        return newFeature;
     }
 
     public void copyProperties(org.maplibre.geojson.Feature from, org.maplibre.geojson.Feature targetFeature){
@@ -931,15 +928,10 @@ public class MapDrawable
         }
     }
 
-
-
-
     public void clearMapListeners(){
         maplibreMap.get().removeOnMapClickListener(this);
         maplibreMap.get().removeOnMapLongClickListener(this);
     }
-
-
 
     @Override
     public void draw(
@@ -949,7 +941,6 @@ public class MapDrawable
             mDisplay.draw(canvas, clearBackground);
         }
     }
-
 
     @Override
     public void draw(
@@ -962,7 +953,6 @@ public class MapDrawable
             mDisplay.draw(canvas, x, y, clearBackground);
         }
     }
-
 
     @Override
     public void draw(
@@ -1265,6 +1255,51 @@ public class MapDrawable
     public void setBackground(Bitmap background) {
         mDisplay.setBackground(background);
     }
+
+    public boolean deleteCurrentPoint(){
+        if (editingObject != null) {
+            editingObject.deleteCurrentPoint();
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+        }
+            return true;
+    }
+
+
+    public boolean moveToPoint(LatLng point){
+        if (editingObject != null) {
+            editingObject.movePointTo(point);
+        }
+        return true;
+    }
+
+
+//    public boolean onOptionsForEditMode(){
+//
+//        boolean result = false;
+//        if (id == R.id.menu_edit_move_point_to_center) {
+//            result = moveSelectedPoint(mCanvasCenterX, mCanvasCenterY);
+//        } else if (id == R.id.menu_edit_move_point_to_current_location) {
+//            result = movePointToLocation();
+//        } else if (id == R.id.menu_edit_add_new_point) {
+//            result = addGeometryToMulti(GeoConstants.GTPoint);
+//        } else if (id == R.id.menu_edit_add_new_line) {
+//            result = addGeometryToMulti(GeoConstants.GTLineString);
+//        } else if (id == R.id.menu_edit_add_new_polygon) {
+//            result = addGeometryToMulti(GeoConstants.GTPolygon);
+//        } else if (id == R.id.menu_edit_add_new_inner_ring) {
+//            result = addInnerRing();
+//        } else if (id == R.id.menu_edit_delete_inner_ring) {
+//            result = deleteInnerRing();
+//        } else if (id == R.id.menu_edit_delete_line || id == R.id.menu_edit_delete_polygon) {
+//            result = deleteGeometry();
+//        } else if (id == R.id.menu_edit_delete_point) {
+//            result = deletePoint();
+//        } else if (id == R.id.menu_edit_by_walk) {
+//            result = true;
+//        } else if (id == R.id.menu_edit_by_touch) {
+//            result = true;
+//        }
+//    }
 
 //    public void showTouchArea(LatLng minPoint, LatLng maxPoint){
 //
