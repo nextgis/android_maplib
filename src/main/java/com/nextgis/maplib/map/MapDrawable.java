@@ -26,7 +26,6 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -54,6 +53,7 @@ import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
 import com.nextgis.maplib.map.MLP.MultiPointEditClass;
+import com.nextgis.maplib.map.MLP.MultiPolygonEditClass;
 import com.nextgis.maplib.map.MLP.PointEditClass;
 import com.nextgis.maplib.map.MLP.PolygonEditClass;
 import com.nextgis.maplib.util.Constants;
@@ -71,8 +71,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
@@ -87,8 +85,6 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMul
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMultiPolygon;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePolygon;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.getMultiPolygonFeatures;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.getPolygonFeatures;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.namePrefix;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_featureid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
@@ -109,16 +105,12 @@ import org.maplibre.android.maps.Projection;
 import org.maplibre.android.maps.Style;
 import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
-import org.maplibre.android.style.layers.FillLayer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
 import org.maplibre.geojson.FeatureCollection;
-import org.maplibre.geojson.Geometry;
-import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.Point;
-import org.maplibre.geojson.Polygon;
 
 public class MapDrawable
         extends MapEventSource
@@ -424,7 +416,7 @@ public class MapDrawable
                     if (features.get(0).hasNonNullValueForProperty("middle")) {
                         isSwitchVertex = true;
                         // need add point
-                        int previndex = features.get(0).getNumberProperty("previndex").intValue();
+                        //int previndex = features.get(0).getNumberProperty("previndex").intValue();
                         clickedFeature = features.get(0);
                         //index = features.get(0).getNumberProperty("index").intValue();
 
@@ -449,6 +441,7 @@ public class MapDrawable
                             editingObject.updateSelectionVerticeIndex(index);
                             editingObject.updateEditingPolygonAndVertex();
                             editingObject.displayMiddlePoints(false, true);
+                            mapFragment.get().updateActions(editingObject);
                         }
                         Point point = ((Point)clickedFeature.geometry());
                         setMarker(new LatLng(point.latitude(), point.longitude()));
@@ -470,7 +463,7 @@ public class MapDrawable
                 if (isDragging && selectedVertexIndex != -1) {
                     if (!hasEditeometry) {
                         hasEditeometry = true;
-                        mapFragment.get().setHasEdit();
+                        //mapFragment.get().setHasEdit();
                     }
                     if(deltaPoint == null){
                         if (editingObject != null){
@@ -521,7 +514,7 @@ public class MapDrawable
 
                 if (isDragging || isSwitchVertex ) {
                     if (editingObject != null) {
-                        mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+                        mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
                         editingObject.regenerateVertexFeatures();
                         editingObject.displayMiddlePoints(false, true);
                         LatLng pointReleased = editingObject.getSelectedPoint();
@@ -890,20 +883,9 @@ public class MapDrawable
             if  (editingObject instanceof PointEditClass ||
                     editingObject instanceof MultiPointEditClass) {
                 choosed = selectedDotSource;
-            }
-
-            if  (editingObject instanceof PolygonEditClass) {
+            } else{
                 choosed = selectedPolySource;
             }
-
-            if  (editingObject instanceof LineEditClass) {
-                choosed = selectedPolySource;
-            }
-
-            if  (editingObject instanceof MultiLineEditClass) {
-                choosed = selectedPolySource;
-            }
-
 
             choosed.setGeoJson(backToOriginal? editingFeatureOriginal : editingObject.editingFeature);
             editingObject = null;
@@ -1273,7 +1255,7 @@ public class MapDrawable
     public boolean deleteCurrentPoint(){
         if (editingObject != null) {
             editingObject.deleteCurrentPoint();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
             return true;
     }
@@ -1281,7 +1263,7 @@ public class MapDrawable
     public boolean deleteCurrentLine(){
         if (editingObject != null && editingObject instanceof MultiLineEditClass) {
             ((MultiLineEditClass)editingObject).deleteCurrentLine();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -1289,7 +1271,7 @@ public class MapDrawable
     public boolean addNewPoint(LatLng center){
         if (editingObject != null && editingObject instanceof MultiPointEditClass) {
             ((MultiPointEditClass)editingObject).addNewPoint(center);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -1297,11 +1279,52 @@ public class MapDrawable
     public boolean addNewLine(LatLng center, Projection projection){
         if (editingObject != null && editingObject instanceof MultiLineEditClass) {
             ((MultiLineEditClass)editingObject).addNewLine(center, projection);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+
         }
         return true;
     }
 
+    public boolean deleteCurrentHole(){
+        if (editingObject != null && editingObject instanceof PolygonEditClass) {
+            ((PolygonEditClass)editingObject).deleteCurrentHole();
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        }
+
+        if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
+            ((MultiPolygonEditClass)editingObject).deleteSelectedPolygon();
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        }
+        return true;
+    }
+
+    public boolean addHole(LatLng center, Projection projection){
+        if (editingObject != null && editingObject instanceof PolygonEditClass) {
+            ((PolygonEditClass)editingObject).addHole(center, projection);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        }
+        if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
+            ((MultiPolygonEditClass)editingObject).addHole(center, projection);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        }
+        return true;
+    }
+
+    public boolean deleteCurrentPolygon(){
+        if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
+            ((MultiPolygonEditClass)editingObject).deleteSelectedPolygon();
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        }
+        return true;
+    }
+
+    public boolean addNewPolygon(LatLng center, Projection projection){
+        if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
+            ((MultiPolygonEditClass)editingObject).addNewPolygonAt(center,projection);
+            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        }
+        return true;
+    }
 
     public boolean moveToPoint(LatLng point){
         if (editingObject != null) {
