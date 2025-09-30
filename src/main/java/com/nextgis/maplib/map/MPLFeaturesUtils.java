@@ -12,6 +12,7 @@ import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
 import com.nextgis.maplib.map.MLP.MultiPointEditClass;
+import com.nextgis.maplib.map.MLP.MultiPolygonEditClass;
 import com.nextgis.maplib.map.MLP.PointEditClass;
 import com.nextgis.maplib.map.MLP.PolygonEditClass;
 import com.nextgis.maplib.util.GeoConstants;
@@ -76,7 +77,11 @@ public class MPLFeaturesUtils {
         } else if (geoType == GeoConstants.GTMultiLineString) {
             return new MultiLineEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
                     choosedSource, vertexSource, markerSource);
-        } else
+        } else if (geoType == GeoConstants.GTMultiPolygon) {
+            return new MultiPolygonEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
+                    choosedSource, vertexSource, markerSource);
+        }
+        else
             return null;
     }
 
