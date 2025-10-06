@@ -137,7 +137,7 @@ public class MapEventSource
         try {
             ((IGISApplication)getContext().getApplicationContext()).addLayerByID(layer.getId());
         } catch (Exception ex){
-
+            Log.e("ERROR", "error load layer " + ex.getMessage() );
         }
 
 

@@ -114,9 +114,7 @@ public class MultiLineEditClass extends MLGeometryEditClass {
                 Point pt1 = editingVertices.get(globalIndexPt1);
                 Point pt2 = editingVertices.get(globalIndexPt2);
 
-                double midLat = (pt1.latitude() + pt2.latitude()) / 2.0;
-                double midLon = (pt1.longitude() + pt2.longitude()) / 2.0;
-                Point middlePoint = Point.fromLngLat(midLon, midLat);
+                Point middlePoint = getMapMidpoint(pt1, pt2);
                 middleVertices.add(middlePoint);
 
                 org.maplibre.geojson.Feature middleVertexFeature = org.maplibre.geojson.Feature.fromGeometry(middlePoint);

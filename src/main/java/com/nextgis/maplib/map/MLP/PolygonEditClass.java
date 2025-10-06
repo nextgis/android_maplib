@@ -16,6 +16,7 @@ import org.maplibre.geojson.Geometry;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,14 +44,34 @@ public class PolygonEditClass extends MLGeometryEditClass {
     // Inherited: List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
 
 
-    public PolygonEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> polygonFeatures,
-                            GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource) {
+    public PolygonEditClass(int geoType,
+                            GeoJsonSource selectedEditedSource, // 1
+                            Feature editingFeature,
+                            List<Feature> polygonFeatures, // 3
+                            GeoJsonSource selectedPolySource,  //4
+                            GeoJsonSource vertexSource,
+                            GeoJsonSource markerSource) {
         super(geoType, selectedEditedSource, editingFeature, polygonFeatures,
                 selectedPolySource, vertexSource, markerSource);
 
         // Remove the currently editing feature from the background list if it exists
         if (editingFeature != null && editingFeature.hasProperty(MPLFeaturesUtils.prop_order)) {
-            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+
+            Iterator<Feature> it = polygonFeatures.iterator();
+            String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+
+            while (it.hasNext()) {
+                Feature f = it.next();
+                if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+                    it.remove();
+                }
+            }
+
+
+            //polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+
+
+
         }
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
 
@@ -60,9 +81,15 @@ public class PolygonEditClass extends MLGeometryEditClass {
             // Handle new polygon creation if needed, perhaps with default points
             this.editingFeature = Feature.fromGeometry(Polygon.fromLngLats(new ArrayList<>()));
             if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-                originalEditingFeature.properties().keySet().forEach(key -> {
+
+                for (String key : originalEditingFeature.properties().keySet()) {
                     this.editingFeature.addProperty(key, originalEditingFeature.properties().get(key));
-                });
+                }
+
+
+//                originalEditingFeature.properties().keySet().forEach(key -> {
+//                    this.editingFeature.addProperty(key, originalEditingFeature.properties().get(key));
+//                });
             }
             this.editingFeature.addStringProperty("color", MPLFeaturesUtils.colorRED);
             selectedPolySource.setGeoJson(this.editingFeature);
@@ -173,11 +200,7 @@ public class PolygonEditClass extends MLGeometryEditClass {
                     Point pt1 = currentRingPoints.get(j);
                     // For a closed ring, the last point connects to the first
                     Point pt2 = currentRingPoints.get((j + 1) % currentRingPoints.size());
-
-                    Point middlePoint = Point.fromLngLat(
-                            (pt1.longitude() + pt2.longitude()) / 2.0,
-                            (pt1.latitude() + pt2.latitude()) / 2.0
-                    );
+                    Point middlePoint = getMapMidpoint(pt1, pt2);
 
                     Feature middleFeature = Feature.fromGeometry(middlePoint);
                     middleFeature.addBooleanProperty("middle", true);
@@ -299,9 +322,13 @@ public class PolygonEditClass extends MLGeometryEditClass {
         Feature newFeature = Feature.fromGeometry(polygonGeom);
 
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-            originalEditingFeature.properties().keySet().forEach(key -> {
+            for (String key : originalEditingFeature.properties().keySet()) {
                 newFeature.addProperty(key, originalEditingFeature.properties().get(key));
-            });
+            }
+
+//            originalEditingFeature.properties().keySet().forEach(key -> {
+//                newFeature.addProperty(key, originalEditingFeature.properties().get(key));
+//            });
         }
         newFeature.addStringProperty("color", MPLFeaturesUtils.colorRED); // Highlight editing polygon
         editingFeature = newFeature;
@@ -463,10 +490,12 @@ public class PolygonEditClass extends MLGeometryEditClass {
         return selectedRingIndex;
     }
 
-
-
     public void addHole(LatLng center, Projection projection) {
+        addHole(createPointsForRing(center, projection, false));
+    }
 
+    static public List<org.maplibre.geojson.Point> createPointsForRing(LatLng center, Projection projection,
+                                                                       boolean closeRing){
         List<org.maplibre.geojson.Point> result = new ArrayList<>();
         if (projection == null || center == null) {
             // Fallback to a small fixed degree offset if projection or center is not available
@@ -507,9 +536,11 @@ public class PolygonEditClass extends MLGeometryEditClass {
             result.add(point1);
             result.add(point2);
             result.add(point3);
+            if (closeRing)
+                result.add(point1);
+
         }
 
-        addHole(result);
-
+        return result;
     }
 }

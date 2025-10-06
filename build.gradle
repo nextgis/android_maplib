@@ -25,7 +25,7 @@ apply plugin: 'com.android.library'
 
 android {
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 26
         compileSdk 36
         targetSdkVersion 36
         versionName '3.0.0'
@@ -37,6 +37,11 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -62,6 +67,9 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
     implementation 'org.maplibre.gl:android-sdk:11.13.0'
+
+//    implementation 'org.maplibre.gl:android-sdk-turf:6.0.1'
+
 
     implementation 'com.github.barsrb:hyperlog-android:master-SNAPSHOT'
 

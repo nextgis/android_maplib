@@ -385,10 +385,14 @@ public class MPLFeaturesUtils {
                             PropertyFactory.circleColor("#FF0000"),
                             PropertyFactory.fillOpacity(0.8f));
         } else if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
+
+
             newLayer = new FillLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
                     .withProperties(
                             PropertyFactory.fillColor("#FF00FF"),
                             PropertyFactory.fillOpacity(0.5f));
+
+
         } else if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
             newLayer = new LineLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
                     .withProperties(

@@ -252,10 +252,10 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
                     Point pt1 = currentRingMainPoints.get(vIdxInRing);
                     Point pt2 = currentRingMainPoints.get((vIdxInRing + 1) % currentRingMainPoints.size());
 
-                    Point middleP = Point.fromLngLat((pt1.longitude() + pt2.longitude()) / 2.0, (pt1.latitude() + pt2.latitude()) / 2.0);
-                    currentRingMiddlePointsList.add(middleP);
+                    Point middlePoint = getMapMidpoint(pt1, pt2);
+                    currentRingMiddlePointsList.add(middlePoint);
 
-                    Feature middleFeature = Feature.fromGeometry(middleP);
+                    Feature middleFeature = Feature.fromGeometry(middlePoint);
                     middleFeature.addBooleanProperty("middle", true);
                     middleFeature.addNumberProperty("polygonIndex", pIdx);
                     middleFeature.addNumberProperty("ringIndexInPolygon", currentRingNumberInPolygon);

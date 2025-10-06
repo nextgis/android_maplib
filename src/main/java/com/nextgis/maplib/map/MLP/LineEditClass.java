@@ -10,7 +10,9 @@ import org.maplibre.geojson.Geometry;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.Point;
 
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -88,9 +90,7 @@ public class LineEditClass extends MLGeometryEditClass {
         for (int index = 0; index < editingVertices.size() - 1; index++) {
             Point pt1 = editingVertices.get(index);
             Point pt2 = editingVertices.get(index + 1);
-            double midLat = pt1.latitude() - (pt1.latitude() - pt2.latitude()) / 2.0;
-            double midLon = pt1.longitude() - (pt1.longitude() - pt2.longitude()) / 2.0;
-            Point middlePoint = Point.fromLngLat(midLon, midLat);
+            Point middlePoint = getMapMidpoint(pt1, pt2);
             middleVertices.add(middlePoint);
 
             org.maplibre.geojson.Feature vertexFeature = org.maplibre.geojson.Feature.fromGeometry(middlePoint);

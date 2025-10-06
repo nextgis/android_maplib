@@ -1,5 +1,8 @@
 package com.nextgis.maplib.map.MLP;
 
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_featureid;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
+
 import android.graphics.PointF;
 
 import org.maplibre.android.geometry.LatLng;
@@ -123,5 +126,41 @@ public abstract class MLGeometryEditClass {
         }
 
         return result;
+    }
+
+    public void finishCreateNewFeature(long id){
+        editingFeature.addStringProperty(prop_featureid, String.valueOf(id));
+    }
+
+
+    // перевод из lat/lon → WebMercator (EPSG:3857)
+    protected static double[] projectWebMercator(double lat, double lon) {
+        double x = lon * 20037508.34 / 180.0;
+        double y = Math.log(Math.tan((90.0 + lat) * Math.PI / 360.0)) / (Math.PI / 180.0);
+        y = y * 20037508.34 / 180.0;
+        return new double[]{x, y};
+    }
+
+    // обратный перевод из WebMercator → lat/lon
+    protected static double[] unprojectWebMercator(double x, double y) {
+        double lon = (x / 20037508.34) * 180.0;
+        double lat = (y / 20037508.34) * 180.0;
+        lat = 180.0 / Math.PI * (2 * Math.atan(Math.exp(lat * Math.PI / 180.0)) - Math.PI / 2.0);
+        return new double[]{lat, lon};
+    }
+
+    // получить midpoint на карте
+    protected static Point getMapMidpoint(Point pt1, Point pt2) {
+
+        double[] p1 = projectWebMercator(pt1.latitude(), pt1.longitude());
+        double[] p2 = projectWebMercator(pt2.latitude(), pt2.longitude());
+
+        double midX = (p1[0] + p2[0]) / 2.0;
+        double midY = (p1[1] + p2[1]) / 2.0;
+
+        double[] result =  unprojectWebMercator(midX, midY);
+
+        Point mid = Point.fromLngLat(result[1], result[0]);
+        return mid;
     }
 }
