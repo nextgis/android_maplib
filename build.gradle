@@ -29,7 +29,6 @@ android {
         compileSdk 36
         targetSdkVersion 36
         versionName '3.0.0'
-
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
