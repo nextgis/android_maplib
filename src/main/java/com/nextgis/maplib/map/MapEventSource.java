@@ -48,11 +48,15 @@ public class MapEventSource
         extends MapContentProviderHelper
 {
     protected static final String BUNDLE_ID_KEY             = "id";
+    protected static final String BUNDLE_ID_NEW_FEATURE_KEY = "id_new_feature";
+    protected static final String BUNDLE_ID_OLD_FEATURE_KEY = "id_old_feature";
     protected static final String BUNDLE_TYPE_KEY           = "type";
     protected static final String BUNDLE_DONE_KEY           = "done";
     protected static final String BUNDLE_ZOOM_KEY           = "zoom";
     protected static final String BUNDLE_X_KEY              = "x";
     protected static final String BUNDLE_Y_KEY              = "y";
+    protected static final String BUNDLE_ID_UPDATE_TYPE     = "id_old_feature";
+
     protected final static int    EVENT_onLayerAdded        = 1;
     protected final static int    EVENT_onLayerDeleted      = 2;
     protected final static int    EVENT_onLayerChanged      = 3;
@@ -60,6 +64,7 @@ public class MapEventSource
     protected final static int    EVENT_onLayersReordered   = 5;
     protected final static int    EVENT_onLayerDrawFinished = 6;
     protected final static int    EVENT_onLayerDrawStarted  = 7;
+    protected final static int    EVENT_onLayerChangedFeatureID      = 8;
     protected        List<MapEventListener> mListeners;
     protected static Handler                mHandler;
     protected        boolean                mFreeze;
@@ -162,9 +167,6 @@ public class MapEventSource
     {
         super.onLayerChanged(layer);
 
-//        Log.e("MPL_LAYERCHANGED", "onLayerChanged call" + layer.getId());
-//        ((IGISApplication)getContext().getApplicationContext()).reloadLayerByID(layer.getId());
-
         if (mListeners == null) {
             return;
         }
@@ -178,6 +180,25 @@ public class MapEventSource
         mHandler.sendMessage(msg);
     }
 
+    @Override
+    protected void onLayerChangedFeatureId(ILayer layer, long oldFeatureId, long newFeatureId, int layerId)
+    {
+        super.onLayerChangedFeatureId(layer, oldFeatureId,  newFeatureId, layerId);
+
+        if (mListeners == null) {
+            return;
+        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_ID_KEY, layer.getId());
+        bundle.putLong(BUNDLE_ID_OLD_FEATURE_KEY, oldFeatureId);
+        bundle.putLong(BUNDLE_ID_NEW_FEATURE_KEY, newFeatureId);
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerChangedFeatureID);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+    }
 
     /**
      * Send layer delete event to all listeners
@@ -347,6 +368,12 @@ public class MapEventSource
                             break;
                         case EVENT_onLayerChanged:
                             listener.onLayerChanged(resultData.getInt(BUNDLE_ID_KEY));
+                            break;
+                        case EVENT_onLayerChangedFeatureID:
+                            listener.onLayerChangedFeatureId(
+                                    resultData.getLong(BUNDLE_ID_OLD_FEATURE_KEY),
+                                    resultData.getLong(BUNDLE_ID_NEW_FEATURE_KEY),
+                                    resultData.getInt(BUNDLE_ID_KEY));
                             break;
                         case EVENT_onExtentChanged:
                             listener.onExtentChanged(

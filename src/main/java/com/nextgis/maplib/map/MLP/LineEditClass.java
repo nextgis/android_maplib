@@ -165,11 +165,9 @@ public class LineEditClass extends MLGeometryEditClass {
         LineString lineString = LineString.fromLngLats(editingVertices);
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(lineString);
 
-        if (originalEditingFeature != null) {
-            String order = originalEditingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
-            if (order != null) {
-                feature.addStringProperty(MPLFeaturesUtils.prop_order, order);
-            }
+        if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
+            originalEditingFeature.properties().keySet().forEach(key -> {
+                feature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
 
         editingFeature = feature;

@@ -1,5 +1,7 @@
 package com.nextgis.maplib.map;
 
+import android.util.Log;
+
 import com.nextgis.maplib.datasource.GeoGeometryCollection;
 import com.nextgis.maplib.datasource.GeoLineString;
 import com.nextgis.maplib.datasource.GeoLinearRing;
@@ -8,6 +10,9 @@ import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
+import com.nextgis.maplib.display.SimpleLineStyle;
+import com.nextgis.maplib.display.SimpleMarkerStyle;
+import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
@@ -374,35 +379,128 @@ public class MPLFeaturesUtils {
         sourceHashMap.put(layerId, vectorSource);
     }
 
-    static public void createFillLayerForLayer(int layerId, int layerType, final Style style, Map<Integer, org.maplibre.android.style.layers.Layer> layersHashMap) {
-        String currentNamePrefix = getTypePrefix(layerType);
+    static public void createFillLayerForLayer(int layerId, int layerType,
+                                               final Style style,
+                                               Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap,
+                                               Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap2,
+                                               com.nextgis.maplib.display.Style layerStyle,
+                                               boolean changeLayer){
         org.maplibre.android.style.layers.Layer newLayer = null;
+        org.maplibre.android.style.layers.Layer newLayer2 = null;
+
+        String currentNamePrefix = getTypePrefix(layerType);
+
+        int fistFillColor = 0;
+        int outlineColor = 0;
+        float alpha  = 0.5f;
+
+        float thinkness = 3; // outline
+
+        // dot
+        float rasuis = 6; // dot
+        int type; // circle quadro triangle
+
+        // line
+        int lineType; // line - fi
+
+        // poly
+        boolean isFilled; // polygon - is filled
+
+        if (layerStyle!= null){
+            fistFillColor = layerStyle.getColor();
+            outlineColor = layerStyle.getOutColor();
+            alpha = layerStyle.getAlpha() / 256.0f;
+            thinkness = layerStyle.getWidth();
+            if (layerStyle instanceof SimpleMarkerStyle){ // dots
+                rasuis = ((SimpleMarkerStyle)layerStyle).getSize();
+                type = ((SimpleMarkerStyle)layerStyle).getType();
+            }
+            if (layerStyle instanceof SimpleLineStyle){ //line
+
+                lineType = ((SimpleLineStyle)layerStyle ).getType();
+            }
+            if (layerStyle instanceof SimplePolygonStyle){ //line
+                isFilled = ((SimplePolygonStyle)layerStyle ).isFill();
+            }
+        }
+
 
         if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint) {
-            newLayer = new CircleLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
+            if (changeLayer) {
+                Log.e("PPOOIINNTT", "color set to" + getColorName(fistFillColor));
+                newLayer = style.getLayer(currentNamePrefix + "layer-" + layerId);
+                newLayer.setProperties(PropertyFactory.circleRadius(rasuis),
+                        PropertyFactory.circleColor(getColorName(fistFillColor)),
+                        PropertyFactory.circleStrokeColor(getColorName(outlineColor)),  //
+                        PropertyFactory.circleStrokeWidth(thinkness),         //
+                        PropertyFactory.circleStrokeOpacity(1f));
+            }
+            else
+                newLayer = new CircleLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
                     .withProperties(
-                            PropertyFactory.circleRadius(3f),
-                            PropertyFactory.circleColor("#FF0000"),
-                            PropertyFactory.fillOpacity(0.8f));
+                            PropertyFactory.circleRadius(rasuis),
+                            PropertyFactory.circleColor(getColorName(fistFillColor)),
+                            //PropertyFactory.fillOpacity(alpha));
+
+                    PropertyFactory.circleStrokeColor(getColorName(outlineColor)),  //
+                    PropertyFactory.circleStrokeWidth(thinkness),         //
+                    PropertyFactory.circleStrokeOpacity(1f));
+
+
         } else if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
+            if (changeLayer) {
+                newLayer = style.getLayer(currentNamePrefix + "layer-" + layerId);
+                newLayer.setProperties(
+                                PropertyFactory.fillColor(getColorName(fistFillColor)),
+                                PropertyFactory.fillOpacity(alpha));
 
+                newLayer2 = style.getLayer(currentNamePrefix + "layer-" + layerId + "_outline");
+                newLayer2.setProperties(
+                                PropertyFactory.lineColor(getColorName(outlineColor)),
+                                PropertyFactory.lineWidth(thinkness));
+            } else {
+                newLayer = new FillLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
+                        .withProperties(
+                                PropertyFactory.fillColor(getColorName(fistFillColor)),
+                                PropertyFactory.fillOpacity(alpha));
 
-            newLayer = new FillLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
-                    .withProperties(
-                            PropertyFactory.fillColor("#FF00FF"),
-                            PropertyFactory.fillOpacity(0.5f));
-
+                newLayer2 = new LineLayer(currentNamePrefix + "layer-" + layerId + "_outline", currentNamePrefix + "source-" + layerId)
+                        .withProperties(
+                                PropertyFactory.lineColor(getColorName(outlineColor)),
+                                PropertyFactory.lineWidth(thinkness));
+            }
 
         } else if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
-            newLayer = new LineLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
+            if (changeLayer) {
+                newLayer = style.getLayer(currentNamePrefix + "layer-" + layerId);
+                newLayer.setProperties( PropertyFactory.lineColor(getColorName(fistFillColor)),
+                        PropertyFactory.lineWidth(thinkness));
+            } else
+
+                newLayer = new LineLayer(currentNamePrefix + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
                     .withProperties(
-                            PropertyFactory.lineColor(Expression.get("color")),
-                            PropertyFactory.lineWidth(2.0f));
+                            //PropertyFactory.lineColor(Expression.get("color")),
+                            PropertyFactory.lineColor(getColorName(fistFillColor)),
+                            PropertyFactory.lineWidth(thinkness));
         }
 
         if (newLayer != null) {
-            style.addLayer(newLayer);
-            layersHashMap.put(layerId, newLayer);
+            if (!changeLayer) {
+                style.addLayer(newLayer);
+                layersHashMap.put(layerId, newLayer);
+            }
         }
+
+        if (newLayer2 != null) {
+            if (!changeLayer) {
+                style.addLayer(newLayer2);
+                layersHashMap2.put(layerId, newLayer2);
+            }
+        }
+
+    }
+
+    public static String getColorName(int color) {
+        return String.format("#%06X", (0xFFFFFF & color));
     }
 }

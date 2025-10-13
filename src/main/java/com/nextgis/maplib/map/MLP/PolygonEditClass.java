@@ -57,21 +57,17 @@ public class PolygonEditClass extends MLGeometryEditClass {
         // Remove the currently editing feature from the background list if it exists
         if (editingFeature != null && editingFeature.hasProperty(MPLFeaturesUtils.prop_order)) {
 
-            Iterator<Feature> it = polygonFeatures.iterator();
-            String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+//            Iterator<Feature> it = polygonFeatures.iterator();
+//            String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
 
-            while (it.hasNext()) {
-                Feature f = it.next();
-                if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
-                    it.remove();
-                }
-            }
+//            while (it.hasNext()) {
+//                Feature f = it.next();
+//                if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+//                    it.remove();
+//                }
+//            }
 
-
-            //polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
-
-
-
+            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
         }
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
 
@@ -322,13 +318,8 @@ public class PolygonEditClass extends MLGeometryEditClass {
         Feature newFeature = Feature.fromGeometry(polygonGeom);
 
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-            for (String key : originalEditingFeature.properties().keySet()) {
-                newFeature.addProperty(key, originalEditingFeature.properties().get(key));
-            }
-
-//            originalEditingFeature.properties().keySet().forEach(key -> {
-//                newFeature.addProperty(key, originalEditingFeature.properties().get(key));
-//            });
+            originalEditingFeature.properties().keySet().forEach(key -> {
+                newFeature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
         newFeature.addStringProperty("color", MPLFeaturesUtils.colorRED); // Highlight editing polygon
         editingFeature = newFeature;

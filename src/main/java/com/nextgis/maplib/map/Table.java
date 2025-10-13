@@ -71,8 +71,10 @@ public class Table implements ILayer, IJSONStore {
     @Override
     public void setName(String newName)
     {
+        //boolean sameValue = newName.equals(this.mName);
         this.mName = newName;
-        notifyLayerChanged();
+        //if (!sameValue)
+            notifyLayerChanged();
     }
 
 
@@ -106,6 +108,14 @@ public class Table implements ILayer, IJSONStore {
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
             group.onLayerChanged(this);
+        }
+    }
+
+    public void notifyLayerChangedFeature(long oldFeatureId, long newFeatureId, int layerId)
+    {
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            group.onLayerChangedFeatureId(this, oldFeatureId, newFeatureId, layerId);
         }
     }
 

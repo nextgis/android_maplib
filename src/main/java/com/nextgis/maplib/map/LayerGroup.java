@@ -561,6 +561,15 @@ public class LayerGroup
         }
     }
 
+    protected void onLayerChangedFeatureId(ILayer layer, long oldFeatureId, long newFeatureId, int layerId)
+    {
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            Log.e("onLayerChangedFeatureId", "layer group onLayerChanged call" + layer.getId());
+            group.onLayerChangedFeatureId(layer, oldFeatureId, newFeatureId,  layerId);
+
+        }
+    }
 
     protected void onLayerDeleted(int id)
     {

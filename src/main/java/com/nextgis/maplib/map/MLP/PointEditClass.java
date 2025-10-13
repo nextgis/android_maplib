@@ -78,12 +78,11 @@ public class PointEditClass extends MLGeometryEditClass {
         Point newPoint = Point.fromLngLat(point.longitude(), point.latitude());
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(newPoint);
 
-        if (originalEditingFeature != null) {
-            String order = originalEditingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
-            if (order != null) {
-                feature.addStringProperty(MPLFeaturesUtils.prop_order, order);
-            }
+        if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
+            originalEditingFeature.properties().keySet().forEach(key -> {
+                feature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
+
         editingFeature = feature;
         feature.addStringProperty("color", MPLFeaturesUtils.colorRED);
 

@@ -693,6 +693,15 @@ public class VectorLayer
     }
 
 
+    public Style getDefaultStyleNoExcept() {
+        try {
+            return ((SimpleFeatureRenderer)getRenderer()).getStyle();
+        }catch (Exception ex){
+            Log.e("style", ex.getMessage());
+            return null;
+        }
+    }
+
     public Style getDefaultStyle()
             throws Exception
     {
@@ -2408,6 +2417,9 @@ public class VectorLayer
         }
 
         notifyLayerChanged();
+
+        if (rowId != -1 && oldRowId != -1 )
+            notifyLayerChangedFeature(oldRowId, rowId, getId());
     }
 
 

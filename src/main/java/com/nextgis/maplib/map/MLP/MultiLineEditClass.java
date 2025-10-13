@@ -236,12 +236,9 @@ public class MultiLineEditClass extends MLGeometryEditClass {
 
         MultiLineString multiLineString = MultiLineString.fromLineStrings(lines);
         editingFeature = org.maplibre.geojson.Feature.fromGeometry(multiLineString);
-
-        if (originalEditingFeature != null) {
-            String order = originalEditingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
-            if (order != null) {
-                editingFeature.addStringProperty(MPLFeaturesUtils.prop_order, order);
-            }
+        if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
+            originalEditingFeature.properties().keySet().forEach(key -> {
+                editingFeature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
 
         // For display: color the selected line red, others light blue
@@ -402,26 +399,33 @@ public class MultiLineEditClass extends MLGeometryEditClass {
     }
 
     public void addNewLine(LatLng center, Projection projection) {
+        List<org.maplibre.geojson.Point> newPoints = getNewLinePoints(center, projection);
+
+        int newPointStartIndex = editingVertices.size();
+        editingVertices.addAll(newPoints);
+        lineSizes.add(2); // New line has 2 points
+        selectedVertexIndex = newPointStartIndex;
+
+        updateEditingPolygonAndVertex();
+        LatLng selectedLatLng = getSelectedPoint();
+        if (selectedLatLng != null) {
+            setMarker(selectedLatLng);
+        }
+    }
+
+    public static List<org.maplibre.geojson.Point> getNewLinePoints(LatLng center, Projection projection){
+        List<org.maplibre.geojson.Point> result = new ArrayList<>();
+
         if (projection == null || center == null) {
             // Fallback to a small fixed degree offset if projection or center is not available
             double offsetDegrees = 0.001;
             Point point1Geo = Point.fromLngLat(center != null ? center.getLongitude() - offsetDegrees : -offsetDegrees,
-                                             center != null ? center.getLatitude() + offsetDegrees : offsetDegrees);
+                    center != null ? center.getLatitude() + offsetDegrees : offsetDegrees);
             Point point2Geo = Point.fromLngLat(center != null ? center.getLongitude() + offsetDegrees : offsetDegrees,
-                                             center != null ? center.getLatitude() - offsetDegrees : -offsetDegrees);
-            
-            int newPointStartIndex = editingVertices.size();
-            editingVertices.add(point1Geo);
-            editingVertices.add(point2Geo);
-            lineSizes.add(2);
-            selectedVertexIndex = newPointStartIndex;
-
-            updateEditingPolygonAndVertex();
-            LatLng selectedLatLng = getSelectedPoint();
-            if (selectedLatLng != null) {
-                setMarker(selectedLatLng);
-            }
-            return;
+                    center != null ? center.getLatitude() - offsetDegrees : -offsetDegrees);
+            result.add(point1Geo);
+            result.add(point2Geo);
+            return result;
         }
 
         org.maplibre.android.geometry.VisibleRegion visibleRegion = projection.getVisibleRegion();
@@ -442,19 +446,9 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         Point point1 = Point.fromLngLat(latLng1.getLongitude(), latLng1.getLatitude());
         Point point2 = Point.fromLngLat(latLng2.getLongitude(), latLng2.getLatitude());
 
-        int newPointStartIndex = editingVertices.size();
-
-        editingVertices.add(point1);
-        editingVertices.add(point2);
-        lineSizes.add(2); // New line has 2 points
-
-        selectedVertexIndex = newPointStartIndex; // Select the first point of the new line
-
-        updateEditingPolygonAndVertex();
-
-        LatLng selectedLatLng = getSelectedPoint();
-        if (selectedLatLng != null) {
-            setMarker(selectedLatLng);
-        }
+        result.add(point1);
+        result.add(point2);
+        return result;
     }
+
 }

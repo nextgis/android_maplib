@@ -50,6 +50,15 @@ public interface MapEventListener
      */
     void onLayerChanged(int id);
 
+
+    /**
+     * Executed then layer changed
+     * @param layerId The changed layer identificator.
+     * @param oldFeatureId The changed feature identificator.
+     *@param newFeatureId The new feature identificator.
+     */
+    void onLayerChangedFeatureId(long oldFeatureId, long newFeatureId, int layerId);
+
     /**
      * Executed then map extent changed (i.e. user zoom in or out)
      * @param zoom New map zoom
