@@ -120,6 +120,7 @@ import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
+import org.maplibre.android.util.DefaultStyle;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -462,13 +463,19 @@ public class MapDrawable
                                         org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
                                         org.maplibre.android.style.layers.PropertyFactory.iconAnchor(
                                                 org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
-
                         style.addLayer(symbolLayer);
                     }
                 });
 
-                // Set map style
-                maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
+                // Set map style MPLB
+                DefaultStyle[] styles = Style.getPredefinedStyles();
+                if (styles != null && styles.length > 0) {
+                    String styleUrl = styles[0].getUrl();
+                    maplibreMap.get().setStyle(new Style.Builder().fromUri(styleUrl));
+                }
+
+                // Set map style NG
+                //maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
             });
         });
         executor.shutdown();

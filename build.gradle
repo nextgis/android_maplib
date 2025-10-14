@@ -65,7 +65,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation 'org.maplibre.gl:android-sdk:11.13.0'
+    implementation 'org.maplibre.gl:android-sdk:12.0.0'
 
 //    implementation 'org.maplibre.gl:android-sdk-turf:6.0.1'
 

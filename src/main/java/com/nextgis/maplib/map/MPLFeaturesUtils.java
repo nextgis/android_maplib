@@ -1,5 +1,7 @@
 package com.nextgis.maplib.map;
 
+import static com.google.gson.internal.GsonTypes.arrayOf;
+
 import android.util.Log;
 
 import com.nextgis.maplib.datasource.GeoGeometryCollection;
@@ -28,7 +30,9 @@ import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
 import org.maplibre.android.style.layers.LineLayer;
+import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
+import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
 import org.maplibre.geojson.Feature;
 import org.maplibre.geojson.FeatureCollection;
@@ -40,6 +44,7 @@ import org.maplibre.geojson.Point;
 import org.maplibre.geojson.Polygon;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +58,7 @@ public class MPLFeaturesUtils {
     static public String colorRED = "#FF0000";
 
     static public String prop_featureid = "featureid";
+    static public String prop_name = "name";
     static public String prop_layerid = "layerid";
     static public String prop_order = "order";
     static public String namePrefix = "nglayer-";
@@ -385,10 +391,12 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap2,
                                                com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer){
+        org.maplibre.android.style.layers.Layer simbolLayer = null;
         org.maplibre.android.style.layers.Layer newLayer = null;
         org.maplibre.android.style.layers.Layer newLayer2 = null;
 
         String currentNamePrefix = getTypePrefix(layerType);
+        String currentNamePrefixSymbol = "symbol-" +  getTypePrefix(layerType);
 
         int fistFillColor = 0;
         int outlineColor = 0;
@@ -484,6 +492,28 @@ public class MPLFeaturesUtils {
                             PropertyFactory.lineWidth(thinkness));
         }
 
+
+        Float[] offsets = {0f, 1.0f};
+        if (changeLayer)
+            simbolLayer = style.getLayer(currentNamePrefixSymbol);
+        if (simbolLayer == null)
+            simbolLayer = new SymbolLayer(currentNamePrefixSymbol + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
+                .withProperties(
+                        PropertyFactory.textField("{featureid}"), // Текст из свойства "name"
+                        PropertyFactory.textSize((thinkness  + 2 )*3),
+                        PropertyFactory.textColor(getColorName(outlineColor)),
+                        //PropertyFactory.textHaloColor("#FFFFFF"), // Белый ореол
+                        //PropertyFactory.textHaloWidth(1f),
+
+                        ///PropertyFactory.textAnchor(Property.TEXT_ANCHOR_CENTER),
+                        PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER),
+                        PropertyFactory.textOffset(offsets), // Смещение текста
+                        PropertyFactory.textAllowOverlap(true), // Разрешить перекрытие
+                        PropertyFactory.textIgnorePlacement(true), // Игнорировать коллизии
+                        PropertyFactory.textMaxWidth(0f) // Максимальная ширина текста
+                );
+
+
         if (newLayer != null) {
             if (!changeLayer) {
                 style.addLayer(newLayer);
@@ -497,6 +527,16 @@ public class MPLFeaturesUtils {
                 layersHashMap2.put(layerId, newLayer2);
             }
         }
+
+        if (simbolLayer != null) {
+            if (!changeLayer) {
+                style.addLayer(simbolLayer);
+                //layersHashMap2.put(layerId, newLayer2);
+            }
+        }
+
+
+
 
     }
 
