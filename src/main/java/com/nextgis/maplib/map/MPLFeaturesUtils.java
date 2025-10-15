@@ -2,6 +2,7 @@ package com.nextgis.maplib.map;
 
 import static com.google.gson.internal.GsonTypes.arrayOf;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.nextgis.maplib.datasource.GeoGeometryCollection;
@@ -389,6 +390,7 @@ public class MPLFeaturesUtils {
                                                final Style style,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap2,
+                                               Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
                                                com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer){
         org.maplibre.android.style.layers.Layer simbolLayer = null;
@@ -494,25 +496,37 @@ public class MPLFeaturesUtils {
 
 
         Float[] offsets = {0f, 1.0f};
-        if (changeLayer)
-            simbolLayer = style.getLayer(currentNamePrefixSymbol);
-        if (simbolLayer == null)
-            simbolLayer = new SymbolLayer(currentNamePrefixSymbol + "layer-" + layerId, currentNamePrefix + "source-" + layerId)
-                .withProperties(
+
+        // signatures turn on
+        boolean needSignatures = !TextUtils.isEmpty(layerStyle.getField());
+        simbolLayer = style.getLayer(currentNamePrefixSymbol + "layer-" + layerId);
+
+        if (!needSignatures && simbolLayer != null ){
+            // need remove
+            style.removeLayer(simbolLayer);
+            symbolsLayerHashMap.remove(layerId);
+
+        } else {
+            if (needSignatures){
+                if (simbolLayer == null){
+                    simbolLayer = new SymbolLayer(currentNamePrefixSymbol + "layer-" + layerId, currentNamePrefix + "source-" + layerId);
+                    style.addLayer(simbolLayer);
+                    symbolsLayerHashMap.put(layerId, simbolLayer);
+                }
+                simbolLayer.setProperties(
                         PropertyFactory.textField("{featureid}"), // Текст из свойства "name"
                         PropertyFactory.textSize((thinkness  + 2 )*3),
                         PropertyFactory.textColor(getColorName(outlineColor)),
                         //PropertyFactory.textHaloColor("#FFFFFF"), // Белый ореол
                         //PropertyFactory.textHaloWidth(1f),
-
                         ///PropertyFactory.textAnchor(Property.TEXT_ANCHOR_CENTER),
                         PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER),
                         PropertyFactory.textOffset(offsets), // Смещение текста
                         PropertyFactory.textAllowOverlap(true), // Разрешить перекрытие
                         PropertyFactory.textIgnorePlacement(true), // Игнорировать коллизии
-                        PropertyFactory.textMaxWidth(0f) // Максимальная ширина текста
-                );
-
+                        PropertyFactory.textMaxWidth(0f)); // Максимальная ширина текста);
+            }
+        }
 
         if (newLayer != null) {
             if (!changeLayer) {
@@ -527,17 +541,6 @@ public class MPLFeaturesUtils {
                 layersHashMap2.put(layerId, newLayer2);
             }
         }
-
-        if (simbolLayer != null) {
-            if (!changeLayer) {
-                style.addLayer(simbolLayer);
-                //layersHashMap2.put(layerId, newLayer2);
-            }
-        }
-
-
-
-
     }
 
     public static String getColorName(int color) {

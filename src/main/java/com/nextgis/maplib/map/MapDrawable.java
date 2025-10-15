@@ -150,6 +150,9 @@ public class MapDrawable
     // outline for polygone
     HashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap2 = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
 
+    // Symbols for geometry signature
+    HashMap<Integer, org.maplibre.android.style.layers.Layer>  symbolsLayerHashMap = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
+
     GeoJsonSource selectedEditedSource = null; // choosed  source - from with edit (selectable)
     GeoJsonSource selectedPolySource = null; // choosed source of polygon/line  //
     GeoJsonSource selectedDotSource = null; // choosed source of polygon  //
@@ -310,6 +313,7 @@ public class MapDrawable
 
                         createSourceForLayer(layer.getId(), layer.getGeometryType(), vectorPolygonFeatures, style, sourceHashMap);
                         createFillLayerForLayer(layer.getId(), layer.getGeometryType(), style, layersHashMap, layersHashMap2,
+                                symbolsLayerHashMap,
                                 ((VectorLayer)layer).getDefaultStyleNoExcept(), false);
                     });
         }
@@ -324,6 +328,7 @@ public class MapDrawable
                 Style maplbrStyle = maplibreMap.get().getStyle();
 
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
+                        symbolsLayerHashMap,
                         newStyle, true);
                 return;
             }
@@ -401,6 +406,7 @@ public class MapDrawable
                              // create source and FillLayer put to style
                             createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()), entry.getValue(), style,sourceHashMap);
                             createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()), style,layersHashMap,layersHashMap2,
+                                    symbolsLayerHashMap,
                                     layersStyle.get(entry.getKey()), false);
                         }
 
@@ -1530,10 +1536,12 @@ public class MapDrawable
         if (layer2 != null)
             layer2.setProperties(visibility(isVisible ? VISIBLE:NONE));
 
+        Layer layerSymbol = symbolsLayerHashMap.get(id);
+        if (layerSymbol != null)
+            layerSymbol.setProperties(visibility(isVisible ? VISIBLE:NONE));
     }
 
     public void changePointColor(){
-
         String colorS = "#FFFFFF";
         if (testColor == 1)
             colorS = "#00FFFF";
@@ -1565,5 +1573,4 @@ public class MapDrawable
         if (testColor > 3 )
             testColor = 0;
     }
-
 }
