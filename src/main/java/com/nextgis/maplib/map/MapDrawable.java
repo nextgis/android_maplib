@@ -473,15 +473,15 @@ public class MapDrawable
                     }
                 });
 
-                // Set map style MPLB
-                DefaultStyle[] styles = Style.getPredefinedStyles();
-                if (styles != null && styles.length > 0) {
-                    String styleUrl = styles[0].getUrl();
-                    maplibreMap.get().setStyle(new Style.Builder().fromUri(styleUrl));
-                }
+//                // Set map style MPLB
+//                DefaultStyle[] styles = Style.getPredefinedStyles();
+//                if (styles != null && styles.length > 0) {
+//                    String styleUrl = styles[0].getUrl();
+//                    maplibreMap.get().setStyle(new Style.Builder().fromUri(styleUrl));
+//                }
 
                 // Set map style NG
-                //maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
+                maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
             });
         });
         executor.shutdown();

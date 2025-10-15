@@ -1,6 +1,6 @@
 package com.nextgis.maplib.map;
 
-import static com.google.gson.internal.GsonTypes.arrayOf;
+
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -513,6 +513,7 @@ public class MPLFeaturesUtils {
                     style.addLayer(simbolLayer);
                     symbolsLayerHashMap.put(layerId, simbolLayer);
                 }
+                String [] font = {"Open Sans Regular"};
                 simbolLayer.setProperties(
                         PropertyFactory.textField("{featureid}"), // Текст из свойства "name"
                         PropertyFactory.textSize((thinkness  + 2 )*3),
@@ -524,6 +525,7 @@ public class MPLFeaturesUtils {
                         PropertyFactory.textOffset(offsets), // Смещение текста
                         PropertyFactory.textAllowOverlap(true), // Разрешить перекрытие
                         PropertyFactory.textIgnorePlacement(true), // Игнорировать коллизии
+                        PropertyFactory.textFont(font),
                         PropertyFactory.textMaxWidth(0f)); // Максимальная ширина текста);
             }
         }
