@@ -22,4 +22,6 @@ public interface MaplibreMapInteraction {
 
     public void updateActions(MLGeometryEditClass editObject);
 
+    public Integer getMode();
+
 }

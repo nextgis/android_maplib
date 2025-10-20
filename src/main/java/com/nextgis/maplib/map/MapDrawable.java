@@ -30,6 +30,7 @@ import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -39,6 +40,7 @@ import com.google.gson.JsonObject;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IMapView;
+import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
@@ -90,10 +92,14 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMul
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePolygon;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getTypePrefix;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.id_name;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.layer_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.namePrefix;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_featureid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 
@@ -278,8 +284,8 @@ public class MapDrawable
 
     public void deleteLayerByID(int id){
         if (maplibreMap.get()!= null) {
-            String sourceId = namePrefix + "source-" + id;
-            String vectorLayerId = namePrefix + "layer-" + id;
+            String sourceId = namePrefix + source_namepart + id;
+            String vectorLayerId = namePrefix + layer_namepart + id;
             if (maplibreMap.get().getStyle().getSource(sourceId)!= null)
                 maplibreMap.get().getStyle().removeSource(sourceId);
             if (maplibreMap.get().getStyle().getLayer(vectorLayerId)!= null)
@@ -320,6 +326,10 @@ public class MapDrawable
     }
 
     public void reloadFillLayerStyleToMaplibre(final  int  id) {
+
+        if (!(mapFragment.get().getMode() == 0))
+            return;
+
         List<ILayer> ret = new ArrayList<>();
         LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, ret);
         for (ILayer iLayer : ret){
@@ -330,9 +340,11 @@ public class MapDrawable
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
                         symbolsLayerHashMap,
                         newStyle, true);
+                reloadLayerToMaplibre(iLayer);
                 return;
             }
         }
+
     }
 
 
@@ -347,13 +359,11 @@ public class MapDrawable
             if (!(ilayer instanceof VectorLayer))
                 return;
             VectorLayer layer = (VectorLayer) ilayer;
-                if (!layer.isValid()) return;
-                if (layer.getGeometryType() == GeoConstants.GTPolygon ||
-                        layer.getGeometryType() == GeoConstants.GTMultiPolygon
-                ) {
-                    List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
-                    sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
-                }
+            //if (!layer.isValid()) return;
+
+            List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
+            sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+
 
             // Switch to main thread
             mainHandler.post(() -> {
@@ -387,8 +397,8 @@ public class MapDrawable
                 if (! (iLayer instanceof VectorLayer))
                     continue;
                 VectorLayer layer = (VectorLayer)iLayer;
-                if (!layer.isValid())
-                    continue;
+//                if (!layer.isValid())
+//                    continue;
 
                 layersType.put(layer.getId(), layer.getGeometryType());
                 layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
@@ -750,7 +760,8 @@ public class MapDrawable
 
 
     public void startFeatureSelectionForEdit(Integer layerdID, Integer layerGeoType,
-                                             Feature originalSelectedFeature, boolean createNew){
+                                             Feature originalSelectedFeature, boolean createNew,
+                                             com.nextgis.maplib.display.Style ngstyle){
 
         Long selectedFeatureId = originalSelectedFeature.getId();
 
@@ -827,6 +838,28 @@ public class MapDrawable
             }
 
             feature.addStringProperty(prop_layerid, String.valueOf(layerdID));
+
+            if (ngstyle != null){
+                String styleField = ((ITextStyle)ngstyle).getField();
+                String styleText = ((ITextStyle)ngstyle).getText();
+
+                if (styleField != null || styleText != null ) {
+                    String signature = null;
+                    if (styleText != null)
+                        signature = styleText;
+                    else {
+                        if (styleField == id_name)
+                            signature = String.valueOf(originalSelectedFeature.getId());
+                        else
+                            signature = originalSelectedFeature.getFieldValueAsString(styleField);
+                    }
+
+                    if (!TextUtils.isEmpty(signature)) {
+                        feature.addStringProperty(prop_signature_text, signature);
+                    }
+                }
+            }
+
 
             int size = sourceFeaturesHashMap.get(layerdID).size();
             feature.addStringProperty(prop_order, String.valueOf(size+1));
