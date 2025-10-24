@@ -475,6 +475,8 @@ public class NGWUtil
             if (name.equals(NGWUtil.NGWKEY_ID)) {
                 feature.setId(reader.nextLong());
             } else if (name.equals(NGWUtil.NGWKEY_GEOM)) {
+
+
                 String wkt = reader.nextString();
                 if (wkt.startsWith("POINT Z")) {
                     throw new NGException("POINTZ");

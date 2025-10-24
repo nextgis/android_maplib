@@ -23,6 +23,8 @@
 
 package com.nextgis.maplib.util;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -34,6 +36,9 @@ import android.util.Log;
 
 import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
+import com.nextgis.maplib.api.IGISApplication;
+import com.nextgis.maplib.datasource.ngw.Connection;
+import com.nextgis.maplib.datasource.ngw.Connections;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -662,6 +667,39 @@ public class NetworkUtil
         } catch (Exception ex){
             Log.e("ssl_trust_store_error", ex.getMessage());
         }
+    }
+
+    public static Connections fillConnections(Context context, AccountManager accountManager)
+    {
+        Connections connections = new Connections("Web GIS");
+        IGISApplication app = (IGISApplication) context.getApplicationContext();
+
+        for (Account account : accountManager.getAccountsByType(app.getAccountsType())) {
+            String url = app.getAccountUrl(account);
+            String password = app.getAccountPassword(account);
+            String login = app.getAccountLogin(account);
+            connections.add(new Connection(account.name, login, password, url.toLowerCase()));
+        }
+        return connections;
+    }
+
+
+    public static String extractResourceValue(String urlString) {
+        Pattern pattern = Pattern.compile("[?&]resource=([^&]*)");
+        Matcher matcher = pattern.matcher(urlString);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
+    }
+
+    public static String getBaseUrlpart(String fullUrl) {
+        int questionMarkIndex = fullUrl.indexOf('?');
+        if (questionMarkIndex != -1) {
+            return fullUrl.substring(0, questionMarkIndex);
+        }
+        return fullUrl; // Если нет параметров, возвращаем исходный URL
     }
 
     public static void configureSSLdefault(){

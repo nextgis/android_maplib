@@ -2,6 +2,16 @@ package com.nextgis.maplib.map;
 
 
 
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_BOTTOM;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_BOTTOM_LEFT;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_BOTTOM_RIGHT;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_LEFT;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_RIGHT;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_LEFT;
+import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_RIGHT;
+import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
+
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -35,8 +45,11 @@ import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.layers.PropertyValue;
+import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
+import org.maplibre.android.style.sources.RasterSource;
+import org.maplibre.android.style.sources.TileSet;
 import org.maplibre.geojson.Feature;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
@@ -418,8 +431,32 @@ public class MPLFeaturesUtils {
     }
 
     static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
-                                            final Style style, Map<Integer, GeoJsonSource> sourceHashMap) {
+                                            final Style style, Map<Integer, GeoJsonSource> sourceHashMap,
+                                            Map<Integer, String> rasterLayersURL) {
+
+
+
         String currentNamePrefix = getTypePrefix(layerType);
+
+
+        if (layerType == GT_RASTER_WA){
+                RasterSource rasterSource = (RasterSource) style.getSource(currentNamePrefix + source_namepart + layerId);
+                if (rasterSource != null && !rasterSource.getUrl().equals(rasterLayersURL.get(layerId))){
+                    style.removeSource(currentNamePrefix + source_namepart + layerId);
+                    rasterSource = null;
+                }
+
+                if (rasterSource == null) {
+                    rasterSource = new RasterSource(currentNamePrefix + source_namepart + layerId,
+                            new TileSet("tileset",
+                                    rasterLayersURL.get(layerId)),
+                            256
+                    );
+                    style.addSource(rasterSource);
+                }
+            return;
+        }
+
 
         GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + layerId);
         if (vectorSource == null) {
@@ -439,11 +476,26 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
                                                com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer){
+
+        String currentNamePrefix = getTypePrefix(layerType);
+
+        if (layerType == GT_RASTER_WA){
+            org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
+
+            if (rasterLayer == null){
+                rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId,
+                        currentNamePrefix + source_namepart + layerId);
+                style.addLayer(rasterLayer);
+            }
+            return;
+        }
+
+
         org.maplibre.android.style.layers.Layer simbolLayer = null;
         org.maplibre.android.style.layers.Layer newLayer = null;
         org.maplibre.android.style.layers.Layer newLayer2 = null;
 
-        String currentNamePrefix = getTypePrefix(layerType);
+
         String currentNamePrefixSymbol = "symbol-" +  getTypePrefix(layerType);
 
         int fistFillColor = 0;
@@ -462,6 +514,9 @@ public class MPLFeaturesUtils {
         // poly
         boolean isFilled; // polygon - is filled
 
+        int textAlignment = ALIGN_TOP;
+        float textSize = 6;
+
         if (layerStyle!= null){
             fistFillColor = layerStyle.getColor();
             outlineColor = layerStyle.getOutColor();
@@ -470,14 +525,16 @@ public class MPLFeaturesUtils {
             if (layerStyle instanceof SimpleMarkerStyle){ // dots
                 rasuis = ((SimpleMarkerStyle)layerStyle).getSize();
                 type = ((SimpleMarkerStyle)layerStyle).getType();
+                textAlignment = ((SimpleMarkerStyle) layerStyle).getTextAlignment();
+                textSize = ((SimpleMarkerStyle) layerStyle).getTextSize();
             }
             if (layerStyle instanceof SimpleLineStyle){ //line
-
                 lineType = ((SimpleLineStyle)layerStyle ).getType();
             }
             if (layerStyle instanceof SimplePolygonStyle){ //line
                 isFilled = ((SimplePolygonStyle)layerStyle ).isFill();
             }
+
         }
 
 
@@ -485,21 +542,22 @@ public class MPLFeaturesUtils {
             if (changeLayer) {
                 Log.e("PPOOIINNTT", "color set to" + getColorName(fistFillColor));
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
-                newLayer.setProperties(PropertyFactory.circleRadius(rasuis),
+                newLayer.setProperties(PropertyFactory.circleRadius(getMPLThinkness(rasuis)),
                         PropertyFactory.circleColor(getColorName(fistFillColor)),
                         PropertyFactory.circleStrokeColor(getColorName(outlineColor)),  //
-                        PropertyFactory.circleStrokeWidth(thinkness),         //
+                        PropertyFactory.circleStrokeWidth(getMPLThinkness(thinkness)),         //
                         PropertyFactory.circleStrokeOpacity(1f));
             }
             else
-                newLayer = new CircleLayer(currentNamePrefix + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId)
+                newLayer = new CircleLayer(currentNamePrefix + layer_namepart + layerId,
+                        currentNamePrefix + source_namepart + layerId)
                     .withProperties(
-                            PropertyFactory.circleRadius(rasuis),
+                            PropertyFactory.circleRadius(getMPLThinkness(rasuis)),
                             PropertyFactory.circleColor(getColorName(fistFillColor)),
                             //PropertyFactory.fillOpacity(alpha));
 
                     PropertyFactory.circleStrokeColor(getColorName(outlineColor)),  //
-                    PropertyFactory.circleStrokeWidth(thinkness),         //
+                    PropertyFactory.circleStrokeWidth(getMPLThinkness(thinkness)),         //
                     PropertyFactory.circleStrokeOpacity(1f));
 
 
@@ -513,7 +571,7 @@ public class MPLFeaturesUtils {
                 newLayer2 = style.getLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart);
                 newLayer2.setProperties(
                                 PropertyFactory.lineColor(getColorName(outlineColor)),
-                                PropertyFactory.lineWidth(thinkness));
+                                PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             } else {
                 newLayer = new FillLayer(currentNamePrefix + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId)
                         .withProperties(
@@ -523,21 +581,21 @@ public class MPLFeaturesUtils {
                 newLayer2 = new LineLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart, currentNamePrefix + source_namepart + layerId)
                         .withProperties(
                                 PropertyFactory.lineColor(getColorName(outlineColor)),
-                                PropertyFactory.lineWidth(thinkness));
+                                PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             }
 
         } else if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
             if (changeLayer) {
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
                 newLayer.setProperties( PropertyFactory.lineColor(getColorName(fistFillColor)),
-                        PropertyFactory.lineWidth(thinkness));
+                        PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             } else
 
                 newLayer = new LineLayer(currentNamePrefix + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId)
                     .withProperties(
                             //PropertyFactory.lineColor(Expression.get("color")),
                             PropertyFactory.lineColor(getColorName(fistFillColor)),
-                            PropertyFactory.lineWidth(thinkness));
+                            PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
         }
 
         // signatures turn on
@@ -573,22 +631,22 @@ public class MPLFeaturesUtils {
                 }
 
                 String [] font = {"Open Sans Regular"};
-                Float[] offsets = {0f, 1.0f};
+
                 PropertyValue<String> placementProperty = null;
                 if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint)
                     placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT);
                 else
                     placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER);
 
-                simbolLayer.setProperties(
+                String anchor = getTextAnchor(textAlignment); // def - Property.TEXT_ANCHOR_TOP
+                Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
 
+                simbolLayer.setProperties(
                         signatureProperty,
-                        PropertyFactory.textSize((thinkness  + 2 )*3),
+                        PropertyFactory.textSize((textSize  + 3 )*3),
                         PropertyFactory.textColor(getColorName(outlineColor)),
-                        PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+                        PropertyFactory.textAnchor(anchor),
                         placementProperty,
-                        //PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER),
-//                        PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT),
 
                         PropertyFactory.textOffset(offsets),
                         PropertyFactory.textAllowOverlap(true),
@@ -617,4 +675,45 @@ public class MPLFeaturesUtils {
     public static String getColorName(int color) {
         return String.format("#%06X", (0xFFFFFF & color));
     }
+
+    public static float getMPLThinkness(float x) {
+        float xMin = 1f;
+        float xMax = 100f;
+        float yMin = 1f;
+        float yMax = 40f;
+        return yMin + (x - xMin) * (yMax - yMin) / (xMax - xMin);
+    }
+
+    public static String getTextAnchor(int ngAlignment){
+        switch (ngAlignment){
+            case ALIGN_TOP: return Property.TEXT_ANCHOR_TOP;
+            case ALIGN_TOP_RIGHT: return Property.TEXT_ANCHOR_TOP_RIGHT;
+            case ALIGN_RIGHT: return Property.TEXT_ANCHOR_RIGHT;
+            case ALIGN_BOTTOM_RIGHT: return Property.TEXT_ANCHOR_BOTTOM_RIGHT;
+            case ALIGN_BOTTOM: return Property.TEXT_ANCHOR_BOTTOM;
+            case ALIGN_BOTTOM_LEFT: return Property.TEXT_ANCHOR_BOTTOM_LEFT;
+            case ALIGN_LEFT: return Property.TEXT_ANCHOR_LEFT;
+            case ALIGN_TOP_LEFT: return Property.TEXT_ANCHOR_TOP_LEFT;
+        }
+        return Property.TEXT_ANCHOR_TOP;
+    }
+
+
+    public static Float[] getTextAnchorOffsets (int ngAlignment, float textSize){
+//        public final static float SIZE_SMALL = 3;
+//        public final static float SIZE_MEDIUM = 6;
+//        public final static float SIZE_BIG = 10;
+        final float coef = textSize < 6f ? 2.0f : 1.5f;
+            switch (ngAlignment) {
+                case ALIGN_TOP :   return new Float[]{0f, -coef};
+                case ALIGN_BOTTOM: return   new Float[]{0f, coef};
+                case ALIGN_LEFT: return   new Float[]{-0.8f, 0f};
+                case ALIGN_RIGHT:return   new Float[]{0.8f, 0f};
+                case ALIGN_TOP_LEFT:  return   new Float[]{-0.8f, -coef};
+                case ALIGN_TOP_RIGHT: return   new Float[]{0.8f, -coef};
+                case ALIGN_BOTTOM_LEFT: return   new Float[]{-0.8f, coef};
+                case ALIGN_BOTTOM_RIGHT: return   new Float[]{0.8f, coef};
+                default: return new Float[]{0f, -coef};
+            }
+        }
 }

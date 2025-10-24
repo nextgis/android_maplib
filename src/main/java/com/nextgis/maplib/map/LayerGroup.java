@@ -188,7 +188,7 @@ public class LayerGroup
         for (int i = 0; i < layerGroup.getLayerCount(); i++) {
             ILayer layer = layerGroup.getLayer(i);
 
-            if (layer instanceof VectorLayer) {
+            if (layer instanceof VectorLayer ) {
                 VectorLayer vectorLayer = (VectorLayer) layer;
                 if (0 != (types & 1 << vectorLayer.getGeometryType())) {
                     layerList.add(0, layer);
@@ -197,6 +197,25 @@ public class LayerGroup
 
             if (layer instanceof LayerGroup) {
                 getVectorLayersByType((LayerGroup) layer, types, layerList);
+            }
+        }
+    }
+
+    public static void getTMSLayersByType(
+            LayerGroup layerGroup,
+            int types,
+            List<ILayer> layerList)
+    {
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
+            ILayer layer = layerGroup.getLayer(i);
+
+            if ( layer instanceof TMSLayer) {
+                TMSLayer tmsLayer = (TMSLayer) layer;
+                layerList.add(0, layer);
+            }
+
+            if (layer instanceof LayerGroup) {
+                getTMSLayersByType((LayerGroup) layer, types, layerList);
             }
         }
     }

@@ -23,6 +23,8 @@
 
 package com.nextgis.maplib.map;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -38,6 +40,7 @@ import android.view.View;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.nextgis.maplib.R;
+import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.IMapView;
 import com.nextgis.maplib.api.ITextStyle;
@@ -50,6 +53,8 @@ import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
+import com.nextgis.maplib.datasource.ngw.Connection;
+import com.nextgis.maplib.datasource.ngw.Connections;
 import com.nextgis.maplib.display.GISDisplay;
 import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
@@ -74,6 +79,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.nextgis.maplib.map.MLP.MultiLineEditClass.getNewLinePoints;
 import static com.nextgis.maplib.map.MLP.PolygonEditClass.createPointsForRing;
@@ -102,14 +109,17 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
-
+import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
+import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
+import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
+import static com.nextgis.maplib.util.NetworkUtil.getBaseUrlpart;
+import static com.nextgis.maplib.util.NetworkUtil.getHTTPBaseAuth;
 import static org.maplibre.android.style.layers.Property.NONE;
 import static org.maplibre.android.style.layers.Property.VISIBLE;
 import static org.maplibre.android.style.layers.PropertyFactory.visibility;
 import static java.util.Collections.emptyList;
-
 import androidx.annotation.NonNull;
-
 import org.maplibre.android.annotations.Icon;
 import org.maplibre.android.annotations.IconFactory;
 import org.maplibre.android.geometry.LatLng;
@@ -117,6 +127,7 @@ import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Projection;
 import org.maplibre.android.maps.Style;
+import org.maplibre.android.module.http.HttpRequestImpl;
 import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
@@ -124,8 +135,11 @@ import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
+import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
+import org.maplibre.android.style.sources.RasterSource;
+import org.maplibre.android.style.sources.VectorSource;
 import org.maplibre.android.util.DefaultStyle;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
@@ -297,31 +311,40 @@ public class MapDrawable
     public void addLayerByID(int id){
         if (maplibreMap.get()!= null) {
 
-
-            //List<ILayer> ret = new ArrayList<>();
-            //LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, ret);
             ILayer iLayer = LayerGroup.getVectorLayersById(this, id);
 
             if (iLayer == null)
                 return;
-                    VectorLayer layer = (VectorLayer) iLayer;
 
-                    // this layer
-                    List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
-                    sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
-                    Style style = maplibreMap.get().getStyle();
+            int geoType = GTNone;
 
-                    Handler mainHandler = new Handler(Looper.getMainLooper());
+            final List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
 
-                    mainHandler.post(() -> {
+            Map<Integer, String> rasterLayersURL = new HashMap<>();
+            if (iLayer instanceof VectorLayer) {
 
-//                        layer.getDefaultStyle().
+                VectorLayer layer = (VectorLayer) iLayer;
+                geoType = layer.getGeometryType();
 
-                        createSourceForLayer(layer.getId(), layer.getGeometryType(), vectorPolygonFeatures, style, sourceHashMap);
-                        createFillLayerForLayer(layer.getId(), layer.getGeometryType(), style, layersHashMap, layersHashMap2,
-                                symbolsLayerHashMap,
-                                ((VectorLayer)layer).getDefaultStyleNoExcept(), false);
-                    });
+                // this layer
+                vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
+                sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+            } else if (iLayer instanceof TMSLayer){
+                geoType = GT_RASTER_WA;
+                TMSLayer layer = (TMSLayer) iLayer;
+                rasterLayersURL.put(layer.getId(), ((NGWRasterLayer)layer).getURL());
+            }
+            Style style = maplibreMap.get().getStyle();
+            final int finalGeoType = geoType;
+
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            mainHandler.post(() -> {
+                createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap, rasterLayersURL);
+                createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
+                        symbolsLayerHashMap,
+                        ((VectorLayer)iLayer).getDefaultStyleNoExcept(), false);
+                checkLayerVisibility(iLayer.getId());
+            });
         }
     }
 
@@ -340,14 +363,12 @@ public class MapDrawable
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
                         symbolsLayerHashMap,
                         newStyle, true);
+                checkLayerVisibility(id);
                 reloadLayerToMaplibre(iLayer);
                 return;
             }
         }
-
     }
-
-
 
     public void reloadLayerToMaplibre(final  ILayer ilayer) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -364,7 +385,6 @@ public class MapDrawable
             List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
             sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
 
-
             // Switch to main thread
             mainHandler.post(() -> {
                 GeoJsonSource layerSource = sourceHashMap.get(layer.getId());
@@ -377,7 +397,8 @@ public class MapDrawable
         executor.shutdown();
     }
 
-    public void loadLayersToMaplibreMap(final String styleJson, final  List<ILayer> layers) {
+    public void loadLayersToMaplibreMap(final String styleJson, final  List<ILayer> vectorLayers,
+                                        final  List<ILayer> tmsLayers) {
 
         maplibreMapView.get().setOnTouchListener(this);
         maplibreMap.get().addOnMapClickListener(this);
@@ -388,12 +409,13 @@ public class MapDrawable
 
         final Map<Integer, Integer> layersType = new HashMap<>();
         final Map<Integer, com.nextgis.maplib.display.Style> layersStyle = new HashMap<>();
+        final Map<Integer, String> rasterLayersURL = new HashMap<>();
 
         executor.execute(() -> {
             if (maplibreMap.get() == null || maplibreMapView.get() == null)
                 return;
             // Load layers
-            for (ILayer iLayer : layers) {
+            for (ILayer iLayer : vectorLayers) {
                 if (! (iLayer instanceof VectorLayer))
                     continue;
                 VectorLayer layer = (VectorLayer)iLayer;
@@ -406,6 +428,60 @@ public class MapDrawable
                 sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
             }
 
+
+            final AccountManager accountManager = AccountManager.get(getContext());
+            final Connections connections = fillConnections(getContext(), accountManager);
+
+
+            for (ILayer iLayer : tmsLayers) {
+                if (! (iLayer instanceof TMSLayer))
+                    continue;
+
+                if (!(iLayer instanceof TMSLayer))
+                    continue;
+
+                if (!(iLayer instanceof NGWRasterLayer))
+                    continue;
+
+                TMSLayer layer = (TMSLayer)iLayer;
+//                if (!layer.isValid())
+//                    continue;((RemoteTMSLayerUI) iLayer).getURL()
+
+
+                if (iLayer instanceof  NGWRasterLayer){
+                    // need add auth
+
+
+                    Connection found = null;
+                    if (iLayer instanceof NGWRasterLayer) {
+                        for (int i = 0; i < connections.getChildrenCount(); i++) {
+                            if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
+                                found = (Connection) connections.getChild(i);
+                                String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
+                                if (null != basicAuth) {
+                                    final String url = ((NGWRasterLayer) iLayer).getURL();
+                                    final String getBaseUrl =  getBaseUrlpart(url);
+                                    final String resPart = "resource=" + extractResourceValue(url);
+
+                                    Log.e("UURR", "layer part: " + url);
+                                    Log.e("UURR", "res part: " + resPart);
+                                    Log.e("UURR", "getBaseUrl part: " + getBaseUrl);
+
+                                    final String [] authPart = new String[2];
+                                    authPart[0] = resPart;
+                                    authPart[1] = basicAuth;
+                                    ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(getBaseUrl, authPart);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                layersType.put(layer.getId(), GT_RASTER_WA);
+                rasterLayersURL.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+            }
+
             // Switch to main thread
             mainHandler.post(() -> {
                 maplibreMapView.get().addOnDidFinishLoadingStyleListener(new MapView.OnDidFinishLoadingStyleListener() {
@@ -413,12 +489,51 @@ public class MapDrawable
                     public void onDidFinishLoadingStyle() {
                         Style style = maplibreMap.get().getStyle();
                         for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : sourceFeaturesHashMap.entrySet()) {
-                             // create source and FillLayer put to style
-                            createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()), entry.getValue(), style,sourceHashMap);
+                            // create source and FillLayer put to style
+                            createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()), entry.getValue(), style,sourceHashMap, rasterLayersURL);
                             createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()), style,layersHashMap,layersHashMap2,
                                     symbolsLayerHashMap,
                                     layersStyle.get(entry.getKey()), false);
+
+                            checkLayerVisibility(entry.getKey());
                         }
+
+                        //HttpRequestImpl.setOkHttpClient(client)
+
+
+                        // PMTILES example
+//                        // raster PMTILES
+//                        String pmTilesPath = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/flowers.pmtiles";
+//
+//                        RasterSource source = new RasterSource("raster-pmtiles-source", pmTilesPath);
+//                        style.addSource(source);
+//
+//                        RasterLayer layer = new RasterLayer("raster-pmtiles-layer", "raster-pmtiles-source");
+//                        style.addLayer(layer);
+//                        // END   PMTILES
+//
+//
+//                        // PMTILES
+//                        String pmTilesPath2 = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/cb_2018_us_zcta510_500k.pmtiles";
+//
+//                        VectorSource source2 = new VectorSource("pmtiles-source", pmTilesPath2);
+//                        style.addSource(source2);
+//
+//                        LineLayer layer2 = new LineLayer("pmtiles-layer", "pmtiles-source")
+//                                .withSourceLayer("zcta")
+//                                .withProperties(
+//                                PropertyFactory.lineColor("#0000ff"),
+//                                PropertyFactory.lineWidth(2f)
+//                        );
+//                        style.addLayer(layer2);
+//
+//                        FillLayer fillLayer = new FillLayer("poly-pmtiles-layer", "pmtiles-source")
+//                                .withSourceLayer("zcta")
+//                                .withProperties(
+//                                        PropertyFactory.fillColor("#FF0000"),
+//                                        PropertyFactory.fillOpacity(0.5f));
+//                        style.addLayer(fillLayer);
+//                        // END   PMTILES
 
                         selectedDotSource = new  GeoJsonSource("selected-dot-source", FeatureCollection.fromFeatures(emptyList()));
                         style.addSource(selectedDotSource);
@@ -454,10 +569,10 @@ public class MapDrawable
                         CircleLayer vertexFillLayer = new CircleLayer("vertex-layer", "vertex-source")
                                 .withProperties(PropertyFactory.circleStrokeWidth(1f),
                                         PropertyFactory.circleStrokeColor("#000000"));
-                                vertexFillLayer.setProperties(
-                                        PropertyFactory.circleRadius(Expression.get("radius")),
-                                        PropertyFactory.circleColor(Expression.get("color")),
-                                        PropertyFactory.circleOpacity(1.0f));
+                        vertexFillLayer.setProperties(
+                                PropertyFactory.circleRadius(Expression.get("radius")),
+                                PropertyFactory.circleColor(Expression.get("color")),
+                                PropertyFactory.circleOpacity(1.0f));
 
                         style.addLayer(vertexFillLayer);
                         // marker
@@ -496,6 +611,8 @@ public class MapDrawable
         });
         executor.shutdown();
     }
+
+
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -750,7 +867,7 @@ public class MapDrawable
             }
 
             if  (type == GeoConstants.GTPolygon || type == GeoConstants.GTMultiPolygon
-             || type == GeoConstants.GTLineString ||type == GeoConstants.GTMultiLineString ) {
+                    || type == GeoConstants.GTLineString ||type == GeoConstants.GTMultiLineString ) {
                 selectedPolySource.setGeoJson(featureSelected);
             }
 
@@ -988,9 +1105,9 @@ public class MapDrawable
         }
 
         if (newGeometry instanceof  GeoPolygon){
-             org.maplibre.geojson.Feature featureML = getFeatureFromNGFeaturePolygon((GeoPolygon)newGeometry);
+            org.maplibre.geojson.Feature featureML = getFeatureFromNGFeaturePolygon((GeoPolygon)newGeometry);
 
-             if(editingObject  != null && editingObject.editingFeature != null)
+            if(editingObject  != null && editingObject.editingFeature != null)
                 copyProperties(editingObject.editingFeature, featureML);
 
             selectedPolySource.setGeoJson(featureML);
@@ -1090,7 +1207,7 @@ public class MapDrawable
                 choosed.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
 
             if (editingObject.editingFeature.geometry() instanceof Polygon ||
-                editingObject.editingFeature.geometry() instanceof MultiPolygon){
+                    editingObject.editingFeature.geometry() instanceof MultiPolygon){
                 Layer layer = maplibreMap.get().getStyle().getLayer("selected-polygon-fill");
                 if (layer != null)
                     maplibreMap.get().getStyle().removeLayer(fillPolyEditLayer);
@@ -1462,7 +1579,7 @@ public class MapDrawable
             editingObject.deleteCurrentPoint();
             mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
-            return true;
+        return true;
     }
 
     public boolean deleteCurrentLine(){
@@ -1606,4 +1723,7 @@ public class MapDrawable
         if (testColor > 3 )
             testColor = 0;
     }
+
+
+
 }

@@ -143,6 +143,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTNone;
 import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 
 
 /**
@@ -718,6 +719,7 @@ public class VectorLayer
 
             case GTPolygon:
             case GTMultiPolygon:
+            case GT_RASTER_WA:
                 return new SimplePolygonStyle(Color.MAGENTA, Color.MAGENTA);
 
             default:

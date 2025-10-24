@@ -29,6 +29,7 @@ import android.app.Activity;
 
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.LayerFactory;
+import com.nextgis.maplib.map.MLP.AuthInterceptorNG;
 import com.nextgis.maplib.map.MapBase;
 
 
@@ -206,6 +207,16 @@ public interface IGISApplication
     public void deleteLayerByID(int id);
 
     public void addLayerByID(int id);
+
+    public AuthInterceptorNG getAuthInterceptor();
+
+    public void updateAuthPair(String layerPart, String[] authPart);
+
+//    public AuthInterceptorNG getAuthInterceptor(){ return interceptorNG;};
+//
+//    public void updateAuthPair(String layerPart, String authPart){
+//        interceptorNG.addAuth(layerPart,authPart);
+//    };
 
 
 }
