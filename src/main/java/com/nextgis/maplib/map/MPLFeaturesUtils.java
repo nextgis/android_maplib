@@ -469,6 +469,15 @@ public class MPLFeaturesUtils {
         sourceHashMap.put(layerId, vectorSource);
     }
 
+
+    static public org.maplibre.android.style.layers.Layer getRasterLayer(int layerId, final Style style){
+        String currentNamePrefix = getTypePrefix(GT_RASTER_WA);
+        org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
+        return rasterLayer;
+    }
+
+
+
     static public void createFillLayerForLayer(int layerId, int layerType,
                                                final Style style,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap,

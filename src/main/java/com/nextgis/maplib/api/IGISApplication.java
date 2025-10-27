@@ -210,7 +210,7 @@ public interface IGISApplication
 
     public AuthInterceptorNG getAuthInterceptor();
 
-    public void updateAuthPair(String layerPart, String[] authPart);
+    public void updateAuthPair( String[] authPart);
 
 //    public AuthInterceptorNG getAuthInterceptor(){ return interceptorNG;};
 //

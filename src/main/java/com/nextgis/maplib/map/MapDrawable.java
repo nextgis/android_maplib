@@ -98,6 +98,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMul
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMultiPolygon;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePolygon;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.getRasterLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getTypePrefix;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.id_name;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.layer_namepart;
@@ -182,6 +183,8 @@ public class MapDrawable
 
     FeatureCollection markerFeatureCollection = FeatureCollection.fromFeatures(new ArrayList<>());
     GeoJsonSource markerSource = null; // marker source - select point
+
+    GeoJsonSource locationSource = null;
 
     List<org.maplibre.geojson.Feature> polygonFeatures = new ArrayList<org.maplibre.geojson.Feature>();  //
 
@@ -316,33 +319,74 @@ public class MapDrawable
             if (iLayer == null)
                 return;
 
+            final AccountManager accountManager = AccountManager.get(getContext());
+            final Connections connections = fillConnections(getContext(), accountManager);
+
+            if (iLayer instanceof  NGWRasterLayer){
+                // need add auth
+                Connection found = null;
+                if (iLayer instanceof NGWRasterLayer) {
+                    for (int i = 0; i < connections.getChildrenCount(); i++) {
+                        if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
+                            found = (Connection) connections.getChild(i);
+                            String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
+                            if (null != basicAuth) {
+                                final String url = ((NGWRasterLayer) iLayer).getURL();
+                                final String getBaseUrl =  getBaseUrlpart(url);
+                                final String resPart = "resource=" + extractResourceValue(url);
+
+//                                Log.d("UURR", "layer part: " + url);
+//                                Log.d("UURR", "res part: " + resPart);
+//                                Log.d("UURR", "getBaseUrl part: " + getBaseUrl);
+
+                                final String [] authPart = new String[3];
+                                authPart[0] = getBaseUrl;
+                                authPart[1] = resPart;
+                                authPart[2] = basicAuth;
+                                ((IGISApplication)getContext().getApplicationContext()).updateAuthPair( authPart);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
             int geoType = GTNone;
-
             final List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
-
             Map<Integer, String> rasterLayersURL = new HashMap<>();
-            if (iLayer instanceof VectorLayer) {
+            com.nextgis.maplib.display.Style ngStyle = null;
 
+            if (iLayer instanceof VectorLayer) {
                 VectorLayer layer = (VectorLayer) iLayer;
                 geoType = layer.getGeometryType();
-
                 // this layer
                 vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
                 sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
-            } else if (iLayer instanceof TMSLayer){
+                ngStyle = ((VectorLayer)iLayer).getDefaultStyleNoExcept();
+            } else if (iLayer instanceof NGWRasterLayer){
                 geoType = GT_RASTER_WA;
-                TMSLayer layer = (TMSLayer) iLayer;
+                NGWRasterLayer layer = (NGWRasterLayer) iLayer;
                 rasterLayersURL.put(layer.getId(), ((NGWRasterLayer)layer).getURL());
+            } else if (iLayer instanceof RemoteTMSLayer){
+                geoType = GT_RASTER_WA;
+                RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
+                rasterLayersURL.put(layer.getId(), (layer).getURLSubdomain());
             }
+
+
             Style style = maplibreMap.get().getStyle();
             final int finalGeoType = geoType;
+            final com.nextgis.maplib.display.Style finalStyle = ngStyle;
+
 
             Handler mainHandler = new Handler(Looper.getMainLooper());
             mainHandler.post(() -> {
                 createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap, rasterLayersURL);
                 createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
-                        ((VectorLayer)iLayer).getDefaultStyleNoExcept(), false);
+                        finalStyle, false);
                 checkLayerVisibility(iLayer.getId());
             });
         }
@@ -437,10 +481,9 @@ public class MapDrawable
                 if (! (iLayer instanceof TMSLayer))
                     continue;
 
-                if (!(iLayer instanceof TMSLayer))
-                    continue;
 
-                if (!(iLayer instanceof NGWRasterLayer))
+                if (!(iLayer instanceof NGWRasterLayer)
+                        && !(iLayer instanceof RemoteTMSLayer))
                     continue;
 
                 TMSLayer layer = (TMSLayer)iLayer;
@@ -450,8 +493,6 @@ public class MapDrawable
 
                 if (iLayer instanceof  NGWRasterLayer){
                     // need add auth
-
-
                     Connection found = null;
                     if (iLayer instanceof NGWRasterLayer) {
                         for (int i = 0; i < connections.getChildrenCount(); i++) {
@@ -463,22 +504,27 @@ public class MapDrawable
                                     final String getBaseUrl =  getBaseUrlpart(url);
                                     final String resPart = "resource=" + extractResourceValue(url);
 
-                                    Log.e("UURR", "layer part: " + url);
-                                    Log.e("UURR", "res part: " + resPart);
-                                    Log.e("UURR", "getBaseUrl part: " + getBaseUrl);
+//                                    Log.d("UURR", "layer part: " + url);
+//                                    Log.d("UURR", "res part: " + resPart);
+//                                    Log.d("UURR", "getBaseUrl part: " + getBaseUrl);
 
-                                    final String [] authPart = new String[2];
-                                    authPart[0] = resPart;
-                                    authPart[1] = basicAuth;
-                                    ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(getBaseUrl, authPart);
+                                    final String [] authPart = new String[3];
+                                    authPart[0] = getBaseUrl;
+                                    authPart[1] = resPart;
+                                    authPart[2] = basicAuth;
+                                    ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
                                     break;
                                 }
                             }
                         }
                     }
                 }
+
                 layersType.put(layer.getId(), GT_RASTER_WA);
-                rasterLayersURL.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                if (layer instanceof  NGWRasterLayer)
+                    rasterLayersURL.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                else if (layer instanceof  RemoteTMSLayer)
+                    rasterLayersURL.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
                 sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
             }
 
@@ -595,6 +641,38 @@ public class MapDrawable
                                         org.maplibre.android.style.layers.PropertyFactory.iconAnchor(
                                                 org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
                         style.addLayer(symbolLayer);
+
+                        locationSource = new GeoJsonSource("user-location-source", Point.fromLngLat(0.0, 0.0));
+                        style.addSource(locationSource);
+
+
+                        final Drawable drawableStand = getContext().getResources().getDrawable( R.drawable.ic_location_standing);
+                        final Bitmap bitmapStand = drawableToBitmap(drawableStand);
+                        String iconStandId = "user-marker-location-stand";
+                        style.addImage(iconStandId, bitmapStand);
+
+                        final Drawable drawableGo = getContext().getResources().getDrawable( R.drawable.ic_location_moving);
+                        final Bitmap bitmapGo = drawableToBitmap(drawableGo);
+                        String iconGoId = "user-marker-location-go";
+                        style.addImage(iconGoId, bitmapGo);
+
+
+
+                        SymbolLayer locationLayer = new SymbolLayer("user-location-layer", "user-location-source")
+                                .withProperties(
+                                        PropertyFactory.iconImage(
+                                            Expression.switchCase(
+                                                    Expression.eq(Expression.get("type"), Expression.literal("stand")), Expression.literal("user-marker-location-stand"),
+                                                    Expression.eq(Expression.get("type"), Expression.literal("go")), Expression.literal("user-marker-location-go"),
+                                                    Expression.literal("user-marker-location-stand"))),
+                                        PropertyFactory.iconRotate(Expression.get("bearing")),
+                                        PropertyFactory.iconSize(1.0f),
+                                        PropertyFactory.iconAllowOverlap(true),
+                                        PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP)
+
+                                );
+                        style.addLayer(locationLayer);
+
                     }
                 });
 
@@ -1689,6 +1767,13 @@ public class MapDrawable
         Layer layerSymbol = symbolsLayerHashMap.get(id);
         if (layerSymbol != null)
             layerSymbol.setProperties(visibility(isVisible ? VISIBLE:NONE));
+
+        if (targetlayer instanceof NGWRasterLayer || targetlayer instanceof  RemoteTMSLayer){
+            Layer layerRaster = getRasterLayer(id,  maplibreMap.get().getStyle());
+            if (layerRaster != null){
+                layerRaster.setProperties(visibility(isVisible ? VISIBLE:NONE));
+            }
+        }
     }
 
     public void changePointColor(){
@@ -1725,5 +1810,17 @@ public class MapDrawable
     }
 
 
+
+    public void updateLocation(Point point, boolean isStanding, float bearing){
+        if(locationSource!= null) {
+            org.maplibre.geojson.Feature pointFeature = org.maplibre.geojson.Feature.fromGeometry(point);
+            pointFeature.addStringProperty("type", String.valueOf(isStanding?"stand" : "go"));
+            if (isStanding)
+                bearing = 0.0f;
+            pointFeature.addNumberProperty("bearing", bearing);
+
+            locationSource.setGeoJson(pointFeature);
+        }
+    }
 
 }

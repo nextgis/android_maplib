@@ -2,7 +2,9 @@ package com.nextgis.maplib.map.MLP;
 
 import android.util.Log;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import okhttp3.Interceptor;
 import okhttp3.Request;
@@ -10,15 +12,15 @@ import okhttp3.Response;
 
 public class AuthInterceptorNG implements Interceptor {
 
-    HashMap<String, String[]> accounts = new HashMap<>();
+    List<String[]> accounts = new ArrayList<>();
 
 
-    public void addAuth(String id, String[] auth) {
-        accounts.put(id, auth);
+    public void addAuth(String[] auth) {
+        accounts.add(auth);
     }
 
-    public void removeAuth(String id) {
-        accounts.remove(id);
+    public void removeAuth(String[] ids) {
+        //accounts.remove(id);
     }
 
 
@@ -26,13 +28,13 @@ public class AuthInterceptorNG implements Interceptor {
     public Response intercept(Chain chain) throws IOException {
         Request originalRequest = chain.request();
 
-        for (String part : accounts.keySet()) {
-            if (originalRequest.url().toString().contains(part)
-            && originalRequest.url().toString().contains( accounts.get(part)[0])) {
+        for (String[] part : accounts) {
+            if (originalRequest.url().toString().contains(part[0])
+            && originalRequest.url().toString().contains(part[1])) {
 
                 Log.d("AuthInterceptor", "Adding Authorization to: " + originalRequest.url());
                 Request newRequest = originalRequest.newBuilder()
-                        .addHeader("Authorization", accounts.get(part)[1])
+                        .addHeader("Authorization", part[2])
                         .build();
                 return chain.proceed(newRequest);
             }
