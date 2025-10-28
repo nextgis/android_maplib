@@ -42,16 +42,3 @@ public class AuthInterceptorNG implements Interceptor {
         return chain.proceed(originalRequest);
     }
 }
-
-//        if (originalRequest.url().toString().contains("alexey655.nextgis.com")
-//                && originalRequest.url().toString().contains("resource=316")) {
-//            Log.d("AuthInterceptor", "Adding Authorization to: " + originalRequest.url());
-//            Request newRequest = originalRequest.newBuilder()
-//                    .addHeader("Authorization", "Basic YWxleGV5NjU1OlJqa2osanI0Jg==")
-//                    .build();
-//            return chain.proceed(newRequest);
-//        }
-
-        // Фильтруем по URL, чтобы добавить заголовок только для тайлов
-//    }
-//}

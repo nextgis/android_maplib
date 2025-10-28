@@ -11,6 +11,7 @@ import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_LEFT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_RIGHT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
+import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -41,6 +42,7 @@ import org.maplibre.android.maps.Style;
 import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
+import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
@@ -83,6 +85,8 @@ public class MPLFeaturesUtils {
     static final public String layer_namepart = "layer-";
     static final public String source_namepart = "source-";
     static final public String outline_namepart = "_outline";
+    static final public String track_namepart = "track-";
+
     static final public String id_name = "_id";
 
 
@@ -126,6 +130,34 @@ public class MPLFeaturesUtils {
             return TextUtils.isEmpty(styleField)? null : styleField;
         }
         return null;
+
+    }
+
+    static public List<org.maplibre.geojson.Feature> createFeatureListFromTrackLayer(final TrackLayer layer) {
+
+        Map<Integer, GeoLineString> tracks = layer.getTracks();
+
+        List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
+
+
+        int i = 0;
+        for (Map.Entry<Integer, GeoLineString> entry : tracks.entrySet()) {
+            i++;
+            Integer id = entry.getKey();
+            LineString lineString = getLineString(entry.getValue());
+            Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
+            lineFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
+//            lineFeature.addStringProperty(prop_order, String.valueOf(i));
+//            lineFeature.addStringProperty(prop_featureid, String.valueOf(id));
+//            lineFeature.addStringProperty(prop_color, colorBlue);
+//            if (signatureField != null) {
+//                lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+//            }
+            lineFeatures.add(lineFeature);
+        }
+
+        return lineFeatures;
+
 
     }
 
@@ -433,10 +465,20 @@ public class MPLFeaturesUtils {
     static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
                                             final Style style, Map<Integer, GeoJsonSource> sourceHashMap,
                                             Map<Integer, String> rasterLayersURL) {
-
-
-
         String currentNamePrefix = getTypePrefix(layerType);
+
+        if (layerType == GT_TRACK_WA){
+            GeoJsonSource trackSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + track_namepart + layerId);
+            if (trackSource == null) {
+                trackSource = new GeoJsonSource(currentNamePrefix + source_namepart + "track-" +layerId, FeatureCollection.fromFeatures(layerFeatures));
+                style.addSource(trackSource);
+            }
+            else
+                trackSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
+
+            sourceHashMap.put(layerId, trackSource);
+            return;
+        }
 
 
         if (layerType == GT_RASTER_WA){
@@ -485,8 +527,23 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
                                                com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer){
-
         String currentNamePrefix = getTypePrefix(layerType);
+
+        if (layerType == GT_TRACK_WA){
+            Layer trackLayer = null;
+            trackLayer = style.getLayer(currentNamePrefix + layer_namepart + track_namepart + layerId);
+            if (trackLayer == null) {
+                trackLayer = new LineLayer(currentNamePrefix + layer_namepart + track_namepart + layerId,
+                        currentNamePrefix + source_namepart + track_namepart + layerId)
+                        .withProperties(
+                                //PropertyFactory.lineColor(Expression.get("color")),
+                                PropertyFactory.lineColor("#0000FF"),
+                                PropertyFactory.lineWidth(getMPLThinkness(3)));
+                style.addLayer(trackLayer);
+            }
+            return;
+        }
+
 
         if (layerType == GT_RASTER_WA){
             org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
@@ -499,18 +556,15 @@ public class MPLFeaturesUtils {
             return;
         }
 
-
         org.maplibre.android.style.layers.Layer simbolLayer = null;
         org.maplibre.android.style.layers.Layer newLayer = null;
         org.maplibre.android.style.layers.Layer newLayer2 = null;
-
 
         String currentNamePrefixSymbol = "symbol-" +  getTypePrefix(layerType);
 
         int fistFillColor = 0;
         int outlineColor = 0;
         float alpha  = 0.5f;
-
         float thinkness = 3; // outline
 
         // dot
@@ -543,13 +597,11 @@ public class MPLFeaturesUtils {
             if (layerStyle instanceof SimplePolygonStyle){ //line
                 isFilled = ((SimplePolygonStyle)layerStyle ).isFill();
             }
-
         }
-
 
         if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint) {
             if (changeLayer) {
-                Log.e("PPOOIINNTT", "color set to" + getColorName(fistFillColor));
+//                Log.e("PPOOIINNTT", "color set to" + getColorName(fistFillColor));
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
                 newLayer.setProperties(PropertyFactory.circleRadius(getMPLThinkness(rasuis)),
                         PropertyFactory.circleColor(getColorName(fistFillColor)),

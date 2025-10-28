@@ -192,8 +192,7 @@ public class TrackLayer
                 FIELD_VISIBLE + " = 1 AND " + FIELD_END + " IS NOT NULL AND " + FIELD_END +
                 " != ''";
 
-        mCursor =
-                mContext.getContentResolver().query(mContentUriTracks, proj, selection, null, null);
+        mCursor = mContext.getContentResolver().query(mContentUriTracks, proj, selection, null, null);
 
         if (null == mCursor) {
             return;

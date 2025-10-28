@@ -54,6 +54,7 @@ public interface GeoConstants
     int GTMultiPolygon       = 6;
     int GTGeometryCollection = 7;
     int GT_RASTER_WA         = 8;
+    int GT_TRACK_WA         = 9;
     int GTNone               = 100;
     int GTLinearRing         = 200;
 

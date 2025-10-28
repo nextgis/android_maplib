@@ -89,6 +89,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromLayer;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromTrackLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFillLayerForLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createSourceForLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getColorName;
@@ -110,8 +111,11 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTNone;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
+import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
 import static com.nextgis.maplib.util.NetworkUtil.getBaseUrlpart;
@@ -441,8 +445,9 @@ public class MapDrawable
         executor.shutdown();
     }
 
-    public void loadLayersToMaplibreMap(final String styleJson, final  List<ILayer> vectorLayers,
-                                        final  List<ILayer> tmsLayers) {
+    public void loadLayersToMaplibreMap(final String styleJson,
+                                        final  List<ILayer> vectorLayers,
+                                        final  List<ILayer> tmsLayers ) {
 
         maplibreMapView.get().setOnTouchListener(this);
         maplibreMap.get().addOnMapClickListener(this);
@@ -460,22 +465,26 @@ public class MapDrawable
                 return;
             // Load layers
             for (ILayer iLayer : vectorLayers) {
-                if (! (iLayer instanceof VectorLayer))
+                if (! (iLayer instanceof VectorLayer || iLayer instanceof TrackLayer))
                     continue;
-                VectorLayer layer = (VectorLayer)iLayer;
-//                if (!layer.isValid())
-//                    continue;
 
-                layersType.put(layer.getId(), layer.getGeometryType());
-                layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
-                List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
-                sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+                if (iLayer instanceof VectorLayer) {
+                    VectorLayer layer = (VectorLayer) iLayer;
+                    layersType.put(layer.getId(), layer.getGeometryType());
+                    layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
+                    List<org.maplibre.geojson.Feature> vectorFeatures = createFeatureListFromLayer(layer);
+                    sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
+                } else if (iLayer instanceof TrackLayer) {
+                    TrackLayer layer = (TrackLayer) iLayer;
+                    layersType.put(layer.getId(), GT_TRACK_WA);
+                    List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(layer);
+                    sourceFeaturesHashMap.put(layer.getId(), tracksFeatures);
+                }
             }
 
 
             final AccountManager accountManager = AccountManager.get(getContext());
             final Connections connections = fillConnections(getContext(), accountManager);
-
 
             for (ILayer iLayer : tmsLayers) {
                 if (! (iLayer instanceof TMSLayer))
@@ -487,9 +496,6 @@ public class MapDrawable
                     continue;
 
                 TMSLayer layer = (TMSLayer)iLayer;
-//                if (!layer.isValid())
-//                    continue;((RemoteTMSLayerUI) iLayer).getURL()
-
 
                 if (iLayer instanceof  NGWRasterLayer){
                     // need add auth
@@ -536,15 +542,20 @@ public class MapDrawable
                         Style style = maplibreMap.get().getStyle();
                         for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : sourceFeaturesHashMap.entrySet()) {
                             // create source and FillLayer put to style
-                            createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()), entry.getValue(), style,sourceHashMap, rasterLayersURL);
-                            createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()), style,layersHashMap,layersHashMap2,
+                            createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()),
+                                    entry.getValue(), style,
+                                    sourceHashMap, rasterLayersURL);
+
+                            createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()),
+                                    style,
+                                    layersHashMap,
+                                    layersHashMap2,
                                     symbolsLayerHashMap,
                                     layersStyle.get(entry.getKey()), false);
 
                             checkLayerVisibility(entry.getKey());
                         }
 
-                        //HttpRequestImpl.setOkHttpClient(client)
 
 
                         // PMTILES example
@@ -945,7 +956,7 @@ public class MapDrawable
             }
 
             if  (type == GeoConstants.GTPolygon || type == GeoConstants.GTMultiPolygon
-                    || type == GeoConstants.GTLineString ||type == GeoConstants.GTMultiLineString ) {
+                    || type == GTLineString ||type == GTMultiLineString ) {
                 selectedPolySource.setGeoJson(featureSelected);
             }
 
@@ -1017,13 +1028,13 @@ public class MapDrawable
                     feature = org.maplibre.geojson.Feature.fromGeometry(polygonMP);
                     break;
 
-                case GeoConstants.GTLineString:
+                case GTLineString:
                     List<org.maplibre.geojson.Point> lineList = getNewLinePoints(center, projection);
                     LineString line = LineString.fromLngLats(lineList);
                     feature = org.maplibre.geojson.Feature.fromGeometry(line);
                     break;
 
-                case GeoConstants.GTMultiLineString:
+                case GTMultiLineString:
                     List<org.maplibre.geojson.Point> lineList2 = getNewLinePoints(center, projection);
                     List<List<org.maplibre.geojson.Point>> multiline = new ArrayList<>();
                     multiline.add(lineList2);
@@ -1079,7 +1090,7 @@ public class MapDrawable
                 choosed = selectedPolySource;
             }
 
-            if  (type == GeoConstants.GTLineString || type == GeoConstants.GTMultiLineString) {
+            if  (type == GTLineString || type == GTMultiLineString) {
                 selectedPolySource.setGeoJson(FeatureCollection.fromFeature(editingFeature));
                 choosed = selectedPolySource;
             }
@@ -1774,6 +1785,9 @@ public class MapDrawable
                 layerRaster.setProperties(visibility(isVisible ? VISIBLE:NONE));
             }
         }
+        if (getLayer(id) instanceof TrackLayer ){
+            dd
+        }
     }
 
     public void changePointColor(){
@@ -1821,6 +1835,30 @@ public class MapDrawable
 
             locationSource.setGeoJson(pointFeature);
         }
+    }
+
+    public void reloadTrackListToMap(){
+        List<ILayer> tracks = new ArrayList<>();
+        LayerGroup.getLayersByType(this, Constants.LAYERTYPE_TRACKS, tracks);
+        if (tracks.size() > 0){
+            TrackLayer trackLayer = (TrackLayer)(tracks.get(0));
+            List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(trackLayer);
+
+
+            createSourceForLayer(trackLayer.getId(), GT_TRACK_WA,
+                    tracksFeatures, maplibreMap.get().getStyle(),
+                    sourceHashMap, new HashMap<>());
+
+            createFillLayerForLayer(trackLayer.getId(), GT_TRACK_WA,
+                    maplibreMap.get().getStyle(),
+                    layersHashMap,
+                    layersHashMap2,
+                    symbolsLayerHashMap,
+                    null, false);
+
+
+        }
+
     }
 
 }
