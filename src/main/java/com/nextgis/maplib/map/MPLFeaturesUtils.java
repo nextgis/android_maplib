@@ -81,11 +81,13 @@ public class MPLFeaturesUtils {
     static public String namePrefix = "nglayer-";
     static public String prop_color = "color";
     static public String prop_signature_text = "signature";
+    static public String prop_start_flag = "type";
 
     static final public String layer_namepart = "layer-";
     static final public String source_namepart = "source-";
     static final public String outline_namepart = "_outline";
     static final public String track_namepart = "track-";
+    static final public String track_flags_namepart = "track-flags-";
 
     static final public String id_name = "_id";
 
@@ -136,27 +138,47 @@ public class MPLFeaturesUtils {
     static public List<org.maplibre.geojson.Feature> createFeatureListFromTrackLayer(final TrackLayer layer) {
 
         Map<Integer, GeoLineString> tracks = layer.getTracks();
-
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
 
-
-        int i = 0;
         for (Map.Entry<Integer, GeoLineString> entry : tracks.entrySet()) {
-            i++;
             Integer id = entry.getKey();
             LineString lineString = getLineString(entry.getValue());
             Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
             lineFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
-//            lineFeature.addStringProperty(prop_order, String.valueOf(i));
-//            lineFeature.addStringProperty(prop_featureid, String.valueOf(id));
-//            lineFeature.addStringProperty(prop_color, colorBlue);
-//            if (signatureField != null) {
-//                lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
-//            }
             lineFeatures.add(lineFeature);
         }
 
         return lineFeatures;
+
+    }
+
+
+    static public List<org.maplibre.geojson.Feature> createFeatureListFlagsFromTrackLayer(final TrackLayer layer) {
+        Map<Integer, GeoLineString> tracks = layer.getTracks();
+        List<org.maplibre.geojson.Feature> pointsFeatures = new ArrayList<>();
+
+        for (Map.Entry<Integer, GeoLineString> entry : tracks.entrySet()) {
+
+            GeoPoint p1 = entry.getValue().getPoints().get(0);
+            GeoPoint p2 = entry.getValue().getPoints().get(entry.getValue().getPoints().size() -1);
+
+            double[] lonLat = convert3857To4326(p1.getX(), p1.getY());
+            Point point1 = Point.fromLngLat(lonLat[0], lonLat[1]);
+            Feature pointFeature1 = org.maplibre.geojson.Feature.fromGeometry(point1);
+            pointFeature1.addBooleanProperty(prop_start_flag, true);
+
+
+            double[] lonLat2 = convert3857To4326(p2.getX(), p2.getY());
+            Point point2 = Point.fromLngLat(lonLat2[0], lonLat2[1]);
+            Feature pointFeature2 = org.maplibre.geojson.Feature.fromGeometry(point2);
+            pointFeature2.addBooleanProperty(prop_start_flag, false);
+
+
+            pointsFeatures.add(pointFeature1);
+            pointsFeatures.add(pointFeature2);
+        }
+
+        return pointsFeatures;
 
 
     }
@@ -458,28 +480,26 @@ public class MPLFeaturesUtils {
         return new double[]{x, y};
     }
 
-    static public final String getTypePrefix(int layerType) {
-        return namePrefix;
-    }
-
     static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
                                             final Style style, Map<Integer, GeoJsonSource> sourceHashMap,
                                             Map<Integer, String> rasterLayersURL) {
-        String currentNamePrefix = getTypePrefix(layerType);
+        String currentNamePrefix = namePrefix;
 
         if (layerType == GT_TRACK_WA){
-            GeoJsonSource trackSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + track_namepart + layerId);
-            if (trackSource == null) {
-                trackSource = new GeoJsonSource(currentNamePrefix + source_namepart + "track-" +layerId, FeatureCollection.fromFeatures(layerFeatures));
-                style.addSource(trackSource);
-            }
-            else
-                trackSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
+//            GeoJsonSource trackSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + track_namepart + layerId);
+//            if (trackSource == null) {
+//                trackSource = new GeoJsonSource(currentNamePrefix + source_namepart + track_namepart + layerId, FeatureCollection.fromFeatures(layerFeatures));
+//                style.addSource(trackSource);
+//            }
+//            else
+//                trackSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
+//
+//            sourceHashMap.put(layerId, trackSource);
 
-            sourceHashMap.put(layerId, trackSource);
+
+
             return;
         }
-
 
         if (layerType == GT_RASTER_WA){
                 RasterSource rasterSource = (RasterSource) style.getSource(currentNamePrefix + source_namepart + layerId);
@@ -513,7 +533,7 @@ public class MPLFeaturesUtils {
 
 
     static public org.maplibre.android.style.layers.Layer getRasterLayer(int layerId, final Style style){
-        String currentNamePrefix = getTypePrefix(GT_RASTER_WA);
+        String currentNamePrefix = namePrefix;
         org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
         return rasterLayer;
     }
@@ -527,20 +547,20 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
                                                com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer){
-        String currentNamePrefix = getTypePrefix(layerType);
+        String currentNamePrefix = namePrefix;
 
         if (layerType == GT_TRACK_WA){
-            Layer trackLayer = null;
-            trackLayer = style.getLayer(currentNamePrefix + layer_namepart + track_namepart + layerId);
-            if (trackLayer == null) {
-                trackLayer = new LineLayer(currentNamePrefix + layer_namepart + track_namepart + layerId,
-                        currentNamePrefix + source_namepart + track_namepart + layerId)
-                        .withProperties(
-                                //PropertyFactory.lineColor(Expression.get("color")),
-                                PropertyFactory.lineColor("#0000FF"),
-                                PropertyFactory.lineWidth(getMPLThinkness(3)));
-                style.addLayer(trackLayer);
-            }
+//            Layer trackLayer = null;
+//            trackLayer = style.getLayer(currentNamePrefix + layer_namepart + track_namepart + layerId);
+//            if (trackLayer == null) {
+//                trackLayer = new LineLayer(currentNamePrefix + layer_namepart + track_namepart + layerId,
+//                        currentNamePrefix + source_namepart + track_namepart + layerId)
+//                        .withProperties(
+//                                //PropertyFactory.lineColor(Expression.get("color")),
+//                                PropertyFactory.lineColor("#0000FF"),
+//                                PropertyFactory.lineWidth(getMPLThinkness(3)));
+//                style.addLayer(trackLayer);
+//            }
             return;
         }
 
@@ -560,7 +580,7 @@ public class MPLFeaturesUtils {
         org.maplibre.android.style.layers.Layer newLayer = null;
         org.maplibre.android.style.layers.Layer newLayer2 = null;
 
-        String currentNamePrefixSymbol = "symbol-" +  getTypePrefix(layerType);
+        String currentNamePrefixSymbol = "symbol-" +  namePrefix;
 
         int fistFillColor = 0;
         int outlineColor = 0;

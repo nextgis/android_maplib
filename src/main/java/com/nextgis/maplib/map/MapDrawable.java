@@ -20,15 +20,16 @@
  * You should have received a copy of the GNU Lesser Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.nextgis.maplib.map;
-
-import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
@@ -79,8 +80,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.nextgis.maplib.map.MLP.MultiLineEditClass.getNewLinePoints;
 import static com.nextgis.maplib.map.MLP.PolygonEditClass.createPointsForRing;
@@ -88,19 +87,19 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.colorBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFlagsFromTrackLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromTrackLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFillLayerForLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createSourceForLayer;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.getColorName;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureLine;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMultiLine;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMultiPoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMultiPolygon;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePolygon;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.getMPLThinkness;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getRasterLayer;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.getTypePrefix;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.id_name;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.layer_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.namePrefix;
@@ -109,6 +108,8 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.track_flags_namepart;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.track_namepart;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
@@ -132,7 +133,6 @@ import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Projection;
 import org.maplibre.android.maps.Style;
-import org.maplibre.android.module.http.HttpRequestImpl;
 import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
@@ -140,12 +140,8 @@ import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
-import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
-import org.maplibre.android.style.sources.RasterSource;
-import org.maplibre.android.style.sources.VectorSource;
-import org.maplibre.android.util.DefaultStyle;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -181,6 +177,13 @@ public class MapDrawable
     GeoJsonSource selectedEditedSource = null; // choosed  source - from with edit (selectable)
     GeoJsonSource selectedPolySource = null; // choosed source of polygon/line  //
     GeoJsonSource selectedDotSource = null; // choosed source of polygon  //
+
+    GeoJsonSource tracksLineSource = null; // constant tracks
+    GeoJsonSource tracksFlagsSource = null; // flags ( start/stop ) tracks
+    GeoJsonSource trackInProgressSource = null; // flags ( start/stop ) tracks
+
+
+
     GeoJsonSource vertexSource = null;      // edit points  //
 
     FillLayer fillPolyEditLayer = null; // fill poly on edit layer (while on move points)
@@ -265,30 +268,10 @@ public class MapDrawable
     // change feature id at map objects - features // objects
     public void changeFeatureId(Long oldFeatureId,Long newFeatureId, int layerId){
 
-//        Log.e("CCACHHEE", "changeFeatureId  oldFeatureId, newFeatureId,layerId: " + oldFeatureId + " " +newFeatureId + " " + layerId );
-//        Log.e("CCACHHEE", "print  sourceFeaturesHashMap---------" );
-
-        for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : sourceFeaturesHashMap.entrySet()){
-//            Log.e("CCACHHEE", "print  sourceFeaturesHashMap for entry:" + entry.getKey() );
-            for (org.maplibre.geojson.Feature feature : entry.getValue()){
-//                Log.e("CCACHHEE", "feature id " + feature.getStringProperty(prop_featureid) );
-            }
-        }
-
-//        Log.e("CCACHHEE", "print  polygonFeatures" );
-        for (org.maplibre.geojson.Feature feature : polygonFeatures){
-//            Log.e("CCACHHEE", "feature id " + feature.getStringProperty(prop_featureid) );
-        }
-
-//        Log.e("CCACHHEE", "end print ------- " );
-
-
-
         String oldFeatureIdString = String.valueOf(oldFeatureId);
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerId);
         for (org.maplibre.geojson.Feature feature : layerFeatures){
             if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
-//                Log.e("CCACHHEE", "sourceFeaturesHashMap change featureid at  " + feature.toJson() );
                 feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
                 break;// only one feature with same id
             }
@@ -296,7 +279,6 @@ public class MapDrawable
 
         for (org.maplibre.geojson.Feature feature : polygonFeatures){
             if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
-//                Log.e("CCACHHEE", "polygonFeatures change featureid at  " + feature.toJson() );
                 feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
                 break;// only one feature with same id
             }
@@ -354,8 +336,6 @@ public class MapDrawable
                     }
                 }
             }
-
-
 
             int geoType = GTNone;
             final List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
@@ -428,7 +408,6 @@ public class MapDrawable
             if (!(ilayer instanceof VectorLayer))
                 return;
             VectorLayer layer = (VectorLayer) ilayer;
-            //if (!layer.isValid()) return;
 
             List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
             sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
@@ -448,7 +427,6 @@ public class MapDrawable
     public void loadLayersToMaplibreMap(final String styleJson,
                                         final  List<ILayer> vectorLayers,
                                         final  List<ILayer> tmsLayers ) {
-
         maplibreMapView.get().setOnTouchListener(this);
         maplibreMap.get().addOnMapClickListener(this);
         maplibreMap.get().addOnMapLongClickListener(this);
@@ -459,6 +437,9 @@ public class MapDrawable
         final Map<Integer, Integer> layersType = new HashMap<>();
         final Map<Integer, com.nextgis.maplib.display.Style> layersStyle = new HashMap<>();
         final Map<Integer, String> rasterLayersURL = new HashMap<>();
+
+        final List<org.maplibre.geojson.Feature> tracksFeatures = new ArrayList<>();
+        final List<org.maplibre.geojson.Feature> tracksFlagsFeatures = new ArrayList<>();
 
         executor.execute(() -> {
             if (maplibreMap.get() == null || maplibreMapView.get() == null)
@@ -477,11 +458,16 @@ public class MapDrawable
                 } else if (iLayer instanceof TrackLayer) {
                     TrackLayer layer = (TrackLayer) iLayer;
                     layersType.put(layer.getId(), GT_TRACK_WA);
-                    List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(layer);
-                    sourceFeaturesHashMap.put(layer.getId(), tracksFeatures);
+                    tracksFeatures.clear();
+                    tracksFeatures.addAll(createFeatureListFromTrackLayer(layer));
+
+                    tracksFlagsFeatures.clear();
+                    tracksFlagsFeatures.addAll(createFeatureListFlagsFromTrackLayer(layer));
+
+                    //List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(layer);
+                    //sourceFeaturesHashMap.put(layer.getId(), tracksFeatures);
                 }
             }
-
 
             final AccountManager accountManager = AccountManager.get(getContext());
             final Connections connections = fillConnections(getContext(), accountManager);
@@ -489,7 +475,6 @@ public class MapDrawable
             for (ILayer iLayer : tmsLayers) {
                 if (! (iLayer instanceof TMSLayer))
                     continue;
-
 
                 if (!(iLayer instanceof NGWRasterLayer)
                         && !(iLayer instanceof RemoteTMSLayer))
@@ -556,8 +541,6 @@ public class MapDrawable
                             checkLayerVisibility(entry.getKey());
                         }
 
-
-
                         // PMTILES example
 //                        // raster PMTILES
 //                        String pmTilesPath = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/flowers.pmtiles";
@@ -617,7 +600,6 @@ public class MapDrawable
                                 .withProperties(
                                         PropertyFactory.fillColor("#FF00FF"),
                                         PropertyFactory.fillOpacity(0.2f));
-//                        style.addLayer(fillLayer);
 
                         // edit layer source
                         vertexSource = new  GeoJsonSource("vertex-source", FeatureCollection.fromFeatures(emptyList()));
@@ -649,8 +631,7 @@ public class MapDrawable
                         SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
                                 .withProperties(
                                         org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
-                                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(
-                                                org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
+                                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
                         style.addLayer(symbolLayer);
 
                         locationSource = new GeoJsonSource("user-location-source", Point.fromLngLat(0.0, 0.0));
@@ -667,8 +648,6 @@ public class MapDrawable
                         String iconGoId = "user-marker-location-go";
                         style.addImage(iconGoId, bitmapGo);
 
-
-
                         SymbolLayer locationLayer = new SymbolLayer("user-location-layer", "user-location-source")
                                 .withProperties(
                                         PropertyFactory.iconImage(
@@ -679,11 +658,57 @@ public class MapDrawable
                                         PropertyFactory.iconRotate(Expression.get("bearing")),
                                         PropertyFactory.iconSize(1.0f),
                                         PropertyFactory.iconAllowOverlap(true),
-                                        PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP)
-
-                                );
+                                        PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP));
                         style.addLayer(locationLayer);
 
+                        // TRACKING
+                        // saved track line
+                        tracksLineSource = new  GeoJsonSource("track-line-source", FeatureCollection.fromFeatures(tracksFeatures));
+                        style.addSource(tracksLineSource);
+
+                        Layer trackLayer = new LineLayer( "track-line-layer", "track-line-source").
+                                    withProperties(
+                                            PropertyFactory.lineColor("#0000FF"),
+                                            PropertyFactory.lineWidth(getMPLThinkness(5)));
+                        style.addLayer(trackLayer);
+
+                        // tracks start stop flags
+                        tracksFlagsSource = new  GeoJsonSource("track-flag-source", FeatureCollection.fromFeatures(tracksFlagsFeatures));
+                        style.addSource(tracksFlagsSource);
+
+                        final Drawable drawableGreenFlag = getContext().getResources().getDrawable( R.drawable.ic_track_flag);
+                        final Bitmap bitmapFlagStart = drawableToBitmap(drawableGreenFlag);
+                        Bitmap greenMarker = recolorBitmap(bitmapFlagStart, Color.GREEN);
+                        String iconFlagStart = "user-marker-flag-start";
+                        style.addImage(iconFlagStart, greenMarker);
+
+                        final Drawable drawableRedFlag = getContext().getResources().getDrawable( R.drawable.ic_track_flag);
+                        final Bitmap bitmapFlagEnd = drawableToBitmap(drawableRedFlag);
+                        Bitmap redBitmap = recolorBitmap(bitmapFlagEnd, Color.RED);
+                        String iconFlagEnd = "user-marker-flag-end";
+                        style.addImage(iconFlagEnd, redBitmap);
+
+                        SymbolLayer trackFlagsLayer = new SymbolLayer("track-flags-layer", "track-flag-source")
+                                .withProperties(
+                                        PropertyFactory.iconImage(
+                                                Expression.switchCase(
+                                                        Expression.eq(Expression.get("type"), Expression.literal(true)), Expression.literal("user-marker-flag-start"),
+                                                        Expression.eq(Expression.get("type"), Expression.literal(false)), Expression.literal("user-marker-flag-end"),
+                                                        Expression.literal("user-marker-flag-start"))),
+                                        PropertyFactory.iconSize(1.0f),
+                                        PropertyFactory.iconAllowOverlap(true),
+                                        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT));
+                        style.addLayer(trackFlagsLayer);
+
+                        // track in progress
+                        trackInProgressSource = new  GeoJsonSource("track-inprogress-source", FeatureCollection.fromFeatures(new ArrayList<>()));
+                        style.addSource(trackInProgressSource);
+
+                        Layer trackInProgressLayer = new LineLayer( "track-inprogress-layer", "track-inprogress-source").
+                                withProperties(
+                                        PropertyFactory.lineColor("#0000FF"),
+                                        PropertyFactory.lineWidth(getMPLThinkness(5)));
+                        style.addLayer(trackInProgressLayer);
                     }
                 });
 
@@ -700,8 +725,6 @@ public class MapDrawable
         });
         executor.shutdown();
     }
-
-
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -1786,7 +1809,19 @@ public class MapDrawable
             }
         }
         if (getLayer(id) instanceof TrackLayer ){
-            dd
+
+            Layer trackLayer = maplibreMap.get().getStyle().getLayer("track-line-layer");
+            if (trackLayer!= null)
+                trackLayer.setProperties(visibility(isVisible ? VISIBLE:NONE));
+
+
+            Layer trackLayerFlags = maplibreMap.get().getStyle().getLayer("track-flags-layer");
+            if (trackLayerFlags!= null)
+                trackLayerFlags.setProperties(visibility(isVisible ? VISIBLE:NONE));
+
+            Layer trackLayerInProgress = maplibreMap.get().getStyle().getLayer("track-inprogress-layer");
+            if (trackLayerInProgress!= null)
+                trackLayerInProgress.setProperties(visibility(isVisible ? VISIBLE:NONE));
         }
     }
 
@@ -1807,7 +1842,7 @@ public class MapDrawable
                 com.nextgis.maplib.display.Style newStyle = ((VectorLayer)iLayer).getDefaultStyleNoExcept();
                 Style maplbrStyle = maplibreMap.get().getStyle();
 
-                String currentNamePrefix = getTypePrefix(iLayer.getType());
+                String currentNamePrefix = namePrefix;
                 org.maplibre.android.style.layers.Layer newLayer = maplbrStyle.getLayer(currentNamePrefix + "layer-" + id);
                 newLayer.setProperties(PropertyFactory.circleRadius(22f),
                         PropertyFactory.circleColor(colorS),
@@ -1837,28 +1872,61 @@ public class MapDrawable
         }
     }
 
+
+    public void reloadCurrentTrackToMap(){
+        List<ILayer> tracks = new ArrayList<>();
+        LayerGroup.getLayersByType(this, Constants.LAYERTYPE_TRACKS, tracks);
+        if (tracks.size() > 0){
+
+            Style style = maplibreMap.get().getStyle();
+            if (style != null) {
+
+                TrackLayer trackLayer = (TrackLayer) (tracks.get(0));
+                List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(trackLayer);
+
+                GeoJsonSource tracksLineSource = (GeoJsonSource)style.getSource("track-inprogress-source");
+                if (tracksLineSource!=null)
+                    tracksLineSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeatures));
+
+            }
+        }
+    }
+
+
     public void reloadTrackListToMap(){
         List<ILayer> tracks = new ArrayList<>();
         LayerGroup.getLayersByType(this, Constants.LAYERTYPE_TRACKS, tracks);
         if (tracks.size() > 0){
-            TrackLayer trackLayer = (TrackLayer)(tracks.get(0));
-            List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(trackLayer);
+
+            Style style = maplibreMap.get().getStyle();
+            if (style != null) {
+
+                TrackLayer trackLayer = (TrackLayer) (tracks.get(0));
+                List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(trackLayer);
+                List<org.maplibre.geojson.Feature> tracksFeaturesFlags = createFeatureListFlagsFromTrackLayer(trackLayer);
 
 
-            createSourceForLayer(trackLayer.getId(), GT_TRACK_WA,
-                    tracksFeatures, maplibreMap.get().getStyle(),
-                    sourceHashMap, new HashMap<>());
+                GeoJsonSource tracksLineSource = (GeoJsonSource)style.getSource("track-line-source");
+                if (tracksLineSource!=null)
+                    tracksLineSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeatures));
 
-            createFillLayerForLayer(trackLayer.getId(), GT_TRACK_WA,
-                    maplibreMap.get().getStyle(),
-                    layersHashMap,
-                    layersHashMap2,
-                    symbolsLayerHashMap,
-                    null, false);
-
-
+                GeoJsonSource tracksLineFlagsSource = (GeoJsonSource)style.getSource("track-flag-source");
+                if (tracksLineFlagsSource!=null)
+                    tracksLineFlagsSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeaturesFlags));
+            }
         }
-
     }
 
+
+    // draw icon in color
+    public Bitmap recolorBitmap(Bitmap src, int color) {
+        Bitmap result = Bitmap.createBitmap(src.getWidth(), src.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(result);
+
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(src, 0, 0, paint);
+
+        return result;
+    }
 }
