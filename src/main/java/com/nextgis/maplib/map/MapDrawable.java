@@ -23,6 +23,7 @@
 package com.nextgis.maplib.map;
 import android.accounts.AccountManager;
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -31,6 +32,7 @@ import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -86,6 +88,7 @@ import static com.nextgis.maplib.map.MLP.PolygonEditClass.createPointsForRing;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.convert3857To4326;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFlagsFromTrackLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromLayer;
@@ -112,6 +115,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.track_flags_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.track_namepart;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
+import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTNone;
@@ -634,7 +638,7 @@ public class MapDrawable
                                         org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
                         style.addLayer(symbolLayer);
 
-                        locationSource = new GeoJsonSource("user-location-source", Point.fromLngLat(0.0, 0.0));
+                        locationSource = new GeoJsonSource("user-location-source", Point.fromLngLat(-100.0, -100.0));
                         style.addSource(locationSource);
 
 
@@ -672,6 +676,17 @@ public class MapDrawable
                                             PropertyFactory.lineWidth(getMPLThinkness(5)));
                         style.addLayer(trackLayer);
 
+                        // track in progress
+                        trackInProgressSource = new  GeoJsonSource("track-inprogress-source", FeatureCollection.fromFeatures(new ArrayList<>()));
+                        style.addSource(trackInProgressSource);
+
+                        Layer trackInProgressLayer = new LineLayer( "track-inprogress-layer", "track-inprogress-source").
+                                withProperties(
+                                        PropertyFactory.lineColor("#0000FF"),
+                                        PropertyFactory.lineWidth(getMPLThinkness(5)));
+                        style.addLayer(trackInProgressLayer);
+
+
                         // tracks start stop flags
                         tracksFlagsSource = new  GeoJsonSource("track-flag-source", FeatureCollection.fromFeatures(tracksFlagsFeatures));
                         style.addSource(tracksFlagsSource);
@@ -699,16 +714,6 @@ public class MapDrawable
                                         PropertyFactory.iconAllowOverlap(true),
                                         PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT));
                         style.addLayer(trackFlagsLayer);
-
-                        // track in progress
-                        trackInProgressSource = new  GeoJsonSource("track-inprogress-source", FeatureCollection.fromFeatures(new ArrayList<>()));
-                        style.addSource(trackInProgressSource);
-
-                        Layer trackInProgressLayer = new LineLayer( "track-inprogress-layer", "track-inprogress-source").
-                                withProperties(
-                                        PropertyFactory.lineColor("#0000FF"),
-                                        PropertyFactory.lineWidth(getMPLThinkness(5)));
-                        style.addLayer(trackInProgressLayer);
                     }
                 });
 
@@ -1872,26 +1877,90 @@ public class MapDrawable
         }
     }
 
-
     public void reloadCurrentTrackToMap(){
-        List<ILayer> tracks = new ArrayList<>();
-        LayerGroup.getLayersByType(this, Constants.LAYERTYPE_TRACKS, tracks);
-        if (tracks.size() > 0){
+        if (maplibreMap.get() == null)
+            return;
+        Style style = maplibreMap.get().getStyle();
+        if (style != null) {
 
-            Style style = maplibreMap.get().getStyle();
-            if (style != null) {
+            List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromCurrentTrack(getContext());
 
-                TrackLayer trackLayer = (TrackLayer) (tracks.get(0));
-                List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(trackLayer);
-
+            if (tracksFeatures .size() > 0){
                 GeoJsonSource tracksLineSource = (GeoJsonSource)style.getSource("track-inprogress-source");
                 if (tracksLineSource!=null)
                     tracksLineSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeatures));
-
             }
         }
     }
 
+    static public List<org.maplibre.geojson.Feature> createFeatureListFromCurrentTrack(Context context) {
+
+        List<org.maplibre.geojson.Feature> result = new ArrayList<>();
+
+        List<Point> pointsList = new ArrayList<>();
+
+        Cursor mCursor;
+        final Uri mContentUriTracks;
+
+        IGISApplication app = (IGISApplication) context.getApplicationContext();
+        String authority = app.getAuthority();
+
+        String[] mProjection = new String[] {TrackLayer.FIELD_ID};
+        String   mSelection  = TrackLayer.FIELD_VISIBLE + " = 1 AND (" + TrackLayer.FIELD_END +
+                " IS NULL OR " + TrackLayer.FIELD_END +
+                " = '')";
+
+        mContentUriTracks = Uri.parse("content://" + authority + "/" + TrackLayer.TABLE_TRACKS);
+        mCursor = context.getContentResolver()
+                .query(mContentUriTracks, mProjection, mSelection, null, null);
+
+
+        if (mCursor == null || mCursor.getCount() == 0 || !mCursor.moveToFirst()) {
+            return result;
+        }
+
+        String id = mCursor.getString(0);
+        String[] proj = new String[] {TrackLayer.FIELD_LON, TrackLayer.FIELD_LAT};
+
+        Cursor track = null;
+        try {
+            track = context.getContentResolver()
+                    .query(Uri.withAppendedPath(mContentUriTracks, id), proj, null, null, null);
+        }catch (Exception ex){
+            Log.e(TAG, ex.getMessage());
+            return result;
+        }
+
+        if (track == null || track.getCount() == 0 || !track.moveToFirst())
+            return result;
+
+            int lonInx = track.getColumnIndex(TrackLayer.FIELD_LON);
+            int latInx = track.getColumnIndex(TrackLayer.FIELD_LAT);
+            int i = 0;
+            do {
+                i++;
+                float x1 = track.getFloat(lonInx);
+                float y1 = track.getFloat(latInx);
+                double[] lonLat = convert3857To4326(x1, y1);
+                Point point1 = Point.fromLngLat(lonLat[0], lonLat[1]);
+                pointsList.add(point1);
+//                org.maplibre.geojson.Feature pointFeature1 = org.maplibre.geojson.Feature.fromGeometry(point1);
+//                result.add(pointFeature1);
+
+                Log.e("TTRR", "point" + i + ": " + lonLat[0] + " : " +lonLat[1]);
+
+
+            } while (track.moveToNext());
+            track.close();
+
+
+            LineString lineString = LineString.fromLngLats(pointsList);
+            org.maplibre.geojson.Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
+            result.add(lineFeature);
+
+
+        return result;
+    }
 
     public void reloadTrackListToMap(){
         List<ILayer> tracks = new ArrayList<>();

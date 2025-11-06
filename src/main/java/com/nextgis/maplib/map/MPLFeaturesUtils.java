@@ -13,6 +13,8 @@ import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_RIGHT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 
+import android.database.Cursor;
+import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -151,6 +153,10 @@ public class MPLFeaturesUtils {
         return lineFeatures;
 
     }
+
+
+
+
 
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFlagsFromTrackLayer(final TrackLayer layer) {
