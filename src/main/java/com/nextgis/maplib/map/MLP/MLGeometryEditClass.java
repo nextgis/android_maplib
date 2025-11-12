@@ -133,7 +133,7 @@ public abstract class MLGeometryEditClass {
     }
 
 
-    // перевод из lat/lon → WebMercator (EPSG:3857)
+    //  lat/lon → WebMercator (EPSG:3857)
     protected static double[] projectWebMercator(double lat, double lon) {
         double x = lon * 20037508.34 / 180.0;
         double y = Math.log(Math.tan((90.0 + lat) * Math.PI / 360.0)) / (Math.PI / 180.0);
@@ -141,7 +141,7 @@ public abstract class MLGeometryEditClass {
         return new double[]{x, y};
     }
 
-    // обратный перевод из WebMercator → lat/lon
+    //  WebMercator → lat/lon
     protected static double[] unprojectWebMercator(double x, double y) {
         double lon = (x / 20037508.34) * 180.0;
         double lat = (y / 20037508.34) * 180.0;
@@ -149,7 +149,7 @@ public abstract class MLGeometryEditClass {
         return new double[]{lat, lon};
     }
 
-    // получить midpoint на карте
+    // get midpoint from map
     protected static Point getMapMidpoint(Point pt1, Point pt2) {
 
         double[] p1 = projectWebMercator(pt1.latitude(), pt1.longitude());

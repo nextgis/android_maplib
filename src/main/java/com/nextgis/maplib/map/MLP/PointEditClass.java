@@ -10,6 +10,7 @@ import org.maplibre.geojson.Geometry;
 import org.maplibre.geojson.Point;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -22,7 +23,20 @@ public class PointEditClass extends MLGeometryEditClass {
         super(geoType, selectedEditedSource, editingFeature, polygonFeatures,
                 selectedPolySource, vertexSource, markerSource);
 
-        polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+//        polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order),
+//                editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+
+        Iterator<Feature> it = polygonFeatures.iterator();
+        String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+
+        while (it.hasNext()) {
+            Feature f = it.next();
+            if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+                it.remove();
+            }
+        }
+
+
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
 
         editingFeature.addStringProperty("color", MPLFeaturesUtils.colorLightBlue);
@@ -79,8 +93,16 @@ public class PointEditClass extends MLGeometryEditClass {
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(newPoint);
 
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-            originalEditingFeature.properties().keySet().forEach(key -> {
-                feature.addProperty(key, originalEditingFeature.properties().get(key));});
+
+            Iterator<String> it = originalEditingFeature.properties().keySet().iterator();
+            while (it.hasNext()) {
+                String key = it.next();
+                feature.addProperty(key, originalEditingFeature.properties().get(key));
+            }
+
+
+//            originalEditingFeature.properties().keySet().forEach(key -> {
+//                feature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
 
         editingFeature = feature;

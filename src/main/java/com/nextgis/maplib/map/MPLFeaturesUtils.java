@@ -12,6 +12,8 @@ import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_LEFT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_RIGHT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_NORMAL;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 
 import android.database.Cursor;
 import android.net.Uri;
@@ -488,22 +490,11 @@ public class MPLFeaturesUtils {
 
     static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
                                             final Style style, Map<Integer, GeoJsonSource> sourceHashMap,
-                                            Map<Integer, String> rasterLayersURL) {
+                                            Map<Integer, String> rasterLayersURL,
+                                            Map<Integer, Integer> rasterLayersTmsTypeMap) {
         String currentNamePrefix = namePrefix;
 
         if (layerType == GT_TRACK_WA){
-//            GeoJsonSource trackSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + track_namepart + layerId);
-//            if (trackSource == null) {
-//                trackSource = new GeoJsonSource(currentNamePrefix + source_namepart + track_namepart + layerId, FeatureCollection.fromFeatures(layerFeatures));
-//                style.addSource(trackSource);
-//            }
-//            else
-//                trackSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
-//
-//            sourceHashMap.put(layerId, trackSource);
-
-
-
             return;
         }
 
@@ -513,18 +504,26 @@ public class MPLFeaturesUtils {
                     style.removeSource(currentNamePrefix + source_namepart + layerId);
                     rasterSource = null;
                 }
-
                 if (rasterSource == null) {
+                    TileSet tileSet = new TileSet("tileset",
+                            rasterLayersURL.get(layerId));
+                    Integer tileTmsType =rasterLayersTmsTypeMap.get(layerId);
+                    if ( tileTmsType != null && tileTmsType != -1){
+                        if (tileTmsType == TMSTYPE_NORMAL) {
+                            tileSet.setScheme( "tms");
+                            Log.e("TTMS", "tileset to tms");
+                        }
+                        if (tileTmsType == TMSTYPE_OSM) {
+                            tileSet.setScheme("xyz");
+                            Log.e("TTMS", "tileset to XYZ");
+                        }
+                    }
                     rasterSource = new RasterSource(currentNamePrefix + source_namepart + layerId,
-                            new TileSet("tileset",
-                                    rasterLayersURL.get(layerId)),
-                            256
-                    );
+                            tileSet, 256 );
                     style.addSource(rasterSource);
                 }
             return;
         }
-
 
         GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + layerId);
         if (vectorSource == null) {

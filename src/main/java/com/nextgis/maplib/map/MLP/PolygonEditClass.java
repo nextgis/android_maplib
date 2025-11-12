@@ -1,6 +1,7 @@
 package com.nextgis.maplib.map.MLP;
 
 import android.graphics.PointF;
+import android.os.Build;
 
 import com.nextgis.maplib.map.MPLFeaturesUtils;
 
@@ -57,18 +58,25 @@ public class PolygonEditClass extends MLGeometryEditClass {
         // Remove the currently editing feature from the background list if it exists
         if (editingFeature != null && editingFeature.hasProperty(MPLFeaturesUtils.prop_order)) {
 
-//            Iterator<Feature> it = polygonFeatures.iterator();
-//            String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
 
-//            while (it.hasNext()) {
-//                Feature f = it.next();
-//                if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
-//                    it.remove();
-//                }
-//            }
 
-            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order),
+                        editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+            } else {
+                Iterator<Feature> it = polygonFeatures.iterator();
+                String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+
+                while (it.hasNext()) {
+                    Feature f = it.next();
+                    if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+                        it.remove();
+                    }
+                }
+            }
+
         }
+
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
 
         if (this.originalEditingFeature != null) {
@@ -318,8 +326,18 @@ public class PolygonEditClass extends MLGeometryEditClass {
         Feature newFeature = Feature.fromGeometry(polygonGeom);
 
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-            originalEditingFeature.properties().keySet().forEach(key -> {
-                newFeature.addProperty(key, originalEditingFeature.properties().get(key));});
+
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+                originalEditingFeature.properties().keySet().forEach(key -> {
+                    newFeature.addProperty(key, originalEditingFeature.properties().get(key));
+                });
+            } else {
+                Iterator<String> it = originalEditingFeature.properties().keySet().iterator();
+                while (it.hasNext()) {
+                    String key = it.next();
+                    newFeature.addProperty(key, originalEditingFeature.properties().get(key));
+                }
+            }
         }
         newFeature.addStringProperty("color", MPLFeaturesUtils.colorRED); // Highlight editing polygon
         editingFeature = newFeature;

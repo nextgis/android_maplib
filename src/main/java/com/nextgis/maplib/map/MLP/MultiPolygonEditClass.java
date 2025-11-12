@@ -10,6 +10,7 @@ import org.maplibre.geojson.MultiPolygon;
 import org.maplibre.geojson.Point;
 import org.maplibre.geojson.Polygon;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,7 +47,19 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
 
         // Remove the currently editing feature from the background list if it exists
         if (editingFeature != null && editingFeature.hasProperty(MPLFeaturesUtils.prop_order)) {
-            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+            Iterator<Feature> it = polygonFeatures.iterator();
+            String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+
+            while (it.hasNext()) {
+                Feature f = it.next();
+                if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+                    it.remove();
+                }
+            }
+
+//            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order),
+//            editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+
         }
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
 
@@ -56,9 +69,17 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
             // Handle new polygon creation if needed, perhaps with default points
             this.editingFeature = Feature.fromGeometry(Polygon.fromLngLats(new ArrayList<>()));
             if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-                originalEditingFeature.properties().keySet().forEach(key -> {
+
+                Iterator<String> it = originalEditingFeature.properties().keySet().iterator();
+                while (it.hasNext()) {
+                    String key = it.next();
                     this.editingFeature.addProperty(key, originalEditingFeature.properties().get(key));
-                });
+                }
+
+
+//                originalEditingFeature.properties().keySet().forEach(key -> {
+//                    this.editingFeature.addProperty(key, originalEditingFeature.properties().get(key));
+//                });
             }
             this.editingFeature.addStringProperty("color", MPLFeaturesUtils.colorRED);
             selectedPolySource.setGeoJson(this.editingFeature);
@@ -179,9 +200,16 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
         Feature newFeature = Feature.fromGeometry(multiPolygon);
 
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-            originalEditingFeature.properties().keySet().forEach(key -> {
+
+            Iterator<String> it = originalEditingFeature.properties().keySet().iterator();
+            while (it.hasNext()) {
+                String key = it.next();
                 newFeature.addProperty(key, originalEditingFeature.properties().get(key));
-            });
+            }
+
+//            originalEditingFeature.properties().keySet().forEach(key -> {
+//                newFeature.addProperty(key, originalEditingFeature.properties().get(key));
+//            });
         }
         newFeature.addStringProperty("color", MPLFeaturesUtils.colorRED); // Highlight editing polygon
         editingFeature = newFeature;

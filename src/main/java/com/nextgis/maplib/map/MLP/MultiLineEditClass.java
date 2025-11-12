@@ -12,6 +12,7 @@ import org.maplibre.geojson.MultiLineString;
 import org.maplibre.geojson.Point;
 import android.graphics.PointF;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -28,7 +29,20 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         super(geoType, selectedEditedSource, editingFeature, lineFeatures,
                 selectedPolySource, vertexSource, markerSource);
 
-        lineFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+        Iterator<Feature> it = lineFeatures.iterator();
+        String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+
+        while (it.hasNext()) {
+            Feature f = it.next();
+            if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+                it.remove();
+            }
+        }
+
+//        lineFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order),
+//                editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
+
+
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(lineFeatures));
 
         // The main editingFeature for a MultiLineString doesn't usually get a single color here,
@@ -70,22 +84,41 @@ public class MultiLineEditClass extends MLGeometryEditClass {
 
     @Override
     public void regenerateVertexFeatures() {
-        List<org.maplibre.geojson.Feature> vertexFeaturesTmp =
-                IntStream.range(0, editingVertices.size())
-                        .mapToObj(index -> {
-                            Point pt = editingVertices.get(index);
-                            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
-                            f.addNumberProperty("index", index);
-                            f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
-                            f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
-                            return f;
-                        })
-                        .collect(Collectors.toList());
+//        List<org.maplibre.geojson.Feature> vertexFeaturesTmp =
+//                IntStream.range(0, editingVertices.size())
+//                        .mapToObj(index -> {
+//                            Point pt = editingVertices.get(index);
+//                            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
+//                            f.addNumberProperty("index", index);
+//                            f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
+//                            f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
+//                            return f;
+//                        })
+//                        .collect(Collectors.toList());
+
+        List<org.maplibre.geojson.Feature> vertexFeaturesTmp = new ArrayList<>();
+        for (int index = 0; index < editingVertices.size(); index++) {
+            Point pt = editingVertices.get(index);
+            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
+            f.addNumberProperty("index", index);
+            f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
+            f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
+            vertexFeaturesTmp.add(f);
+        }
+
 
         // Preserve middle points if they exist, only update main vertices
-        List<Feature> middlePointFeatures = vertexFeatures.stream()
-            .filter(f -> f.hasNonNullValueForProperty("middle"))
-            .collect(Collectors.toList());
+//        List<Feature> middlePointFeatures = vertexFeatures.stream()
+//            .filter(f -> f.hasNonNullValueForProperty("middle"))
+//            .collect(Collectors.toList());
+//
+
+        List<org.maplibre.geojson.Feature> middlePointFeatures = new ArrayList<>();
+        for (org.maplibre.geojson.Feature f : vertexFeatures) {
+            if (!f.hasNonNullValueForProperty("middle")) {
+                middlePointFeatures.add(f);
+            }
+        }
 
         vertexFeatures.clear();
         vertexFeatures.addAll(vertexFeaturesTmp);
@@ -96,9 +129,17 @@ public class MultiLineEditClass extends MLGeometryEditClass {
 
     public void generateMiddlePointsAddAndDisplay() {
         // Remove old middle points before generating new ones
-        List<org.maplibre.geojson.Feature> mainVertexFeatures = vertexFeatures.stream()
-                .filter(f -> !f.hasNonNullValueForProperty("middle"))
-                .collect(Collectors.toList());
+//        List<org.maplibre.geojson.Feature> mainVertexFeatures = vertexFeatures.stream()
+//                .filter(f -> !f.hasNonNullValueForProperty("middle"))
+//                .collect(Collectors.toList());
+
+        List<org.maplibre.geojson.Feature> mainVertexFeatures = new ArrayList<>();
+        for (org.maplibre.geojson.Feature f : vertexFeatures) {
+            if (!f.hasNonNullValueForProperty("middle")) {
+                mainVertexFeatures.add(f);
+            }
+        }
+
         vertexFeatures.clear();
         vertexFeatures.addAll(mainVertexFeatures);
 
@@ -174,20 +215,37 @@ public class MultiLineEditClass extends MLGeometryEditClass {
             if (!editingVertices.isEmpty()) {
                 selectedVertexIndex = 0;
                 // Apply color to the initially selected main vertex (if any)
-                 vertexFeatures.stream()
-                    .filter(f -> !f.hasNonNullValueForProperty("middle") && f.getNumberProperty("index").intValue() == selectedVertexIndex)
-                    .findFirst()
-                    .ifPresent(f -> f.addStringProperty("color", MPLFeaturesUtils.colorRED));
+//                 vertexFeatures.stream()
+//                    .filter(f -> !f.hasNonNullValueForProperty("middle") && f.getNumberProperty("index").intValue() == selectedVertexIndex)
+//                    .findFirst()
+//                    .ifPresent(f -> f.addStringProperty("color", MPLFeaturesUtils.colorRED));
+
+                for (org.maplibre.geojson.Feature f : vertexFeatures) {
+                    if (!f.hasNonNullValueForProperty("middle")) {
+                        Number indexNum = f.getNumberProperty("index");
+                        if (indexNum != null && indexNum.intValue() == selectedVertexIndex) {
+                            f.addStringProperty("color", MPLFeaturesUtils.colorRED);
+                            break;
+                        }
+                    }
+                }
             } else {
                 selectedVertexIndex = -1;
             }
         } else {
             // Ensure correct coloring for the currently selected main vertex
-            vertexFeatures.forEach(f -> {
-                if (!f.hasNonNullValueForProperty("middle")) {
-                    f.addStringProperty("color", f.getNumberProperty("index").intValue() == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
+            Iterator<Feature> it = vertexFeatures.iterator();
+            while (it.hasNext()) {
+                Feature feature = it.next();
+                if (!feature.hasNonNullValueForProperty("middle")) {
+                    feature.addStringProperty("color", feature.getNumberProperty("index").intValue() == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
                 }
-            });
+            }
+//            vertexFeatures.forEach(f -> {
+//                if (!f.hasNonNullValueForProperty("middle")) {
+//                    f.addStringProperty("color", f.getNumberProperty("index").intValue() == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
+//                }
+//            });
         }
 
         if (changeGeoJsonSource) {
@@ -237,8 +295,15 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         MultiLineString multiLineString = MultiLineString.fromLineStrings(lines);
         editingFeature = org.maplibre.geojson.Feature.fromGeometry(multiLineString);
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-            originalEditingFeature.properties().keySet().forEach(key -> {
-                editingFeature.addProperty(key, originalEditingFeature.properties().get(key));});
+
+            Iterator<String> it = originalEditingFeature.properties().keySet().iterator();
+            while (it.hasNext()) {
+                String key = it.next();
+                editingFeature.addProperty(key, originalEditingFeature.properties().get(key));
+            }
+
+//            originalEditingFeature.properties().keySet().forEach(key -> {
+//                editingFeature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
 
         // For display: color the selected line red, others light blue
@@ -256,17 +321,27 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(displayLineFeatures));
 
         // Regenerate main vertex features (middle points are handled by displayMiddlePoints)
-        List<org.maplibre.geojson.Feature> mainVertexFeatures = IntStream.range(0, editingVertices.size())
-            .mapToObj(index -> {
-                Point pt = editingVertices.get(index);
-                org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
-                f.addNumberProperty("index", index);
-                f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
-                f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
-                return f;
-            })
-            .collect(Collectors.toList());
-        
+//        List<org.maplibre.geojson.Feature> mainVertexFeatures = IntStream.range(0, editingVertices.size())
+//            .mapToObj(index -> {
+//                Point pt = editingVertices.get(index);
+//                org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
+//                f.addNumberProperty("index", index);
+//                f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
+//                f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
+//                return f;
+//            })
+//            .collect(Collectors.toList());
+
+        List<org.maplibre.geojson.Feature> mainVertexFeatures = new ArrayList<>();
+        for (int index = 0; index < editingVertices.size(); index++) {
+            Point pt = editingVertices.get(index);
+            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
+            f.addNumberProperty("index", index);
+            f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
+            f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
+            mainVertexFeatures.add(f);
+        }
+
         vertexFeatures.clear();
         vertexFeatures.addAll(mainVertexFeatures);
 

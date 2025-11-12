@@ -75,6 +75,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -130,9 +131,13 @@ import static org.maplibre.android.style.layers.Property.VISIBLE;
 import static org.maplibre.android.style.layers.PropertyFactory.visibility;
 import static java.util.Collections.emptyList;
 import androidx.annotation.NonNull;
+
+import org.maplibre.android.MapLibre;
 import org.maplibre.android.annotations.Icon;
 import org.maplibre.android.annotations.IconFactory;
+import org.maplibre.android.camera.CameraUpdateFactory;
 import org.maplibre.android.geometry.LatLng;
+import org.maplibre.android.geometry.LatLngBounds;
 import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Projection;
@@ -146,6 +151,7 @@ import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
+import org.maplibre.android.style.sources.Source;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -188,9 +194,15 @@ public class MapDrawable
 
 
 
+
+
     GeoJsonSource vertexSource = null;      // edit points  //
 
     FillLayer fillPolyEditLayer = null; // fill poly on edit layer (while on move points)
+
+    public org.maplibre.geojson.Feature hiddedFeature = null;
+    Long hiddedFeatureId = null;
+    int hiddedlayerdID = -1;
 
     FeatureCollection markerFeatureCollection = FeatureCollection.fromFeatures(new ArrayList<>());
     GeoJsonSource markerSource = null; // marker source - select point
@@ -329,21 +341,33 @@ public class MapDrawable
 //                                Log.d("UURR", "res part: " + resPart);
 //                                Log.d("UURR", "getBaseUrl part: " + getBaseUrl);
 
-                                final String [] authPart = new String[3];
+                                final String [] authPart = new String[4];
                                 authPart[0] = getBaseUrl;
                                 authPart[1] = resPart;
                                 authPart[2] = basicAuth;
+                                authPart[3] = iLayer.getPath().toString();
                                 ((IGISApplication)getContext().getApplicationContext()).updateAuthPair( authPart);
                                 break;
                             }
                         }
                     }
                 }
+            } else if (iLayer instanceof  RemoteTMSLayer){
+                final String url = ((RemoteTMSLayer) iLayer).getURL();
+                final String getBaseUrl =  getBaseUrlpart(url);
+                final String resPart = "resource=" + extractResourceValue(url);
+                final String [] authPart = new String[4];
+                authPart[0] = getBaseUrl;
+                authPart[1] = resPart;
+                authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
+                authPart[3] = iLayer.getPath().toString();
+                ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
             }
 
             int geoType = GTNone;
             final List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
-            Map<Integer, String> rasterLayersURL = new HashMap<>();
+            Map<Integer, String> rasterLayersURLMap = new HashMap<>();
+            Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
             com.nextgis.maplib.display.Style ngStyle = null;
 
             if (iLayer instanceof VectorLayer) {
@@ -353,16 +377,23 @@ public class MapDrawable
                 vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
                 sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
                 ngStyle = ((VectorLayer)iLayer).getDefaultStyleNoExcept();
+
             } else if (iLayer instanceof NGWRasterLayer){
                 geoType = GT_RASTER_WA;
                 NGWRasterLayer layer = (NGWRasterLayer) iLayer;
-                rasterLayersURL.put(layer.getId(), ((NGWRasterLayer)layer).getURL());
+                rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer)layer).getURL());
+                rasterLayersTmsTypeMap.put(layer.getId(), -1);
             } else if (iLayer instanceof RemoteTMSLayer){
                 geoType = GT_RASTER_WA;
                 RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
-                rasterLayersURL.put(layer.getId(), (layer).getURLSubdomain());
+                rasterLayersURLMap.put(layer.getId(), (layer).getURLSubdomain());
+                rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+            } else if (iLayer instanceof LocalTMSLayer) {
+                geoType = GT_RASTER_WA;
+                LocalTMSLayer layer = (LocalTMSLayer) iLayer;
+                rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
             }
-
 
             Style style = maplibreMap.get().getStyle();
             final int finalGeoType = geoType;
@@ -371,7 +402,8 @@ public class MapDrawable
 
             Handler mainHandler = new Handler(Looper.getMainLooper());
             mainHandler.post(() -> {
-                createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap, rasterLayersURL);
+                createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
+                        rasterLayersURLMap, rasterLayersTmsTypeMap);
                 createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
                         finalStyle, false);
@@ -440,7 +472,8 @@ public class MapDrawable
 
         final Map<Integer, Integer> layersType = new HashMap<>();
         final Map<Integer, com.nextgis.maplib.display.Style> layersStyle = new HashMap<>();
-        final Map<Integer, String> rasterLayersURL = new HashMap<>();
+        final Map<Integer, String> rasterLayersURLMap = new HashMap<>();
+        final Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
 
         final List<org.maplibre.geojson.Feature> tracksFeatures = new ArrayList<>();
         final List<org.maplibre.geojson.Feature> tracksFlagsFeatures = new ArrayList<>();
@@ -481,7 +514,8 @@ public class MapDrawable
                     continue;
 
                 if (!(iLayer instanceof NGWRasterLayer)
-                        && !(iLayer instanceof RemoteTMSLayer))
+                        && !(iLayer instanceof RemoteTMSLayer)
+                        && !(iLayer instanceof LocalTMSLayer))
                     continue;
 
                 TMSLayer layer = (TMSLayer)iLayer;
@@ -498,28 +532,39 @@ public class MapDrawable
                                     final String url = ((NGWRasterLayer) iLayer).getURL();
                                     final String getBaseUrl =  getBaseUrlpart(url);
                                     final String resPart = "resource=" + extractResourceValue(url);
-
-//                                    Log.d("UURR", "layer part: " + url);
-//                                    Log.d("UURR", "res part: " + resPart);
-//                                    Log.d("UURR", "getBaseUrl part: " + getBaseUrl);
-
-                                    final String [] authPart = new String[3];
+                                    final String [] authPart = new String[4];
                                     authPart[0] = getBaseUrl;
                                     authPart[1] = resPart;
                                     authPart[2] = basicAuth;
+                                    authPart[3] = iLayer.getPath().toString();
                                     ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
                                     break;
                                 }
                             }
                         }
                     }
+                } else if (iLayer instanceof  RemoteTMSLayer){
+                    final String url = ((RemoteTMSLayer) iLayer).getURL();
+                    final String getBaseUrl =  getBaseUrlpart(url);
+                    final String resPart = "resource=" + extractResourceValue(url);
+                    final String [] authPart = new String[4];
+                    authPart[0] = getBaseUrl;
+                    authPart[1] = resPart;
+                    authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
+                    authPart[3] = iLayer.getPath().toString();
+                    ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
                 }
 
                 layersType.put(layer.getId(), GT_RASTER_WA);
                 if (layer instanceof  NGWRasterLayer)
-                    rasterLayersURL.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
-                else if (layer instanceof  RemoteTMSLayer)
-                    rasterLayersURL.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
+                    rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                else if (layer instanceof  RemoteTMSLayer) {
+                    rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
+                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                } else if (layer instanceof  LocalTMSLayer) {
+                    rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                }
                 sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
             }
 
@@ -533,7 +578,7 @@ public class MapDrawable
                             // create source and FillLayer put to style
                             createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()),
                                     entry.getValue(), style,
-                                    sourceHashMap, rasterLayersURL);
+                                    sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap);
 
                             createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()),
                                     style,
@@ -1173,13 +1218,68 @@ public class MapDrawable
             editingFeatureOriginal = editingFeatureTmp;
             polygonFeatures = sourceFeaturesHashMap.get(layerdID);
 
-            polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
+            Iterator<org.maplibre.geojson.Feature> it = polygonFeatures.iterator();
+            String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);
+
+            while (it.hasNext()) {
+                org.maplibre.geojson.Feature f = it.next();
+                if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+                    it.remove();
+                }
+            }
+
+            //polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
             selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
         }
         editingFeature = null;
         editingFeatureOriginal = null;
         selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
         selectedDotSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+    }
+
+    public void hideFeature(Long selectedFeatureId, int layerdID){
+        List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerdID);
+        org.maplibre.geojson.Feature found = null;
+        for (org.maplibre.geojson.Feature feature : layerFeatures){
+            if (feature.getStringProperty(prop_featureid).equals(String.valueOf(selectedFeatureId))) {
+                found = feature;
+                break;
+            }
+        }
+        GeoJsonSource source = sourceHashMap.get(layerdID);
+
+        if (found != null && source != null){
+            String fid = String.valueOf(selectedFeatureId);
+            Iterator<org.maplibre.geojson.Feature> it = layerFeatures.iterator();
+            while (it.hasNext()) {
+                org.maplibre.geojson.Feature f = it.next();
+                if (Objects.equals(f.getStringProperty(prop_featureid), fid)) {
+                    it.remove();
+                    hiddedFeature = f;
+                    hiddedFeatureId =selectedFeatureId;
+                    hiddedlayerdID = layerdID;
+
+                }
+            }
+            source.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
+            selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+            selectedDotSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+
+        }
+    }
+
+    public void showFeatureFromHide(Long selectedFeatureId, int layerdID, org.maplibre.geojson.Feature hiddedFeature){
+        List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerdID);
+        GeoJsonSource source = sourceHashMap.get(layerdID);
+
+        if (hiddedFeature != null && source != null && layerFeatures != null){
+            layerFeatures.add(hiddedFeature);
+
+            source.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
+            selectedPolySource.setGeoJson(FeatureCollection.fromFeature(hiddedFeature));
+            //selectedDotSource.setGeoJson(FeatureCollection.fromFeature(hiddedFeature));
+
+        }
     }
 
     public void updateMarkerByEditObject(){
@@ -1481,6 +1581,18 @@ public class MapDrawable
                 zoom = maxZoom;
 
             setZoomAndCenter((float) zoom, envelope.getCenter());
+
+            // maplibre part
+            double[] lonLat1 = convert3857To4326(envelope.getMaxX(), envelope.getMinY());
+            double[] lonLat2 = convert3857To4326(envelope.getMinX(), envelope.getMaxY());
+
+            LatLng sw = new LatLng(lonLat1[1], lonLat1[0]);
+            LatLng ne = new LatLng(lonLat2[1], lonLat2[0]);
+            LatLngBounds bounds = new LatLngBounds.Builder()
+                    .include(sw)
+                    .include(ne)
+                    .build();
+            maplibreMap.get().easeCamera(CameraUpdateFactory.newLatLngBounds(bounds, 50), 800);
         }
     }
 
@@ -1807,13 +1919,14 @@ public class MapDrawable
         if (layerSymbol != null)
             layerSymbol.setProperties(visibility(isVisible ? VISIBLE:NONE));
 
-        if (targetlayer instanceof NGWRasterLayer || targetlayer instanceof  RemoteTMSLayer){
+        if (targetlayer instanceof NGWRasterLayer || targetlayer instanceof  RemoteTMSLayer ||
+                targetlayer instanceof  LocalTMSLayer){
             Layer layerRaster = getRasterLayer(id,  maplibreMap.get().getStyle());
             if (layerRaster != null){
                 layerRaster.setProperties(visibility(isVisible ? VISIBLE:NONE));
             }
         }
-        if (getLayer(id) instanceof TrackLayer ){
+        if (targetlayer instanceof TrackLayer ){
 
             Layer trackLayer = maplibreMap.get().getStyle().getLayer("track-line-layer");
             if (trackLayer!= null)
