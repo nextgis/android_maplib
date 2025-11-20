@@ -148,13 +148,13 @@ public class MapBase
         return new GeoEnvelope();
     }
 
-    public GeoEnvelope getCurrentBounds()
-    {
-        if (mDisplay != null) {
-            return mDisplay.getBounds();
-        }
-        return null;
-    }
+//    public GeoEnvelope getCurrentBounds()
+//    {
+//        if (mDisplay != null) {
+//            return mDisplay.getBounds();
+//        }
+//        return null;
+//    }
 
     @Override
     public void clearLayers() {

@@ -15,11 +15,16 @@ import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_NORMAL;
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 
+import static org.maplibre.android.style.layers.PropertyFactory.rasterBrightnessMax;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterContrast;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterOpacity;
+
 import android.database.Cursor;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometryCollection;
 import com.nextgis.maplib.datasource.GeoLineString;
@@ -32,6 +37,7 @@ import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.display.SimplePolygonStyle;
+import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
@@ -500,7 +506,7 @@ public class MPLFeaturesUtils {
 
         if (layerType == GT_RASTER_WA){
                 RasterSource rasterSource = (RasterSource) style.getSource(currentNamePrefix + source_namepart + layerId);
-                if (rasterSource != null && !rasterSource.getUrl().equals(rasterLayersURL.get(layerId))){
+                if (rasterSource != null && rasterSource.getUrl()!= null &&  !rasterSource.getUrl().equals(rasterLayersURL.get(layerId))){
                     style.removeSource(currentNamePrefix + source_namepart + layerId);
                     rasterSource = null;
                 }
@@ -551,24 +557,20 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap2,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
                                                com.nextgis.maplib.display.Style layerStyle,
-                                               boolean changeLayer){
+                                               boolean changeLayer,
+                                               ILayer iLayer){
+        float minZoom = -1;
+        float maxZoom = -1;
+        if (iLayer!= null){
+            minZoom =((com.nextgis.maplib.map.Layer)iLayer).getMinZoom();
+            maxZoom =((com.nextgis.maplib.map.Layer)iLayer).getMaxZoom();
+        }
+
         String currentNamePrefix = namePrefix;
 
         if (layerType == GT_TRACK_WA){
-//            Layer trackLayer = null;
-//            trackLayer = style.getLayer(currentNamePrefix + layer_namepart + track_namepart + layerId);
-//            if (trackLayer == null) {
-//                trackLayer = new LineLayer(currentNamePrefix + layer_namepart + track_namepart + layerId,
-//                        currentNamePrefix + source_namepart + track_namepart + layerId)
-//                        .withProperties(
-//                                //PropertyFactory.lineColor(Expression.get("color")),
-//                                PropertyFactory.lineColor("#0000FF"),
-//                                PropertyFactory.lineWidth(getMPLThinkness(3)));
-//                style.addLayer(trackLayer);
-//            }
             return;
         }
-
 
         if (layerType == GT_RASTER_WA){
             org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
@@ -576,8 +578,47 @@ public class MPLFeaturesUtils {
             if (rasterLayer == null){
                 rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId,
                         currentNamePrefix + source_namepart + layerId);
-                style.addLayer(rasterLayer);
-            }
+                    style.addLayer(rasterLayer);
+                }
+                if (minZoom!= -1)
+                    rasterLayer.setMinZoom(minZoom);
+                if (maxZoom!= -1)
+                    rasterLayer.setMaxZoom(maxZoom + 1);
+
+                // TMSRenderer tmsRenderer = (TMSRenderer) mRasterLayer.getRenderer();
+                if (iLayer != null && iLayer instanceof  TMSLayer) {
+                    TMSRenderer tmsRenderer = (TMSRenderer) ((TMSLayer) iLayer).getRenderer();
+                    float alpha = tmsRenderer.getAlpha() / 255.0f; // stored value 0 - 255 // need for maplibre 0 - 1
+                    float contrast = (tmsRenderer.getContrast() - 1) ; //stored value 0 - 100 ,  needed -1  +1
+                    float brightness = ((tmsRenderer.getBrightness()) / 255.0f) +1 ; // stored value 0  510 , need value 0  >1   1 norm
+                    boolean isGray = tmsRenderer.isForceToGrayScale();
+
+//                    rasterLayer.setProperties(
+//                            rasterOpacity(alpha),   // 0 = прозрачный, 1 = непрозрачный
+//                            rasterContrast(contrast),   // значение от -1 до +1
+//                            rasterBrightnessMax(brightness)
+//                    );
+
+                    rasterLayer.setProperties(
+                            rasterOpacity(alpha),   // 0 = прозрачный, 1 = непрозрачный
+                            rasterContrast(contrast),   // значение от -1 до +1
+                            rasterBrightnessMax(brightness)
+                    );
+
+                    Log.e("TTMMSS","alpha is " + alpha);
+                    Log.e("TTMMSS","contrast is " + contrast);
+                    Log.e("TTMMSS","brightness is " + brightness);
+//                    if (isGray){
+//                        rasterLayer.setProperties(
+//                                rasterColor(new Float[] {
+//                                        0.2126f, 0.7152f, 0.0722f, 0f,    // R
+//                                        0.2126f, 0.7152f, 0.0722f, 0f,    // G
+//                                        0.2126f, 0.7152f, 0.0722f, 0f,    // B
+//                                        0f,      0f,      0f,      1f     // A
+//                                })
+//                        );
+//                    }
+                }
             return;
         }
 

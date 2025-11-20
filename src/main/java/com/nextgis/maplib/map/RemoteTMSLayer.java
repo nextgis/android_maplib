@@ -62,6 +62,9 @@ public class RemoteTMSLayer
     protected static final String JSON_LOGIN_KEY    = "login";
     protected static final String JSON_PASSWORD_KEY = "password";
     protected static final String JSON_TILE_AGE_KEY = "tile_age";
+    protected static final String JSON_IS_OFFLINELAYER_KEY = "is_offline_layer";
+
+
 
     protected       String       mURL;
     protected       NetworkUtil  mNet;
@@ -74,6 +77,8 @@ public class RemoteTMSLayer
 //    protected       Semaphore    mAvailable;
     protected long mTileMaxAge;
     protected volatile long mLastCheckTime;
+    protected boolean mIsOfflineLayer;
+
 
     public final static long DELAY = NetworkUtil.TIMEOUT_SOCKET + NetworkUtil.TIMEOUT_CONNECTION;
 
@@ -149,6 +154,7 @@ public class RemoteTMSLayer
 //            }
 
             try {
+                Log.e("TTIILLE", "+tile at:" + url);
                 getTileFromStream(url, tilePath);
             } catch (InterruptedIOException e) {
                 Log.d(TAG, "Thread interrupted, delete the tile file for the url: " + url);
@@ -246,6 +252,9 @@ public class RemoteTMSLayer
 
         rootConfig.put(JSON_TILE_AGE_KEY, mTileMaxAge);
 
+        rootConfig.put(JSON_IS_OFFLINELAYER_KEY, mIsOfflineLayer);
+
+
         return rootConfig;
     }
 
@@ -269,6 +278,10 @@ public class RemoteTMSLayer
 
         if(jsonObject.has(JSON_TILE_AGE_KEY)) {
             mTileMaxAge = jsonObject.getLong(JSON_TILE_AGE_KEY);
+        }
+
+        if(jsonObject.has(JSON_IS_OFFLINELAYER_KEY)) {
+            mIsOfflineLayer = jsonObject.getBoolean(JSON_IS_OFFLINELAYER_KEY);
         }
 
         analizeURL(mURL);
@@ -307,6 +320,18 @@ public class RemoteTMSLayer
 
         String subdomain = mSubdomains.get(mCurrentSubdomain++);
         return result.replace(mSubDomainsMask, subdomain);
+    }
+
+
+    public boolean getIsOfflie()
+    {
+        return mIsOfflineLayer;
+    }
+
+
+    public void setIsOfflie(boolean mIsOffline) {
+        mIsOfflineLayer = mIsOffline;
+
     }
 
 

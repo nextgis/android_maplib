@@ -59,7 +59,6 @@ import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.Connections;
 import com.nextgis.maplib.display.GISDisplay;
-import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
 import com.nextgis.maplib.map.MLP.MultiPointEditClass;
@@ -112,8 +111,6 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.track_flags_namepart;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.track_namepart;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 import static com.nextgis.maplib.util.Constants.TAG;
@@ -132,7 +129,6 @@ import static org.maplibre.android.style.layers.PropertyFactory.visibility;
 import static java.util.Collections.emptyList;
 import androidx.annotation.NonNull;
 
-import org.maplibre.android.MapLibre;
 import org.maplibre.android.annotations.Icon;
 import org.maplibre.android.annotations.IconFactory;
 import org.maplibre.android.camera.CameraUpdateFactory;
@@ -151,7 +147,6 @@ import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
-import org.maplibre.android.style.sources.Source;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -274,7 +269,7 @@ public class MapDrawable
         LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, ret);
         for (ILayer iLayer : ret){
             if (iLayer.getId() == id){
-                reloadLayerToMaplibre(iLayer);
+                reloadVectorLayerDataToMaplibre(iLayer);
                 return;
             }
         }
@@ -305,10 +300,11 @@ public class MapDrawable
         if (maplibreMap.get()!= null) {
             String sourceId = namePrefix + source_namepart + id;
             String vectorLayerId = namePrefix + layer_namepart + id;
-            if (maplibreMap.get().getStyle().getSource(sourceId)!= null)
-                maplibreMap.get().getStyle().removeSource(sourceId);
             if (maplibreMap.get().getStyle().getLayer(vectorLayerId)!= null)
                 maplibreMap.get().getStyle().removeLayer(vectorLayerId);
+            if (maplibreMap.get().getStyle().getSource(sourceId)!= null)
+                maplibreMap.get().getStyle().removeSource(sourceId);
+
         }
     }
 
@@ -384,10 +380,17 @@ public class MapDrawable
                 rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer)layer).getURL());
                 rasterLayersTmsTypeMap.put(layer.getId(), -1);
             } else if (iLayer instanceof RemoteTMSLayer){
-                geoType = GT_RASTER_WA;
-                RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
-                rasterLayersURLMap.put(layer.getId(), (layer).getURLSubdomain());
-                rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                if (((RemoteTMSLayer)iLayer).mIsOfflineLayer){
+                    geoType = GT_RASTER_WA;
+                    RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
+                    rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                } else {
+                    geoType = GT_RASTER_WA;
+                    RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
+                    rasterLayersURLMap.put(layer.getId(), (layer).getURLSubdomain());
+                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                }
             } else if (iLayer instanceof LocalTMSLayer) {
                 geoType = GT_RASTER_WA;
                 LocalTMSLayer layer = (LocalTMSLayer) iLayer;
@@ -402,11 +405,12 @@ public class MapDrawable
 
             Handler mainHandler = new Handler(Looper.getMainLooper());
             mainHandler.post(() -> {
-                createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
-                        rasterLayersURLMap, rasterLayersTmsTypeMap);
                 createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
-                        finalStyle, false);
+                        finalStyle, false, iLayer);
+                createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
+                        rasterLayersURLMap, rasterLayersTmsTypeMap);
+
                 checkLayerVisibility(iLayer.getId());
             });
         }
@@ -417,30 +421,56 @@ public class MapDrawable
         if (!(mapFragment.get().getMode() == 0))
             return;
 
-        List<ILayer> ret = new ArrayList<>();
-        LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, ret);
-        for (ILayer iLayer : ret){
+        List<ILayer> vectorss = new ArrayList<>();
+        List<ILayer> tmss = new ArrayList<>();
+
+
+        getTMSLayersByType(this,  GeoConstants.GTAnyCheck, tmss);
+
+
+        LayerGroup.getVectorLayersByType(this, GeoConstants.GTAnyCheck, vectorss);
+        for (ILayer iLayer : vectorss){
             if (iLayer.getId() == id){
                 com.nextgis.maplib.display.Style newStyle = ((VectorLayer)iLayer).getDefaultStyleNoExcept();
                 Style maplbrStyle = maplibreMap.get().getStyle();
 
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
                         symbolsLayerHashMap,
-                        newStyle, true);
+                        newStyle, true, iLayer);
                 checkLayerVisibility(id);
-                reloadLayerToMaplibre(iLayer);
+                reloadVectorLayerDataToMaplibre(iLayer);
+                return;
+            }
+        }
+
+        for (ILayer iLayer : tmss){
+            if (iLayer.getId() == id){
+
+                Style maplbrStyle = maplibreMap.get().getStyle();
+
+                createFillLayerForLayer(id,  GT_RASTER_WA, maplbrStyle ,layersHashMap, layersHashMap2,
+                        symbolsLayerHashMap,
+                        null, true, iLayer);
+                checkLayerVisibility(id);
+                reloadVectorLayerDataToMaplibre(iLayer);
                 return;
             }
         }
     }
 
-    public void reloadLayerToMaplibre(final  ILayer ilayer) {
+    public void reloadVectorLayerDataToMaplibre(final  ILayer ilayer) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler mainHandler = new Handler(Looper.getMainLooper());
 
         executor.execute(() -> {
             if (maplibreMap.get() == null || maplibreMapView.get() == null)
                 return;
+            if (ilayer instanceof  TMSLayer){
+
+                return;
+            }
+
+
             if (!(ilayer instanceof VectorLayer))
                 return;
             VectorLayer layer = (VectorLayer) ilayer;
@@ -555,12 +585,19 @@ public class MapDrawable
                     ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
                 }
 
+
+
                 layersType.put(layer.getId(), GT_RASTER_WA);
                 if (layer instanceof  NGWRasterLayer)
                     rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
                 else if (layer instanceof  RemoteTMSLayer) {
-                    rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
-                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                    if (((RemoteTMSLayer)layer).mIsOfflineLayer){
+                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                    } else {
+                        rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
+                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                    }
                 } else if (layer instanceof  LocalTMSLayer) {
                     rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                     rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
@@ -580,12 +617,14 @@ public class MapDrawable
                                     entry.getValue(), style,
                                     sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap);
 
-                            createFillLayerForLayer(entry.getKey(), layersType.get(entry.getKey()),
+                            createFillLayerForLayer(entry.getKey(),
+                                    layersType.get(entry.getKey()),
                                     style,
                                     layersHashMap,
                                     layersHashMap2,
                                     symbolsLayerHashMap,
-                                    layersStyle.get(entry.getKey()), false);
+                                    layersStyle.get(entry.getKey()), false,
+                                    getLayerById(entry.getKey()));
 
                             checkLayerVisibility(entry.getKey());
                         }
@@ -1380,7 +1419,7 @@ public class MapDrawable
             maplibreMap.get().getStyle().removeLayer(fillPolyEditLayer);
 
 
-        if (originalSelectedFeature.getId() != -1)
+        if (originalSelectedFeature!= null && originalSelectedFeature.getId() != -1)
             startFeatureSelectionForView(mapFragment.get().getSelectedLayerId(),originalSelectedFeature );
     }
 
@@ -1603,6 +1642,26 @@ public class MapDrawable
             return mDisplay.getCenter();
         }
         return new GeoPoint();
+    }
+
+    @Override
+    public GeoEnvelope getCurrentBounds() {
+
+        if (maplibreMap.get()!= null){
+            LatLngBounds bounds = maplibreMap.get().getProjection().getVisibleRegion().latLngBounds;
+
+            LatLng swPoint = bounds.getSouthWest();
+            LatLng nePoint = bounds.getNorthEast();
+
+
+            double[] sw = convert4326To3857(swPoint.getLongitude(), swPoint.getLatitude());
+            double[] ne = convert4326To3857(nePoint.getLongitude(), nePoint.getLatitude());
+
+            return new GeoEnvelope(sw[0], ne[0], sw[1], ne[1]);
+
+        }
+
+        return null;
     }
 
 
@@ -1903,6 +1962,8 @@ public class MapDrawable
     }
 
     public void checkLayerVisibility(int id){
+        if (maplibreMap.get().getStyle() == null)
+            return;
 
         ILayer targetlayer = getVectorLayersById(this,  id);
         boolean isVisible = ((com.nextgis.maplib.map.Layer)targetlayer).isVisible();
@@ -2060,7 +2121,7 @@ public class MapDrawable
 //                org.maplibre.geojson.Feature pointFeature1 = org.maplibre.geojson.Feature.fromGeometry(point1);
 //                result.add(pointFeature1);
 
-                Log.e("TTRR", "point" + i + ": " + lonLat[0] + " : " +lonLat[1]);
+//                Log.e("TTRR", "point" + i + ": " + lonLat[0] + " : " +lonLat[1]);
 
 
             } while (track.moveToNext());

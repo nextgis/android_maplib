@@ -212,6 +212,9 @@ public interface IGISApplication
 
     public void updateAuthPair( String[] authPart);
 
+
+    public MapBase getMapBase( );
+
 //    public AuthInterceptorNG getAuthInterceptor(){ return interceptorNG;};
 //
 //    public void updateAuthPair(String layerPart, String authPart){
