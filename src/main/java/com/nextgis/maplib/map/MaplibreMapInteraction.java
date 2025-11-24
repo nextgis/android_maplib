@@ -24,4 +24,7 @@ public interface MaplibreMapInteraction {
 
     public Integer getMode();
 
+
+    public  void loadLayersLite();
+
 }

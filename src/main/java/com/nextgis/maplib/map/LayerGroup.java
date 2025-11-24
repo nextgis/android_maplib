@@ -220,6 +220,26 @@ public class LayerGroup
         }
     }
 
+
+
+    public static void getAllLayers(
+            LayerGroup layerGroup,
+            List<ILayer> layerList)
+    {
+        for (int i = 0; i < layerGroup.getLayerCount(); i++) {
+            ILayer layer = layerGroup.getLayer(i);
+
+            if ( ! (layer instanceof LayerGroup)) {
+                Log.e("MPLREM",  "get layer: " + layer.getId() + " _ "+ layer.getName());
+                layerList.add(0, layer);
+            }
+
+            if (layer instanceof LayerGroup) {
+                getAllLayers((LayerGroup) layer,layerList);
+            }
+        }
+    }
+
     public List<ILayer> getLayers(){
         return mLayers;
     }

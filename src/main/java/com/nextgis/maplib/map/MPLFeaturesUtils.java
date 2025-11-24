@@ -550,6 +550,19 @@ public class MPLFeaturesUtils {
     }
 
 
+    static public List<String> getLayerMLibreNames(int layerId, int layerType){
+
+        List<String> result = new ArrayList<>();
+        result.add(namePrefix + layer_namepart + layerId);
+
+        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
+            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
+
+        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
+        result.add(symbolLayer);
+
+        return result;
+    }
 
     static public void createFillLayerForLayer(int layerId, int layerType,
                                                final Style style,
@@ -578,8 +591,10 @@ public class MPLFeaturesUtils {
             if (rasterLayer == null){
                 rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId,
                         currentNamePrefix + source_namepart + layerId);
-                    style.addLayer(rasterLayer);
-                }
+                //Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
+                style.addLayer(rasterLayer);
+
+            }
                 if (minZoom!= -1)
                     rasterLayer.setMinZoom(minZoom);
                 if (maxZoom!= -1)
@@ -593,31 +608,12 @@ public class MPLFeaturesUtils {
                     float brightness = ((tmsRenderer.getBrightness()) / 255.0f) +1 ; // stored value 0  510 , need value 0  >1   1 norm
                     boolean isGray = tmsRenderer.isForceToGrayScale();
 
-//                    rasterLayer.setProperties(
-//                            rasterOpacity(alpha),   // 0 = прозрачный, 1 = непрозрачный
-//                            rasterContrast(contrast),   // значение от -1 до +1
-//                            rasterBrightnessMax(brightness)
-//                    );
-
                     rasterLayer.setProperties(
-                            rasterOpacity(alpha),   // 0 = прозрачный, 1 = непрозрачный
-                            rasterContrast(contrast),   // значение от -1 до +1
+                            rasterOpacity(alpha),
+                            rasterContrast(contrast),
                             rasterBrightnessMax(brightness)
                     );
 
-                    Log.e("TTMMSS","alpha is " + alpha);
-                    Log.e("TTMMSS","contrast is " + contrast);
-                    Log.e("TTMMSS","brightness is " + brightness);
-//                    if (isGray){
-//                        rasterLayer.setProperties(
-//                                rasterColor(new Float[] {
-//                                        0.2126f, 0.7152f, 0.0722f, 0f,    // R
-//                                        0.2126f, 0.7152f, 0.0722f, 0f,    // G
-//                                        0.2126f, 0.7152f, 0.0722f, 0f,    // B
-//                                        0f,      0f,      0f,      1f     // A
-//                                })
-//                        );
-//                    }
                 }
             return;
         }
@@ -786,6 +782,8 @@ public class MPLFeaturesUtils {
 
         if (newLayer != null) {
             if (!changeLayer) {
+                //Log.e("MPLREM",  "add layer: " + newLayer.getId());
+
                 style.addLayer(newLayer);
                 layersHashMap.put(layerId, newLayer);
             }
@@ -793,6 +791,7 @@ public class MPLFeaturesUtils {
 
         if (newLayer2 != null) {
             if (!changeLayer) {
+//                Log.e("MPLREM",  "add layer2 : " + newLayer2.getId());
                 style.addLayer(newLayer2);
                 layersHashMap2.put(layerId, newLayer2);
             }
