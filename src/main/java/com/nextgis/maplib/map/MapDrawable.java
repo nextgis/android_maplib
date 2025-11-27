@@ -73,11 +73,14 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
@@ -165,14 +168,23 @@ public class MapDrawable
         MapLibreMap.OnMapLongClickListener,
         MapLibreMap.OnMapClickListener {
 
+    public final static int MODE_NONE = 0;
+    public final static int MODE_HIGHLIGHT = 1;
+    public final static int MODE_EDIT = 2;
+    public final static int MODE_CHANGE = 3;
+    public final static int MODE_EDIT_BY_WALK = 4;
+    public final static int MODE_EDIT_BY_TOUCH = 5;
+
     static int testColor = 0;
 
 
     // map  layerID : list of added features for layer
-    HashMap<Integer, List<org.maplibre.geojson.Feature>> sourceFeaturesHashMap = new HashMap<Integer, List<org.maplibre.geojson.Feature>>();
+    LinkedHashMap<Integer, List<org.maplibre.geojson.Feature>> sourceFeaturesHashMap = new LinkedHashMap<Integer, List<org.maplibre.geojson.Feature>>();
+
+    LinkedHashMap<Integer, List<org.maplibre.geojson.Feature>> sourcesOrder = new LinkedHashMap<Integer, List<org.maplibre.geojson.Feature>>();
 
     // map sources added to maplibre  from layers
-    HashMap<Integer, GeoJsonSource>  sourceHashMap = new HashMap<Integer, GeoJsonSource>();
+    LinkedHashMap<Integer, GeoJsonSource>  sourceHashMap = new LinkedHashMap<Integer, GeoJsonSource>();
 
     // map fill Layer of each added layer
     HashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
@@ -260,15 +272,11 @@ public class MapDrawable
 
         final Style style = maplibreMap.get().getStyle();
         for (final Layer layer :maplibreMap.get().getStyle().getLayers()){
-            Log.e("MPLREM",  "delete layer pre-delete: " + layer.getId());
             boolean result = style.removeLayer(layer);
-            Log.e("MPLREM",  "delete layer pre-del result: " + result);
         }
 
         for (final Source source : maplibreMap.get().getStyle().getSources()) {
-            Log.e("MPLREM",  "delete layer pre-delete: " + source.getId());
             boolean result = style.removeSource(source);
-            Log.e("MPLREM",  "delete layer pre-del result: " + result);
         }
 
 
@@ -367,10 +375,6 @@ public class MapDrawable
                                 final String getBaseUrl =  getBaseUrlpart(url);
                                 final String resPart = "resource=" + extractResourceValue(url);
 
-//                                Log.d("UURR", "layer part: " + url);
-//                                Log.d("UURR", "res part: " + resPart);
-//                                Log.d("UURR", "getBaseUrl part: " + getBaseUrl);
-
                                 final String [] authPart = new String[4];
                                 authPart[0] = getBaseUrl;
                                 authPart[1] = resPart;
@@ -406,6 +410,7 @@ public class MapDrawable
                 // this layer
                 vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
                 sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+                sourcesOrder.put(layer.getId(), new ArrayList<>());
                 ngStyle = ((VectorLayer)iLayer).getDefaultStyleNoExcept();
 
             } else if (iLayer instanceof NGWRasterLayer){
@@ -511,6 +516,7 @@ public class MapDrawable
 
             List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
             sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+            sourcesOrder.put(layer.getId(), new ArrayList<>());
 
             // Switch to main thread
             mainHandler.post(() -> {
@@ -526,8 +532,6 @@ public class MapDrawable
 
     public void loadLayersToMaplibreMap(final String styleJson,
                                         final  List<ILayer> allLayers,
-                                        final  List<ILayer> vectorLayers,
-                                        final  List<ILayer> tmsLayers ,
                                         final boolean createSource) {
         maplibreMapView.get().setOnTouchListener(this);
         maplibreMap.get().addOnMapClickListener(this);
@@ -552,10 +556,12 @@ public class MapDrawable
             final AccountManager accountManager = AccountManager.get(getContext());
             final Connections connections = fillConnections(getContext(), accountManager);
 
+            //sourceFeaturesHashMap.clear();
+            //sourceHashMap.clear();
+            sourcesOrder.clear();
 
             for (ILayer iLayer : allLayers) {
-//                if (! (iLayer instanceof VectorLayer || iLayer instanceof TrackLayer))
-//                    continue;
+//                Log.e("MPLREM",  "iterate layer " + iLayer.getName());
 
                 if (iLayer instanceof VectorLayer) {
                     VectorLayer layer = (VectorLayer) iLayer;
@@ -563,6 +569,7 @@ public class MapDrawable
                     layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
                     List<org.maplibre.geojson.Feature> vectorFeatures = createFeatureListFromLayer(layer);
                     sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
+                    sourcesOrder.put(layer.getId(), new ArrayList<>());
                 } else if (iLayer instanceof TrackLayer) {
                     TrackLayer layer = (TrackLayer) iLayer;
                     layersType.put(layer.getId(), GT_TRACK_WA);
@@ -601,6 +608,7 @@ public class MapDrawable
                         layersType.put(layer.getId(), GT_RASTER_WA);
                         rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
                         sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                        sourcesOrder.put(layer.getId(), new ArrayList<>());
                     }
                 } else if (iLayer instanceof  RemoteTMSLayer){
                     final String url = ((RemoteTMSLayer) iLayer).getURL();
@@ -623,41 +631,16 @@ public class MapDrawable
                         rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                     }
                     sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                    sourcesOrder.put(layer.getId(), new ArrayList<>());
                 } else if (iLayer instanceof  LocalTMSLayer) {
                     TMSLayer layer = (TMSLayer)iLayer;
                     layersType.put(layer.getId(), GT_RASTER_WA);
                     rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                     rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                     sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                    sourcesOrder.put(layer.getId(), new ArrayList<>());
                 }
             }
-
-
-
-//            for (ILayer iLayer : tmsLayers) {
-//                TMSLayer layer = (TMSLayer)iLayer;
-//                layersType.put(layer.getId(), GT_RASTER_WA);
-//                if (layer instanceof  NGWRasterLayer)
-//                    rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
-//                else if (layer instanceof  RemoteTMSLayer) {
-//                    if (((RemoteTMSLayer)layer).mIsOfflineLayer){
-//                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
-//                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
-//                    } else {
-//                        rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
-//                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
-//                    }
-//                } else if (layer instanceof  LocalTMSLayer) {
-//
-//                    rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
-//                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
-//
-//                }
-//                sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
-//            }
-
-            // Switch to main thread
-//            Log.e("MPLREM",  "mainHandler.post(()");
 
             mainHandler.post(() -> {
                 maplibreMapView.get().addOnDidFinishLoadingStyleListener(new MapView.OnDidFinishLoadingStyleListener() {
@@ -675,11 +658,14 @@ public class MapDrawable
                         }
 
 
-                        for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : sourceFeaturesHashMap.entrySet()) {
+                        List<Map.Entry<Integer, List<org.maplibre.geojson.Feature>>> listOf = new ArrayList<>(sourcesOrder.entrySet());
+                        Collections.reverse(listOf);
+
+                        for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : listOf) {
                             // create source and FillLayer put to style
                             if (createSource)
                                 createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()),
-                                        entry.getValue(), style,
+                                        sourceFeaturesHashMap.get(entry.getKey()), style,
                                         sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap);
 
                             createFillLayerForLayer(entry.getKey(),
@@ -694,39 +680,6 @@ public class MapDrawable
                             checkLayerVisibility(entry.getKey());
                         }
 
-                        // PMTILES example
-//                        // raster PMTILES
-//                        String pmTilesPath = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/flowers.pmtiles";
-//
-//                        RasterSource source = new RasterSource("raster-pmtiles-source", pmTilesPath);
-//                        style.addSource(source);
-//
-//                        RasterLayer layer = new RasterLayer("raster-pmtiles-layer", "raster-pmtiles-source");
-//                        style.addLayer(layer);
-//                        // END   PMTILES
-//
-//
-//                        // PMTILES
-//                        String pmTilesPath2 = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/cb_2018_us_zcta510_500k.pmtiles";
-//
-//                        VectorSource source2 = new VectorSource("pmtiles-source", pmTilesPath2);
-//                        style.addSource(source2);
-//
-//                        LineLayer layer2 = new LineLayer("pmtiles-layer", "pmtiles-source")
-//                                .withSourceLayer("zcta")
-//                                .withProperties(
-//                                PropertyFactory.lineColor("#0000ff"),
-//                                PropertyFactory.lineWidth(2f)
-//                        );
-//                        style.addLayer(layer2);
-//
-//                        FillLayer fillLayer = new FillLayer("poly-pmtiles-layer", "pmtiles-source")
-//                                .withSourceLayer("zcta")
-//                                .withProperties(
-//                                        PropertyFactory.fillColor("#FF0000"),
-//                                        PropertyFactory.fillOpacity(0.5f));
-//                        style.addLayer(fillLayer);
-//                        // END   PMTILES
 
                         if (createSource) {
                             selectedDotSource = new GeoJsonSource("selected-dot-source", FeatureCollection.fromFeatures(emptyList()));
@@ -817,10 +770,10 @@ public class MapDrawable
                         SymbolLayer locationLayer = new SymbolLayer("user-location-layer", "user-location-source")
                                 .withProperties(
                                         PropertyFactory.iconImage(
-                                            Expression.switchCase(
-                                                    Expression.eq(Expression.get("type"), Expression.literal("stand")), Expression.literal("user-marker-location-stand"),
-                                                    Expression.eq(Expression.get("type"), Expression.literal("go")), Expression.literal("user-marker-location-go"),
-                                                    Expression.literal("user-marker-location-stand"))),
+                                                Expression.switchCase(
+                                                        Expression.eq(Expression.get("type"), Expression.literal("stand")), Expression.literal("user-marker-location-stand"),
+                                                        Expression.eq(Expression.get("type"), Expression.literal("go")), Expression.literal("user-marker-location-go"),
+                                                        Expression.literal("user-marker-location-stand"))),
                                         PropertyFactory.iconRotate(Expression.get("bearing")),
                                         PropertyFactory.iconSize(1.0f),
                                         PropertyFactory.iconAllowOverlap(true),
@@ -835,9 +788,9 @@ public class MapDrawable
                         }
 
                         Layer trackLayer = new LineLayer( "track-line-layer", "track-line-source").
-                                    withProperties(
-                                            PropertyFactory.lineColor("#0000FF"),
-                                            PropertyFactory.lineWidth(getMPLThinkness(5)));
+                                withProperties(
+                                        PropertyFactory.lineColor("#0000FF"),
+                                        PropertyFactory.lineWidth(getMPLThinkness(5)));
                         style.addLayer(trackLayer);
 
                         // track in progress
@@ -885,20 +838,245 @@ public class MapDrawable
                     }
                 });
 
-//                // Set map style MPLB
-//                DefaultStyle[] styles = Style.getPredefinedStyles();
-//                if (styles != null && styles.length > 0) {
-//                    String styleUrl = styles[0].getUrl();
-//                    maplibreMap.get().setStyle(new Style.Builder().fromUri(styleUrl));
-//                }
-
                 // Set map style NG
-                Log.e("MPLREM",  "setStyle");
+//                Log.e("MPLREM",  "setStyle");
                 maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
             });
         });
         executor.shutdown();
     }
+
+    public void loadLayersToMaplibreMapLite(final  List<ILayer> allLayers){
+
+        final Map<Integer, Integer> layersType = new HashMap<>();
+        final Map<Integer, com.nextgis.maplib.display.Style> layersStyle = new HashMap<>();
+        final Map<Integer, String> rasterLayersURLMap = new HashMap<>();
+        final Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
+
+        final List<org.maplibre.geojson.Feature> tracksFeatures = new ArrayList<>();
+        final List<org.maplibre.geojson.Feature> tracksFlagsFeatures = new ArrayList<>();
+
+
+        final AccountManager accountManager = AccountManager.get(getContext());
+        final Connections connections = fillConnections(getContext(), accountManager);
+
+        sourcesOrder.clear();
+
+        for (ILayer iLayer : allLayers) {
+//            Log.e("MPLREM",  "iterate layer " + iLayer.getName());
+
+            if (iLayer instanceof VectorLayer) {
+                VectorLayer layer = (VectorLayer) iLayer;
+                layersType.put(layer.getId(), layer.getGeometryType());
+                layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
+                List<org.maplibre.geojson.Feature> vectorFeatures = createFeatureListFromLayer(layer);
+                sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
+                sourcesOrder.put(layer.getId(), new ArrayList<>());
+            } else if (iLayer instanceof TrackLayer) {
+                TrackLayer layer = (TrackLayer) iLayer;
+                layersType.put(layer.getId(), GT_TRACK_WA);
+                tracksFeatures.clear();
+                tracksFeatures.addAll(createFeatureListFromTrackLayer(layer));
+
+                tracksFlagsFeatures.clear();
+                tracksFlagsFeatures.addAll(createFeatureListFlagsFromTrackLayer(layer));
+            } else  if (iLayer instanceof  NGWRasterLayer){
+                // need add auth
+                Connection found = null;
+                if (iLayer instanceof NGWRasterLayer) {
+                    for (int i = 0; i < connections.getChildrenCount(); i++) {
+                        if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
+                            found = (Connection) connections.getChild(i);
+                            String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
+                            if (null != basicAuth) {
+                                final String url = ((NGWRasterLayer) iLayer).getURL();
+                                final String getBaseUrl =  getBaseUrlpart(url);
+                                final String resPart = "resource=" + extractResourceValue(url);
+                                final String [] authPart = new String[4];
+                                authPart[0] = getBaseUrl;
+                                authPart[1] = resPart;
+                                authPart[2] = basicAuth;
+                                authPart[3] = iLayer.getPath().toString();
+                                ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
+                                break;
+                            }
+                        }
+                    }
+
+                    TMSLayer layer = (TMSLayer)iLayer;
+                    layersType.put(layer.getId(), GT_RASTER_WA);
+                    rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                    sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                    sourcesOrder.put(layer.getId(), new ArrayList<>());
+                }
+            } else if (iLayer instanceof  RemoteTMSLayer){
+                final String url = ((RemoteTMSLayer) iLayer).getURL();
+                final String getBaseUrl =  getBaseUrlpart(url);
+                final String resPart = "resource=" + extractResourceValue(url);
+                final String [] authPart = new String[4];
+                authPart[0] = getBaseUrl;
+                authPart[1] = resPart;
+                authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
+                authPart[3] = iLayer.getPath().toString();
+                ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
+
+                TMSLayer layer = (TMSLayer)iLayer;
+                layersType.put(layer.getId(), GT_RASTER_WA);
+                if (((RemoteTMSLayer)layer).mIsOfflineLayer){
+                    rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                } else {
+                    rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
+                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                }
+                sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                sourcesOrder.put(layer.getId(), new ArrayList<>());
+            } else if (iLayer instanceof  LocalTMSLayer) {
+                TMSLayer layer = (TMSLayer)iLayer;
+                layersType.put(layer.getId(), GT_RASTER_WA);
+                rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                sourcesOrder.put(layer.getId(), new ArrayList<>());
+            }
+        }
+
+
+        Style style = maplibreMap.get().getStyle();
+        for (Layer layer :maplibreMap.get().getStyle().getLayers()){
+            boolean result = style.removeLayer(layer);
+        }
+
+
+        List<Map.Entry<Integer, List<org.maplibre.geojson.Feature>>> listOf = new ArrayList<>(sourcesOrder.entrySet());
+        Collections.reverse(listOf);
+
+        for (Map.Entry<Integer, List<org.maplibre.geojson.Feature>> entry : listOf) {
+
+            createFillLayerForLayer(entry.getKey(),
+                    layersType.get(entry.getKey()),
+                    style,
+                    layersHashMap,
+                    layersHashMap2,
+                    symbolsLayerHashMap,
+                    layersStyle.get(entry.getKey()), false,
+                    getLayerById(entry.getKey()));
+
+            checkLayerVisibility(entry.getKey());
+        }
+
+
+        CircleLayer selectedDotCircleLayer = new CircleLayer("selected-dot-layer", "selected-dot-source")
+                .withProperties(PropertyFactory.circleStrokeWidth(1f),
+                        PropertyFactory.circleStrokeColor("#000000"));
+        selectedDotCircleLayer.setProperties(
+                PropertyFactory.circleRadius(Expression.get("radius")),
+                PropertyFactory.circleColor(Expression.get("color")),
+                PropertyFactory.circleOpacity(1.0f));
+        style.addLayer(selectedDotCircleLayer);
+
+
+
+        LineLayer lineLayer = new LineLayer("selected-polygon-line", "selected-poly-source")
+                .withProperties(
+                        PropertyFactory.lineColor(Expression.get("color")),
+                        PropertyFactory.lineWidth(2.0f) );
+        style.addLayer(lineLayer);
+
+        fillPolyEditLayer = new FillLayer("selected-polygon-fill" ,"selected-poly-source" )
+                .withProperties(
+                        PropertyFactory.fillColor("#FF00FF"),
+                        PropertyFactory.fillOpacity(0.2f));
+
+
+        CircleLayer vertexFillLayer = new CircleLayer("vertex-layer", "vertex-source")
+                .withProperties(PropertyFactory.circleStrokeWidth(1f),
+                        PropertyFactory.circleStrokeColor("#000000"));
+        vertexFillLayer.setProperties(
+                PropertyFactory.circleRadius(Expression.get("radius")),
+                PropertyFactory.circleColor(Expression.get("color")),
+                PropertyFactory.circleOpacity(1.0f));
+
+        style.addLayer(vertexFillLayer);
+        // marker
+        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor_2);
+        final Bitmap bitmap = drawableToBitmap(drawable);
+
+        final IconFactory iconFactory = IconFactory.getInstance(getContext());
+        final Icon markerIcon = iconFactory.fromBitmap(bitmap);
+        String iconId = "marker-icon-selected";
+        style.addImage(iconId, bitmap);
+
+
+        SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
+                .withProperties(
+                        org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
+                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
+        style.addLayer(symbolLayer);
+
+
+        final Drawable drawableStand = getContext().getResources().getDrawable( R.drawable.ic_location_standing);
+        final Bitmap bitmapStand = drawableToBitmap(drawableStand);
+        String iconStandId = "user-marker-location-stand";
+        style.addImage(iconStandId, bitmapStand);
+
+        final Drawable drawableGo = getContext().getResources().getDrawable( R.drawable.ic_location_moving);
+        final Bitmap bitmapGo = drawableToBitmap(drawableGo);
+        String iconGoId = "user-marker-location-go";
+        style.addImage(iconGoId, bitmapGo);
+
+        SymbolLayer locationLayer = new SymbolLayer("user-location-layer", "user-location-source")
+                .withProperties(
+                        PropertyFactory.iconImage(
+                                Expression.switchCase(
+                                        Expression.eq(Expression.get("type"), Expression.literal("stand")), Expression.literal("user-marker-location-stand"),
+                                        Expression.eq(Expression.get("type"), Expression.literal("go")), Expression.literal("user-marker-location-go"),
+                                        Expression.literal("user-marker-location-stand"))),
+                        PropertyFactory.iconRotate(Expression.get("bearing")),
+                        PropertyFactory.iconSize(1.0f),
+                        PropertyFactory.iconAllowOverlap(true),
+                        PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP));
+        style.addLayer(locationLayer);
+
+        // TRACKING
+        // saved track line
+        Layer trackLayer = new LineLayer( "track-line-layer", "track-line-source").
+                withProperties(
+                        PropertyFactory.lineColor("#0000FF"),
+                        PropertyFactory.lineWidth(getMPLThinkness(5)));
+        style.addLayer(trackLayer);
+
+        // track in progress
+
+        Layer trackInProgressLayer = new LineLayer( "track-inprogress-layer", "track-inprogress-source").
+                withProperties(
+                        PropertyFactory.lineColor("#0000FF"),
+                        PropertyFactory.lineWidth(getMPLThinkness(5)));
+        style.addLayer(trackInProgressLayer);
+
+
+        // tracks start stop flags
+
+
+
+        SymbolLayer trackFlagsLayer = new SymbolLayer("track-flags-layer", "track-flag-source")
+                .withProperties(
+                        PropertyFactory.iconImage(
+                                Expression.switchCase(
+                                        Expression.eq(Expression.get("type"), Expression.literal(true)), Expression.literal("user-marker-flag-start"),
+                                        Expression.eq(Expression.get("type"), Expression.literal(false)), Expression.literal("user-marker-flag-end"),
+                                        Expression.literal("user-marker-flag-start"))),
+                        PropertyFactory.iconSize(1.0f),
+                        PropertyFactory.iconAllowOverlap(true),
+                        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT));
+        style.addLayer(trackFlagsLayer);
+    }
+
+
+
+
+
+
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -999,6 +1177,12 @@ public class MapDrawable
                     if (markerFeatureCollection.features().size() > 0)
                         hideMarker();
                     return true;
+//                } else if (mapFragment.get().getMode() == MODE_EDIT_BY_TOUCH){
+//
+//
+//
+//
+//                    return true;
                 } else {
                     return false;
                 }
@@ -2193,29 +2377,29 @@ public class MapDrawable
         if (track == null || track.getCount() == 0 || !track.moveToFirst())
             return result;
 
-            int lonInx = track.getColumnIndex(TrackLayer.FIELD_LON);
-            int latInx = track.getColumnIndex(TrackLayer.FIELD_LAT);
-            int i = 0;
-            do {
-                i++;
-                float x1 = track.getFloat(lonInx);
-                float y1 = track.getFloat(latInx);
-                double[] lonLat = convert3857To4326(x1, y1);
-                Point point1 = Point.fromLngLat(lonLat[0], lonLat[1]);
-                pointsList.add(point1);
+        int lonInx = track.getColumnIndex(TrackLayer.FIELD_LON);
+        int latInx = track.getColumnIndex(TrackLayer.FIELD_LAT);
+        int i = 0;
+        do {
+            i++;
+            float x1 = track.getFloat(lonInx);
+            float y1 = track.getFloat(latInx);
+            double[] lonLat = convert3857To4326(x1, y1);
+            Point point1 = Point.fromLngLat(lonLat[0], lonLat[1]);
+            pointsList.add(point1);
 //                org.maplibre.geojson.Feature pointFeature1 = org.maplibre.geojson.Feature.fromGeometry(point1);
 //                result.add(pointFeature1);
 
 //                Log.e("TTRR", "point" + i + ": " + lonLat[0] + " : " +lonLat[1]);
 
 
-            } while (track.moveToNext());
-            track.close();
+        } while (track.moveToNext());
+        track.close();
 
 
-            LineString lineString = LineString.fromLngLats(pointsList);
-            org.maplibre.geojson.Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
-            result.add(lineFeature);
+        LineString lineString = LineString.fromLngLats(pointsList);
+        org.maplibre.geojson.Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
+        result.add(lineFeature);
 
 
         return result;
@@ -2258,11 +2442,50 @@ public class MapDrawable
         return result;
     }
 
-    public void updatelayerOrder(ILayer from, ILayer to){
+//    public void updatelayerOrder(ILayer from, ILayer to){
+//
+//
+//        List<String> fromLayers =  getLayerMLibreNames(from.getId(), from.getType());
+//        List<String> toLayers =  getLayerMLibreNames(to.getId(), to.getType());
+//
+//        Log.e("MPLREM",  "from: " + fromLayers.get(0) + " to " + toLayers.get(0));
+//
+//
+//    }
 
 
-        List<String> fromLayers =  getLayerMLibreNames(from.getId(), from.getType());
-        List<String> toLayers =  getLayerMLibreNames(to.getId(), to.getType());
 
-    }
+// PMTILES example
+//                        // raster PMTILES
+//                        String pmTilesPath = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/flowers.pmtiles";
+//
+//                        RasterSource source = new RasterSource("raster-pmtiles-source", pmTilesPath);
+//                        style.addSource(source);
+//
+//                        RasterLayer layer = new RasterLayer("raster-pmtiles-layer", "raster-pmtiles-source");
+//                        style.addLayer(layer);
+//                        // END   PMTILES
+//
+//
+//                        // PMTILES
+//                        String pmTilesPath2 = "pmtiles://file:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/cb_2018_us_zcta510_500k.pmtiles";
+//
+//                        VectorSource source2 = new VectorSource("pmtiles-source", pmTilesPath2);
+//                        style.addSource(source2);
+//
+//                        LineLayer layer2 = new LineLayer("pmtiles-layer", "pmtiles-source")
+//                                .withSourceLayer("zcta")
+//                                .withProperties(
+//                                PropertyFactory.lineColor("#0000ff"),
+//                                PropertyFactory.lineWidth(2f)
+//                        );
+//                        style.addLayer(layer2);
+//
+//                        FillLayer fillLayer = new FillLayer("poly-pmtiles-layer", "pmtiles-source")
+//                                .withSourceLayer("zcta")
+//                                .withProperties(
+//                                        PropertyFactory.fillColor("#FF0000"),
+//                                        PropertyFactory.fillOpacity(0.5f));
+//                        style.addLayer(fillLayer);
+//                        // END   PMTILES
 }

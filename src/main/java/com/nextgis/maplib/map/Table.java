@@ -54,8 +54,8 @@ public class Table implements ILayer, IJSONStore {
     protected Context mContext;
 
     public Table(
-            Context context,
-            File path)
+            final Context context,
+            final File path)
     {
         mPath = path;
         mContext = context;

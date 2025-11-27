@@ -555,11 +555,13 @@ public class MPLFeaturesUtils {
         List<String> result = new ArrayList<>();
         result.add(namePrefix + layer_namepart + layerId);
 
-        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
-            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
 
-        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
-        result.add(symbolLayer);
+
+//        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
+//            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
+
+//        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
+//        result.add(symbolLayer);
 
         return result;
     }
@@ -591,7 +593,7 @@ public class MPLFeaturesUtils {
             if (rasterLayer == null){
                 rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId,
                         currentNamePrefix + source_namepart + layerId);
-                //Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
+//                Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
                 style.addLayer(rasterLayer);
 
             }
@@ -782,7 +784,7 @@ public class MPLFeaturesUtils {
 
         if (newLayer != null) {
             if (!changeLayer) {
-                //Log.e("MPLREM",  "add layer: " + newLayer.getId());
+//                Log.e("MPLREM",  "addvector  layer: " + newLayer.getId());
 
                 style.addLayer(newLayer);
                 layersHashMap.put(layerId, newLayer);
@@ -791,7 +793,7 @@ public class MPLFeaturesUtils {
 
         if (newLayer2 != null) {
             if (!changeLayer) {
-//                Log.e("MPLREM",  "add layer2 : " + newLayer2.getId());
+//                Log.e("MPLREM",  "addvector layer2 : " + newLayer2.getId());
                 style.addLayer(newLayer2);
                 layersHashMap2.put(layerId, newLayer2);
             }

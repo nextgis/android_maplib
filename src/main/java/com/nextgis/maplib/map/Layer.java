@@ -50,8 +50,8 @@ public class Layer extends Table
 
 
     public Layer(
-            Context context,
-            File path)
+            final Context context,
+            final File path)
     {
         super(context, path);
         mExtents = new GeoEnvelope();

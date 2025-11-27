@@ -71,9 +71,9 @@ public class LayerGroup
 
 
     public LayerGroup(
-            Context context,
-            File path,
-            LayerFactory layerFactory)
+            final Context context,
+            final File path,
+            final LayerFactory layerFactory)
     {
         super(context, path);
 
@@ -230,7 +230,7 @@ public class LayerGroup
             ILayer layer = layerGroup.getLayer(i);
 
             if ( ! (layer instanceof LayerGroup)) {
-                Log.e("MPLREM",  "get layer: " + layer.getId() + " _ "+ layer.getName());
+//                Log.e("MPLREM",  "get layer: " + layer.getId() + " _ "+ layer.getName());
                 layerList.add(0, layer);
             }
 

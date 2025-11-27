@@ -555,7 +555,7 @@ public class VectorLayer
 //                        total++;
 //                    Log.d(TAG, "attach insert success: " + result.toString());
 //                }
-        // копирование пока не делаем
+
 
     }
 

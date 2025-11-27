@@ -43,9 +43,9 @@ public class MapBase
     private boolean mDirty;
 
     public MapBase(
-            Context context,
-            File path,
-            LayerFactory layerFactory)
+            final Context context,
+            final File path,
+            final LayerFactory layerFactory)
     {
         super(context, path.getParentFile(), layerFactory);
         mNewId = 0;
