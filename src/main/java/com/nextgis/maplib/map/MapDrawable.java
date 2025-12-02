@@ -108,8 +108,10 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.getLayerMLibreNames;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getMPLThinkness;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getRasterLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.id_name;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.latLngPointFromGeoPoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.layer_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.namePrefix;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.outline_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_featureid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
@@ -235,6 +237,10 @@ public class MapDrawable
     private MotionEvent startEvent = null;
     private PointF deltaPoint = null;
 
+    public float zoomSaved = 1.0f; // one time used zoom after map start
+    public GeoPoint centerSaved = new GeoPoint(0,0); //
+
+
 
     protected int  mLimitsType;
     protected RunnableFuture<Void> mDrawThreadTask;
@@ -281,20 +287,20 @@ public class MapDrawable
 
 
 
-
-        this.maplibreMap.get().clear();
-
-        this.maplibreMap.clear();
-        this.maplibreMapView.get().onPause();
-        this.maplibreMapView.get().onStop();
-        this.maplibreMapView.get().onDestroy();
-
-
-        this.maplibreMapView.clear();
-
-
-        this.maplibreMap = new WeakReference<>(null);
-        this.maplibreMapView = new WeakReference<>(null);
+//
+//        this.maplibreMap.get().clear();
+//
+//        this.maplibreMap.clear();
+//        this.maplibreMapView.get().onPause();
+//        this.maplibreMapView.get().onStop();
+//        this.maplibreMapView.get().onDestroy();
+//
+//
+//        this.maplibreMapView.clear();
+//
+//
+//        this.maplibreMap = new WeakReference<>(null);
+//        this.maplibreMapView = new WeakReference<>(null);
     }
 
     public MapLibreMap getMaplibreMap(){
@@ -341,9 +347,24 @@ public class MapDrawable
     public void deleteLayerByID(int id){
         if (maplibreMap.get()!= null) {
             String sourceId = namePrefix + source_namepart + id;
+
             String vectorLayerId = namePrefix + layer_namepart + id;
+
+            String vectorLayerId2 = namePrefix + layer_namepart + id + outline_namepart;
+
+            String currentNamePrefixSymbol = "symbol-" +  namePrefix;
+            String vectorLayerIdSymbols =currentNamePrefixSymbol + layer_namepart + id;
+
             if (maplibreMap.get().getStyle().getLayer(vectorLayerId)!= null)
                 maplibreMap.get().getStyle().removeLayer(vectorLayerId);
+
+            if (maplibreMap.get().getStyle().getLayer(vectorLayerId2)!= null)
+                maplibreMap.get().getStyle().removeLayer(vectorLayerId2);
+
+            if (maplibreMap.get().getStyle().getLayer(vectorLayerIdSymbols)!= null)
+                maplibreMap.get().getStyle().removeLayer(vectorLayerIdSymbols);
+
+
             if (maplibreMap.get().getStyle().getSource(sourceId)!= null)
                 maplibreMap.get().getStyle().removeSource(sourceId);
 
@@ -456,7 +477,6 @@ public class MapDrawable
     }
 
     public void reloadFillLayerStyleToMaplibre(final  int  id) {
-
         if (!(mapFragment.get().getMode() == 0))
             return;
 
@@ -1072,17 +1092,13 @@ public class MapDrawable
         style.addLayer(trackFlagsLayer);
     }
 
-
-
-
-
-
-
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         android.graphics.PointF screenPoint = new android.graphics.PointF(event.getX(), event.getY());
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
+                if (mapFragment.get()!= null)
+                    mapFragment.get().setLongLongClickProcesses(false);
                 clickPoint = new PointF(event.getX(), event.getY());
                 android.graphics.RectF rect = new android.graphics.RectF(event.getX() - 20,event.getY() - 20,event.getX() + 20,event.getY() + 20);
                 List<org.maplibre.geojson.Feature> featuresMarker = maplibreMap.get().queryRenderedFeatures(rect, "marker-layer");
@@ -1189,8 +1205,16 @@ public class MapDrawable
             }
 
             case MotionEvent.ACTION_UP: {
-                v.performClick();
-                v.performLongClick();
+//                v.performClick();
+//                v.performLongClick();
+
+                if (mapFragment.get()!=null && mapFragment.get().getLongLongClickProcesses()){
+                    mapFragment.get().setLongLongClickProcesses(false);
+                    return false;
+                }
+
+
+
                 float deltaX = clickPoint.x - event.getX();
                 float deltaY = clickPoint.y - event.getY();
                 float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -1265,7 +1289,9 @@ public class MapDrawable
         PointF clickPoint = maplibreMap.get().getProjection().toScreenLocation(latLng);
         GeoEnvelope clickeEnelope = getClickEnelope(clickPoint);
 
-        mapFragment.get().processMapLongClick(clickeEnelope, clickPoint);
+        boolean result = mapFragment.get().processMapLongClick(clickeEnelope, clickPoint);
+        if (result && mapFragment.get()!= null)
+            mapFragment.get().setLongLongClickProcesses(true);
         return false;
     }
 
@@ -1870,7 +1896,24 @@ public class MapDrawable
             newZoom = Math.round(newZoom);
             mDisplay.setZoomAndCenter(newZoom, center);
             onExtentChanged((int) newZoom, center);
+            zoomSaved = zoom;
+            centerSaved = center;
         }
+
+        if (maplibreMap.get()!= null)
+            maplibreMap.get().easeCamera(CameraUpdateFactory.newLatLngZoom(latLngPointFromGeoPoint(center), zoom), 800);
+    }
+
+
+    public final GeoPoint getMaplibreCenter() {
+        if (maplibreMap.get() != null) {
+
+            LatLng center =  maplibreMap.get().getCameraPosition().target;
+            double[] centerPoints = convert4326To3857(center.getLongitude(), center.getLatitude());
+
+            return new GeoPoint(centerPoints[0], centerPoints[1]);
+        }
+        return null;
     }
 
     @Override

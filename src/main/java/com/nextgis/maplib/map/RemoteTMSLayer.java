@@ -154,7 +154,6 @@ public class RemoteTMSLayer
 //            }
 
             try {
-                Log.e("TTIILLE", "+tile at:" + url);
                 getTileFromStream(url, tilePath);
             } catch (InterruptedIOException e) {
                 Log.d(TAG, "Thread interrupted, delete the tile file for the url: " + url);

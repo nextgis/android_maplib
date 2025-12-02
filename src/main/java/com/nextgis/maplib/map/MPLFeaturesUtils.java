@@ -24,6 +24,8 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometryCollection;
@@ -48,6 +50,7 @@ import com.nextgis.maplib.map.MLP.PolygonEditClass;
 import com.nextgis.maplib.util.GeoConstants;
 
 
+import org.maplibre.android.geometry.LatLng;
 import org.maplibre.android.maps.Style;
 import org.maplibre.android.style.expressions.Expression;
 import org.maplibre.android.style.layers.CircleLayer;
@@ -295,6 +298,7 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> pointFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
+        //if (features.entrySet() != null)
         for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
             i++;
             Long id = entry.getKey();
@@ -494,6 +498,17 @@ public class MPLFeaturesUtils {
         return new double[]{x, y};
     }
 
+    static GeoPoint geoPointFromMaplibrePoint(Point point){
+        double[] centerPoints = convert4326To3857(point.longitude(), point.latitude());
+        return new GeoPoint(centerPoints[0], centerPoints[1]);
+    }
+
+    static public  LatLng latLngPointFromGeoPoint(GeoPoint gePoint){
+        double[] lonLat = convert3857To4326(gePoint.getX(), gePoint.getY());
+        return new LatLng(lonLat[1], lonLat[0]);
+    }
+
+
     static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
                                             final Style style, Map<Integer, GeoJsonSource> sourceHashMap,
                                             Map<Integer, String> rasterLayersURL,
@@ -571,7 +586,7 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap2,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
-                                               com.nextgis.maplib.display.Style layerStyle,
+                                               @Nullable com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer,
                                                ILayer iLayer){
         float minZoom = -1;
@@ -724,61 +739,63 @@ public class MPLFeaturesUtils {
         }
 
         // signatures turn on
-        String styleField = ((ITextStyle)layerStyle).getField();
-        String styleText = ((ITextStyle)layerStyle).getText();
-        boolean needSignatures = !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText) ;
+        if (layerStyle!= null) {
+            String styleField = ((ITextStyle) layerStyle).getField();
+            String styleText = ((ITextStyle) layerStyle).getText();
+            boolean needSignatures = !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText);
 
 
-        simbolLayer = style.getLayer(currentNamePrefixSymbol + layer_namepart + layerId);
+            simbolLayer = style.getLayer(currentNamePrefixSymbol + layer_namepart + layerId);
 
-        if (!needSignatures && simbolLayer != null ){
-            // need remove
-            style.removeLayer(simbolLayer);
-            symbolsLayerHashMap.remove(layerId);
+            if (!needSignatures && simbolLayer != null) {
+                // need remove
+                style.removeLayer(simbolLayer);
+                symbolsLayerHashMap.remove(layerId);
 
-        } else {
-            if (needSignatures){
-                if (simbolLayer == null){
-                    simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId);
-                    style.addLayer(simbolLayer);
-                    symbolsLayerHashMap.put(layerId, simbolLayer);
-                }
+            } else {
+                if (needSignatures) {
+                    if (simbolLayer == null) {
+                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId);
+                        style.addLayer(simbolLayer);
+                        symbolsLayerHashMap.put(layerId, simbolLayer);
+                    }
 
 
-                PropertyValue<String> signatureProperty = null;
-                if (!TextUtils.isEmpty(styleText))
-                    signatureProperty = PropertyFactory.textField(styleText);
-                else {
-                    if (styleField.equals(id_name))
-                        signatureProperty = PropertyFactory.textField("{" + prop_featureid + "}");
+                    PropertyValue<String> signatureProperty = null;
+                    if (!TextUtils.isEmpty(styleText))
+                        signatureProperty = PropertyFactory.textField(styleText);
+                    else {
+                        if (styleField.equals(id_name))
+                            signatureProperty = PropertyFactory.textField("{" + prop_featureid + "}");
+                        else
+                            signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
+                    }
+
+                    String[] font = {"Open Sans Regular"};
+
+                    PropertyValue<String> placementProperty = null;
+                    if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint)
+                        placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT);
                     else
-                        signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
+                        placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER);
+
+                    String anchor = getTextAnchor(textAlignment); // def - Property.TEXT_ANCHOR_TOP
+                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
+
+                    simbolLayer.setProperties(
+                            signatureProperty,
+                            PropertyFactory.textSize((textSize + 3) * 3),
+                            PropertyFactory.textColor(getColorName(outlineColor)),
+                            PropertyFactory.textAnchor(anchor),
+                            placementProperty,
+
+                            PropertyFactory.textOffset(offsets),
+                            PropertyFactory.textAllowOverlap(true),
+                            PropertyFactory.textIgnorePlacement(true),
+                            PropertyFactory.textFont(font),
+                            PropertyFactory.textMaxWidth(0f))
+                    ;
                 }
-
-                String [] font = {"Open Sans Regular"};
-
-                PropertyValue<String> placementProperty = null;
-                if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint)
-                    placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT);
-                else
-                    placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER);
-
-                String anchor = getTextAnchor(textAlignment); // def - Property.TEXT_ANCHOR_TOP
-                Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
-
-                simbolLayer.setProperties(
-                        signatureProperty,
-                        PropertyFactory.textSize((textSize  + 3 )*3),
-                        PropertyFactory.textColor(getColorName(outlineColor)),
-                        PropertyFactory.textAnchor(anchor),
-                        placementProperty,
-
-                        PropertyFactory.textOffset(offsets),
-                        PropertyFactory.textAllowOverlap(true),
-                        PropertyFactory.textIgnorePlacement(true),
-                        PropertyFactory.textFont(font),
-                        PropertyFactory.textMaxWidth(0f))
-                ;
             }
         }
 

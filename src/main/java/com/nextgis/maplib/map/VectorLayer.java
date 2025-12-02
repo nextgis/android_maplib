@@ -2695,12 +2695,13 @@ public class VectorLayer
     }
 
     public final  Map<Long, Feature> getFeatures(){
+        final Map<Long, Feature> featureListMap = new HashMap<>();
+
         final Cursor cursor = query(null, null, null, null, null);
         if (null == cursor) {
-            return null;
+            return featureListMap;
         }
 
-        final Map<Long, Feature> featureListMap = new HashMap<>();
         final List<Field> fields = getFields();
         while (cursor.moveToNext()) {
             final Feature feature1 = new Feature(cursor.getLong(0), fields);
@@ -3283,6 +3284,8 @@ public class VectorLayer
                 rootConfig.put(NGWVectorLayer.JSON_NGWLAYER_TYPE_KEY, Connection.NGWResourceTypeVectorLayer);
                 FileUtil.writeToFile(getFileName(), rootConfig.toString());
                 MapBase map = MapDrawable.getInstance();
+                map.clearLayers();
+                ((MapDrawable)map).clearMaplLibreMap();
                 map.load();
                 new Sync().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             } catch (IOException | JSONException ignored) { }

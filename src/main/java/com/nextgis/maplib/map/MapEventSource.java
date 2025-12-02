@@ -134,7 +134,9 @@ public class MapEventSource
     @Override
     protected void onLayerAdded(ILayer layer)
     {
+
         super.onLayerAdded(layer);
+
         if (mListeners == null) {
             return;
         }
