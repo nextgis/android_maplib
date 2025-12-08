@@ -503,6 +503,11 @@ public class MPLFeaturesUtils {
         return new GeoPoint(centerPoints[0], centerPoints[1]);
     }
 
+    static public GeoPoint geoPointFromLatLng(LatLng latLng){
+        double[] centerPoints = convert4326To3857(latLng.getLongitude(), latLng.getLatitude());
+        return new GeoPoint(centerPoints[0], centerPoints[1]);
+    }
+
     static public  LatLng latLngPointFromGeoPoint(GeoPoint gePoint){
         double[] lonLat = convert3857To4326(gePoint.getX(), gePoint.getY());
         return new LatLng(lonLat[1], lonLat[0]);
@@ -532,11 +537,11 @@ public class MPLFeaturesUtils {
                     if ( tileTmsType != null && tileTmsType != -1){
                         if (tileTmsType == TMSTYPE_NORMAL) {
                             tileSet.setScheme( "tms");
-                            Log.e("TTMS", "tileset to tms");
+//                            Log.e("TTMS", "tileset to tms");
                         }
                         if (tileTmsType == TMSTYPE_OSM) {
                             tileSet.setScheme("xyz");
-                            Log.e("TTMS", "tileset to XYZ");
+//                            Log.e("TTMS", "tileset to XYZ");
                         }
                     }
                     rasterSource = new RasterSource(currentNamePrefix + source_namepart + layerId,
@@ -566,18 +571,13 @@ public class MPLFeaturesUtils {
 
 
     static public List<String> getLayerMLibreNames(int layerId, int layerType){
-
         List<String> result = new ArrayList<>();
         result.add(namePrefix + layer_namepart + layerId);
-
-
-
 //        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
 //            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
 
 //        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
 //        result.add(symbolLayer);
-
         return result;
     }
 
@@ -589,6 +589,7 @@ public class MPLFeaturesUtils {
                                                @Nullable com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer,
                                                ILayer iLayer){
+//        Log.e("ZXZY", "create layer " + iLayer.getName());
         float minZoom = -1;
         float maxZoom = -1;
         if (iLayer!= null){

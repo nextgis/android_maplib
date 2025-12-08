@@ -16,7 +16,7 @@ public interface MaplibreMapInteraction {
 
     public void updateGeometryFromMaplibre(org.maplibre.geojson.Feature feature, Feature originalSelectedFeaturem, MLGeometryEditClass editObject );
 
-    public int getSelectedLayerId();
+    public VectorLayer getSelectedLayer();
 
     public void updateActions(MLGeometryEditClass editObject);
 

@@ -699,6 +699,8 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
             Point newPoint = Point.fromLngLat(point.getLongitude(), point.getLatitude());
             editingVertices.set(selectedVertexIndex, newPoint);
             updateEditingPolygonAndVertex();
+            setMarker(point);
+
         }
     }
 

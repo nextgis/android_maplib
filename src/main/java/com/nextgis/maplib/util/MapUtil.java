@@ -339,16 +339,16 @@ public class MapUtil {
 
 
     static public void logFeatures(HashMap<Integer, List<Feature>> results){
-        Log.e("RREESS", "results");
-        for ( Map.Entry feature: results.entrySet()){
-            Log.e("RREESS", "key" + feature.getKey());
-            try {
-                Log.e("RREESS", "feature" + ((Feature) feature.getValue()).toJSON().toString());
-            } catch (JSONException ex){
-                Log.e("RREESS", "feature key"  + feature.getKey() + " EXCEPTION!!! " + ex.toString());
-            }
-
-        }
+//        Log.e("RREESS", "results");
+//        for ( Map.Entry feature: results.entrySet()){
+//            Log.e("RREESS", "key" + feature.getKey());
+//            try {
+//                Log.e("RREESS", "feature" + ((Feature) feature.getValue()).toJSON().toString());
+//            } catch (JSONException ex){
+//                Log.e("RREESS", "feature key"  + feature.getKey() + " EXCEPTION!!! " + ex.toString());
+//            }
+//
+//        }
 
     }
 }

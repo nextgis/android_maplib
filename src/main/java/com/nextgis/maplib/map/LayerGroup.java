@@ -594,7 +594,7 @@ public class LayerGroup
     {
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
-            Log.e("MPL_LAYERCHANGED", "layer group onLayerChanged call" + layer.getId());
+//            Log.e("MPL_LAYERCHANGED", "layer group onLayerChanged call" + layer.getId());
             group.onLayerChanged(layer);
 
         }
@@ -604,7 +604,7 @@ public class LayerGroup
     {
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
-            Log.e("onLayerChangedFeatureId", "layer group onLayerChanged call" + layer.getId());
+//            Log.e("onLayerChangedFeatureId", "layer group onLayerChanged call" + layer.getId());
             group.onLayerChangedFeatureId(layer, oldFeatureId, newFeatureId,  layerId);
 
         }

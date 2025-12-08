@@ -488,10 +488,7 @@ public class PolygonEditClass extends MLGeometryEditClass {
             Point newPoint = Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude());
             editingVertices.set(selectedVertexIndex, newPoint);
             updateEditingPolygonAndVertex(); // This will refresh the polygon and middle points
-            // Marker is usually handled by the caller of movePointTo, but we can update it here too.
-            // if (markerSource != null && getSelectedPoint() != null) {
-            //    markerSource.setGeoJson(Feature.fromGeometry(Point.fromLngLat(getSelectedPoint().getLongitude(), getSelectedPoint().getLatitude())));
-            // }
+            setMarker(latLng);
         }
     }
 

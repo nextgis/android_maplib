@@ -3287,6 +3287,8 @@ public class VectorLayer
                 map.clearLayers();
                 ((MapDrawable)map).clearMaplLibreMap();
                 map.load();
+                ((MapDrawable)map).loadMarkersTopPart();
+
                 new Sync().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             } catch (IOException | JSONException ignored) { }
         }

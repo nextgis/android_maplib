@@ -101,7 +101,8 @@ public interface IMapView
      */
     void setZoomAndCenter(
             float zoom,
-            GeoPoint center);
+            GeoPoint center,
+            boolean  startSecondMaplibre);
 
     /**
      * Zoom to fill provided extent
