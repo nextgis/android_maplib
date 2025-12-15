@@ -35,6 +35,7 @@ import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteFullException;
+import android.database.sqlite.SQLiteStatement;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -91,7 +92,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -225,6 +228,7 @@ public class VectorLayer
 
     protected boolean mIsEditable;
 
+    static final boolean useNewLargeDataload = true;
     /**
      * The geometry cache for fast querying and drawing
      */
@@ -2433,7 +2437,43 @@ public class VectorLayer
     }
 
 
-    public GeoGeometry getGeometryForId(long rowId)
+
+    protected GeoGeometry getLagreGeometryFromQuery(
+            String[] columns,
+            String selection,
+            SQLiteDatabase db) {
+
+
+        Cursor cursor = db.query(mPath.getName(), columns, selection, null, null, null, null);
+
+
+        return null;
+
+    }
+
+
+
+        public GeoGeometry getLargeGeometryForId(long rowId) {
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+        SQLiteDatabase db = map.getDatabase(true);
+
+        byte[] geomBlob = readLargeBlob(db,mPath.getName(),  rowId );
+        if (geomBlob != null) {
+            try {
+                return  GeoGeometryFactory.fromBlob(geomBlob);
+            } catch (Exception ex){
+                return null;
+            }
+        }
+        return null;
+
+    }
+
+        public GeoGeometry getGeometryForId(long rowId)
     {
         MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
         if (null == map) {
@@ -2443,7 +2483,8 @@ public class VectorLayer
         SQLiteDatabase db = map.getDatabase(true);
         String[] columns = new String[] {Constants.FIELD_GEOM};
         String selection = Constants.FIELD_ID + " = " + rowId;
-        return getGeometryFromQuery(columns, selection, db);
+        return getLargeGeometryForId( rowId);
+        //return getGeometryFromQuery(columns, selection, db);
     }
 
 
@@ -2502,25 +2543,25 @@ public class VectorLayer
     }
 
 
-    public GeoGeometry getGeometryForId(
-            long rowId,
-            int zoom)
-    {
-        if (zoom > GeoConstants.DEFAULT_CACHE_MAX_ZOOM) {
-            return getGeometryForId(rowId);
-        }
-
-        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
-        if (null == map) {
-            throw new IllegalArgumentException(
-                    "The map should extends MapContentProviderHelper or inherited");
-        }
-        SQLiteDatabase db = map.getDatabase(true);
-        String[] columns = new String[] {Constants.FIELD_GEOM_ + zoom};
-        String selection = Constants.FIELD_ID + " = " + rowId;
-
-        return getGeometryFromQuery(columns, selection, db);
-    }
+//    public GeoGeometry getGeometryForId(
+//            long rowId,
+//            int zoom)
+//    {
+//        if (zoom > GeoConstants.DEFAULT_CACHE_MAX_ZOOM) {
+//            return getGeometryForId(rowId);
+//        }
+//
+//        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+//        if (null == map) {
+//            throw new IllegalArgumentException(
+//                    "The map should extends MapContentProviderHelper or inherited");
+//        }
+//        SQLiteDatabase db = map.getDatabase(true);
+//        String[] columns = new String[] {Constants.FIELD_GEOM_ + zoom};
+//        String selection = Constants.FIELD_ID + " = " + rowId;
+//
+//        return getGeometryFromQuery(columns, selection, db);
+//    }
 
 
     public GeoGeometry getGeometryForId(
@@ -2695,6 +2736,15 @@ public class VectorLayer
     }
 
     public final  Map<Long, Feature> getFeatures(){
+        if (useNewLargeDataload)
+            return getFeaturesLARGEDATA();
+        else
+            return getFeaturesOLDDATA();
+    }
+
+
+
+    public final  Map<Long, Feature> getFeaturesOLDDATA(){
         final Map<Long, Feature> featureListMap = new HashMap<>();
 
         final Cursor cursor = query(null, null, null, null, null);
@@ -2712,7 +2762,88 @@ public class VectorLayer
         return featureListMap;
     }
 
-    public Feature getFeature(long featureId)
+    public final  Map<Long, Feature> getFeaturesLARGEDATA(){
+        final Map<Long, Feature> featureListMap = new HashMap<>();
+
+        final List<Field> fields = getFields();
+        String[] projection = new String[fields.size() +1] ; // только ID, а лучше все поля КРОМЕ geom
+        projection[0] = "_id";
+        for (int i = 0; i < fields.size(); i++)
+            projection[i+1] = fields.get(i).getName();
+
+        Cursor cursor = query(projection,  null, null, null, null);
+//        final Cursor cursor = query(null, null, null, null, null);
+        if (null == cursor) {
+            return featureListMap;
+        }
+
+        MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+        if (null == map) {
+            Log.d(TAG, "The map should extends MapContentProviderHelper or inherited");
+            throw new IllegalArgumentException(
+                    "The map should extends MapContentProviderHelper or inherited");
+        }
+
+        SQLiteDatabase db = map.getDatabase(true);
+
+        while (cursor.moveToNext()) {
+            final Feature feature1 = new Feature(cursor.getLong(0), fields);
+            feature1.fromCursorWithoutGeometry(cursor);
+
+            byte[] geomBlob = readLargeBlob(db,mPath.getName(),  feature1.getId() );
+            if (geomBlob != null) {
+                try {
+                    feature1.setGeometry(GeoGeometryFactory.fromBlob(geomBlob));
+                } catch (Exception ex){
+                    return featureListMap;
+                }
+            }
+            featureListMap.put(feature1.getId(), feature1);
+        }
+        cursor.close();
+        return featureListMap;
+    }
+
+    public static byte[] readLargeBlob(SQLiteDatabase db, String tableName, long rowId) {
+        String sql = "SELECT " + FIELD_GEOM + " FROM " + tableName + " WHERE _id = ?";
+        SQLiteStatement st = db.compileStatement(sql);
+        st.bindLong(1, rowId);
+
+        ParcelFileDescriptor pfd = st.simpleQueryForBlobFileDescriptor();
+        if (pfd == null)
+            return null;
+
+        return readBlob(pfd.getFileDescriptor());
+    }
+
+    private static byte[] readBlob(FileDescriptor fd) {
+        try (FileInputStream fis = new FileInputStream(fd);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                bos.write(buffer, 0, bytesRead);
+            }
+
+            return bos.toByteArray();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    public final  Feature getFeature(long featureId){
+        if (useNewLargeDataload)
+            return getFeatureLargeData(featureId);
+        else
+            return getFeatureOldData(featureId);
+    }
+
+    public final  Feature getFeatureOldData(long featureId)
     {
         Cursor cursor = query(null, FIELD_ID + " = " + featureId, null, null, null);
         if (null == cursor) {
@@ -2727,6 +2858,55 @@ public class VectorLayer
 
         cursor.close();
 
+        return feature;
+    }
+
+    public final  Feature getFeatureLargeData(long featureId)
+    {
+        Feature feature = null;
+
+        final List<Field> fields = getFields();
+        String[] projection = new String[fields.size() +1] ; // только ID, а лучше все поля КРОМЕ geom
+        projection[0] = "_id";
+        for (int i = 0; i < fields.size(); i++)
+            projection[i+1] = fields.get(i).getName();
+
+        Cursor cursor = query(projection,  FIELD_ID + " = " + featureId, null, null, null);
+//        final Cursor cursor = query(null, null, null, null, null);
+
+
+//        Cursor cursor = query(null, FIELD_ID + " = " + featureId, null, null, null);
+        if (null == cursor) {
+            return null;
+        }
+
+        if (cursor.moveToFirst()) {
+
+            MapContentProviderHelper map = (MapContentProviderHelper) MapBase.getInstance();
+            if (null == map) {
+                Log.d(TAG, "The map should extends MapContentProviderHelper or inherited");
+                throw new IllegalArgumentException(
+                        "The map should extends MapContentProviderHelper or inherited");
+            }
+
+            SQLiteDatabase db = map.getDatabase(true);
+
+
+            feature = new Feature(cursor.getLong(0), fields);
+            feature.fromCursorWithoutGeometry(cursor);
+
+            byte[] geomBlob = readLargeBlob(db,mPath.getName(),  feature.getId() );
+            if (geomBlob != null) {
+                try {
+                    feature.setGeometry(GeoGeometryFactory.fromBlob(geomBlob));
+                } catch (Exception ex){
+                    return null;
+                }
+            }
+//            feature = new Feature(featureId, getFields());
+//            feature.fromCursor(cursor);
+        }
+        cursor.close();
         return feature;
     }
 

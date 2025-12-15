@@ -121,6 +121,8 @@ public class LocationUtil
 
 
     public static String formatLength(Context context, double length, int precision) {
+        if (context == null)
+            return null;
         SharedPreferences preferences = context.getSharedPreferences(context.getPackageName() + "_preferences", MODE_MULTI_PROCESS);
         String value = preferences.getString(SettingsConstants.KEY_PREF_UNITS, "metric");
         boolean metric = value == null || value.equals("metric");

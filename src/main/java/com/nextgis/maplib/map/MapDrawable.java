@@ -187,7 +187,7 @@ public class MapDrawable
     LinkedHashMap<Integer, List<org.maplibre.geojson.Feature>> sourcesOrder = new LinkedHashMap<Integer, List<org.maplibre.geojson.Feature>>();
 
     // map sources added to maplibre  from layers
-    LinkedHashMap<Integer, GeoJsonSource>  sourceHashMap = new LinkedHashMap<Integer, GeoJsonSource>();
+    LinkedHashMap<String, GeoJsonSource>  sourceHashMap = new LinkedHashMap<String, GeoJsonSource>();
 
     // map fill Layer of each added layer
     HashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
@@ -283,8 +283,7 @@ public class MapDrawable
         });
     }
 
-
-        public void clearMaplLibreMap(){
+    public void clearMaplLibreMap(){
 
         final Style style = maplibreMap.get().getStyle();
         for (final Layer layer :maplibreMap.get().getStyle().getLayers()){
@@ -479,9 +478,11 @@ public class MapDrawable
             mainHandler.post(() -> {
                 createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
-                        finalStyle, false, iLayer);
+                        finalStyle, false, iLayer,
+                        iLayer.getPath().toString());
                 createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
-                        rasterLayersURLMap, rasterLayersTmsTypeMap);
+                        rasterLayersURLMap, rasterLayersTmsTypeMap,
+                        iLayer.getPath().toString());
 
                 checkLayerVisibility(iLayer.getId());
             });
@@ -507,7 +508,8 @@ public class MapDrawable
 
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
                         symbolsLayerHashMap,
-                        newStyle, true, iLayer);
+                        newStyle, true, iLayer,
+                        iLayer.getPath().toString());
                 checkLayerVisibility(id);
                 reloadVectorLayerDataToMaplibre(iLayer);
                 return;
@@ -521,7 +523,8 @@ public class MapDrawable
 
                 createFillLayerForLayer(id,  GT_RASTER_WA, maplbrStyle ,layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
-                        null, true, iLayer);
+                        null, true, iLayer,
+                        iLayer.getPath().toString());
                 checkLayerVisibility(id);
                 reloadVectorLayerDataToMaplibre(iLayer);
                 return;
@@ -552,7 +555,7 @@ public class MapDrawable
 
             // Switch to main thread
             mainHandler.post(() -> {
-                GeoJsonSource layerSource = sourceHashMap.get(layer.getId());
+                GeoJsonSource layerSource = sourceHashMap.get(layer.getPath().toString());
                 List<org.maplibre.geojson.Feature> features = sourceFeaturesHashMap.get(layer.getId());
                 if (layerSource != null) {
                     layerSource.setGeoJson(FeatureCollection.fromFeatures(features));
@@ -573,6 +576,7 @@ public class MapDrawable
         Handler mainHandler = new Handler(Looper.getMainLooper());
 
         final Map<Integer, Integer> layersType = new HashMap<>();
+        final Map<Integer, String> layersPath = new HashMap<>();
         final Map<Integer, com.nextgis.maplib.display.Style> layersStyle = new HashMap<>();
         final Map<Integer, String> rasterLayersURLMap = new HashMap<>();
         final Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
@@ -598,6 +602,7 @@ public class MapDrawable
                 if (iLayer instanceof VectorLayer) {
                     VectorLayer layer = (VectorLayer) iLayer;
                     layersType.put(layer.getId(), layer.getGeometryType());
+                    layersPath.put(layer.getId(), layer.getPath().toString());
                     layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
                     List<org.maplibre.geojson.Feature> vectorFeatures = createFeatureListFromLayer(layer);
                     sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
@@ -605,6 +610,8 @@ public class MapDrawable
                 } else if (iLayer instanceof TrackLayer) {
                     TrackLayer layer = (TrackLayer) iLayer;
                     layersType.put(layer.getId(), GT_TRACK_WA);
+                    layersPath.put(layer.getId(), layer.getPath().toString());
+
                     tracksFeatures.clear();
                     tracksFeatures.addAll(createFeatureListFromTrackLayer(layer));
 
@@ -638,6 +645,8 @@ public class MapDrawable
 
                         TMSLayer layer = (TMSLayer)iLayer;
                         layersType.put(layer.getId(), GT_RASTER_WA);
+                        layersPath.put(layer.getId(), layer.getPath().toString());
+
                         rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
                         sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
                         sourcesOrder.put(layer.getId(), new ArrayList<>());
@@ -655,6 +664,8 @@ public class MapDrawable
 
                     TMSLayer layer = (TMSLayer)iLayer;
                     layersType.put(layer.getId(), GT_RASTER_WA);
+                    layersPath.put(layer.getId(), layer.getPath().toString());
+
                     if (((RemoteTMSLayer)layer).mIsOfflineLayer){
                         rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                         rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
@@ -667,6 +678,8 @@ public class MapDrawable
                 } else if (iLayer instanceof  LocalTMSLayer) {
                     TMSLayer layer = (TMSLayer)iLayer;
                     layersType.put(layer.getId(), GT_RASTER_WA);
+                    layersPath.put(layer.getId(), layer.getPath().toString());
+
                     rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                     rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                     sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
@@ -698,7 +711,8 @@ public class MapDrawable
                             if (createSource)
                                 createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()),
                                         sourceFeaturesHashMap.get(entry.getKey()), style,
-                                        sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap);
+                                        sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap,
+                                        layersPath.get(entry.getKey()));
 
                             createFillLayerForLayer(entry.getKey(),
                                     layersType.get(entry.getKey()),
@@ -707,7 +721,8 @@ public class MapDrawable
                                     layersHashMap2,
                                     symbolsLayerHashMap,
                                     layersStyle.get(entry.getKey()), false,
-                                    getLayerById(entry.getKey()));
+                                    getLayerById(entry.getKey()),
+                                    layersPath.get(entry.getKey()));
 
                             checkLayerVisibility(entry.getKey());
                         }
@@ -990,7 +1005,8 @@ public class MapDrawable
                         layersHashMap2,
                         symbolsLayerHashMap,
                         layersStyle.get(entry.getKey()), false,
-                        getLayerById(entry.getKey()));
+                        getLayerById(entry.getKey()),
+                        getLayerById(entry.getKey()).getPath().toString());
 
                 checkLayerVisibility(entry.getKey());
             }
@@ -1029,21 +1045,7 @@ public class MapDrawable
                 PropertyFactory.circleOpacity(1.0f));
 
         style.addLayer(vertexFillLayer);
-        // marker
-        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor_2);
-        final Bitmap bitmap = drawableToBitmap(drawable);
 
-        final IconFactory iconFactory = IconFactory.getInstance(getContext());
-        final Icon markerIcon = iconFactory.fromBitmap(bitmap);
-        String iconId = "marker-icon-selected";
-        style.addImage(iconId, bitmap);
-
-
-        SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
-                .withProperties(
-                        org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
-                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
-        style.addLayer(symbolLayer);
 
 
         final Drawable drawableStand = getContext().getResources().getDrawable( R.drawable.ic_location_standing);
@@ -1101,6 +1103,24 @@ public class MapDrawable
                         PropertyFactory.iconAllowOverlap(true),
                         PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT));
         style.addLayer(trackFlagsLayer);
+
+
+        // marker
+        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor_2);
+        final Bitmap bitmap = drawableToBitmap(drawable);
+
+        final IconFactory iconFactory = IconFactory.getInstance(getContext());
+        final Icon markerIcon = iconFactory.fromBitmap(bitmap);
+        String iconId = "marker-icon-selected";
+        style.addImage(iconId, bitmap);
+
+
+        SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
+                .withProperties(
+                        org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
+                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
+        style.addLayer(symbolLayer);
+
     }
 
     @Override
@@ -1505,7 +1525,7 @@ public class MapDrawable
         }
 
         if (editingFeatureTmp != null) {
-            selectedEditedSource = sourceHashMap.get(ilayerd.getId());
+            selectedEditedSource = sourceHashMap.get(ilayerd.getPath().toString());
             editingFeature = editingFeatureTmp;
 
             int type = ((VectorLayer)ilayerd).getGeometryType();
@@ -1571,7 +1591,7 @@ public class MapDrawable
         }
 
         if (editingFeatureTmp != null) {
-            selectedEditedSource = sourceHashMap.get(layerdID);
+            selectedEditedSource = sourceHashMap.get(getLayer(layerdID).getPath().toString());
             editingFeature = editingFeatureTmp;
             editingFeatureOriginal = editingFeatureTmp;
             polygonFeatures = sourceFeaturesHashMap.get(layerdID);
@@ -1604,7 +1624,7 @@ public class MapDrawable
                 break;
             }
         }
-        GeoJsonSource source = sourceHashMap.get(layerdID);
+        GeoJsonSource source = sourceHashMap.get(getLayer(layerdID).getPath().toString());
 
         if (found != null && source != null){
             String fid = String.valueOf(selectedFeatureId);
@@ -1628,7 +1648,7 @@ public class MapDrawable
 
     public void showFeatureFromHide(Long selectedFeatureId, int layerdID, org.maplibre.geojson.Feature hiddedFeature){
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerdID);
-        GeoJsonSource source = sourceHashMap.get(layerdID);
+        GeoJsonSource source = sourceHashMap.get(getLayer(layerdID).getPath().toString());
 
         if (hiddedFeature != null && source != null && layerFeatures != null){
             layerFeatures.add(hiddedFeature);

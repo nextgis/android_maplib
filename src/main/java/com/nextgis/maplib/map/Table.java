@@ -25,6 +25,7 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.util.Log;
 
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.ILayer;
@@ -95,7 +96,8 @@ public class Table implements ILayer, IJSONStore {
     @Override
     public boolean delete(boolean keepTrack)
     {
-        FileUtil.deleteRecursive(mPath);
+        if (!FileUtil.deleteRecursive(mPath))
+            Log.e("DDELETE", "Delete fail for "  + mPath);
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
             group.onLayerDeleted(mId);

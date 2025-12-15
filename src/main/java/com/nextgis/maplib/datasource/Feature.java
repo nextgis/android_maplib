@@ -492,6 +492,51 @@ public class Feature
         }
     }
 
+    public void fromCursorWithoutGeometry(Cursor cursor)
+    {
+        if (null == cursor) {
+            return;
+        }
+        mId = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
+
+        for (int i = 0; i < mFields.size(); i++) {
+            Field field = mFields.get(i);
+            int index = cursor.getColumnIndex(field.getName());
+            if (cursor.isNull(index)) {
+                setFieldValue(i, null);
+            } else {
+                if (index != NOT_FOUND) {
+                    switch (field.getType()) {
+                        case FTString:
+                            setFieldValue(i, cursor.getString(index));
+                            break;
+                        case FTLong:
+                            setFieldValue(i, cursor.getLong(index));
+                            break;
+                        case FTInteger:
+                            setFieldValue(i, cursor.getInt(index));
+                            break;
+                        case FTReal:
+                            setFieldValue(i, cursor.getDouble(index));
+                            break;
+                        case FTDate:
+                        case FTTime:
+                        case FTDateTime:
+
+                            TimeZone timeZone = TimeZone.getDefault();
+                            timeZone.setRawOffset(0); // set to UTC
+                            Calendar calendar = Calendar.getInstance(timeZone);
+                            calendar.setTimeInMillis(cursor.getLong(index));
+                            setFieldValue(i, calendar.getTimeInMillis());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
 
     public boolean equalsData(Feature f)
     {

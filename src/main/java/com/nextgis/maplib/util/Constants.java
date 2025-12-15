@@ -233,8 +233,8 @@ public interface Constants
     String URI_PARAMETER_NOT_SYNC = "not_sync";
     String URI_PARAMETER_ATTACH_NOFILE = "attach_web_located";
 
-    String CHANGES_NAME_POSTFIX      = "_changes";
-    String ATTACHMENTS_NAME_POSTFIX      = "_attachments";
+    public static final String CHANGES_NAME_POSTFIX      = "_changes";
+    public static final String ATTACHMENTS_NAME_POSTFIX      = "_attachments";
 
     int    CHANGE_OPERATION_TEMP     = 1;
     int    CHANGE_OPERATION_NEW      = 1 << 1; // 2

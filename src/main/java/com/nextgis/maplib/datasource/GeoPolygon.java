@@ -475,6 +475,9 @@ public class GeoPolygon
         double vertiy, vertix, vertjy, vertjx;
         boolean c = false;
 
+        if (! getEnvelope().contains(point))
+            return false;
+
         for (i = 0, j = mOuterRing.getPointCount() - 1; i < mOuterRing.getPointCount(); j = i++) {
             vertix = mOuterRing.getPoints().get(i).getX();
             vertiy = mOuterRing.getPoints().get(i).getY();

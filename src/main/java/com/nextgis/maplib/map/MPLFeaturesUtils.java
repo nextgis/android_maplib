@@ -515,9 +515,10 @@ public class MPLFeaturesUtils {
 
 
     static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
-                                            final Style style, Map<Integer, GeoJsonSource> sourceHashMap,
+                                            final Style style, Map<String, GeoJsonSource> sourceHashMap,
                                             Map<Integer, String> rasterLayersURL,
-                                            Map<Integer, Integer> rasterLayersTmsTypeMap) {
+                                            Map<Integer, Integer> rasterLayersTmsTypeMap,
+                                            String layerPath) {
         String currentNamePrefix = namePrefix;
 
         if (layerType == GT_TRACK_WA){
@@ -525,9 +526,15 @@ public class MPLFeaturesUtils {
         }
 
         if (layerType == GT_RASTER_WA){
-                RasterSource rasterSource = (RasterSource) style.getSource(currentNamePrefix + source_namepart + layerId);
+                RasterSource rasterSource = (RasterSource) style.getSource(
+                        //currentNamePrefix + source_namepart + layerId
+                        layerPath
+                );
                 if (rasterSource != null && rasterSource.getUrl()!= null &&  !rasterSource.getUrl().equals(rasterLayersURL.get(layerId))){
-                    style.removeSource(currentNamePrefix + source_namepart + layerId);
+                    style.removeSource(
+                    //        currentNamePrefix + source_namepart + layerId
+                            layerPath
+                    );
                     rasterSource = null;
                 }
                 if (rasterSource == null) {
@@ -544,22 +551,32 @@ public class MPLFeaturesUtils {
 //                            Log.e("TTMS", "tileset to XYZ");
                         }
                     }
-                    rasterSource = new RasterSource(currentNamePrefix + source_namepart + layerId,
+                    rasterSource = new RasterSource(
+                            //currentNamePrefix + source_namepart + layerId
+                            layerPath
+                            ,
                             tileSet, 256 );
                     style.addSource(rasterSource);
                 }
             return;
         }
 
-        GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(currentNamePrefix + source_namepart + layerId);
+        GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(layerPath
+        //        currentNamePrefix + source_namepart + layerId
+        );
         if (vectorSource == null) {
-            vectorSource = new GeoJsonSource(currentNamePrefix + source_namepart + layerId, FeatureCollection.fromFeatures(layerFeatures));
+            vectorSource = new GeoJsonSource(layerPath
+                    //currentNamePrefix + source_namepart + layerId
+                    ,
+                    FeatureCollection.fromFeatures(layerFeatures));
             style.addSource(vectorSource);
         }
         else
             vectorSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
 
-        sourceHashMap.put(layerId, vectorSource);
+        sourceHashMap.put(layerPath
+                //layerId
+                , vectorSource);
     }
 
 
@@ -588,7 +605,8 @@ public class MPLFeaturesUtils {
                                                Map<Integer,org.maplibre.android.style.layers.Layer> symbolsLayerHashMap,
                                                @Nullable com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer,
-                                               ILayer iLayer){
+                                               ILayer iLayer,
+                                               String layerPath){
 //        Log.e("ZXZY", "create layer " + iLayer.getName());
         float minZoom = -1;
         float maxZoom = -1;
@@ -608,7 +626,9 @@ public class MPLFeaturesUtils {
 
             if (rasterLayer == null){
                 rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId,
-                        currentNamePrefix + source_namepart + layerId);
+                        //currentNamePrefix + source_namepart + layerId
+                        layerPath
+                );
 //                Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
                 style.addLayer(rasterLayer);
 
@@ -691,7 +711,9 @@ public class MPLFeaturesUtils {
             }
             else
                 newLayer = new CircleLayer(currentNamePrefix + layer_namepart + layerId,
-                        currentNamePrefix + source_namepart + layerId)
+                        //currentNamePrefix + source_namepart + layerId
+                        layerPath
+                )
                     .withProperties(
                             PropertyFactory.circleRadius(getMPLThinkness(rasuis)),
                             PropertyFactory.circleColor(getColorName(fistFillColor)),
@@ -714,12 +736,16 @@ public class MPLFeaturesUtils {
                                 PropertyFactory.lineColor(getColorName(outlineColor)),
                                 PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             } else {
-                newLayer = new FillLayer(currentNamePrefix + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId)
+                newLayer = new FillLayer(currentNamePrefix + layer_namepart + layerId,
+                //        currentNamePrefix + source_namepart + layerId
+                        layerPath)
                         .withProperties(
                                 PropertyFactory.fillColor(getColorName(fistFillColor)),
                                 PropertyFactory.fillOpacity(alpha));
 
-                newLayer2 = new LineLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart, currentNamePrefix + source_namepart + layerId)
+                newLayer2 = new LineLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart,
+                        //currentNamePrefix + source_namepart + layerId
+                        layerPath)
                         .withProperties(
                                 PropertyFactory.lineColor(getColorName(outlineColor)),
                                 PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
@@ -732,7 +758,9 @@ public class MPLFeaturesUtils {
                         PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             } else
 
-                newLayer = new LineLayer(currentNamePrefix + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId)
+                newLayer = new LineLayer(currentNamePrefix + layer_namepart + layerId,
+                        //currentNamePrefix + source_namepart + layerId
+                        layerPath)
                     .withProperties(
                             //PropertyFactory.lineColor(Expression.get("color")),
                             PropertyFactory.lineColor(getColorName(fistFillColor)),
@@ -756,7 +784,9 @@ public class MPLFeaturesUtils {
             } else {
                 if (needSignatures) {
                     if (simbolLayer == null) {
-                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId, currentNamePrefix + source_namepart + layerId);
+                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId,
+                                //currentNamePrefix + source_namepart + layerId
+                                layerPath);
                         style.addLayer(simbolLayer);
                         symbolsLayerHashMap.put(layerId, simbolLayer);
                     }
