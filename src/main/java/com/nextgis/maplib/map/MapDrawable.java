@@ -474,12 +474,19 @@ public class MapDrawable
             final com.nextgis.maplib.display.Style finalStyle = ngStyle;
 
 
+
+            org.maplibre.android.style.layers.Layer last = layersHashMap.values()
+                    .stream()
+                    .reduce((first, second) -> second)
+                    .orElse(null);
+
             Handler mainHandler = new Handler(Looper.getMainLooper());
             mainHandler.post(() -> {
                 createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
                         finalStyle, false, iLayer,
-                        iLayer.getPath().toString());
+                        iLayer.getPath().toString(),
+                        last);
                 createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
                         rasterLayersURLMap, rasterLayersTmsTypeMap,
                         iLayer.getPath().toString());
@@ -509,7 +516,7 @@ public class MapDrawable
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
                         symbolsLayerHashMap,
                         newStyle, true, iLayer,
-                        iLayer.getPath().toString());
+                        iLayer.getPath().toString(), null);
                 checkLayerVisibility(id);
                 reloadVectorLayerDataToMaplibre(iLayer);
                 return;
@@ -524,7 +531,7 @@ public class MapDrawable
                 createFillLayerForLayer(id,  GT_RASTER_WA, maplbrStyle ,layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
                         null, true, iLayer,
-                        iLayer.getPath().toString());
+                        iLayer.getPath().toString(), null);
                 checkLayerVisibility(id);
                 reloadVectorLayerDataToMaplibre(iLayer);
                 return;
@@ -722,7 +729,7 @@ public class MapDrawable
                                     symbolsLayerHashMap,
                                     layersStyle.get(entry.getKey()), false,
                                     getLayerById(entry.getKey()),
-                                    layersPath.get(entry.getKey()));
+                                    layersPath.get(entry.getKey()), null);
 
                             checkLayerVisibility(entry.getKey());
                         }
@@ -773,14 +780,7 @@ public class MapDrawable
                                 PropertyFactory.circleOpacity(1.0f));
 
                         style.addLayer(vertexFillLayer);
-                        // marker
-                        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor_2);
-                        final Bitmap bitmap = drawableToBitmap(drawable);
 
-                        final IconFactory iconFactory = IconFactory.getInstance(getContext());
-                        final Icon markerIcon = iconFactory.fromBitmap(bitmap);
-                        String iconId = "marker-icon-selected";
-                        style.addImage(iconId, bitmap);
 
 
                         final Drawable drawableStand = getContext().getResources().getDrawable( R.drawable.ic_location_standing);
@@ -806,24 +806,8 @@ public class MapDrawable
                                         PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP));
                         style.addLayer(locationLayer);
 
-                        // marker layer
-                        markerFeatureCollection = FeatureCollection.fromFeatures(new ArrayList<>());
 
-                        if (createSource) {
-                            markerSource = new GeoJsonSource("marker-source", markerFeatureCollection);
-                            style.addSource(markerSource);
-                        }
 
-                        SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
-                                .withProperties(
-                                        org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
-                                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
-                        style.addLayer(symbolLayer);
-
-                        if (createSource) {
-                            locationSource = new GeoJsonSource("user-location-source", Point.fromLngLat(-100.0, -100.0));
-                            style.addSource(locationSource);
-                        }
 
 
                         // TRACKING
@@ -881,6 +865,37 @@ public class MapDrawable
                                         PropertyFactory.iconAllowOverlap(true),
                                         PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT));
                         style.addLayer(trackFlagsLayer);
+
+
+                        // marker
+                        final Drawable drawable = getContext().getResources().getDrawable( R.drawable.ic_action_anchor_2);
+                        final Bitmap bitmap = drawableToBitmap(drawable);
+
+                        final IconFactory iconFactory = IconFactory.getInstance(getContext());
+                        final Icon markerIcon = iconFactory.fromBitmap(bitmap);
+                        String iconId = "marker-icon-selected";
+                        style.addImage(iconId, bitmap);
+
+                        // marker layer
+                        markerFeatureCollection = FeatureCollection.fromFeatures(new ArrayList<>());
+
+                        if (createSource) {
+                            markerSource = new GeoJsonSource("marker-source", markerFeatureCollection);
+                            style.addSource(markerSource);
+                        }
+
+                        SymbolLayer symbolLayer = new SymbolLayer("marker-layer", "marker-source")
+                                .withProperties(
+                                        org.maplibre.android.style.layers.PropertyFactory.iconImage(iconId),
+                                        org.maplibre.android.style.layers.PropertyFactory.iconAnchor(org.maplibre.android.style.layers.Property.ICON_ANCHOR_TOP_LEFT));
+                        style.addLayer(symbolLayer);
+
+                        if (createSource) {
+                            locationSource = new GeoJsonSource("user-location-source", Point.fromLngLat(-100.0, -100.0));
+                            style.addSource(locationSource);
+                        }
+
+
                     }
                 });
 
@@ -1006,7 +1021,7 @@ public class MapDrawable
                         symbolsLayerHashMap,
                         layersStyle.get(entry.getKey()), false,
                         getLayerById(entry.getKey()),
-                        getLayerById(entry.getKey()).getPath().toString());
+                        getLayerById(entry.getKey()).getPath().toString(), null);
 
                 checkLayerVisibility(entry.getKey());
             }

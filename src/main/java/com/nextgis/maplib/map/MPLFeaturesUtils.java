@@ -606,7 +606,8 @@ public class MPLFeaturesUtils {
                                                @Nullable com.nextgis.maplib.display.Style layerStyle,
                                                boolean changeLayer,
                                                ILayer iLayer,
-                                               String layerPath){
+                                               String layerPath,
+                                               org.maplibre.android.style.layers.Layer lastLayer){
 //        Log.e("ZXZY", "create layer " + iLayer.getName());
         float minZoom = -1;
         float maxZoom = -1;
@@ -630,7 +631,11 @@ public class MPLFeaturesUtils {
                         layerPath
                 );
 //                Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
-                style.addLayer(rasterLayer);
+
+                if (lastLayer != null && style.getLayer(lastLayer.getId()) != null )
+                    style.addLayerAbove (rasterLayer, lastLayer.getId());
+                else
+                    style.addLayer(rasterLayer);
 
             }
                 if (minZoom!= -1)
@@ -787,7 +792,11 @@ public class MPLFeaturesUtils {
                         simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId,
                                 //currentNamePrefix + source_namepart + layerId
                                 layerPath);
-                        style.addLayer(simbolLayer);
+
+                        if (lastLayer != null && style.getLayer(lastLayer.getId()) != null )
+                            style.addLayerAbove (simbolLayer, lastLayer.getId());
+                        else
+                            style.addLayer(simbolLayer);
                         symbolsLayerHashMap.put(layerId, simbolLayer);
                     }
 
@@ -833,8 +842,10 @@ public class MPLFeaturesUtils {
         if (newLayer != null) {
             if (!changeLayer) {
 //                Log.e("MPLREM",  "addvector  layer: " + newLayer.getId());
-
-                style.addLayer(newLayer);
+                if (lastLayer != null && style.getLayer(lastLayer.getId()) != null )
+                    style.addLayerAbove (newLayer, lastLayer.getId());
+                else
+                    style.addLayer(newLayer);
                 layersHashMap.put(layerId, newLayer);
             }
         }
@@ -842,7 +853,10 @@ public class MPLFeaturesUtils {
         if (newLayer2 != null) {
             if (!changeLayer) {
 //                Log.e("MPLREM",  "addvector layer2 : " + newLayer2.getId());
-                style.addLayer(newLayer2);
+                if (lastLayer != null && style.getLayer(lastLayer.getId()) != null  && newLayer != null)
+                    style.addLayerAbove (newLayer2, newLayer.getId());
+                else
+                    style.addLayer(newLayer2);
                 layersHashMap2.put(layerId, newLayer2);
             }
         }
