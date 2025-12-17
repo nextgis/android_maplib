@@ -607,7 +607,7 @@ public class MPLFeaturesUtils {
                                                boolean changeLayer,
                                                ILayer iLayer,
                                                String layerPath,
-                                               org.maplibre.android.style.layers.Layer lastLayer){
+                                               org.maplibre.android.style.layers.Layer firstToolLayer){
 //        Log.e("ZXZY", "create layer " + iLayer.getName());
         float minZoom = -1;
         float maxZoom = -1;
@@ -632,10 +632,14 @@ public class MPLFeaturesUtils {
                 );
 //                Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
 
-                if (lastLayer != null && style.getLayer(lastLayer.getId()) != null )
-                    style.addLayerAbove (rasterLayer, lastLayer.getId());
-                else
+                if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ) {
+                    style.addLayerBelow(rasterLayer, firstToolLayer.getId());
+                    Log.e("LLOG", "added " + rasterLayer.getId() + " below from " + firstToolLayer.getId());
+                }
+                else {
                     style.addLayer(rasterLayer);
+                    Log.e("LLOG", "added simple way " + rasterLayer.getId());
+                }
 
             }
                 if (minZoom!= -1)
@@ -656,7 +660,6 @@ public class MPLFeaturesUtils {
                             rasterContrast(contrast),
                             rasterBrightnessMax(brightness)
                     );
-
                 }
             return;
         }
@@ -793,10 +796,14 @@ public class MPLFeaturesUtils {
                                 //currentNamePrefix + source_namepart + layerId
                                 layerPath);
 
-                        if (lastLayer != null && style.getLayer(lastLayer.getId()) != null )
-                            style.addLayerAbove (simbolLayer, lastLayer.getId());
-                        else
+                        if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ){
+                            style.addLayerBelow(simbolLayer, firstToolLayer.getId());
+                            Log.e("LLOG", "added " + simbolLayer.getId() + " below from " + firstToolLayer.getId());
+                        }
+                        else {
                             style.addLayer(simbolLayer);
+                            Log.e("LLOG", "added simple way " + simbolLayer.getId());
+                        }
                         symbolsLayerHashMap.put(layerId, simbolLayer);
                     }
 
@@ -842,10 +849,14 @@ public class MPLFeaturesUtils {
         if (newLayer != null) {
             if (!changeLayer) {
 //                Log.e("MPLREM",  "addvector  layer: " + newLayer.getId());
-                if (lastLayer != null && style.getLayer(lastLayer.getId()) != null )
-                    style.addLayerAbove (newLayer, lastLayer.getId());
-                else
+                if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ) {
+                    style.addLayerBelow(newLayer, firstToolLayer.getId());
+                    Log.e("LLOG", "added " + newLayer.getId() + " below from " + firstToolLayer.getId());
+                }
+                else {
                     style.addLayer(newLayer);
+                    Log.e("LLOG", "added simple way " + newLayer.getId());
+                }
                 layersHashMap.put(layerId, newLayer);
             }
         }
@@ -853,10 +864,14 @@ public class MPLFeaturesUtils {
         if (newLayer2 != null) {
             if (!changeLayer) {
 //                Log.e("MPLREM",  "addvector layer2 : " + newLayer2.getId());
-                if (lastLayer != null && style.getLayer(lastLayer.getId()) != null  && newLayer != null)
-                    style.addLayerAbove (newLayer2, newLayer.getId());
-                else
+                if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null  && newLayer != null){
+                    style.addLayerBelow (newLayer2, firstToolLayer.getId());
+                    Log.e("LLOG", "added " + newLayer2.getId() + " below from " + firstToolLayer.getId());
+                }
+                else {
                     style.addLayer(newLayer2);
+                    Log.e("LLOG", "added simple way " + newLayer2.getId());
+                }
                 layersHashMap2.put(layerId, newLayer2);
             }
         }

@@ -959,8 +959,8 @@ public class NGWUtil
     }
 
     public static HttpResponse createNewGroup(
-            Context context,
-            Connection connection,
+            final Context context,
+            final Connection connection,
             long parentId,
             String name,
             String keyName)

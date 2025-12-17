@@ -33,6 +33,7 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDoneException;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteFullException;
 import android.database.sqlite.SQLiteStatement;
@@ -2809,7 +2810,13 @@ public class VectorLayer
         SQLiteStatement st = db.compileStatement(sql);
         st.bindLong(1, rowId);
 
-        ParcelFileDescriptor pfd = st.simpleQueryForBlobFileDescriptor();
+        ParcelFileDescriptor pfd = null;
+        try {
+            pfd = st.simpleQueryForBlobFileDescriptor();
+        } catch (SQLiteDoneException e) {
+            return null;
+        }
+
         if (pfd == null)
             return null;
 

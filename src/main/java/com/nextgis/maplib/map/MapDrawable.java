@@ -190,13 +190,13 @@ public class MapDrawable
     LinkedHashMap<String, GeoJsonSource>  sourceHashMap = new LinkedHashMap<String, GeoJsonSource>();
 
     // map fill Layer of each added layer
-    HashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
+    LinkedHashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap = new LinkedHashMap<Integer, org.maplibre.android.style.layers.Layer>();
 
     // outline for polygone
-    HashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap2 = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
+    LinkedHashMap<Integer, org.maplibre.android.style.layers.Layer>  layersHashMap2 = new LinkedHashMap<Integer, org.maplibre.android.style.layers.Layer>();
 
     // Symbols for geometry signature
-    HashMap<Integer, org.maplibre.android.style.layers.Layer>  symbolsLayerHashMap = new HashMap<Integer, org.maplibre.android.style.layers.Layer>();
+    LinkedHashMap<Integer, org.maplibre.android.style.layers.Layer>  symbolsLayerHashMap = new LinkedHashMap<Integer, org.maplibre.android.style.layers.Layer>();
 
     GeoJsonSource selectedEditedSource = null; // choosed  source - from with edit (selectable)
     GeoJsonSource selectedPolySource = null; // choosed source of polygon/line  //
@@ -205,6 +205,9 @@ public class MapDrawable
     GeoJsonSource tracksLineSource = null; // constant tracks
     GeoJsonSource tracksFlagsSource = null; // flags ( start/stop ) tracks
     GeoJsonSource trackInProgressSource = null; // flags ( start/stop ) tracks
+
+    CircleLayer selectedDotCircleLayer = null;
+
 
 
     GeoJsonSource vertexSource = null;      // edit points  //
@@ -290,6 +293,8 @@ public class MapDrawable
 //            Log.e("ZXZY", "delete layer" + layer.getId());
             boolean result = style.removeLayer(layer);
         }
+        // clear all layers - so - first tool layer also clear
+        selectedDotCircleLayer = null;
 
 //        for (final Source source : maplibreMap.get().getStyle().getSources()) {
 //            Log.e("ZXZY", "delete source" + source.getId());
@@ -475,18 +480,13 @@ public class MapDrawable
 
 
 
-            org.maplibre.android.style.layers.Layer last = layersHashMap.values()
-                    .stream()
-                    .reduce((first, second) -> second)
-                    .orElse(null);
-
             Handler mainHandler = new Handler(Looper.getMainLooper());
             mainHandler.post(() -> {
                 createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
                         symbolsLayerHashMap,
                         finalStyle, false, iLayer,
                         iLayer.getPath().toString(),
-                        last);
+                        selectedDotCircleLayer);
                 createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
                         rasterLayersURLMap, rasterLayersTmsTypeMap,
                         iLayer.getPath().toString());
@@ -740,7 +740,7 @@ public class MapDrawable
                             style.addSource(selectedDotSource);
                         }
 
-                        CircleLayer selectedDotCircleLayer = new CircleLayer("selected-dot-layer", "selected-dot-source")
+                        selectedDotCircleLayer = new CircleLayer("selected-dot-layer", "selected-dot-source")
                                 .withProperties(PropertyFactory.circleStrokeWidth(1f),
                                         PropertyFactory.circleStrokeColor("#000000"));
                         selectedDotCircleLayer.setProperties(
@@ -1028,7 +1028,7 @@ public class MapDrawable
         }
 
 
-        CircleLayer selectedDotCircleLayer = new CircleLayer("selected-dot-layer", "selected-dot-source")
+        selectedDotCircleLayer = new CircleLayer("selected-dot-layer", "selected-dot-source")
                 .withProperties(PropertyFactory.circleStrokeWidth(1f),
                         PropertyFactory.circleStrokeColor("#000000"));
         selectedDotCircleLayer.setProperties(
