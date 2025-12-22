@@ -624,6 +624,7 @@ public class VectorLayer
             envelope = geoGeometry.getEnvelope();
         }
         mExtents.merge(envelope);
+//        Log.e("CCACHH","addItem");
         mCache.addItem(rowId, envelope);
     }
 
@@ -831,9 +832,11 @@ public class VectorLayer
         }
 
         if (!mIsCacheRebuilding) {
+//            Log.e("CCACHH","mCache.save");
+
             mCache.save(new File(mPath, RTREE));
-            if (DEBUG_MODE)
-                Log.d(Constants.TAG, "mCache: saving toJSON");
+//            if (DEBUG_MODE)
+//                Log.d(Constants.TAG, "mCache: saving toJSON");
         }
 
         return rootConfig;
@@ -887,6 +890,7 @@ public class VectorLayer
         //load vector cache
         mCacheLoaded = false;
 
+//        Log.e("CCACHH","reloadCache mCache.load");
         mCache.load(new File(mPath, RTREE));
 
         mCacheLoaded = true;
@@ -2292,10 +2296,14 @@ public class VectorLayer
     public void notifyDelete(long rowId)
     {
         //remove cached item
+//        Log.e("CCACHH","pre mCache.removeItem");
+
         if (mCache.removeItem(rowId) != null) {
+//            Log.e("CCACHH","mCache.removeItem");
             save();
             notifyLayerChanged();
         }
+//        Log.e("CCACHH","mCache.save");
         mCache.save(new File(mPath, RTREE));
 
     }
@@ -2369,6 +2377,8 @@ public class VectorLayer
     public void notifyDeleteAll()
     {
         //clear cache
+//        Log.e("CCACHH","mCache.clear");
+
         mCache.clear();
         save();
         notifyLayerChanged();
@@ -2404,7 +2414,21 @@ public class VectorLayer
 
         boolean needSave = false;
         if (oldRowId != Constants.NOT_FOUND) {
-            mCache.changeId(oldRowId, rowId);
+//            Log.e("CCACHH","changeId from " + oldRowId + " to " + rowId);
+            boolean result = mCache.changeId(oldRowId, rowId);
+
+
+//            Log.e("CCACHH","changeId result " + (result? "TRUE" : "FALSE"));
+            //mCache.changeIdForAll (oldRowId, rowId, mCache.getRoot());
+
+            if (result) {
+                if (mCache instanceof GeometryRTree)
+                    ((GeometryRTree) mCache).setHasEdits(true);
+                mCache.save(new File(mPath, RTREE));
+            }
+
+
+
             if (DEBUG_MODE)
                 Log.d(Constants.TAG, "mCache: changing id from " + oldRowId + " to " + rowId);
             needSave = true;
@@ -2412,6 +2436,7 @@ public class VectorLayer
 
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom && !attributesOnly) {
+//            Log.e("CCACHH","mCache.removeItem: " + rowId);
             mCache.removeItem(rowId);
             cacheGeometryEnvelope(rowId, geom);
             if (DEBUG_MODE)
@@ -2673,9 +2698,10 @@ public class VectorLayer
                     if (null != geometry) {
                         long rowId = cursor.getLong(0);
                         try { // fail on debugapp
+//                            Log.e("CCACHH","mCache.addItem: geometry.getEnvelope" );
                             mCache.addItem(rowId, geometry.getEnvelope());
                         } catch ( Exception ex){
-                            Log.e("envelope fail", ex != null ? ex.getMessage() : "null message");
+                            Log.e("rebuild cache envelope fail", ex != null ? ex.getMessage() : "null message");
                         }
                     }
 

@@ -60,6 +60,7 @@ public class Table implements ILayer, IJSONStore {
     {
         mPath = path;
         mContext = context;
+        mId = path.hashCode() & 0x7FFFFFFF; // hash of path
     }
 
     @Override

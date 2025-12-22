@@ -23,7 +23,7 @@ package com.nextgis.maplib.api;
 
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.GeoGeometry;
-
+import com.nextgis.maplib.datasource.GeometryRTree;
 import java.io.File;
 import java.util.List;
 
@@ -51,7 +51,7 @@ public interface IGeometryCache {
      * @param featureId Feature identificator
      * @return Cache item
      */
-    IGeometryCacheItem getItem(long featureId);
+    List<IGeometryCacheItem> getItem(long featureId);
 
     /**
      * Remove item from cache
@@ -84,9 +84,14 @@ public interface IGeometryCache {
      */
     List<IGeometryCacheItem> getAll();
 
-    void changeId(long oldFeatureId, long newFeatureId);
+    boolean changeId(long oldFeatureId, long newFeatureId);
+
+    void changeIdForAll(long from, long to, GeometryRTree.Node n);
 
     void save(File path);
 
     void load(File path);
+
+    GeometryRTree.Node getRoot();
+
 }

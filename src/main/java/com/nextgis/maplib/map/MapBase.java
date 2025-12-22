@@ -49,7 +49,7 @@ public class MapBase
     {
         super(context, path.getParentFile(), layerFactory);
         mNewId = 0;
-        mId = NOT_FOUND;
+        mId = path.hashCode() & 0x7FFFFFFF; // hash of path
         mInstance = this;
         mFileName = path.getName();
     }
@@ -69,7 +69,8 @@ public class MapBase
     @Override
     protected void onLayerAdded(ILayer layer)
     {
-        layer.setId(getNewId());
+        //layer.setId(layer.getId());
+        //layer.setId(getNewId());
         super.onLayerAdded(layer);
     }
 
@@ -97,7 +98,7 @@ public class MapBase
     public boolean delete(boolean keepTrack)
     {
         ILayer trackLayer = null;
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (!(layer instanceof TrackLayer)) {
                 layer.setParent(null);
                 layer.delete(true);
@@ -109,7 +110,7 @@ public class MapBase
 
         mLayers.clear();
         if (keepTrack && mLayers != null)
-            mLayers.add(trackLayer);
+            mLayers.put(trackLayer.getId(), trackLayer);
 
         return FileUtil.deleteRecursive(getFileName());
     }

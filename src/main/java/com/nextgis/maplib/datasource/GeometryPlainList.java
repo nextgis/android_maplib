@@ -25,6 +25,7 @@ import com.nextgis.maplib.api.IGeometryCache;
 import com.nextgis.maplib.api.IGeometryCacheItem;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,13 +57,14 @@ public class GeometryPlainList implements IGeometryCache {
     }
 
     @Override
-    public IGeometryCacheItem getItem(long featureId) {
+    public List<IGeometryCacheItem> getItem(long featureId) {
+        List<IGeometryCacheItem> result= new ArrayList<>();
         for (VectorCacheItem cacheItem : mVectorCacheItems) {
             if (cacheItem.getFeatureId() == featureId) {
-                return cacheItem;
+                result.add(cacheItem);
             }
         }
-        return null;
+        return result;
     }
 
     @Override
@@ -112,10 +114,19 @@ public class GeometryPlainList implements IGeometryCache {
     }
 
     @Override
-    public void changeId(long oldFeatureId, long newFeatureId) {
-        IGeometryCacheItem item = getItem(oldFeatureId);
-        if (null != item)
-            item.setFeatureId(newFeatureId);
+    public boolean changeId(long oldFeatureId, long newFeatureId) {
+        List<IGeometryCacheItem> items = getItem(oldFeatureId);
+        if (null != items) {
+            for (IGeometryCacheItem item : items)
+                item.setFeatureId(newFeatureId);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void changeIdForAll(long from, long to, GeometryRTree.Node n) {
+
     }
 
     @Override
@@ -126,6 +137,11 @@ public class GeometryPlainList implements IGeometryCache {
     @Override
     public void load(File path) {
         // TODO: 02.09.15
+    }
+
+    @Override
+    public GeometryRTree.Node getRoot() {
+        return null;
     }
 
     protected class VectorCacheItem implements IGeometryCacheItem

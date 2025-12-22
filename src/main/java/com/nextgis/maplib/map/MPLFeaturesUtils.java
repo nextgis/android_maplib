@@ -735,12 +735,14 @@ public class MPLFeaturesUtils {
         } else if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
             if (changeLayer) {
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
-                newLayer.setProperties(
+                if (newLayer != null)
+                    newLayer.setProperties(
                                 PropertyFactory.fillColor(getColorName(fistFillColor)),
                                 PropertyFactory.fillOpacity(alpha));
 
                 newLayer2 = style.getLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart);
-                newLayer2.setProperties(
+                if (newLayer2 != null)
+                    newLayer2.setProperties(
                                 PropertyFactory.lineColor(getColorName(outlineColor)),
                                 PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             } else {

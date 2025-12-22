@@ -46,7 +46,10 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -57,7 +60,7 @@ import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_MAP_PATH;
 public class LayerGroup
         extends Layer
 {
-    protected final List<ILayer> mLayers = new ArrayList<>();
+    protected final LinkedHashMap<Integer, ILayer> mLayers = new LinkedHashMap<>();
     protected LayerFactory mLayerFactory;
     protected int          mLayerDrawIndex;
     protected GISDisplay   mDisplay;
@@ -66,7 +69,7 @@ public class LayerGroup
 
     public interface OnAllLayersAddedListener
     {
-        void onAllLayersAdded(List<ILayer> layers);
+        void onAllLayersAdded(LinkedHashMap<Integer, ILayer> layers);
     }
 
 
@@ -99,7 +102,10 @@ public class LayerGroup
             return this;
         }
 
-        for (ILayer layer : mLayers) {
+        if (mLayers.get(id)!= null)
+            return mLayers.get(id);
+
+        for (ILayer layer : mLayers.values()) {
             if (layer.getId() == id) {
                 return layer;
             }
@@ -119,7 +125,7 @@ public class LayerGroup
             return this;
         }
 
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer.getName().equals(name)) {
                 return layer;
             }
@@ -137,7 +143,7 @@ public class LayerGroup
             return this;
         }
 
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer.getPath().getName().equals(name)) {
                 return layer;
             }
@@ -241,7 +247,8 @@ public class LayerGroup
     }
 
     public List<ILayer> getLayers(){
-        return mLayers;
+        return new ArrayList<>(mLayers.values());
+        //return mLayers.values().;
     }
 
 
@@ -254,96 +261,100 @@ public class LayerGroup
     public void addLayer(ILayer layer)
     {
         if (layer != null) {
-            mLayers.add(layer);
+            mLayers.put(layer.getId(), layer);
             layer.setParent(this);
             onLayerAdded(layer);
         }
     }
-
 
     public void insertLayer(
             int index,
-            ILayer layer)
-    {
+            ILayer layer) {
         if (layer != null) {
-
-            mLayers.add(index, layer);
+            putAtIndex(mLayers, index, layer.getId(), layer);
+            //mLayers.add(index, layer);
             layer.setParent(this);
             onLayerAdded(layer);
         }
     }
 
-
     public void moveLayer(
             int newPosition,
-            ILayer layer)
-    {
-        if (layer != null) {
+            ILayer layer) {
 
+
+
+        if (layer != null) {
             synchronized (this) {
-                mLayers.remove(layer);
-                mLayers.add(newPosition, layer);
+
+                moveLayer(mLayers, layer, newPosition );
+
+
+
+//                mLayers.remove(layer);
+//                mLayers.add(newPosition, layer);
             }
             onLayersReordered();
         }
     }
 
 
-    public void replaceAllLayers(ArrayList<ILayer> newList)
-    {
-        ILayer trackLayer = null;
-        synchronized (this) {
-            for (ILayer layer : mLayers){
-                if (layer instanceof  TrackLayer){
-                    trackLayer = layer;
-                    break;
-                }
-            }
-
-            mLayers.clear();
-
-            if (trackLayer != null)
-                newList.add(trackLayer);
-
-            mLayers.addAll(newList);
-
-        }
-
-
-//        //save changes to file
-//        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-//
-//        File defaultPath = getContext().getExternalFilesDir(KEY_PREF_MAP);
-////        if (defaultPath == null) {
-////            defaultPath = new File(getFilesDir(), KEY_PREF_MAP);
-////        }
-//
-//        String KEY_PREF_MAP_NAME             = "map_name";
-//        String mapPath = mSharedPreferences.getString(KEY_PREF_MAP_PATH, defaultPath.getPath());
-//        String mapName = mSharedPreferences.getString(KEY_PREF_MAP_NAME, "default");
-//
-//        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-//
-//
-//        JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
-//        final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LAYERS_KEY);
-//
-//        for (int i = 0; i < jsonArray.length(); i++) {
-//            JSONObject jsonLayer = jsonArray.getJSONObject(i);
-//            String sPath = jsonLayer.getString(JSON_PATH_KEY);
-//            File inFile = new File(getPath(), sPath);
-//            if (inFile.exists()) {
-//                ILayer layer = mLayerFactory.createLayer(mContext, inFile);
-//                if (null != layer && layer.load()) {
-//                    addLayer(layer);
+//    public void replaceAllLayers(ArrayList<ILayer> newList)
+//    {
+//        ILayer trackLayer = null;
+//        synchronized (this) {
+//            for (ILayer layer : mLayers.values()){
+//                if (layer instanceof  TrackLayer){
+//                    trackLayer = layer;
+//                    break;
 //                }
 //            }
+//
+//            mLayers.clear();
+//
+//            if (trackLayer != null)
+//                newList.add(trackLayer);
+//
+//            for (ILayer iLayer : newList)
+//                mLayers.put(iLayer.getId(), iLayer);
+//
 //        }
 //
-//        * */
-
-
-    }
+//
+////        //save changes to file
+////        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+////
+////        File defaultPath = getContext().getExternalFilesDir(KEY_PREF_MAP);
+//////        if (defaultPath == null) {
+//////            defaultPath = new File(getFilesDir(), KEY_PREF_MAP);
+//////        }
+////
+////        String KEY_PREF_MAP_NAME             = "map_name";
+////        String mapPath = mSharedPreferences.getString(KEY_PREF_MAP_PATH, defaultPath.getPath());
+////        String mapName = mSharedPreferences.getString(KEY_PREF_MAP_NAME, "default");
+////
+////        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+////
+////
+////        JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
+////        final JSONArray jsonArray = jsonObject.getJSONArray(JSON_LAYERS_KEY);
+////
+////        for (int i = 0; i < jsonArray.length(); i++) {
+////            JSONObject jsonLayer = jsonArray.getJSONObject(i);
+////            String sPath = jsonLayer.getString(JSON_PATH_KEY);
+////            File inFile = new File(getPath(), sPath);
+////            if (inFile.exists()) {
+////                ILayer layer = mLayerFactory.createLayer(mContext, inFile);
+////                if (null != layer && layer.load()) {
+////                    addLayer(layer);
+////                }
+////            }
+////        }
+////
+////        * */
+//
+//
+//    }
 
     public int removeLayer(ILayer layer)
     {
@@ -351,7 +362,12 @@ public class LayerGroup
             int result = mLayers.size() - 1;
 
             if (layer != null) {
-                result = mLayers.indexOf(layer);
+
+
+                result = removeLayerAndGetIndex(mLayers, layer);
+
+                //result = mLayers.indexOf(layer);
+
                 onLayerDeleted(layer.getId());
             }
             return result;
@@ -371,7 +387,7 @@ public class LayerGroup
         }
 
         //synchronized (this) {
-            for (ILayer layer : mLayers) {
+            for (ILayer layer : mLayers.values()) {
                 if (Thread.currentThread().isInterrupted()) {
                     break;
                 }
@@ -404,7 +420,7 @@ public class LayerGroup
     @Override
     public void cancelDraw()
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof IRenderer) {
                 IRenderer renderer = (IRenderer) layer;
                 renderer.cancelDraw();
@@ -416,7 +432,7 @@ public class LayerGroup
     @Override
     public boolean isVisible()
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof ILayerView) {
                 ILayerView layerView = (ILayerView) layer;
                 if (layerView.isVisible()) {
@@ -431,7 +447,7 @@ public class LayerGroup
     @Override
     public void setVisible(boolean visible)
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof ILayerView) {
                 ILayerView layerView = (ILayerView) layer;
                 layerView.setVisible(visible);
@@ -492,7 +508,7 @@ public class LayerGroup
     @Override
     public boolean delete(boolean keepTrack)
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             layer.setParent(null);
             layer.delete(keepTrack);
         }
@@ -508,7 +524,7 @@ public class LayerGroup
 
         JSONArray jsonArray = new JSONArray();
         rootConfig.put(JSON_LAYERS_KEY, jsonArray);
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             JSONObject layerObject = new JSONObject();
             layerObject.put(JSON_PATH_KEY, layer.getPath().getName());
             jsonArray.put(layerObject);
@@ -519,12 +535,11 @@ public class LayerGroup
 
     public void clearLayers()
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof LayerGroup) {
                 ((LayerGroup) layer).clearLayers();
             }
         }
-
         mLayers.clear();
     }
 
@@ -566,8 +581,8 @@ public class LayerGroup
     public void onUpgrade(final SQLiteDatabase sqLiteDatabase, final int oldVersion, final int newVersion) {
         setOnAllLayersAddedListener(new OnAllLayersAddedListener() {
             @Override
-            public void onAllLayersAdded(List<ILayer> layers) {
-                for (ILayer layer : mLayers) {
+            public void onAllLayersAdded(LinkedHashMap<Integer, ILayer> layers) {
+                for (ILayer layer : mLayers.values()) {
                         layer.onUpgrade(sqLiteDatabase, oldVersion, newVersion);
                         setOnAllLayersAddedListener(null);
                 }
@@ -612,7 +627,13 @@ public class LayerGroup
 
     protected void onLayerDeleted(int id)
     {
-        for (ILayer layer : mLayers) {
+        if (mLayers.get(id) != null) {
+            mLayers.remove(id);
+            return;
+        }
+
+        for (ILayer layer : mLayers.values()) {
+
             if (layer.getId() == id) {
                 mLayers.remove(layer);
                 break;
@@ -654,7 +675,9 @@ public class LayerGroup
 
     public ILayer getLayer(int index)
     {
-        return mLayers.get(index);
+        return getLayerByindex(mLayers,  index);
+
+        /// return mLayers.get(index);
     }
 
 
@@ -668,7 +691,7 @@ public class LayerGroup
     public boolean save()
     {
         synchronized (this) {
-            for (ILayer layer : mLayers) {
+            for (ILayer layer : mLayers.values()) {
                 layer.save();
             }
         }
@@ -710,7 +733,7 @@ public class LayerGroup
     {
         super.setViewSize(w, h);
 
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof ILayerView) {
                 ILayerView lv = (ILayerView) layer;
                 lv.setViewSize(w, h);
@@ -721,7 +744,7 @@ public class LayerGroup
 
     public boolean isChanges()
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof LayerGroup) {
                 LayerGroup layerGroup = (LayerGroup) layer;
                 if (layerGroup.isChanges()) {
@@ -740,7 +763,7 @@ public class LayerGroup
 
     public boolean haveFeaturesNotSyncFlag()
     {
-        for (ILayer layer : mLayers) {
+        for (ILayer layer : mLayers.values()) {
             if (layer instanceof LayerGroup) {
                 LayerGroup layerGroup = (LayerGroup) layer;
                 if (layerGroup.haveFeaturesNotSyncFlag()) {
@@ -755,4 +778,107 @@ public class LayerGroup
         }
         return false;
     }
+
+
+    public static int indexOfLayer(LinkedHashMap<Integer, ILayer> map, ILayer layer) {
+        int index = 0;
+        for (ILayer value : map.values()) {
+            if (value == layer) { // или equals()
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+
+    public static ILayer getLayerByindex(LinkedHashMap<Integer, ILayer> map, int index) {
+        int indextmp = 0;
+        for (ILayer value : map.values()) {
+            if (indextmp == index) { // или equals()
+                return value;
+            }
+            indextmp++;
+        }
+        return null;
+    }
+
+    public static Integer removeLayer(LinkedHashMap<Integer, ILayer> map, ILayer layer) {
+        for (Map.Entry<Integer, ILayer> e : map.entrySet()) {
+            if (e.getValue() == layer) {
+                map.remove(e.getKey());
+                return e.getKey();
+            }
+        }
+        return null;
+    }
+
+    public static int removeLayerAndGetIndex(
+            LinkedHashMap<Integer, ILayer> map,
+            ILayer layer
+    ) {
+        int index = 0;
+        Iterator<Map.Entry<Integer, ILayer>> it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, ILayer> e = it.next();
+            if (e.getValue() == layer) {
+                it.remove();
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+
+    public static void putAtIndex(
+            LinkedHashMap<Integer, ILayer> map,
+            int index,
+            Integer newKey,
+            ILayer newLayer
+    ) {
+        LinkedHashMap<Integer, ILayer> tmp = new LinkedHashMap<>();
+
+        int i = 0;
+        boolean inserted = false;
+
+        for (Map.Entry<Integer, ILayer> e : map.entrySet()) {
+            if (i == index) {
+                tmp.put(newKey, newLayer);
+                inserted = true;
+            }
+            tmp.put(e.getKey(), e.getValue());
+            i++;
+        }
+
+        if (!inserted) {
+            tmp.put(newKey, newLayer); // в конец
+        }
+
+        map.clear();
+        map.putAll(tmp);
+    }
+
+    public static void moveLayer(
+            LinkedHashMap<Integer, ILayer> map,
+            ILayer layer,
+            int newIndex
+    ) {
+        Integer key = null;
+
+        for (Map.Entry<Integer, ILayer> e : map.entrySet()) {
+            if (e.getValue() == layer) {
+                key = e.getKey();
+                break;
+            }
+        }
+        if (key == null) return;
+
+        map.remove(key);
+        putAtIndex(map, newIndex, key, layer);
+    }
+
+
+
+
+
+
 }

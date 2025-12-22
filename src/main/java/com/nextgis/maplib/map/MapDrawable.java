@@ -227,9 +227,9 @@ public class MapDrawable
 
     PointF clickPoint = null;
 
-    private Feature  originalSelectedFeature = null;            // original who edit
+    public Feature  originalSelectedFeature = null;            // original who edit
 
-    private MLGeometryEditClass editingObject = null;    // current edit
+    public MLGeometryEditClass editingObject = null;    // current edit
 
     private org.maplibre.geojson.Feature  editingFeature = null;    // current edit
     private org.maplibre.geojson.Feature  editingFeatureOriginal = null;
@@ -1606,7 +1606,7 @@ public class MapDrawable
         }
 
         if (editingFeatureTmp != null) {
-            selectedEditedSource = sourceHashMap.get(getLayer(layerdID).getPath().toString());
+            selectedEditedSource = sourceHashMap.get(getLayerById(layerdID).getPath().toString());
             editingFeature = editingFeatureTmp;
             editingFeatureOriginal = editingFeatureTmp;
             polygonFeatures = sourceFeaturesHashMap.get(layerdID);
@@ -1639,7 +1639,7 @@ public class MapDrawable
                 break;
             }
         }
-        GeoJsonSource source = sourceHashMap.get(getLayer(layerdID).getPath().toString());
+        GeoJsonSource source = sourceHashMap.get(getLayerById(layerdID).getPath().toString());
 
         if (found != null && source != null){
             String fid = String.valueOf(selectedFeatureId);
@@ -1663,7 +1663,7 @@ public class MapDrawable
 
     public void showFeatureFromHide(Long selectedFeatureId, int layerdID, org.maplibre.geojson.Feature hiddedFeature){
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerdID);
-        GeoJsonSource source = sourceHashMap.get(getLayer(layerdID).getPath().toString());
+        GeoJsonSource source = sourceHashMap.get(getLayerById(layerdID).getPath().toString());
 
         if (hiddedFeature != null && source != null && layerFeatures != null){
             layerFeatures.add(hiddedFeature);
