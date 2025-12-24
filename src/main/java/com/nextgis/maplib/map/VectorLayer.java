@@ -111,6 +111,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1337,6 +1338,7 @@ public class VectorLayer
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
             notify.putExtra(FIELD_ID, rowId);
             notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            notify.setPackage(getContext().getPackageName());
             getContext().sendBroadcast(notify);
         }
 
@@ -1560,6 +1562,7 @@ public class VectorLayer
                 FileUtil.deleteRecursive(attachFolder);
             }
             notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+            notify.setPackage(getContext().getPackageName());
             getContext().sendBroadcast(notify);
         }
         return result;
@@ -1795,6 +1798,7 @@ public class VectorLayer
                     notify = new Intent(Constants.NOTIFY_UPDATE_ALL);
                     notify.putExtra(
                             Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                    notify.setPackage(getContext().getPackageName());
                     getContext().sendBroadcast(notify);
                 }
             } else if (values.containsKey(Constants.FIELD_GEOM) || values.containsKey(
@@ -1818,6 +1822,7 @@ public class VectorLayer
                     notify.putExtra(Constants.ATTRIBUTES_ONLY, false);
                     notify.putExtra(
                             Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                    notify.setPackage(getContext().getPackageName());
                     getContext().sendBroadcast(notify);
                 }
 
@@ -1827,6 +1832,7 @@ public class VectorLayer
                 notify.putExtra(Constants.ATTRIBUTES_ONLY, true);
                 notify.putExtra(
                         Constants.NOTIFY_LAYER_NAME, mPath.getName()); // if we need mAuthority?
+                notify.setPackage(getContext().getPackageName());
                 getContext().sendBroadcast(notify);
             }
 
@@ -2377,7 +2383,7 @@ public class VectorLayer
     public void notifyDeleteAll()
     {
         //clear cache
-//        Log.e("CCACHH","mCache.clear");
+//        Log.e("/**/CCACHH","mCache.clear");
 
         mCache.clear();
         save();
@@ -2822,6 +2828,7 @@ public class VectorLayer
                 try {
                     feature1.setGeometry(GeoGeometryFactory.fromBlob(geomBlob));
                 } catch (Exception ex){
+                    cursor.close();
                     return featureListMap;
                 }
             }
@@ -2846,7 +2853,14 @@ public class VectorLayer
         if (pfd == null)
             return null;
 
-        return readBlob(pfd.getFileDescriptor());
+        final byte[] result = readBlob(pfd.getFileDescriptor());
+        try {
+            pfd.close();
+        } catch (Exception ex){
+            Log.e("readLargeBlob", ex != null ? ex.getMessage() : "null message");
+        }
+
+        return result;
     }
 
     private static byte[] readBlob(FileDescriptor fd) {

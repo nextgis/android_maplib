@@ -22,6 +22,9 @@
  */
 package com.nextgis.maplib.map;
 import android.accounts.AccountManager;
+import android.app.ActivityManager;
+import android.app.AlertDialog;
+import android.app.Fragment;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -39,6 +42,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -389,110 +393,126 @@ public class MapDrawable
 
 
     public void addLayerByID(int id){
-        if (maplibreMap.get()!= null) {
+        ILayer crashLayer = null;
+        if (maplibreMap.get() != null)
+            crashLayer = LayerGroup.getVectorLayersById(this, id);
 
-            ILayer iLayer = LayerGroup.getVectorLayersById(this, id);
+        try {
 
-            if (iLayer == null)
-                return;
 
-            final AccountManager accountManager = AccountManager.get(getContext());
-            final Connections connections = fillConnections(getContext(), accountManager);
+            if (maplibreMap.get() != null) {
 
-            if (iLayer instanceof  NGWRasterLayer){
-                // need add auth
-                Connection found = null;
+                ILayer iLayer = LayerGroup.getVectorLayersById(this, id);
+
+                if (iLayer == null)
+                    return;
+
+                final AccountManager accountManager = AccountManager.get(getContext());
+                final Connections connections = fillConnections(getContext(), accountManager);
+
                 if (iLayer instanceof NGWRasterLayer) {
-                    for (int i = 0; i < connections.getChildrenCount(); i++) {
-                        if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
-                            found = (Connection) connections.getChild(i);
-                            String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
-                            if (null != basicAuth) {
-                                final String url = ((NGWRasterLayer) iLayer).getURL();
-                                final String getBaseUrl =  getBaseUrlpart(url);
-                                final String resPart = "resource=" + extractResourceValue(url);
+                    // need add auth
+                    Connection found = null;
+                    if (iLayer instanceof NGWRasterLayer) {
+                        for (int i = 0; i < connections.getChildrenCount(); i++) {
+                            if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
+                                found = (Connection) connections.getChild(i);
+                                String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
+                                if (null != basicAuth) {
+                                    final String url = ((NGWRasterLayer) iLayer).getURL();
+                                    final String getBaseUrl = getBaseUrlpart(url);
+                                    final String resPart = "resource=" + extractResourceValue(url);
 
-                                final String [] authPart = new String[4];
-                                authPart[0] = getBaseUrl;
-                                authPart[1] = resPart;
-                                authPart[2] = basicAuth;
-                                authPart[3] = iLayer.getPath().toString();
-                                ((IGISApplication)getContext().getApplicationContext()).updateAuthPair( authPart);
-                                break;
+                                    final String[] authPart = new String[4];
+                                    authPart[0] = getBaseUrl;
+                                    authPart[1] = resPart;
+                                    authPart[2] = basicAuth;
+                                    authPart[3] = iLayer.getPath().toString();
+                                    ((IGISApplication) getContext().getApplicationContext()).updateAuthPair(authPart);
+                                    break;
+                                }
                             }
                         }
                     }
+                } else if (iLayer instanceof RemoteTMSLayer) {
+                    final String url = ((RemoteTMSLayer) iLayer).getURL();
+                    final String getBaseUrl = getBaseUrlpart(url);
+                    final String resPart = "resource=" + extractResourceValue(url);
+                    final String[] authPart = new String[4];
+                    authPart[0] = getBaseUrl;
+                    authPart[1] = resPart;
+                    authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
+                    authPart[3] = iLayer.getPath().toString();
+                    ((IGISApplication) getContext().getApplicationContext()).updateAuthPair(authPart);
                 }
-            } else if (iLayer instanceof  RemoteTMSLayer){
-                final String url = ((RemoteTMSLayer) iLayer).getURL();
-                final String getBaseUrl =  getBaseUrlpart(url);
-                final String resPart = "resource=" + extractResourceValue(url);
-                final String [] authPart = new String[4];
-                authPart[0] = getBaseUrl;
-                authPart[1] = resPart;
-                authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
-                authPart[3] = iLayer.getPath().toString();
-                ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
-            }
 
-            int geoType = GTNone;
-            final List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
-            Map<Integer, String> rasterLayersURLMap = new HashMap<>();
-            Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
-            com.nextgis.maplib.display.Style ngStyle = null;
+                int geoType = GTNone;
+                final List<org.maplibre.geojson.Feature> vectorPolygonFeatures = new ArrayList<>();
+                Map<Integer, String> rasterLayersURLMap = new HashMap<>();
+                Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
+                com.nextgis.maplib.display.Style ngStyle = null;
 
-            if (iLayer instanceof VectorLayer) {
-                VectorLayer layer = (VectorLayer) iLayer;
-                geoType = layer.getGeometryType();
-                // this layer
-                vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
-                sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
-                sourcesOrder.put(layer.getId(), new ArrayList<>());
-                ngStyle = ((VectorLayer)iLayer).getDefaultStyleNoExcept();
+                if (iLayer instanceof VectorLayer) {
+                    VectorLayer layer = (VectorLayer) iLayer;
+                    geoType = layer.getGeometryType();
+                    // this layer
+                    vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
+                    sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+                    sourcesOrder.put(layer.getId(), new ArrayList<>());
+                    ngStyle = ((VectorLayer) iLayer).getDefaultStyleNoExcept();
 
-            } else if (iLayer instanceof NGWRasterLayer){
-                geoType = GT_RASTER_WA;
-                NGWRasterLayer layer = (NGWRasterLayer) iLayer;
-                rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer)layer).getURL());
-                rasterLayersTmsTypeMap.put(layer.getId(), -1);
-            } else if (iLayer instanceof RemoteTMSLayer){
-                if (((RemoteTMSLayer)iLayer).mIsOfflineLayer){
+                } else if (iLayer instanceof NGWRasterLayer) {
                     geoType = GT_RASTER_WA;
-                    RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
+                    NGWRasterLayer layer = (NGWRasterLayer) iLayer;
+                    rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                    rasterLayersTmsTypeMap.put(layer.getId(), -1);
+                } else if (iLayer instanceof RemoteTMSLayer) {
+                    if (((RemoteTMSLayer) iLayer).mIsOfflineLayer) {
+                        geoType = GT_RASTER_WA;
+                        RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
+                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                    } else {
+                        geoType = GT_RASTER_WA;
+                        RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
+                        rasterLayersURLMap.put(layer.getId(), (layer).getURLSubdomain());
+                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                    }
+                } else if (iLayer instanceof LocalTMSLayer) {
+                    geoType = GT_RASTER_WA;
+                    LocalTMSLayer layer = (LocalTMSLayer) iLayer;
                     rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                     rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
-                } else {
-                    geoType = GT_RASTER_WA;
-                    RemoteTMSLayer layer = (RemoteTMSLayer) iLayer;
-                    rasterLayersURLMap.put(layer.getId(), (layer).getURLSubdomain());
-                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                 }
-            } else if (iLayer instanceof LocalTMSLayer) {
-                geoType = GT_RASTER_WA;
-                LocalTMSLayer layer = (LocalTMSLayer) iLayer;
-                rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
-                rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+
+                Style style = maplibreMap.get().getStyle();
+                final int finalGeoType = geoType;
+                final com.nextgis.maplib.display.Style finalStyle = ngStyle;
+
+
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(() -> {
+                    createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
+                            symbolsLayerHashMap,
+                            finalStyle, false, iLayer,
+                            iLayer.getPath().toString(),
+                            selectedDotCircleLayer);
+                    createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
+                            rasterLayersURLMap, rasterLayersTmsTypeMap,
+                            iLayer.getPath().toString());
+
+                    checkLayerVisibility(iLayer.getId());
+                });
             }
-
-            Style style = maplibreMap.get().getStyle();
-            final int finalGeoType = geoType;
-            final com.nextgis.maplib.display.Style finalStyle = ngStyle;
-
-
-
-            Handler mainHandler = new Handler(Looper.getMainLooper());
-            mainHandler.post(() -> {
-                createFillLayerForLayer(iLayer.getId(), finalGeoType, style, layersHashMap, layersHashMap2,
-                        symbolsLayerHashMap,
-                        finalStyle, false, iLayer,
-                        iLayer.getPath().toString(),
-                        selectedDotCircleLayer);
-                createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
-                        rasterLayersURLMap, rasterLayersTmsTypeMap,
-                        iLayer.getPath().toString());
-
-                checkLayerVisibility(iLayer.getId());
-            });
+        } catch (OutOfMemoryError outOfMemoryError){
+            if (mapFragment.get() != null){
+                String layerName = (crashLayer == null? "null" : crashLayer.getName());
+                AlertDialog builder = new AlertDialog.Builder(((Fragment)mapFragment.get()).getActivity())
+                        .setTitle("MemoryError")
+                        .setMessage( ((Fragment)mapFragment.get()).getActivity().getString(R.string.outofmemory) + layerName)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+            }
         }
     }
 
@@ -606,91 +626,98 @@ public class MapDrawable
             for (ILayer iLayer : allLayers) {
 //                Log.e("MPLREM",  "iterate layer " + iLayer.getName());
 
-                if (iLayer instanceof VectorLayer) {
-                    VectorLayer layer = (VectorLayer) iLayer;
-                    layersType.put(layer.getId(), layer.getGeometryType());
-                    layersPath.put(layer.getId(), layer.getPath().toString());
-                    layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
-                    List<org.maplibre.geojson.Feature> vectorFeatures = createFeatureListFromLayer(layer);
-                    sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
-                    sourcesOrder.put(layer.getId(), new ArrayList<>());
-                } else if (iLayer instanceof TrackLayer) {
-                    TrackLayer layer = (TrackLayer) iLayer;
-                    layersType.put(layer.getId(), GT_TRACK_WA);
-                    layersPath.put(layer.getId(), layer.getPath().toString());
+                try {
+                    if (iLayer instanceof VectorLayer) {
+                        VectorLayer layer = (VectorLayer) iLayer;
+                        layersType.put(layer.getId(), layer.getGeometryType());
+                        layersPath.put(layer.getId(), layer.getPath().toString());
+                        layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
+                        List<org.maplibre.geojson.Feature> vectorFeatures = createFeatureListFromLayer(layer);
+                        sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
+                        sourcesOrder.put(layer.getId(), new ArrayList<>());
+                    } else if (iLayer instanceof TrackLayer) {
+                        TrackLayer layer = (TrackLayer) iLayer;
+                        layersType.put(layer.getId(), GT_TRACK_WA);
+                        layersPath.put(layer.getId(), layer.getPath().toString());
 
-                    tracksFeatures.clear();
-                    tracksFeatures.addAll(createFeatureListFromTrackLayer(layer));
+                        tracksFeatures.clear();
+                        tracksFeatures.addAll(createFeatureListFromTrackLayer(layer));
 
-                    tracksFlagsFeatures.clear();
-                    tracksFlagsFeatures.addAll(createFeatureListFlagsFromTrackLayer(layer));
+                        tracksFlagsFeatures.clear();
+                        tracksFlagsFeatures.addAll(createFeatureListFlagsFromTrackLayer(layer));
 
-                    //List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(layer);
-                    //sourceFeaturesHashMap.put(layer.getId(), tracksFeatures);
-                } else  if (iLayer instanceof  NGWRasterLayer){
-                    // need add auth
-                    Connection found = null;
-                    if (iLayer instanceof NGWRasterLayer) {
-                        for (int i = 0; i < connections.getChildrenCount(); i++) {
-                            if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
-                                found = (Connection) connections.getChild(i);
-                                String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
-                                if (null != basicAuth) {
-                                    final String url = ((NGWRasterLayer) iLayer).getURL();
-                                    final String getBaseUrl =  getBaseUrlpart(url);
-                                    final String resPart = "resource=" + extractResourceValue(url);
-                                    final String [] authPart = new String[4];
-                                    authPart[0] = getBaseUrl;
-                                    authPart[1] = resPart;
-                                    authPart[2] = basicAuth;
-                                    authPart[3] = iLayer.getPath().toString();
-                                    ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
-                                    break;
+                        //List<org.maplibre.geojson.Feature> tracksFeatures = createFeatureListFromTrackLayer(layer);
+                        //sourceFeaturesHashMap.put(layer.getId(), tracksFeatures);
+                    } else if (iLayer instanceof NGWRasterLayer) {
+                        // need add auth
+                        Connection found = null;
+                        if (iLayer instanceof NGWRasterLayer) {
+                            for (int i = 0; i < connections.getChildrenCount(); i++) {
+                                if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
+                                    found = (Connection) connections.getChild(i);
+                                    String basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
+                                    if (null != basicAuth) {
+                                        final String url = ((NGWRasterLayer) iLayer).getURL();
+                                        final String getBaseUrl = getBaseUrlpart(url);
+                                        final String resPart = "resource=" + extractResourceValue(url);
+                                        final String[] authPart = new String[4];
+                                        authPart[0] = getBaseUrl;
+                                        authPart[1] = resPart;
+                                        authPart[2] = basicAuth;
+                                        authPart[3] = iLayer.getPath().toString();
+                                        ((IGISApplication) getContext().getApplicationContext()).updateAuthPair(authPart);
+                                        break;
+                                    }
                                 }
                             }
-                        }
 
-                        TMSLayer layer = (TMSLayer)iLayer;
+                            TMSLayer layer = (TMSLayer) iLayer;
+                            layersType.put(layer.getId(), GT_RASTER_WA);
+                            layersPath.put(layer.getId(), layer.getPath().toString());
+
+                            rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                            sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                            sourcesOrder.put(layer.getId(), new ArrayList<>());
+                        }
+                    } else if (iLayer instanceof RemoteTMSLayer) {
+                        final String url = ((RemoteTMSLayer) iLayer).getURL();
+                        final String getBaseUrl = getBaseUrlpart(url);
+                        final String resPart = "resource=" + extractResourceValue(url);
+                        final String[] authPart = new String[4];
+                        authPart[0] = getBaseUrl;
+                        authPart[1] = resPart;
+                        authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
+                        authPart[3] = iLayer.getPath().toString();
+                        ((IGISApplication) getContext().getApplicationContext()).updateAuthPair(authPart);
+
+                        TMSLayer layer = (TMSLayer) iLayer;
                         layersType.put(layer.getId(), GT_RASTER_WA);
                         layersPath.put(layer.getId(), layer.getPath().toString());
 
-                        rasterLayersURLMap.put(layer.getId(), ((NGWRasterLayer) layer).getURL());
+                        if (((RemoteTMSLayer) layer).mIsOfflineLayer) {
+                            rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                            rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                        } else {
+                            rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
+                            rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                        }
+                        sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
+                        sourcesOrder.put(layer.getId(), new ArrayList<>());
+                    } else if (iLayer instanceof LocalTMSLayer) {
+                        TMSLayer layer = (TMSLayer) iLayer;
+                        layersType.put(layer.getId(), GT_RASTER_WA);
+                        layersPath.put(layer.getId(), layer.getPath().toString());
+
+                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                         sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
                         sourcesOrder.put(layer.getId(), new ArrayList<>());
                     }
-                } else if (iLayer instanceof  RemoteTMSLayer){
-                    final String url = ((RemoteTMSLayer) iLayer).getURL();
-                    final String getBaseUrl =  getBaseUrlpart(url);
-                    final String resPart = "resource=" + extractResourceValue(url);
-                    final String [] authPart = new String[4];
-                    authPart[0] = getBaseUrl;
-                    authPart[1] = resPart;
-                    authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
-                    authPart[3] = iLayer.getPath().toString();
-                    ((IGISApplication)getContext().getApplicationContext()).updateAuthPair(authPart);
-
-                    TMSLayer layer = (TMSLayer)iLayer;
-                    layersType.put(layer.getId(), GT_RASTER_WA);
-                    layersPath.put(layer.getId(), layer.getPath().toString());
-
-                    if (((RemoteTMSLayer)layer).mIsOfflineLayer){
-                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
-                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
-                    } else {
-                        rasterLayersURLMap.put(layer.getId(), ((RemoteTMSLayer) layer).getURLSubdomain());
-                        rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
+                } catch (OutOfMemoryError outOfMemoryError){
+                    mainHandler.post(()-> {
+                        Toast.makeText(mContext, mContext.getString(R.string.outofmemory) + iLayer.getName(), Toast.LENGTH_LONG).show();
                     }
-                    sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
-                    sourcesOrder.put(layer.getId(), new ArrayList<>());
-                } else if (iLayer instanceof  LocalTMSLayer) {
-                    TMSLayer layer = (TMSLayer)iLayer;
-                    layersType.put(layer.getId(), GT_RASTER_WA);
-                    layersPath.put(layer.getId(), layer.getPath().toString());
-
-                    rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
-                    rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
-                    sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
-                    sourcesOrder.put(layer.getId(), new ArrayList<>());
+                    );
                 }
             }
 

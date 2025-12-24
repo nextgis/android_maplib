@@ -478,7 +478,9 @@ public class NGWUtil
 
 
                 String wkt = reader.nextString();
-                if (wkt.startsWith("POINT Z")) {
+                if (wkt.startsWith("POINT Z") || wkt.startsWith("MULTIPOINT Z") ||
+                        wkt.startsWith("LINESTRING Z") || wkt.startsWith("MULTILINESTRING Z") ||
+                        wkt.startsWith("POLYGON Z") || wkt.startsWith("MULTIPOLYGON Z")) {
                     throw new NGException("POINTZ");
                 }
                 GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt, nSRS);

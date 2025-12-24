@@ -881,7 +881,10 @@ public class NGWVectorLayer
 //                if (DEBUG_MODE)
 //                    Log.d(Constants.TAG, "mCache: saving sendLocalChanges");
                 //notify to reload changes
-                getContext().sendBroadcast(new Intent(SyncAdapter.SYNC_CHANGES));
+                getContext().sendBroadcast(
+                        new Intent(SyncAdapter.SYNC_CHANGES)
+                                .setPackage(getContext().getPackageName())
+                );
             }
 
         } catch (SQLiteException e) {
@@ -1297,6 +1300,7 @@ public class NGWVectorLayer
         notify.putExtra(Constants.FIELD_ID, newFeatureId);
         notify.putExtra(Constants.ATTRIBUTES_ONLY, true);
         notify.putExtra(Constants.NOTIFY_LAYER_NAME, mPath.getName());
+        notify.setPackage(getContext().getPackageName());
         getContext().sendBroadcast(notify);
 
         //rename photo id folder if exist
@@ -1338,8 +1342,8 @@ public class NGWVectorLayer
         Intent msg = new Intent(MESSAGE_ALERT_INTENT);
         msg.putExtra(MESSAGE_EXTRA, message);
         msg.putExtra(MESSAGE_TITLE_EXTRA, title);
+        msg.setPackage(getContext().getPackageName());
         getContext().sendBroadcast(msg);
-
         com.nextgis.maplib.datasource.ngw.SyncAdapter.showNotify(getContext(), message, title);
         return;
     }

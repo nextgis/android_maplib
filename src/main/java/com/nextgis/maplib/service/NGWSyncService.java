@@ -76,7 +76,7 @@ public class NGWSyncService
         intentFilter.addAction(SyncAdapter.SYNC_CANCELED);
         intentFilter.addAction(SyncAdapter.SYNC_CHANGES);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(mSyncReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+            registerReceiver(mSyncReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             registerReceiver(mSyncReceiver, intentFilter);
         }

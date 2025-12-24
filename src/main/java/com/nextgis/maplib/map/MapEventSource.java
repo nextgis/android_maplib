@@ -26,9 +26,12 @@ package com.nextgis.maplib.map;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.MapEventListener;
@@ -145,8 +148,16 @@ public class MapEventSource
             ((IGISApplication)getContext().getApplicationContext()).addLayerByID(layer.getId());
         } catch (Exception ex){
             Log.e("ERROR", "error load layer " + ex.getMessage() );
-        }
+        } catch (OutOfMemoryError error){
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            Log.e("ERROR", "addlayer error load layer " + error.getMessage() );
 
+            mainHandler.post(
+                    ()-> {
+                        Toast.makeText(mContext,
+                                mContext.getString(R.string.outofmemory) +  layer.getName(),
+                                Toast.LENGTH_SHORT).show(); });
+        }
 
         Bundle bundle = new Bundle();
         bundle.putInt(BUNDLE_ID_KEY, layer.getId());

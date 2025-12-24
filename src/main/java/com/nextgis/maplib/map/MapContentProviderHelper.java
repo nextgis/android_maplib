@@ -93,7 +93,7 @@ public class MapContentProviderHelper
         intentFilter.addAction(NOTIFY_FEATURE_ID_CHANGE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter, Context.RECEIVER_EXPORTED);
+            context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             context.registerReceiver(new VectorLayerNotifyReceiver(), intentFilter);
         }

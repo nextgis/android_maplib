@@ -76,6 +76,7 @@ import org.maplibre.geojson.Polygon;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -235,7 +236,11 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
-        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+
+        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        while (iterator.hasNext()){
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
@@ -250,6 +255,7 @@ public class MPLFeaturesUtils {
                 lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
             lineFeatures.add(lineFeature);
+            iterator.remove();
         }
         return lineFeatures;
     }
@@ -258,7 +264,11 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
-        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+
+        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        while (iterator.hasNext()){
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             List<LineString> linesArray = new ArrayList<>();
             i++;
             Long id = entry.getKey();
@@ -279,6 +289,7 @@ public class MPLFeaturesUtils {
                 lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
             lineFeatures.add(lineFeature);
+            iterator.remove();
         }
         return lineFeatures;
     }
@@ -299,7 +310,12 @@ public class MPLFeaturesUtils {
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
         //if (features.entrySet() != null)
-        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+
+        ///for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        while (iterator.hasNext()){
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
+
             i++;
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
@@ -314,6 +330,7 @@ public class MPLFeaturesUtils {
                 pointFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
             pointFeatures.add(pointFeature);
+            iterator.remove();
         }
         return pointFeatures;
     }
@@ -322,7 +339,10 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> mpointFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
-        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        while (iterator.hasNext()){
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
@@ -343,6 +363,7 @@ public class MPLFeaturesUtils {
                 mpointFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
             mpointFeatures.add(mpointFeature);
+            iterator.remove();
         }
         return mpointFeatures;
     }
@@ -351,7 +372,11 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
-        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+
+        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+        while (iterator.hasNext()) {
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
@@ -371,6 +396,8 @@ public class MPLFeaturesUtils {
                 mpolyFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
             vectorFeatures.add(mpolyFeature);
+            iterator.remove(); // Удаляет текущий элемент из Map
+//            Log.e("MMEMOR","size" + vectorFeatures.size() );
         }
         return vectorFeatures;
     }
@@ -379,22 +406,34 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
-        for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
+
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
+
             GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
             org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
             polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
             polyFeature.addStringProperty(prop_order, String.valueOf(i));
             polyFeature.addStringProperty(prop_featureid, String.valueOf(id));
+
             if (signatureField != null) {
                 polyFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
+
             vectorFeatures.add(polyFeature);
+
+            // Освобождаем память сразу после обработки
+            iterator.remove(); // Удаляет текущий элемент из Map
         }
+
         return vectorFeatures;
     }
+
 
     public static org.maplibre.geojson.Feature getFeatureFromNGFeatureMultiLine(GeoMultiLineString geoLineGeometry) {
         List<List<Point>> mline = new ArrayList<>();

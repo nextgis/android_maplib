@@ -133,7 +133,10 @@ public class SyncAdapter
         Log.d(TAG, "onPerformSync");
 
         MapContentProviderHelper mapContentProviderHelper =(MapContentProviderHelper) MapBase.getInstance();
-        getContext().sendBroadcast(new Intent(SYNC_START));
+
+        getContext().sendBroadcast(
+                (new Intent(SYNC_START)).setPackage(getContext().getPackageName())
+        );
 
         mVersions = new HashMap<>();
         HyperLog.v(Constants.TAG, "SyncAdapter: mapContentProviderHelper is " + mapContentProviderHelper);
@@ -146,7 +149,7 @@ public class SyncAdapter
         if (isCanceled()) {
             Log.d(Constants.TAG, "onPerformSync - SYNC_CANCELED is sent");
             HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_CANCELED is sent");
-            getContext().sendBroadcast(new Intent(SYNC_CANCELED));
+            getContext().sendBroadcast(new Intent(SYNC_CANCELED).setPackage(getContext().getPackageName()));
             return;
         }
 
@@ -205,6 +208,7 @@ public class SyncAdapter
         if (!TextUtils.isEmpty(mError))
             finish.putExtra(EXCEPTION, mError);
         HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_FINISH is sent / mError is " + (TextUtils.isEmpty(mError) ? null:mError));
+        finish.setPackage(getContext().getPackageName());
         getContext().sendBroadcast(finish);
     }
 
@@ -284,6 +288,7 @@ public class SyncAdapter
         Intent msg = new Intent(MESSAGE_NOTIFY_INTENT);
         msg.putExtra(MESSAGE_EXTRA, message);
         msg.putExtra(MESSAGE_TITLE_EXTRA, title);
+        msg.setPackage(context.getPackageName());
         context.sendBroadcast(msg);
 
     }
