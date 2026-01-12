@@ -2,6 +2,7 @@ package com.nextgis.maplib.map;
 
 
 
+import static com.google.gson.internal.GsonTypes.arrayOf;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_BOTTOM;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_BOTTOM_LEFT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_BOTTOM_RIGHT;
@@ -26,6 +27,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.google.gson.JsonArray;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometryCollection;
@@ -36,6 +38,9 @@ import com.nextgis.maplib.datasource.GeoMultiPoint;
 import com.nextgis.maplib.datasource.GeoMultiPolygon;
 import com.nextgis.maplib.datasource.GeoPoint;
 import com.nextgis.maplib.datasource.GeoPolygon;
+import com.nextgis.maplib.display.FieldStyleRule;
+import com.nextgis.maplib.display.RuleFeatureRenderer;
+import com.nextgis.maplib.display.SimpleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.display.SimplePolygonStyle;
@@ -88,6 +93,27 @@ public class MPLFeaturesUtils {
     static public String colorLightBlue = "#03a9f4";
     static public String colorBlue = "#0000FF";
     static public String colorRED = "#FF0000";
+
+    static public String prop_color_fill_rule = "fillcolor";
+    static public String prop_text_color = "textcolor";
+    static public String prop_text_textsize = "textsize";
+    static public String prop_text_textanchor = "textanchor";
+    static public String prop_text_textoffsets = "textoffset";
+
+    // common properties
+    static public String prop_color_fill = "colorfill";  // fill color
+    static public String prop_color_stroke = "colorstroke"; // color outline for dot and polygone
+    static public String prop_size = "size"; // size for dot
+    static public String prop_thinkness = "thinkness";   // thinkness for dot / line
+    static public String prop_opacity = "opacity";   // thinkness for dot / line
+
+
+
+    static public String prop_type = "filltype"; // dot (circle square ...) .  // line - dashed
+    static public String prop_type2 = "filltype2"; // dot (circle square ...) .  // line - dashed
+
+
+
 
     static public String prop_featureid = "featureid";
     static public String prop_layerid = "layerid";
@@ -205,34 +231,58 @@ public class MPLFeaturesUtils {
         List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
 
         String signatureField =  getLayerSignatureField(layer);
+        com.nextgis.maplib.display.Style layerStyle = layer.getDefaultStyleNoExcept();
+        String styleField = ((ITextStyle) layerStyle).getField();
+        String styleText = ((ITextStyle) layerStyle).getText();
+
+        boolean needSignatures = false;
+        boolean ruleSyling = false;
+            if (layer.getRenderer() instanceof RuleFeatureRenderer ||
+                    !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText)) {
+                needSignatures = true;
+                if (layer.getRenderer() instanceof RuleFeatureRenderer)
+                    ruleSyling = true;
+            }
 
         if (layer.getGeometryType() == GeoConstants.GTPoint) {
-            return getPointFeatures(layer,signatureField);
+            return getPointFeatures(layer,signatureField, needSignatures, styleText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTMultiPoint) {
-            return getMultiPointFeatures(layer,signatureField);
+            return getMultiPointFeatures(layer,signatureField, needSignatures, styleText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTLineString) {
-            return getLineFeatures(layer,signatureField);
+            return getLineFeatures(layer,signatureField, needSignatures, styleText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTMultiLineString) {
-            return getMultiLineFeatures(layer,signatureField);
+            return getMultiLineFeatures(layer,signatureField, needSignatures, styleText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTPolygon) {
-            return getPolygonFeatures(layer,signatureField);
+            return getPolygonFeatures(layer,signatureField, needSignatures, styleText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTMultiPolygon) {
-            return getMultiPolygonFeatures(layer,signatureField);
+            return getMultiPolygonFeatures(layer,signatureField, needSignatures, styleText);
         }
         return vectorFeatures;
     }
 
-    private static List<Feature> getLineFeatures(VectorLayer layer, String signatureField) {
+    private static List<Feature> getLineFeatures(VectorLayer layer, String signatureField,
+                                                 boolean needSignatures, String commonText){
+        boolean ruleStyle = false;
+        String keyForRule = "";
+        boolean isIdKey = false;
+
+        if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+            ruleStyle = true;
+            keyForRule = ((FieldStyleRule) ((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule()).getKey();
+            if ("_id".equals(keyForRule))
+                isIdKey = true;
+        }
+
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
@@ -251,22 +301,91 @@ public class MPLFeaturesUtils {
             lineFeature.addStringProperty(prop_order, String.valueOf(i));
             lineFeature.addStringProperty(prop_featureid, String.valueOf(id));
             lineFeature.addStringProperty(prop_color, colorBlue);
-            if (signatureField != null) {
-                lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+
+            if (ruleStyle){
+                String keyValue = isIdKey? String.valueOf(feature.getId()) : (String.valueOf(feature.getFieldValue(keyForRule)));
+                com.nextgis.maplib.display.Style style = ((FieldStyleRule)(((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule())).getStyleRules().get(keyValue);
+                if (style != null){
+
+                    String ruleSignatureField = ((ITextStyle)style).getField();
+                    if (!TextUtils.isEmpty(ruleSignatureField)){
+                        String text = ruleSignatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(ruleSignatureField));
+                        lineFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    // text part
+                    lineFeature.addStringProperty(prop_text_color, getColorName((style).getOutColor()));
+
+//                    float textSize = (((SimpleMarkerStyle) style).getTextSize() + 3) * 3;
+//                    lineFeature.addStringProperty(prop_text_textsize, String.valueOf(textSize));
+
+//                    int textAlignment = ((SimpleMarkerStyle) style).getTextAlignment();
+//                    String anchor = getTextAnchor(textAlignment);
+//                    lineFeature.addStringProperty(prop_text_textanchor, anchor);
+
+//                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
+//                    JsonArray offsetArray = new JsonArray();
+//                    offsetArray.add(offsets[0]);
+//                    offsetArray.add(offsets[1]);
+//                    lineFeature.addProperty(prop_text_textoffsets, offsetArray);
+
+                    // color data
+                    lineFeature.addStringProperty(prop_color_fill, getColorName(style.getColor()));
+                    lineFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
+                    if (((SimpleLineStyle)style).getType() == 2)
+                        lineFeature.addNumberProperty(prop_type,(((SimpleLineStyle)style).getType()));
+                        //lineFeature.addNumberProperty(prop_type, ((SimpleLineStyle)style).getType() == 2 ?  new Float[]{2f, 2f} : null);
+                } else {
+
+                    String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
+                    if (!TextUtils.isEmpty(styleField )){
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(styleField));
+                        lineFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    if (!TextUtils.isEmpty(commonText )){
+                        lineFeature.addStringProperty(prop_signature_text, commonText);
+                    }
+                }
+            } else {
+                if (needSignatures){
+                    // only common signature
+                    if (signatureField != null) {
+                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(signatureField));
+                        lineFeature.addStringProperty(prop_signature_text, text);
+                    }
+                }
             }
+
+
+//            if (signatureField != null) {
+//                lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+//            }
             lineFeatures.add(lineFeature);
             iterator.remove();
         }
         return lineFeatures;
     }
 
-    private static List<Feature> getMultiLineFeatures(VectorLayer layer, String signatureField) {
+    private static List<Feature> getMultiLineFeatures(VectorLayer layer, String signatureField,
+                                                      boolean needSignatures, String commonText){
+
+        boolean ruleStyle = false;
+        String keyForRule = "";
+        boolean isIdKey = false;
+
+        if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+            ruleStyle = true;
+            keyForRule = ((FieldStyleRule) ((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule()).getKey();
+            if ("_id".equals(keyForRule))
+                isIdKey = true;
+        }
+
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
         Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
 
-        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
         while (iterator.hasNext()){
             Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             List<LineString> linesArray = new ArrayList<>();
@@ -285,8 +404,60 @@ public class MPLFeaturesUtils {
             lineFeature.addStringProperty(prop_order, String.valueOf(i));
             lineFeature.addStringProperty(prop_featureid, String.valueOf(id));
             lineFeature.addStringProperty(prop_color, colorBlue);
-            if (signatureField != null) {
-                lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+
+            if (ruleStyle){
+                String keyValue = isIdKey? String.valueOf(feature.getId()) : (String.valueOf(feature.getFieldValue(keyForRule)));
+                com.nextgis.maplib.display.Style style = ((FieldStyleRule)(((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule())).getStyleRules().get(keyValue);
+                if (style != null){
+
+                    String ruleSignatureField = ((ITextStyle)style).getField();
+                    if (!TextUtils.isEmpty(ruleSignatureField)){
+                        String text = ruleSignatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(ruleSignatureField));
+                        lineFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    // text part
+                    lineFeature.addStringProperty(prop_text_color, getColorName((style).getOutColor()));
+
+//                    float textSize = (((SimpleMarkerStyle) style).getTextSize() + 3) * 3;
+//                    lineFeature.addStringProperty(prop_text_textsize, String.valueOf(textSize));
+
+//                    int textAlignment = ((SimpleMarkerStyle) style).getTextAlignment();
+//                    String anchor = getTextAnchor(textAlignment);
+//                    lineFeature.addStringProperty(prop_text_textanchor, anchor);
+
+//                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
+//                    JsonArray offsetArray = new JsonArray();
+//                    offsetArray.add(offsets[0]);
+//                    offsetArray.add(offsets[1]);
+//                    lineFeature.addProperty(prop_text_textoffsets, offsetArray);
+
+                    // color data
+                    lineFeature.addStringProperty(prop_color_fill, getColorName(style.getColor()));
+                    lineFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
+                    if (((SimpleLineStyle)style).getType() == 2)
+                        lineFeature.addNumberProperty(prop_type,(((SimpleLineStyle)style).getType()));
+                    //lineFeature.addNumberProperty(prop_type, ((SimpleLineStyle)style).getType() == 2 ?  new Float[]{2f, 2f} : null);
+                } else {
+
+                    String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
+                    if (!TextUtils.isEmpty(styleField )){
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(styleField));
+                        lineFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    if (!TextUtils.isEmpty(commonText )){
+                        lineFeature.addStringProperty(prop_signature_text, commonText);
+                    }
+                }
+            } else {
+                if (needSignatures){
+                    // only common signature
+                    if (signatureField != null) {
+                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(signatureField));
+                        lineFeature.addStringProperty(prop_signature_text, text);
+                    }
+                }
             }
             lineFeatures.add(lineFeature);
             iterator.remove();
@@ -305,14 +476,24 @@ public class MPLFeaturesUtils {
         return LineString.fromLngLats(pointList);
     }
 
-    private static List<Feature> getPointFeatures(VectorLayer layer, String signatureField) {
+    private static List<Feature> getPointFeatures(VectorLayer layer, String signatureField,
+                                                  boolean needSignatures, String commonText){
+        boolean ruleStyle = false;
+        String keyForRule = "";
+        boolean isIdKey = false;
+
+        if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+            ruleStyle = true;
+            keyForRule = ((FieldStyleRule) ((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule()).getKey();
+            if ("_id".equals(keyForRule))
+                isIdKey = true;
+        }
+
         List<org.maplibre.geojson.Feature> pointFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
-        //if (features.entrySet() != null)
         Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
 
-        ///for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
         while (iterator.hasNext()){
             Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
 
@@ -326,21 +507,89 @@ public class MPLFeaturesUtils {
             pointFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
             pointFeature.addStringProperty(prop_order, String.valueOf(i));
             pointFeature.addStringProperty(prop_featureid, String.valueOf(id));
-            if (signatureField != null) {
-                pointFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+
+            if (ruleStyle){
+                String keyValue = isIdKey? String.valueOf(feature.getId()) : (String.valueOf(feature.getFieldValue(keyForRule)));
+                com.nextgis.maplib.display.Style style = ((FieldStyleRule)(((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule())).getStyleRules().get(keyValue);
+                if (style != null){
+                    // text
+                    String ruleSignatureField = ((ITextStyle)style).getField();
+                    if (!TextUtils.isEmpty(ruleSignatureField)){
+                        String text = ruleSignatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(ruleSignatureField));
+                        pointFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    // text part
+                    pointFeature.addStringProperty(prop_text_color, getColorName(((SimpleMarkerStyle) style).getTextColor()));
+
+                    float textSize = (((SimpleMarkerStyle) style).getTextSize() + 3) * 3;
+                    pointFeature.addStringProperty(prop_text_textsize, String.valueOf(textSize));
+
+                    int textAlignment = ((SimpleMarkerStyle) style).getTextAlignment();
+                    String anchor = getTextAnchor(textAlignment);
+                    pointFeature.addStringProperty(prop_text_textanchor, anchor);
+
+                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
+                    JsonArray offsetArray = new JsonArray();
+                    offsetArray.add(offsets[0]);
+                    offsetArray.add(offsets[1]);
+
+
+                    pointFeature.addProperty(prop_text_textoffsets, offsetArray);
+
+                    // color data
+                    pointFeature.addStringProperty(prop_color_fill, getColorName(style.getColor()));
+                    pointFeature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
+
+                    pointFeature.addNumberProperty(prop_size, getMPLThinkness(((SimpleMarkerStyle) style).getSize()));
+                    pointFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
+
+                } else {
+
+                    String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
+                    if (!TextUtils.isEmpty(styleField )){
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(styleField));
+                        pointFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    if (!TextUtils.isEmpty(commonText )){
+                        pointFeature.addStringProperty(prop_signature_text, commonText);
+                    }
+                }
+            } else {
+                if (needSignatures){
+                        // only common signature
+                        if (signatureField != null) {
+                            String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
+                                    : String.valueOf(feature.getFieldValue(signatureField));
+                            pointFeature.addStringProperty(prop_signature_text, text);
+                        }
+                }
             }
+
             pointFeatures.add(pointFeature);
             iterator.remove();
         }
         return pointFeatures;
     }
 
-    private static List<Feature> getMultiPointFeatures(VectorLayer layer, String signatureField) {
+    private static List<Feature> getMultiPointFeatures(VectorLayer layer, String signatureField,
+                                                       boolean needSignatures, String commonText) {
+
+        boolean ruleStyle = false;
+        String keyForRule = "";
+        boolean isIdKey = false;
+
+        if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+            ruleStyle = true;
+            keyForRule = ((FieldStyleRule) ((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule()).getKey();
+            if ("_id".equals(keyForRule))
+                isIdKey = true;
+        }
+
         List<org.maplibre.geojson.Feature> mpointFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
         Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
-        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
         while (iterator.hasNext()){
             Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
@@ -359,8 +608,60 @@ public class MPLFeaturesUtils {
             mpointFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
             mpointFeature.addStringProperty(prop_order, String.valueOf(i));
             mpointFeature.addStringProperty(prop_featureid, String.valueOf(id));
-            if (signatureField != null) {
-                mpointFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+
+            if (ruleStyle){
+                String keyValue = isIdKey? String.valueOf(feature.getId()) : (String.valueOf(feature.getFieldValue(keyForRule)));
+                com.nextgis.maplib.display.Style style = ((FieldStyleRule)(((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule())).getStyleRules().get(keyValue);
+                if (style != null){
+                    // text
+                    String ruleSignatureField = ((ITextStyle)style).getField();
+                    if (!TextUtils.isEmpty(ruleSignatureField)){
+                        String text = ruleSignatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(ruleSignatureField));
+                        mpointFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    // text part
+                    mpointFeature.addStringProperty(prop_text_color, getColorName(((SimpleMarkerStyle) style).getTextColor()));
+
+                    float textSize = (((SimpleMarkerStyle) style).getTextSize() + 3) * 3;
+                    mpointFeature.addStringProperty(prop_text_textsize, String.valueOf(textSize));
+
+                    int textAlignment = ((SimpleMarkerStyle) style).getTextAlignment();
+                    String anchor = getTextAnchor(textAlignment);
+                    mpointFeature.addStringProperty(prop_text_textanchor, anchor);
+
+                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
+                    JsonArray offsetArray = new JsonArray();
+                    offsetArray.add(offsets[0]);
+                    offsetArray.add(offsets[1]);
+                    mpointFeature.addProperty(prop_text_textoffsets, offsetArray);
+                    // color data
+                    mpointFeature.addStringProperty(prop_color_fill, getColorName(style.getColor()));
+                    mpointFeature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
+
+                    mpointFeature.addNumberProperty(prop_size, getMPLThinkness(((SimpleMarkerStyle) style).getSize()));
+                    mpointFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
+
+                } else {
+
+                    String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
+                    if (!TextUtils.isEmpty(styleField )){
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(styleField));
+                        mpointFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    if (!TextUtils.isEmpty(commonText )){
+                        mpointFeature.addStringProperty(prop_signature_text, commonText);
+                    }
+                }
+            } else {
+                if (needSignatures){
+                    // only common signature
+                    if (signatureField != null) {
+                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(signatureField));
+                        mpointFeature.addStringProperty(prop_signature_text, text);
+                    }
+                }
             }
             mpointFeatures.add(mpointFeature);
             iterator.remove();
@@ -368,13 +669,99 @@ public class MPLFeaturesUtils {
         return mpointFeatures;
     }
 
-    static public List<Feature> getMultiPolygonFeatures(final VectorLayer layer, String signatureField) {
+
+    static public List<Feature> getPolygonFeatures(final VectorLayer layer, String signatureField,
+                                                   boolean needSignatures, String commonText){
+
+        boolean ruleStyle = false;
+        String keyForRule = "";
+        boolean isIdKey = false;
+        if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+            ruleStyle = true;
+            keyForRule = ((FieldStyleRule) ((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule()).getKey();
+            if ("_id".equals(keyForRule))
+                isIdKey = true;
+        }
+
+        List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
+        Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
+        int i = 0;
+        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
+            i++;
+            Long id = entry.getKey();
+            com.nextgis.maplib.datasource.Feature feature = entry.getValue();
+
+            GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
+            org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
+            polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
+            polyFeature.addStringProperty(prop_order, String.valueOf(i));
+            polyFeature.addStringProperty(prop_featureid, String.valueOf(id));
+
+            if (ruleStyle){
+                String keyValue = isIdKey? String.valueOf(feature.getId()) : (String.valueOf(feature.getFieldValue(keyForRule)));
+                com.nextgis.maplib.display.Style style = ((FieldStyleRule)
+                        (((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule())).getStyleRules().get(keyValue);
+                if (style != null){
+                    // polylayer
+                    polyFeature.addStringProperty(prop_color_fill_rule, getColorName(style.getColor()));
+                    if (style instanceof SimplePolygonStyle){
+                        polyFeature.addNumberProperty(prop_opacity, ((SimplePolygonStyle)style).isFill()? 0.5f : 0.0f);
+                    }
+                    // outline layer
+                    polyFeature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
+                    polyFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
+
+                } else {
+
+                    String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
+                    if (!TextUtils.isEmpty(styleField )){
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(styleField));
+                        polyFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    if (!TextUtils.isEmpty(commonText )){
+                        polyFeature.addStringProperty(prop_signature_text, commonText);
+                    }
+                }
+            } else {
+                if (needSignatures){
+                    // only common signature
+                    if (signatureField != null) {
+                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(signatureField));
+                        polyFeature.addStringProperty(prop_signature_text, text);
+                    }
+                }
+            }
+
+            vectorFeatures.add(polyFeature);
+            iterator.remove();  // free immediately
+        }
+        return vectorFeatures;
+    }
+
+
+    static public List<Feature> getMultiPolygonFeatures(final VectorLayer layer, String signatureField,
+                                                        boolean needSignatures, String commonText){
+
+        boolean ruleStyle = false;
+        String keyForRule = "";
+        boolean isIdKey = false;
+
+        if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+            ruleStyle = true;
+            keyForRule = ((FieldStyleRule) ((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule()).getKey();
+            if ("_id".equals(keyForRule))
+                isIdKey = true;
+        }
+
         List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
         Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
         int i = 0;
         Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
 
-        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
         while (iterator.hasNext()) {
             Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
@@ -395,42 +782,48 @@ public class MPLFeaturesUtils {
             if (signatureField != null) {
                 mpolyFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
             }
-            vectorFeatures.add(mpolyFeature);
-            iterator.remove(); // Удаляет текущий элемент из Map
-//            Log.e("MMEMOR","size" + vectorFeatures.size() );
-        }
-        return vectorFeatures;
-    }
 
-    static public List<Feature> getPolygonFeatures(final VectorLayer layer, String signatureField) {
-        List<org.maplibre.geojson.Feature> vectorFeatures = new ArrayList<>();
-        Map<Long, com.nextgis.maplib.datasource.Feature> features = layer.getFeatures();
-        int i = 0;
 
-        Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
+            if (ruleStyle){
+                String keyValue = isIdKey? String.valueOf(feature.getId()) : (String.valueOf(feature.getFieldValue(keyForRule)));
+                com.nextgis.maplib.display.Style style = ((FieldStyleRule)
+                        (((RuleFeatureRenderer) (layer.getRenderer())).getStyleRule())).getStyleRules().get(keyValue);
+                if (style != null){
+                    // polylayer
+                    mpolyFeature.addStringProperty(prop_color_fill_rule, getColorName(style.getColor()));
+                    if (style instanceof SimplePolygonStyle){
+                        mpolyFeature.addNumberProperty(prop_opacity, ((SimplePolygonStyle)style).isFill()? 0.5f : 0.0f);
+                    }
+                    // outline layer
+                    mpolyFeature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
+                    mpolyFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
 
-        while (iterator.hasNext()) {
-            Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
-            i++;
-            Long id = entry.getKey();
-            com.nextgis.maplib.datasource.Feature feature = entry.getValue();
+                } else {
 
-            GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
-            org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
-            polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
-            polyFeature.addStringProperty(prop_order, String.valueOf(i));
-            polyFeature.addStringProperty(prop_featureid, String.valueOf(id));
-
-            if (signatureField != null) {
-                polyFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
+                    String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
+                    if (!TextUtils.isEmpty(styleField )){
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(styleField));
+                        mpolyFeature.addStringProperty(prop_signature_text, text);
+                    }
+                    if (!TextUtils.isEmpty(commonText )){
+                        mpolyFeature.addStringProperty(prop_signature_text, commonText);
+                    }
+                }
+            } else {
+                if (needSignatures){
+                    // only common signature
+                    if (signatureField != null) {
+                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
+                                : String.valueOf(feature.getFieldValue(signatureField));
+                        mpolyFeature.addStringProperty(prop_signature_text, text);
+                    }
+                }
             }
 
-            vectorFeatures.add(polyFeature);
-
-            // Освобождаем память сразу после обработки
-            iterator.remove(); // Удаляет текущий элемент из Map
+            vectorFeatures.add(mpolyFeature);
+            iterator.remove();
         }
-
         return vectorFeatures;
     }
 
@@ -558,22 +951,14 @@ public class MPLFeaturesUtils {
                                             Map<Integer, String> rasterLayersURL,
                                             Map<Integer, Integer> rasterLayersTmsTypeMap,
                                             String layerPath) {
-        String currentNamePrefix = namePrefix;
-
         if (layerType == GT_TRACK_WA){
             return;
         }
 
         if (layerType == GT_RASTER_WA){
-                RasterSource rasterSource = (RasterSource) style.getSource(
-                        //currentNamePrefix + source_namepart + layerId
-                        layerPath
-                );
+                RasterSource rasterSource = (RasterSource) style.getSource(layerPath);
                 if (rasterSource != null && rasterSource.getUrl()!= null &&  !rasterSource.getUrl().equals(rasterLayersURL.get(layerId))){
-                    style.removeSource(
-                    //        currentNamePrefix + source_namepart + layerId
-                            layerPath
-                    );
+                    style.removeSource(layerPath);
                     rasterSource = null;
                 }
                 if (rasterSource == null) {
@@ -583,39 +968,26 @@ public class MPLFeaturesUtils {
                     if ( tileTmsType != null && tileTmsType != -1){
                         if (tileTmsType == TMSTYPE_NORMAL) {
                             tileSet.setScheme( "tms");
-//                            Log.e("TTMS", "tileset to tms");
                         }
                         if (tileTmsType == TMSTYPE_OSM) {
                             tileSet.setScheme("xyz");
-//                            Log.e("TTMS", "tileset to XYZ");
                         }
                     }
-                    rasterSource = new RasterSource(
-                            //currentNamePrefix + source_namepart + layerId
-                            layerPath
-                            ,
-                            tileSet, 256 );
+                    rasterSource = new RasterSource(layerPath,tileSet, 256 );
                     style.addSource(rasterSource);
                 }
             return;
         }
 
-        GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(layerPath
-        //        currentNamePrefix + source_namepart + layerId
-        );
+        GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(layerPath);
         if (vectorSource == null) {
-            vectorSource = new GeoJsonSource(layerPath
-                    //currentNamePrefix + source_namepart + layerId
-                    ,
-                    FeatureCollection.fromFeatures(layerFeatures));
+            vectorSource = new GeoJsonSource(layerPath, FeatureCollection.fromFeatures(layerFeatures));
             style.addSource(vectorSource);
         }
         else
             vectorSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
 
-        sourceHashMap.put(layerPath
-                //layerId
-                , vectorSource);
+        sourceHashMap.put(layerPath, vectorSource);
     }
 
 
@@ -626,16 +998,16 @@ public class MPLFeaturesUtils {
     }
 
 
-    static public List<String> getLayerMLibreNames(int layerId, int layerType){
-        List<String> result = new ArrayList<>();
-        result.add(namePrefix + layer_namepart + layerId);
-//        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
-//            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
-
-//        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
-//        result.add(symbolLayer);
-        return result;
-    }
+//    static public List<String> getLayerMLibreNames(int layerId, int layerType){
+//        List<String> result = new ArrayList<>();
+//        result.add(namePrefix + layer_namepart + layerId);
+////        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
+////            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
+//
+////        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
+////        result.add(symbolLayer);
+//        return result;
+//    }
 
     static public void createFillLayerForLayer(int layerId, int layerType,
                                                final Style style,
@@ -647,7 +1019,6 @@ public class MPLFeaturesUtils {
                                                ILayer iLayer,
                                                String layerPath,
                                                org.maplibre.android.style.layers.Layer firstToolLayer){
-//        Log.e("ZXZY", "create layer " + iLayer.getName());
         float minZoom = -1;
         float maxZoom = -1;
         if (iLayer!= null){
@@ -665,21 +1036,14 @@ public class MPLFeaturesUtils {
             org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
 
             if (rasterLayer == null){
-                rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId,
-                        //currentNamePrefix + source_namepart + layerId
-                        layerPath
-                );
-//                Log.e("MPLREM",  "add layer: " + rasterLayer.getId());
+                rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId, layerPath);
 
                 if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ) {
                     style.addLayerBelow(rasterLayer, firstToolLayer.getId());
-                    Log.e("LLOG", "added " + rasterLayer.getId() + " below from " + firstToolLayer.getId());
                 }
                 else {
                     style.addLayer(rasterLayer);
-                    Log.e("LLOG", "added simple way " + rasterLayer.getId());
                 }
-
             }
                 if (minZoom!= -1)
                     rasterLayer.setMinZoom(minZoom);
@@ -697,8 +1061,7 @@ public class MPLFeaturesUtils {
                     rasterLayer.setProperties(
                             rasterOpacity(alpha),
                             rasterContrast(contrast),
-                            rasterBrightnessMax(brightness)
-                    );
+                            rasterBrightnessMax(brightness));
                 }
             return;
         }
@@ -716,112 +1079,162 @@ public class MPLFeaturesUtils {
 
         // dot
         float rasuis = 6; // dot
-        int type; // circle quadro triangle
-
-        // line
-        int lineType; // line - fi
+        int type = 0; // circle quadro triangle . // dash dot
 
         // poly
         boolean isFilled; // polygon - is filled
 
         int textAlignment = ALIGN_TOP;
         float textSize = 6;
+        int textColor = 0;
 
         if (layerStyle!= null){
             fistFillColor = layerStyle.getColor();
             outlineColor = layerStyle.getOutColor();
             alpha = layerStyle.getAlpha() / 256.0f;
             thinkness = layerStyle.getWidth();
+
             if (layerStyle instanceof SimpleMarkerStyle){ // dots
                 rasuis = ((SimpleMarkerStyle)layerStyle).getSize();
                 type = ((SimpleMarkerStyle)layerStyle).getType();
                 textAlignment = ((SimpleMarkerStyle) layerStyle).getTextAlignment();
                 textSize = ((SimpleMarkerStyle) layerStyle).getTextSize();
+                textColor = ((SimpleMarkerStyle) layerStyle).getTextColor();
             }
             if (layerStyle instanceof SimpleLineStyle){ //line
-                lineType = ((SimpleLineStyle)layerStyle ).getType();
+                type = ((SimpleLineStyle)layerStyle).getType();
+                textColor = ( layerStyle).getOutColor();
             }
             if (layerStyle instanceof SimplePolygonStyle){ //line
                 isFilled = ((SimplePolygonStyle)layerStyle ).isFill();
+                if (!isFilled)
+                    alpha = 0.0f;
             }
         }
 
         if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint) {
-            if (changeLayer) {
-//                Log.e("PPOOIINNTT", "color set to" + getColorName(fistFillColor));
+            if (changeLayer)
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
-                newLayer.setProperties(PropertyFactory.circleRadius(getMPLThinkness(rasuis)),
-                        PropertyFactory.circleColor(getColorName(fistFillColor)),
-                        PropertyFactory.circleStrokeColor(getColorName(outlineColor)),  //
-                        PropertyFactory.circleStrokeWidth(getMPLThinkness(thinkness)),         //
+            if (newLayer == null)
+                newLayer = new CircleLayer(currentNamePrefix + layer_namepart + layerId, layerPath);
+
+            newLayer.setProperties(
+                        PropertyFactory.circleRadius(Expression.coalesce(
+                                Expression.get(prop_size), // rule
+                                Expression.literal(getMPLThinkness(rasuis)))),
+
+                        PropertyFactory.circleColor(Expression.coalesce(
+                        Expression.get(prop_color_fill), // rule
+                        Expression.literal(getColorName(fistFillColor)))),
+
+                        PropertyFactory.circleStrokeColor(Expression.coalesce(
+                                Expression.get(prop_color_stroke), // rule
+                                Expression.literal(getColorName(outlineColor)))),
+
+                        PropertyFactory.circleStrokeWidth(Expression.coalesce(
+                                Expression.get(prop_thinkness), // rule
+                                Expression.literal(getMPLThinkness(thinkness)))),
                         PropertyFactory.circleStrokeOpacity(1f));
-            }
-            else
-                newLayer = new CircleLayer(currentNamePrefix + layer_namepart + layerId,
-                        //currentNamePrefix + source_namepart + layerId
-                        layerPath
-                )
-                    .withProperties(
-                            PropertyFactory.circleRadius(getMPLThinkness(rasuis)),
-                            PropertyFactory.circleColor(getColorName(fistFillColor)),
-                            //PropertyFactory.fillOpacity(alpha));
 
-                    PropertyFactory.circleStrokeColor(getColorName(outlineColor)),  //
-                    PropertyFactory.circleStrokeWidth(getMPLThinkness(thinkness)),         //
-                    PropertyFactory.circleStrokeOpacity(1f));
+        } else if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
+            if (changeLayer)
+                newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
+            if (newLayer == null )
+                newLayer = new LineLayer(currentNamePrefix + layer_namepart + layerId,layerPath);
 
+            newLayer.setProperties(
+                    PropertyFactory.lineColor(Expression.coalesce(
+                            Expression.get(prop_color_fill), // rule
+                            Expression.literal(getColorName(fistFillColor)))),
 
+                    PropertyFactory.lineWidth(Expression.coalesce(
+                            Expression.get(prop_thinkness), // rule
+                            Expression.literal(getMPLThinkness(thinkness)))),
+
+                    PropertyFactory.lineDasharray(type == 2 ?  new Float[]{2f, 2f} : null)
+
+//                        PropertyFactory.lineDasharray(
+//
+//                        Expression.switchCase(
+//                                Expression.eq(Expression.get(prop_type), Expression.literal(1)),
+//                                // TRUE -> dashed
+//                                Expression.literal(new Float[]{2f, 2f}),
+//                                // DEFAULT -> "almost solid" (workaround вместо null)
+//                                Expression.literal(new Float[]{1f, 0f})
+//                        ))
+
+//                        PropertyFactory.lineDasharray(Expression.coalesce(
+//                                Expression.get(prop_type), // rule
+//                                Expression.literal(type == 2 ?  new Float[]{2f, 2f} : null)))
+//                        PropertyFactory.circleStrokeWidth(Expression.coalesce(
+//                                Expression.get(prop_type), // rule
+//                                Expression.literal(
+//                                        Expression.step(
+//                                                Expression.get(prop_type2),  // ваша prop_type
+//                                                Expression.literal(new Float[]{0f, 0f}),
+//                                                Expression.stop(1, null),  // если type == 2
+//                                                Expression.stop(2,  new Float[]{2f, 2f}),  // если type == 2
+//                                                Expression.stop (3, null)  // если type == 2
+//                                        )
+//                                )))
+                    /*
+                     */
+
+                );
         } else if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
             if (changeLayer) {
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
-                if (newLayer != null)
-                    newLayer.setProperties(
-                                PropertyFactory.fillColor(getColorName(fistFillColor)),
-                                PropertyFactory.fillOpacity(alpha));
-
                 newLayer2 = style.getLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart);
-                if (newLayer2 != null)
-                    newLayer2.setProperties(
-                                PropertyFactory.lineColor(getColorName(outlineColor)),
-                                PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
-            } else {
-                newLayer = new FillLayer(currentNamePrefix + layer_namepart + layerId,
-                //        currentNamePrefix + source_namepart + layerId
-                        layerPath)
-                        .withProperties(
-                                PropertyFactory.fillColor(getColorName(fistFillColor)),
-                                PropertyFactory.fillOpacity(alpha));
-
-                newLayer2 = new LineLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart,
-                        //currentNamePrefix + source_namepart + layerId
-                        layerPath)
-                        .withProperties(
-                                PropertyFactory.lineColor(getColorName(outlineColor)),
-                                PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
             }
+            if (newLayer == null)
+                newLayer = new FillLayer(currentNamePrefix + layer_namepart + layerId,layerPath);
 
-        } else if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
-            if (changeLayer) {
-                newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
-                newLayer.setProperties( PropertyFactory.lineColor(getColorName(fistFillColor)),
-                        PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
-            } else
+            if (newLayer2 == null)
+                newLayer2 = new LineLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart, layerPath);
 
-                newLayer = new LineLayer(currentNamePrefix + layer_namepart + layerId,
-                        //currentNamePrefix + source_namepart + layerId
-                        layerPath)
-                    .withProperties(
-                            //PropertyFactory.lineColor(Expression.get("color")),
-                            PropertyFactory.lineColor(getColorName(fistFillColor)),
-                            PropertyFactory.lineWidth(getMPLThinkness(thinkness)));
+            newLayer.setProperties(
+                            PropertyFactory.fillColor(Expression.coalesce(
+                                    Expression.get(prop_color_fill_rule), // rule
+                                    Expression.literal(getColorName(fistFillColor)))), // def value
+
+                                PropertyFactory.fillOpacity(Expression.coalesce(
+                                    Expression.get(prop_opacity), // rule
+                                    Expression.literal(alpha))));
+
+            newLayer2.setProperties(
+                                PropertyFactory.lineColor(
+                                        Expression.coalesce(
+                                                Expression.get(prop_color_stroke), // rule
+                                                Expression.literal(getColorName(outlineColor)))),
+
+                                PropertyFactory.lineWidth(Expression.coalesce(
+                                        Expression.get(prop_thinkness), // rule
+                                        Expression.literal(getMPLThinkness(thinkness))
+                                        )));
+
         }
 
         // signatures turn on
         if (layerStyle!= null) {
             String styleField = ((ITextStyle) layerStyle).getField();
             String styleText = ((ITextStyle) layerStyle).getText();
-            boolean needSignatures = !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText);
 
+
+//            boolean needSignatures = !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText);
+            // old - if signature always turn on for all layer (vector)
+
+            boolean needSignatures = false;
+            boolean ruleSyling = false;
+
+            if (iLayer instanceof  VectorLayer){
+                final VectorLayer vectorLayer = (VectorLayer)(iLayer);
+                if (vectorLayer.getRenderer() instanceof RuleFeatureRenderer ||
+                        !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText)) {
+                needSignatures = true;
+                if (vectorLayer.getRenderer() instanceof RuleFeatureRenderer)
+                    ruleSyling = true;
+                }
+            }
 
             simbolLayer = style.getLayer(currentNamePrefixSymbol + layer_namepart + layerId);
 
@@ -833,34 +1246,28 @@ public class MPLFeaturesUtils {
             } else {
                 if (needSignatures) {
                     if (simbolLayer == null) {
-                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId,
-                                //currentNamePrefix + source_namepart + layerId
-                                layerPath);
+                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId, layerPath);
 
                         if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ){
                             style.addLayerBelow(simbolLayer, firstToolLayer.getId());
-                            Log.e("LLOG", "added " + simbolLayer.getId() + " below from " + firstToolLayer.getId());
                         }
                         else {
                             style.addLayer(simbolLayer);
-                            Log.e("LLOG", "added simple way " + simbolLayer.getId());
                         }
                         symbolsLayerHashMap.put(layerId, simbolLayer);
                     }
 
-
                     PropertyValue<String> signatureProperty = null;
-                    if (!TextUtils.isEmpty(styleText))
-                        signatureProperty = PropertyFactory.textField(styleText);
-                    else {
-                        if (styleField.equals(id_name))
-                            signatureProperty = PropertyFactory.textField("{" + prop_featureid + "}");
-                        else
-                            signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
-                    }
-
+                    signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
+//                    if (!TextUtils.isEmpty(styleText))
+//                        signatureProperty = PropertyFactory.textField(styleText);
+//                    else {
+//                        if (styleField!= null && styleField.equals(id_name) && !ruleSyling)
+//                            signatureProperty = PropertyFactory.textField("{" + prop_featureid + "}");
+//                        else
+//                            signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
+//                    }
                     String[] font = {"Open Sans Regular"};
-
                     PropertyValue<String> placementProperty = null;
                     if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint)
                         placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT);
@@ -872,12 +1279,32 @@ public class MPLFeaturesUtils {
 
                     simbolLayer.setProperties(
                             signatureProperty,
-                            PropertyFactory.textSize((textSize + 3) * 3),
-                            PropertyFactory.textColor(getColorName(outlineColor)),
-                            PropertyFactory.textAnchor(anchor),
-                            placementProperty,
 
-                            PropertyFactory.textOffset(offsets),
+                            //PropertyFactory.textSize((textSize + 3) * 3),
+
+                            PropertyFactory.textSize(Expression.coalesce(
+                                    Expression.get(prop_text_textsize), // rule
+                                    Expression.literal((textSize + 3) * 3)  // дефолтное значение
+                            )),
+
+                            PropertyFactory.textColor(Expression.coalesce(
+                                    Expression.get(prop_text_color), // rule
+                                    Expression.literal(getColorName(textColor))  // дефолтное значение
+                            )),
+
+                            PropertyFactory.textAnchor(Expression.coalesce(
+                                    Expression.get(prop_text_textanchor), // rule
+                                    Expression.literal(anchor)  // дефолтное значение
+                            )),
+                            //PropertyFactory.textAnchor(anchor),
+                            placementProperty,
+                            //PropertyFactory.textOffset(offsets),
+
+                            PropertyFactory.textOffset(Expression.coalesce(
+                                    Expression.get(prop_text_textoffsets), // rule
+                                    Expression.literal(offsets)  // дефолтное значение
+                            )),
+
                             PropertyFactory.textAllowOverlap(true),
                             PropertyFactory.textIgnorePlacement(true),
                             PropertyFactory.textFont(font),
@@ -889,14 +1316,11 @@ public class MPLFeaturesUtils {
 
         if (newLayer != null) {
             if (!changeLayer) {
-//                Log.e("MPLREM",  "addvector  layer: " + newLayer.getId());
                 if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ) {
                     style.addLayerBelow(newLayer, firstToolLayer.getId());
-                    Log.e("LLOG", "added " + newLayer.getId() + " below from " + firstToolLayer.getId());
                 }
                 else {
                     style.addLayer(newLayer);
-                    Log.e("LLOG", "added simple way " + newLayer.getId());
                 }
                 layersHashMap.put(layerId, newLayer);
             }
@@ -904,14 +1328,11 @@ public class MPLFeaturesUtils {
 
         if (newLayer2 != null) {
             if (!changeLayer) {
-//                Log.e("MPLREM",  "addvector layer2 : " + newLayer2.getId());
                 if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null  && newLayer != null){
                     style.addLayerBelow (newLayer2, firstToolLayer.getId());
-                    Log.e("LLOG", "added " + newLayer2.getId() + " below from " + firstToolLayer.getId());
                 }
                 else {
                     style.addLayer(newLayer2);
-                    Log.e("LLOG", "added simple way " + newLayer2.getId());
                 }
                 layersHashMap2.put(layerId, newLayer2);
             }
