@@ -51,9 +51,10 @@ public class PolygonEditClass extends MLGeometryEditClass {
                             List<Feature> polygonFeatures, // 3
                             GeoJsonSource selectedPolySource,  //4
                             GeoJsonSource vertexSource,
-                            GeoJsonSource markerSource) {
+                            GeoJsonSource markerSource,
+                            String layerPath) {
         super(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                selectedPolySource, vertexSource, markerSource);
+                selectedPolySource, vertexSource, markerSource, layerPath);
 
         // Remove the currently editing feature from the background list if it exists
         if (editingFeature != null && editingFeature.hasProperty(MPLFeaturesUtils.prop_order)) {

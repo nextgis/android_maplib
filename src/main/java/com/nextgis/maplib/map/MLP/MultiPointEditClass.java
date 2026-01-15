@@ -22,9 +22,9 @@ public class MultiPointEditClass extends MLGeometryEditClass {
     List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
 
     public MultiPointEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> polygonFeatures,
-                               GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource) {
+                               GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource,  String layerPath) {
         super(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                selectedPolySource, vertexSource, markerSource);
+                selectedPolySource, vertexSource, markerSource, layerPath);
 
         Iterator<Feature> it = polygonFeatures.iterator();
         String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);

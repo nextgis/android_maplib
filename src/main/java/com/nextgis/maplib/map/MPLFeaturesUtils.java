@@ -11,6 +11,8 @@ import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_RIGHT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_LEFT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_RIGHT;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_NORMAL;
@@ -72,6 +74,7 @@ import org.maplibre.android.style.sources.RasterSource;
 import org.maplibre.android.style.sources.TileSet;
 import org.maplibre.geojson.Feature;
 import org.maplibre.geojson.FeatureCollection;
+import org.maplibre.geojson.Geometry;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
 import org.maplibre.geojson.MultiPoint;
@@ -129,6 +132,9 @@ public class MPLFeaturesUtils {
     static final public String track_namepart = "track-";
     static final public String track_flags_namepart = "track-flags-";
 
+    static final public String source_text = "-text"; // source for text part of polygon[s]
+
+
     static final public String id_name = "_id";
 
 
@@ -139,26 +145,27 @@ public class MPLFeaturesUtils {
             List<Feature> polygonFeatures,
             GeoJsonSource choosedSource, // source of point/ line / polygon
             GeoJsonSource vertexSource,
-            GeoJsonSource markerSource) {
+            GeoJsonSource markerSource,
+            final String  layerPath) {
 
-        if (geoType == GeoConstants.GTPolygon) {
+        if (geoType == GTPolygon) {
             return new PolygonEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                    choosedSource, vertexSource, markerSource);
+                    choosedSource, vertexSource, markerSource, layerPath);
         } else if (geoType == GeoConstants.GTPoint) {
             return new PointEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                    choosedSource, vertexSource, markerSource);
+                    choosedSource, vertexSource, markerSource, layerPath);
         } else if (geoType == GeoConstants.GTMultiPoint) {
             return new MultiPointEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                    choosedSource, vertexSource, markerSource);
+                    choosedSource, vertexSource, markerSource, layerPath);
         } else if (geoType == GeoConstants.GTLineString) {
             return new LineEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                    choosedSource, vertexSource, markerSource);
+                    choosedSource, vertexSource, markerSource, layerPath);
         } else if (geoType == GeoConstants.GTMultiLineString) {
             return new MultiLineEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                    choosedSource, vertexSource, markerSource);
+                    choosedSource, vertexSource, markerSource, layerPath);
         } else if (geoType == GeoConstants.GTMultiPolygon) {
             return new MultiPolygonEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                    choosedSource, vertexSource, markerSource);
+                    choosedSource, vertexSource, markerSource, layerPath);
         }
         else
             return null;
@@ -260,7 +267,7 @@ public class MPLFeaturesUtils {
             return getMultiLineFeatures(layer,signatureField, needSignatures, styleText);
         }
 
-        if (layer.getGeometryType() == GeoConstants.GTPolygon) {
+        if (layer.getGeometryType() == GTPolygon) {
             return getPolygonFeatures(layer,signatureField, needSignatures, styleText);
         }
 
@@ -713,12 +720,22 @@ public class MPLFeaturesUtils {
                     polyFeature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
                     polyFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
 
+                    // text
+                    String ruleSignatureField = ((ITextStyle)style).getField();
+                    if (!TextUtils.isEmpty(ruleSignatureField)){
+                        String text = ruleSignatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(ruleSignatureField));
+                        polyFeature.addStringProperty(prop_signature_text, text);
+                    } else {
+                        String sign = ((ITextStyle) style).getText();
+                        if (!TextUtils.isEmpty(sign))
+                            polyFeature.addStringProperty(prop_signature_text, sign);
+                    }
+
                 } else {
 
                     String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
                     if (!TextUtils.isEmpty(styleField )){
-                        String text = styleField.equals("_id") ? String.valueOf(feature.getId())
-                                : String.valueOf(feature.getFieldValue(styleField));
+                        String text = styleField.equals("_id") ? String.valueOf(feature.getId()): String.valueOf(feature.getFieldValue(styleField));
                         polyFeature.addStringProperty(prop_signature_text, text);
                     }
                     if (!TextUtils.isEmpty(commonText )){
@@ -729,8 +746,7 @@ public class MPLFeaturesUtils {
                 if (needSignatures){
                     // only common signature
                     if (signatureField != null) {
-                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId())
-                                : String.valueOf(feature.getFieldValue(signatureField));
+                        String text = signatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(signatureField));
                         polyFeature.addStringProperty(prop_signature_text, text);
                     }
                 }
@@ -797,6 +813,18 @@ public class MPLFeaturesUtils {
                     // outline layer
                     mpolyFeature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
                     mpolyFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
+
+                    // text
+                    String ruleSignatureField = ((ITextStyle)style).getField();
+                    if (!TextUtils.isEmpty(ruleSignatureField)){
+                        String text = ruleSignatureField.equals("_id") ? String.valueOf(feature.getId()) : String.valueOf(feature.getFieldValue(ruleSignatureField));
+                        mpolyFeature.addStringProperty(prop_signature_text, text);
+                    }else {
+                        String sign = ((ITextStyle) style).getText();
+                        if (!TextUtils.isEmpty(sign))
+                            mpolyFeature.addStringProperty(prop_signature_text, sign);
+                    }
+
 
                 } else {
 
@@ -946,8 +974,11 @@ public class MPLFeaturesUtils {
     }
 
 
-    static public void createSourceForLayer(int layerId, int layerType, final List<org.maplibre.geojson.Feature> layerFeatures,
-                                            final Style style, Map<String, GeoJsonSource> sourceHashMap,
+    static public void createSourceForLayer(int layerId,
+                                            int layerType,
+                                            final List<org.maplibre.geojson.Feature> layerFeatures,
+                                            final Style style,
+                                            Map<String, GeoJsonSource> sourceHashMap,
                                             Map<Integer, String> rasterLayersURL,
                                             Map<Integer, Integer> rasterLayersTmsTypeMap,
                                             String layerPath) {
@@ -979,6 +1010,11 @@ public class MPLFeaturesUtils {
             return;
         }
 
+        boolean addPolyTextSource = false;
+        if (layerType == GTPolygon || layerType == GTMultiPolygon){
+            addPolyTextSource = true;
+        }
+
         GeoJsonSource vectorSource = (GeoJsonSource) style.getSource(layerPath);
         if (vectorSource == null) {
             vectorSource = new GeoJsonSource(layerPath, FeatureCollection.fromFeatures(layerFeatures));
@@ -988,6 +1024,79 @@ public class MPLFeaturesUtils {
             vectorSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
 
         sourceHashMap.put(layerPath, vectorSource);
+
+
+        if (addPolyTextSource){
+
+            List<Feature> points =  convertToPointFeatures(layerFeatures);
+            Log.e("SSUURR", "get source for: " + layerPath + source_text );
+            GeoJsonSource vectorTextSource = (GeoJsonSource) style.getSource(layerPath + source_text );
+            if (vectorTextSource == null) {
+                vectorTextSource = new GeoJsonSource(layerPath + source_text, FeatureCollection.fromFeatures(points));
+                Log.e("SSUURR", "create source for: " + layerPath + source_text );
+                style.addSource(vectorTextSource);
+
+            }
+            else
+                vectorTextSource.setGeoJson(FeatureCollection.fromFeatures(points));
+
+            sourceHashMap.put(layerPath + source_text, vectorTextSource);
+        }
+
+    }
+
+
+    static  public List<Feature> convertToPointFeatures(List<Feature> layerFeatures) {
+        List<Feature> centroidFeatures = new ArrayList<>();
+
+        for (Feature feature : layerFeatures) {
+            Geometry geometry = feature.geometry();
+            Point centroid = null;
+
+            if (geometry instanceof Polygon) {
+                centroid = calculatePolygonCentroid((Polygon) geometry);
+            } else if (geometry instanceof MultiPolygon) {
+                centroid = calculateMultiPolygonCentroid((MultiPolygon) geometry);
+            }
+
+            if (centroid != null) {
+                Feature centroidFeature = Feature.fromGeometry(
+                        centroid,
+                        feature.properties()
+                );
+                centroidFeatures.add(centroidFeature);
+            }
+        }
+
+        return centroidFeatures;
+    }
+
+    static private Point calculatePolygonCentroid(Polygon polygon) {
+        List<Point> points = polygon.coordinates().get(0); // внешнее кольцо
+        return getAveragePoint(points);
+    }
+
+    static private Point calculateMultiPolygonCentroid(MultiPolygon multiPolygon) {
+        List<Point> allPoints = new ArrayList<>();
+
+        for (List<List<Point>> polygonRings : multiPolygon.coordinates()) {
+            allPoints.addAll(polygonRings.get(0)); // внешнее кольцо каждого полигона
+        }
+
+        return getAveragePoint(allPoints);
+    }
+
+    static  private Point getAveragePoint(List<Point> points) {
+        double sumLon = 0;
+        double sumLat = 0;
+        int count = points.size();
+
+        for (Point point : points) {
+            sumLon += point.longitude();
+            sumLat += point.latitude();
+        }
+
+        return Point.fromLngLat(sumLon / count, sumLat / count);
     }
 
 
@@ -1085,7 +1194,7 @@ public class MPLFeaturesUtils {
         boolean isFilled; // polygon - is filled
 
         int textAlignment = ALIGN_TOP;
-        float textSize = 6;
+        float textSize = 3;
         int textColor = 0;
 
         if (layerStyle!= null){
@@ -1111,6 +1220,13 @@ public class MPLFeaturesUtils {
                     alpha = 0.0f;
             }
         }
+
+
+        // polygon makes signature other way: - create points for polygones
+        // - differ source for points () (layerPath + source_text)
+        // points as center of polygons
+        // SymbolLayer for (layerPath + source_text) source
+        boolean isPolygon = layerType == GTPolygon || layerType == GTMultiPolygon;
 
         if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint) {
             if (changeLayer)
@@ -1181,7 +1297,7 @@ public class MPLFeaturesUtils {
                      */
 
                 );
-        } else if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
+        } else if (layerType == GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
             if (changeLayer) {
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
                 newLayer2 = style.getLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart);
@@ -1211,14 +1327,12 @@ public class MPLFeaturesUtils {
                                         Expression.get(prop_thinkness), // rule
                                         Expression.literal(getMPLThinkness(thinkness))
                                         )));
-
         }
 
         // signatures turn on
         if (layerStyle!= null) {
             String styleField = ((ITextStyle) layerStyle).getField();
             String styleText = ((ITextStyle) layerStyle).getText();
-
 
 //            boolean needSignatures = !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText);
             // old - if signature always turn on for all layer (vector)
@@ -1246,7 +1360,10 @@ public class MPLFeaturesUtils {
             } else {
                 if (needSignatures) {
                     if (simbolLayer == null) {
-                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId, layerPath);
+                        Log.e("SSUURR", "create layer name : " + currentNamePrefixSymbol + layer_namepart + layerId);
+                        Log.e("SSUURR", "create layer source : " + (layerPath + (isPolygon ? source_text : "")));
+                        simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId,
+                                layerPath + (isPolygon ? source_text : ""));
 
                         if (firstToolLayer != null && style.getLayer(firstToolLayer.getId()) != null ){
                             style.addLayerBelow(simbolLayer, firstToolLayer.getId());
@@ -1259,28 +1376,18 @@ public class MPLFeaturesUtils {
 
                     PropertyValue<String> signatureProperty = null;
                     signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
-//                    if (!TextUtils.isEmpty(styleText))
-//                        signatureProperty = PropertyFactory.textField(styleText);
-//                    else {
-//                        if (styleField!= null && styleField.equals(id_name) && !ruleSyling)
-//                            signatureProperty = PropertyFactory.textField("{" + prop_featureid + "}");
-//                        else
-//                            signatureProperty = PropertyFactory.textField("{" + prop_signature_text + "}");
-//                    }
                     String[] font = {"Open Sans Regular"};
                     PropertyValue<String> placementProperty = null;
-                    if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint)
+                    if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint || isPolygon)
                         placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT);
                     else
                         placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER);
 
                     String anchor = getTextAnchor(textAlignment); // def - Property.TEXT_ANCHOR_TOP
-                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
+                    Float[] offsets =  isPolygon? new Float[]{0.0f, 0f} :  getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
 
                     simbolLayer.setProperties(
                             signatureProperty,
-
-                            //PropertyFactory.textSize((textSize + 3) * 3),
 
                             PropertyFactory.textSize(Expression.coalesce(
                                     Expression.get(prop_text_textsize), // rule
@@ -1296,9 +1403,7 @@ public class MPLFeaturesUtils {
                                     Expression.get(prop_text_textanchor), // rule
                                     Expression.literal(anchor)  // дефолтное значение
                             )),
-                            //PropertyFactory.textAnchor(anchor),
                             placementProperty,
-                            //PropertyFactory.textOffset(offsets),
 
                             PropertyFactory.textOffset(Expression.coalesce(
                                     Expression.get(prop_text_textoffsets), // rule

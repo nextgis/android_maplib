@@ -41,9 +41,9 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
     private List<List<List<Point>>> middleVerticesPerPolygonPerRing = new ArrayList<>();
 
     public MultiPolygonEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> polygonFeatures,
-                                 GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource) {
+                                 GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource,  String layerPath) {
         super(geoType, selectedEditedSource, editingFeature, polygonFeatures,
-                selectedPolySource, vertexSource, markerSource);
+                selectedPolySource, vertexSource, markerSource, layerPath);
 
         // Remove the currently editing feature from the background list if it exists
         if (editingFeature != null && editingFeature.hasProperty(MPLFeaturesUtils.prop_order)) {

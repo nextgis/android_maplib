@@ -16,11 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class MLGeometryEditClass {
-    final org.maplibre.geojson.Feature originalEditingFeature;
+    public final org.maplibre.geojson.Feature originalEditingFeature;
     public org.maplibre.geojson.Feature editingFeature;
     final GeoJsonSource selectedPolySource;
     final GeoJsonSource vertexSource;      // edit points  //
     public int selectedVertexIndex = -1;
+    public final String layerPath;
 
     final GeoJsonSource markerSource;
 
@@ -30,11 +31,13 @@ public abstract class MLGeometryEditClass {
                                List<org.maplibre.geojson.Feature> polygonFeatures,
                                GeoJsonSource selectedPolySource,
                                GeoJsonSource vertexSource,
-                               GeoJsonSource markerSource) {
+                               GeoJsonSource markerSource,
+                               String layerPath) {
         this.originalEditingFeature = editingFeature;
         this.selectedPolySource = selectedPolySource;
         this.vertexSource = vertexSource;
         this.markerSource = markerSource;
+        this.layerPath = layerPath;
     }
 
     // extract vertices from feature -

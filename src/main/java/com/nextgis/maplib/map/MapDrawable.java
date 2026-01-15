@@ -97,6 +97,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert3857To4326;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.convert4326To3857;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.convertToPointFeatures;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFlagsFromTrackLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.createFeatureListFromTrackLayer;
@@ -121,12 +122,15 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.source_text;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
@@ -138,6 +142,7 @@ import static org.maplibre.android.style.layers.Property.VISIBLE;
 import static org.maplibre.android.style.layers.PropertyFactory.visibility;
 import static java.util.Collections.emptyList;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.maplibre.android.annotations.Icon;
 import org.maplibre.android.annotations.IconFactory;
@@ -587,6 +592,15 @@ public class MapDrawable
                 if (layerSource != null) {
                     layerSource.setGeoJson(FeatureCollection.fromFeatures(features));
                 }
+
+                if (layer.mGeometryType == GTPolygon || layer.mGeometryType ==  GTMultiPolygon){
+                    GeoJsonSource layerSourceText = sourceHashMap.get(layer.getPath().toString() + source_text);
+                    if (layerSourceText != null){
+                        List<org.maplibre.geojson.Feature> points =  convertToPointFeatures(features);
+                        layerSourceText.setGeoJson(FeatureCollection.fromFeatures(points));
+                    }
+                }
+
             });
         });
         executor.shutdown();
@@ -1441,7 +1455,7 @@ public class MapDrawable
                 selectedDotSource.setGeoJson(featureSelected);
             }
 
-            if  (type == GeoConstants.GTPolygon || type == GeoConstants.GTMultiPolygon
+            if  (type == GeoConstants.GTPolygon || type == GTMultiPolygon
                     || type == GTLineString ||type == GTMultiLineString ) {
                 selectedPolySource.setGeoJson(featureSelected);
             }
@@ -1514,7 +1528,7 @@ public class MapDrawable
                     feature = org.maplibre.geojson.Feature.fromGeometry(polygon);
                     break;
 
-                case GeoConstants.GTMultiPolygon:
+                case GTMultiPolygon:
                     List<List<org.maplibre.geojson.Point>> polyListMP = new ArrayList<>();
                     polyListMP.add(createPointsForRing(center, maplibreMap.get().getProjection(),  true));
                     MultiPolygon polygonMP = MultiPolygon.fromLngLats(Arrays.asList(polyListMP));
@@ -1578,7 +1592,7 @@ public class MapDrawable
                 editingFeature.addStringProperty("color", colorRED);
             }
 
-            if  (type == GeoConstants.GTPolygon || type == GeoConstants.GTMultiPolygon) {
+            if  (type == GeoConstants.GTPolygon || type == GTMultiPolygon) {
                 selectedPolySource.setGeoJson(FeatureCollection.fromFeature(editingFeature));
                 choosed = selectedPolySource;
             }
@@ -1600,11 +1614,12 @@ public class MapDrawable
                     polygonFeatures,
                     choosed,
                     vertexSource,
-                    markerSource);
+                    markerSource,
+                    ilayerd.getPath().toString());
 
             Layer layer = maplibreMap.get().getStyle().getLayer("selected-polygon-fill");
             if (layerGeoType ==GeoConstants.GTPolygon ||
-                    layerGeoType ==GeoConstants.GTMultiPolygon){
+                    layerGeoType == GTMultiPolygon){
                 if (layer == null) {
                     maplibreMap.get().getStyle().addLayer(fillPolyEditLayer);
                 }
@@ -1650,6 +1665,18 @@ public class MapDrawable
 
             //polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
             selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
+            // need check sign
+            if (getLayerById(layerdID) instanceof VectorLayer vectorLayer){
+                if (vectorLayer.mGeometryType == GTPolygon || vectorLayer.mGeometryType == GTMultiPolygon){
+                    reAssembleSignPoly(
+                            maplibreMap.get().getStyle(),
+                            polygonFeatures,
+                            editingObject.layerPath);
+                }
+            }
+
+
+
         }
         editingFeature = null;
         editingFeatureOriginal = null;
@@ -1681,6 +1708,16 @@ public class MapDrawable
 
                 }
             }
+
+            if (getLayerById(layerdID) instanceof VectorLayer vectorLayer){
+                if (vectorLayer.mGeometryType == GTPolygon || vectorLayer.mGeometryType == GTMultiPolygon){
+                    reAssembleSignPoly(
+                            maplibreMap.get().getStyle(),
+                            layerFeatures,
+                            getLayerById(layerdID).getPath().toString());
+                }
+            }
+
             source.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
             selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             selectedDotSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
@@ -1820,7 +1857,7 @@ public class MapDrawable
             if (backToOriginal)
                 copyProperties(editingFeatureOriginal, editingObject.editingFeature);
             hasEditeometry = false;
-            org.maplibre.geojson.Feature target =backToOriginal? editingFeatureOriginal : editingObject.editingFeature ;
+            org.maplibre.geojson.Feature target = backToOriginal? editingFeatureOriginal : editingObject.editingFeature ;
 
             boolean needChangeFeature = true; // false for newFeature create cancel - remove from anysource
             if (target!= null && target.hasNonNullValueForProperty(prop_featureid) && target.getStringProperty(prop_featureid).equals("-1")) // new feature - no back to anything
@@ -1829,6 +1866,12 @@ public class MapDrawable
                 polygonFeatures.add(backToOriginal? editingFeatureOriginal : editingObject.editingFeature);
 
             selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
+            // need modify poly sign source
+
+
+            reAssembleSignPoly(maplibreMap.get().getStyle(),
+                    polygonFeatures,
+                    editingObject.layerPath);
 
             GeoJsonSource choosed = null;
             if  (editingObject instanceof PointEditClass ||
@@ -2367,6 +2410,12 @@ public class MapDrawable
             }
         }
         originalSelectedFeature.setId(newFeatureID);
+
+        // WA for sign by id field for new feature
+        if (editingObject.originalEditingFeature != null && editingObject.originalEditingFeature.getStringProperty(prop_signature_text) != null &&
+                editingObject.originalEditingFeature.getStringProperty(prop_signature_text) .equals("-1"))
+            editingObject.originalEditingFeature.addStringProperty(prop_signature_text, String.valueOf(newFeatureID));
+
         cancelFeatureEdit(false);
 
     }
@@ -2594,6 +2643,27 @@ public class MapDrawable
 
     public void clearPressedPoint(){
         selectedDotSource.setGeoJson(FeatureCollection.fromFeatures(emptyList()));
+
+    }
+
+    // check if need sign for polygon
+    // make point and add to source
+    public void reAssembleSignPoly(@Nullable  final Style style,
+                                   final List<org.maplibre.geojson.Feature> polyFeatures,
+                                   String layerPath ){
+
+        if (style == null)
+            return;
+
+        List<org.maplibre.geojson.Feature> points =  convertToPointFeatures(polyFeatures);
+        GeoJsonSource vectorTextSource = (GeoJsonSource) style.getSource(layerPath + source_text );
+        if (vectorTextSource == null) {
+            vectorTextSource = new GeoJsonSource(layerPath + source_text, FeatureCollection.fromFeatures(points));
+            style.addSource(vectorTextSource);
+            sourceHashMap.put(layerPath + source_text, vectorTextSource);
+        }
+        else
+            vectorTextSource.setGeoJson(FeatureCollection.fromFeatures(points));
 
     }
 

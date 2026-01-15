@@ -25,9 +25,9 @@ public class MultiLineEditClass extends MLGeometryEditClass {
     List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>(); // all features for display (vertices + middle points)
 
     public MultiLineEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> lineFeatures,
-                              GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource) {
+                              GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource, String layerPath) {
         super(geoType, selectedEditedSource, editingFeature, lineFeatures,
-                selectedPolySource, vertexSource, markerSource);
+                selectedPolySource, vertexSource, markerSource, layerPath);
 
         Iterator<Feature> it = lineFeatures.iterator();
         String targetOrder = editingFeature.getStringProperty(MPLFeaturesUtils.prop_order);

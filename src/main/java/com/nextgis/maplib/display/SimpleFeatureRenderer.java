@@ -245,7 +245,7 @@ public class SimpleFeatureRenderer
                 else
                     fieldValue = feature.getFieldValueAsString(fieldValue);
 
-                ((ITextStyle) style).setText(fieldValue);
+                //((ITextStyle) style).setText(fieldValue);
             }
         }
 

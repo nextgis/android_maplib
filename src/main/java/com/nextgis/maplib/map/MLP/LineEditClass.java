@@ -25,9 +25,10 @@ public class LineEditClass extends MLGeometryEditClass {
     List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
 
     public LineEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> lineFeatures,
-                         GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource) {
+                         GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource,
+                         String layerPath) {
         super(geoType, selectedEditedSource, editingFeature, lineFeatures,
-                selectedPolySource, vertexSource, markerSource);
+                selectedPolySource, vertexSource, markerSource, layerPath);
 
 //        lineFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order),
 //                editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
