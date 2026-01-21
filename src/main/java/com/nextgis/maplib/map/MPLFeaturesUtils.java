@@ -110,13 +110,8 @@ public class MPLFeaturesUtils {
     static public String prop_thinkness = "thinkness";   // thinkness for dot / line
     static public String prop_opacity = "opacity";   // thinkness for dot / line
 
-
-
     static public String prop_type = "filltype"; // dot (circle square ...) .  // line - dashed
     static public String prop_type2 = "filltype2"; // dot (circle square ...) .  // line - dashed
-
-
-
 
     static public String prop_featureid = "featureid";
     static public String prop_layerid = "layerid";
@@ -133,10 +128,7 @@ public class MPLFeaturesUtils {
     static final public String track_flags_namepart = "track-flags-";
 
     static final public String source_text = "-text"; // source for text part of polygon[s]
-
-
     static final public String id_name = "_id";
-
 
     public static MLGeometryEditClass createEditObject(
             int geoType,
@@ -179,11 +171,9 @@ public class MPLFeaturesUtils {
             return TextUtils.isEmpty(styleField)? null : styleField;
         }
         return null;
-
     }
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFromTrackLayer(final TrackLayer layer) {
-
         Map<Integer, GeoLineString> tracks = layer.getTracks();
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
 
@@ -194,15 +184,8 @@ public class MPLFeaturesUtils {
             lineFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
             lineFeatures.add(lineFeature);
         }
-
         return lineFeatures;
-
     }
-
-
-
-
-
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFlagsFromTrackLayer(final TrackLayer layer) {
         Map<Integer, GeoLineString> tracks = layer.getTracks();
@@ -224,14 +207,11 @@ public class MPLFeaturesUtils {
             Feature pointFeature2 = org.maplibre.geojson.Feature.fromGeometry(point2);
             pointFeature2.addBooleanProperty(prop_start_flag, false);
 
-
             pointsFeatures.add(pointFeature1);
             pointsFeatures.add(pointFeature2);
         }
 
         return pointsFeatures;
-
-
     }
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFromLayer(final VectorLayer layer) {
@@ -295,7 +275,6 @@ public class MPLFeaturesUtils {
         int i = 0;
         Iterator<Map.Entry<Long, com.nextgis.maplib.datasource.Feature>> iterator = features.entrySet().iterator();
 
-        //for (Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry : features.entrySet()) {
         while (iterator.hasNext()){
             Map.Entry<Long, com.nextgis.maplib.datasource.Feature> entry = iterator.next();
             i++;
@@ -322,25 +301,11 @@ public class MPLFeaturesUtils {
                     // text part
                     lineFeature.addStringProperty(prop_text_color, getColorName((style).getOutColor()));
 
-//                    float textSize = (((SimpleMarkerStyle) style).getTextSize() + 3) * 3;
-//                    lineFeature.addStringProperty(prop_text_textsize, String.valueOf(textSize));
-
-//                    int textAlignment = ((SimpleMarkerStyle) style).getTextAlignment();
-//                    String anchor = getTextAnchor(textAlignment);
-//                    lineFeature.addStringProperty(prop_text_textanchor, anchor);
-
-//                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
-//                    JsonArray offsetArray = new JsonArray();
-//                    offsetArray.add(offsets[0]);
-//                    offsetArray.add(offsets[1]);
-//                    lineFeature.addProperty(prop_text_textoffsets, offsetArray);
-
                     // color data
                     lineFeature.addStringProperty(prop_color_fill, getColorName(style.getColor()));
                     lineFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
                     if (((SimpleLineStyle)style).getType() == 2)
                         lineFeature.addNumberProperty(prop_type,(((SimpleLineStyle)style).getType()));
-                        //lineFeature.addNumberProperty(prop_type, ((SimpleLineStyle)style).getType() == 2 ?  new Float[]{2f, 2f} : null);
                 } else {
 
                     String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
@@ -364,10 +329,6 @@ public class MPLFeaturesUtils {
                 }
             }
 
-
-//            if (signatureField != null) {
-//                lineFeature.addStringProperty(prop_signature_text, entry.getValue().getFieldValueAsString(signatureField));
-//            }
             lineFeatures.add(lineFeature);
             iterator.remove();
         }
@@ -425,25 +386,11 @@ public class MPLFeaturesUtils {
                     // text part
                     lineFeature.addStringProperty(prop_text_color, getColorName((style).getOutColor()));
 
-//                    float textSize = (((SimpleMarkerStyle) style).getTextSize() + 3) * 3;
-//                    lineFeature.addStringProperty(prop_text_textsize, String.valueOf(textSize));
-
-//                    int textAlignment = ((SimpleMarkerStyle) style).getTextAlignment();
-//                    String anchor = getTextAnchor(textAlignment);
-//                    lineFeature.addStringProperty(prop_text_textanchor, anchor);
-
-//                    Float[] offsets = getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
-//                    JsonArray offsetArray = new JsonArray();
-//                    offsetArray.add(offsets[0]);
-//                    offsetArray.add(offsets[1]);
-//                    lineFeature.addProperty(prop_text_textoffsets, offsetArray);
-
                     // color data
                     lineFeature.addStringProperty(prop_color_fill, getColorName(style.getColor()));
                     lineFeature.addNumberProperty(prop_thinkness, getMPLThinkness(style.getWidth()));
                     if (((SimpleLineStyle)style).getType() == 2)
                         lineFeature.addNumberProperty(prop_type,(((SimpleLineStyle)style).getType()));
-                    //lineFeature.addNumberProperty(prop_type, ((SimpleLineStyle)style).getType() == 2 ?  new Float[]{2f, 2f} : null);
                 } else {
 
                     String styleField = ((RuleFeatureRenderer) layer.getRenderer()).getStyle().getField();
@@ -1025,7 +972,6 @@ public class MPLFeaturesUtils {
 
         sourceHashMap.put(layerPath, vectorSource);
 
-
         if (addPolyTextSource){
 
             List<Feature> points =  convertToPointFeatures(layerFeatures);
@@ -1039,12 +985,9 @@ public class MPLFeaturesUtils {
             }
             else
                 vectorTextSource.setGeoJson(FeatureCollection.fromFeatures(points));
-
             sourceHashMap.put(layerPath + source_text, vectorTextSource);
         }
-
     }
-
 
     static  public List<Feature> convertToPointFeatures(List<Feature> layerFeatures) {
         List<Feature> centroidFeatures = new ArrayList<>();
@@ -1106,18 +1049,6 @@ public class MPLFeaturesUtils {
         return rasterLayer;
     }
 
-
-//    static public List<String> getLayerMLibreNames(int layerId, int layerType){
-//        List<String> result = new ArrayList<>();
-//        result.add(namePrefix + layer_namepart + layerId);
-////        if (layerType == GeoConstants.GTPolygon || layerType == GeoConstants.GTMultiPolygon)
-////            result.add(namePrefix + layer_namepart + layerId + outline_namepart);
-//
-////        String symbolLayer = "symbol-" +  namePrefix + layer_namepart + layerId;
-////        result.add(symbolLayer);
-//        return result;
-//    }
-
     static public void createFillLayerForLayer(int layerId, int layerType,
                                                final Style style,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap,
@@ -1159,7 +1090,6 @@ public class MPLFeaturesUtils {
                 if (maxZoom!= -1)
                     rasterLayer.setMaxZoom(maxZoom + 1);
 
-                // TMSRenderer tmsRenderer = (TMSRenderer) mRasterLayer.getRenderer();
                 if (iLayer != null && iLayer instanceof  TMSLayer) {
                     TMSRenderer tmsRenderer = (TMSRenderer) ((TMSLayer) iLayer).getRenderer();
                     float alpha = tmsRenderer.getAlpha() / 255.0f; // stored value 0 - 255 // need for maplibre 0 - 1
@@ -1278,7 +1208,7 @@ public class MPLFeaturesUtils {
 //                                // DEFAULT -> "almost solid" (workaround вместо null)
 //                                Expression.literal(new Float[]{1f, 0f})
 //                        ))
-
+//                          try to use coalesce - not work - commented
 //                        PropertyFactory.lineDasharray(Expression.coalesce(
 //                                Expression.get(prop_type), // rule
 //                                Expression.literal(type == 2 ?  new Float[]{2f, 2f} : null)))
@@ -1286,11 +1216,11 @@ public class MPLFeaturesUtils {
 //                                Expression.get(prop_type), // rule
 //                                Expression.literal(
 //                                        Expression.step(
-//                                                Expression.get(prop_type2),  // ваша prop_type
+//                                                Expression.get(prop_type2),  // your prop type
 //                                                Expression.literal(new Float[]{0f, 0f}),
-//                                                Expression.stop(1, null),  // если type == 2
-//                                                Expression.stop(2,  new Float[]{2f, 2f}),  // если type == 2
-//                                                Expression.stop (3, null)  // если type == 2
+//                                                Expression.stop(1, null),  // if type == 2
+//                                                Expression.stop(2,  new Float[]{2f, 2f}),  // if type == 2
+//                                                Expression.stop (3, null)  // if type == 2
 //                                        )
 //                                )))
                     /*
@@ -1381,7 +1311,7 @@ public class MPLFeaturesUtils {
                     if (layerType == GeoConstants.GTPoint || layerType == GeoConstants.GTMultiPoint || isPolygon)
                         placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_POINT);
                     else
-                        placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE_CENTER);
+                        placementProperty = PropertyFactory.symbolPlacement(Property.SYMBOL_PLACEMENT_LINE);
 
                     String anchor = getTextAnchor(textAlignment); // def - Property.TEXT_ANCHOR_TOP
                     Float[] offsets =  isPolygon? new Float[]{0.0f, 0f} :  getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
@@ -1393,6 +1323,8 @@ public class MPLFeaturesUtils {
                                     Expression.get(prop_text_textsize), // rule
                                     Expression.literal((textSize + 3) * 3)  // дефолтное значение
                             )),
+
+                            PropertyFactory.symbolSpacing(10f), // меньше = чаще
 
                             PropertyFactory.textColor(Expression.coalesce(
                                     Expression.get(prop_text_color), // rule
@@ -1413,8 +1345,7 @@ public class MPLFeaturesUtils {
                             PropertyFactory.textAllowOverlap(true),
                             PropertyFactory.textIgnorePlacement(true),
                             PropertyFactory.textFont(font),
-                            PropertyFactory.textMaxWidth(0f))
-                    ;
+                            PropertyFactory.textMaxWidth(0f));
                 }
             }
         }

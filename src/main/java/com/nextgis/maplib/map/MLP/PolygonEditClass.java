@@ -26,7 +26,7 @@ public class PolygonEditClass extends MLGeometryEditClass {
 
 
     private List<org.maplibre.geojson.Point> editingVertices = new ArrayList<>();    // editing vertices
-    List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
+    //List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
 
     // Holds the main vertices for all rings in a flat list.
     // Example: [ext_pt1, ext_pt2, ext_pt3, hole1_pt1, hole1_pt2, hole1_pt3, hole2_pt1, ...]
@@ -169,7 +169,8 @@ public class PolygonEditClass extends MLGeometryEditClass {
         vertexFeatures.clear();
 
         if (editingVertices.isEmpty() && polygonRingEndIndices.isEmpty() && changeGeoJsonSource) {
-            vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
+            if (!vertextHided)
+                vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
             return;
         }
 
@@ -221,7 +222,7 @@ public class PolygonEditClass extends MLGeometryEditClass {
             currentRingStartIndex = ringEndIndex;
         }
         
-        if (changeGeoJsonSource && vertexSource != null) {
+        if (changeGeoJsonSource && vertexSource != null && !vertextHided) {
             vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
         }
     }
@@ -256,6 +257,52 @@ public class PolygonEditClass extends MLGeometryEditClass {
         updateEditingPolygonAndVertex();
         setMarker(getSelectedPoint());
     }
+
+    @Override
+    public void addNewFlowPoint(LatLng newPoint) {
+        if (newPoint == null ||
+                selectedVertexIndex < 0 ||
+                selectedRingIndex < 0 ||
+                selectedRingIndex >= polygonRingEndIndices.size()) {
+            return;
+        }
+
+        Point geoPoint = Point.fromLngLat(
+                newPoint.getLongitude(),
+                newPoint.getLatitude()
+        );
+
+        // start of ring at commmon list
+        int ringStartIndex = (selectedRingIndex == 0)
+                ? 0
+                : polygonRingEndIndices.get(selectedRingIndex - 1);
+
+        int ringEndIndex = polygonRingEndIndices.get(selectedRingIndex);
+
+        // position of selected ring
+        int vertexIndexInRing = selectedVertexIndex - ringStartIndex;
+
+        if (vertexIndexInRing < 0 || selectedVertexIndex >= ringEndIndex) {
+            return; //
+        }
+
+        // insert after selected vertex
+        int insertIndex = ringStartIndex + vertexIndexInRing + 1;
+        editingVertices.add(insertIndex, geoPoint);
+
+        // refresh all end-index for all rings
+        for (int i = selectedRingIndex; i < polygonRingEndIndices.size(); i++) {
+            polygonRingEndIndices.set(i, polygonRingEndIndices.get(i) + 1);
+        }
+
+        // new vertex is selected
+        selectedVertexIndex = insertIndex;
+        updateSelectedRingAndVertexInRingIndices(selectedVertexIndex);
+
+        updateEditingPolygonAndVertex();
+        setMarker(getSelectedPoint());
+    }
+
 
 
     @Override

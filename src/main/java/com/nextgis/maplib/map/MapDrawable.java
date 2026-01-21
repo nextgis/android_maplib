@@ -246,6 +246,7 @@ public class MapDrawable
     private boolean hasEditeometry = false; // was edit
 
     private boolean isDragging = false;
+    private boolean isDraggingByTouchGPS = false;
     private boolean isSwitchVertex = false;
     private MotionEvent startEvent = null;
     private PointF deltaPoint = null;
@@ -1189,6 +1190,16 @@ public class MapDrawable
                 clickPoint = new PointF(event.getX(), event.getY());
                 android.graphics.RectF rect = new android.graphics.RectF(event.getX() - 20,event.getY() - 20,event.getX() + 20,event.getY() + 20);
                 List<org.maplibre.geojson.Feature> featuresMarker = maplibreMap.get().queryRenderedFeatures(rect, "marker-layer");
+
+                if (mapFragment.get().getMode() == MODE_EDIT_BY_TOUCH ){
+                    isDraggingByTouchGPS = true;
+                    startEvent = event;
+
+                    if (editingObject != null)
+                        editingObject.hideVertext();
+                    return true;
+                }
+
                 if (!featuresMarker.isEmpty()){
                     // press marker - lock for future move
                     isDragging = true;
@@ -1217,9 +1228,7 @@ public class MapDrawable
                             editingObject.updateSelectionMiddlePoint(features.get(0));
                             //editingObject.updateSelectionVerticeIndex(index);
                             editingObject.updateEditingPolygonAndVertex();
-
                             mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
-
 
                         }
                         Point point = ((Point)clickedFeature.geometry());
@@ -1254,6 +1263,17 @@ public class MapDrawable
                 int selectedVertexIndex = -1;
                 if (editingObject != null )
                     selectedVertexIndex = editingObject.getSelectedVertexIndex();
+
+                if (isDraggingByTouchGPS && editingObject!= null){
+                    if (mapFragment.get().getMode() == MODE_EDIT_BY_TOUCH){
+                        PointF  newPoint = new PointF(screenPoint.x,screenPoint.y);
+                        LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(newPoint);
+                        editingObject.addNewFlowPoint(latLng);
+                        editingObject.updateEditingPolygonAndVertex();
+                        return true;
+                    }
+                }
+
                 if (isDragging && selectedVertexIndex != -1) {
                     if (!hasEditeometry) {
                         hasEditeometry = true;
@@ -1284,12 +1304,6 @@ public class MapDrawable
                     if (markerFeatureCollection.features().size() > 0)
                         hideMarker();
                     return true;
-//                } else if (mapFragment.get().getMode() == MODE_EDIT_BY_TOUCH){
-//
-//
-//
-//
-//                    return true;
                 } else {
                     return false;
                 }
@@ -1310,24 +1324,43 @@ public class MapDrawable
                 float deltaY = clickPoint.y - event.getY();
                 float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-                if (!isDragging)
-                    if (distance < 5)
-                        mapFragment.get().processMapClick(screenPoint.x, screenPoint.y);
-                clickPoint = null;
+                if (isDraggingByTouchGPS){
 
-                if (isDragging || isSwitchVertex ) {
-                    if (editingObject != null) {
-                        mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
-                        editingObject.regenerateVertexFeatures();
-                        editingObject.displayMiddlePoints(false, true);
-                        LatLng pointReleased = editingObject.getSelectedPoint();
+                    mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
 
-                        if (pointReleased != null)
-                            setMarker(pointReleased);
-                    } else
-                        setMarker(event);
+//                    if (editingObject != null)
+//                        editingObject.showVertext();
+
+                    isDraggingByTouchGPS = false;
+                    isDragging = false;
+                    isDraggingByTouchGPS = false;
+                    isSwitchVertex = false;
+                    deltaPoint = null;
+                    startEvent = null;
+                    return false;
+                } else {
+
+
+                    if (!isDragging)
+                        if (distance < 5)
+                            mapFragment.get().processMapClick(screenPoint.x, screenPoint.y);
+                    clickPoint = null;
+
+                    if (isDragging || isSwitchVertex) {
+                        if (editingObject != null) {
+                            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+                            editingObject.regenerateVertexFeatures();
+                            editingObject.displayMiddlePoints(false, true);
+                            LatLng pointReleased = editingObject.getSelectedPoint();
+
+                            if (pointReleased != null)
+                                setMarker(pointReleased);
+                        } else
+                            setMarker(event);
+                    }
                 }
                 isDragging = false;
+                isDraggingByTouchGPS = false;
                 isSwitchVertex = false;
                 deltaPoint = null;
                 startEvent = null;
@@ -1335,6 +1368,11 @@ public class MapDrawable
             }
         }
         return false;
+    }
+
+
+    public void updateHistoryByWalkEnd(){
+        mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
     }
 
     public void setMarker(MotionEvent motionEvent){
@@ -1479,7 +1517,7 @@ public class MapDrawable
                 if (ilayerd.getId() == lID && selectedFeatureId.equals(fID))
                     return;
                 // need unselect feature
-                unselectFeatureFromEdit(false);
+                unselectFeatureFromEdit(false, false);
                 return;
             }
         }
@@ -1829,7 +1867,7 @@ public class MapDrawable
     }
 
     public void  cancelFeatureEdit(boolean backToOriginal){
-        unselectFeatureFromEdit(backToOriginal);
+        unselectFeatureFromEdit(backToOriginal, false);
         hideMarker();
 
         Layer layer = maplibreMap.get().getStyle().getLayer("selected-polygon-fill");
@@ -1852,7 +1890,24 @@ public class MapDrawable
         }
     }
 
-    public void unselectFeatureFromEdit(boolean backToOriginal){
+
+    public void hideVertex(){
+        if (editingObject != null)
+            editingObject.hideVertext();
+    }
+
+    public void showVertex(){
+        if (editingObject != null)
+            editingObject.showVertext();
+    }
+
+
+    public void showMarker(){
+        if (editingObject != null)
+            editingObject.showCurrentMarker();
+    }
+
+    public void unselectFeatureFromEdit(boolean backToOriginal, boolean keepEditObj ){
         if (editingObject != null && editingObject.editingFeature != null) {
             if (backToOriginal)
                 copyProperties(editingFeatureOriginal, editingObject.editingFeature);
@@ -1862,10 +1917,13 @@ public class MapDrawable
             boolean needChangeFeature = true; // false for newFeature create cancel - remove from anysource
             if (target!= null && target.hasNonNullValueForProperty(prop_featureid) && target.getStringProperty(prop_featureid).equals("-1")) // new feature - no back to anything
                 needChangeFeature = false;
+            if (polygonFeatures.size() > 0)
+                polygonFeatures.clear();
             if (needChangeFeature)
                 polygonFeatures.add(backToOriginal? editingFeatureOriginal : editingObject.editingFeature);
 
-            selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
+            if (!keepEditObj)
+                selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
             // need modify poly sign source
 
 
@@ -1893,10 +1951,12 @@ public class MapDrawable
                     maplibreMap.get().getStyle().removeLayer(fillPolyEditLayer);
             }
 
-            editingObject = null;
-            editingFeatureOriginal = null;
-            editingFeature = null;
-            vertexSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+            if (!keepEditObj) {
+                editingObject = null;
+                editingFeatureOriginal = null;
+                editingFeature = null;
+                vertexSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+            }
         }
     }
 
@@ -2507,6 +2567,17 @@ public class MapDrawable
             pointFeature.addNumberProperty("bearing", bearing);
 
             locationSource.setGeoJson(pointFeature);
+        }
+    }
+
+    public void addPointByWalk(LatLng latLng){
+
+
+        Log.e("POI", "add point " + latLng.getLatitude() + " " + latLng.getLongitude());
+
+        if (editingObject != null) {
+            editingObject.addNewFlowPoint(latLng);
+            editingObject.updateEditingPolygonAndVertex();
         }
     }
 

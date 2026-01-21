@@ -11,6 +11,8 @@ import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
 import org.maplibre.geojson.Point;
 import android.graphics.PointF;
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +24,6 @@ public class MultiLineEditClass extends MLGeometryEditClass {
     private List<org.maplibre.geojson.Point> editingVertices = new ArrayList<>();    // all vertices from all lines
     private List<Integer> lineSizes = new ArrayList<>(); // number of vertices in each line
     private List<org.maplibre.geojson.Point> middleVertices = new ArrayList<>();    // middle points
-    List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>(); // all features for display (vertices + middle points)
 
     public MultiLineEditClass(int geoType, GeoJsonSource selectedEditedSource, Feature editingFeature, List<Feature> lineFeatures,
                               GeoJsonSource selectedPolySource, GeoJsonSource vertexSource, GeoJsonSource markerSource, String layerPath) {
@@ -38,17 +39,7 @@ public class MultiLineEditClass extends MLGeometryEditClass {
                 it.remove();
             }
         }
-
-//        lineFeatures.removeIf(f -> Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order),
-//                editingFeature.getStringProperty(MPLFeaturesUtils.prop_order)));
-
-
         selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(lineFeatures));
-
-        // The main editingFeature for a MultiLineString doesn't usually get a single color here,
-        // as its individual lines will be colored based on selection during updateEditingPolygonAndVertex.
-        // However, if you need an initial color for the whole geometry before selection, set it.
-        // editingFeature.addStringProperty("color", MPLFeaturesUtils.colorLightBlue);
     }
 
     @Override
@@ -84,17 +75,6 @@ public class MultiLineEditClass extends MLGeometryEditClass {
 
     @Override
     public void regenerateVertexFeatures() {
-//        List<org.maplibre.geojson.Feature> vertexFeaturesTmp =
-//                IntStream.range(0, editingVertices.size())
-//                        .mapToObj(index -> {
-//                            Point pt = editingVertices.get(index);
-//                            org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
-//                            f.addNumberProperty("index", index);
-//                            f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
-//                            f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
-//                            return f;
-//                        })
-//                        .collect(Collectors.toList());
 
         List<org.maplibre.geojson.Feature> vertexFeaturesTmp = new ArrayList<>();
         for (int index = 0; index < editingVertices.size(); index++) {
@@ -106,13 +86,7 @@ public class MultiLineEditClass extends MLGeometryEditClass {
             vertexFeaturesTmp.add(f);
         }
 
-
         // Preserve middle points if they exist, only update main vertices
-//        List<Feature> middlePointFeatures = vertexFeatures.stream()
-//            .filter(f -> f.hasNonNullValueForProperty("middle"))
-//            .collect(Collectors.toList());
-//
-
         List<org.maplibre.geojson.Feature> middlePointFeatures = new ArrayList<>();
         for (org.maplibre.geojson.Feature f : vertexFeatures) {
             if (!f.hasNonNullValueForProperty("middle")) {
@@ -124,15 +98,12 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         vertexFeatures.addAll(vertexFeaturesTmp);
         vertexFeatures.addAll(middlePointFeatures); // Add back middle points
 
-        vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
+        if (!vertextHided)
+            vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
     }
 
     public void generateMiddlePointsAddAndDisplay() {
         // Remove old middle points before generating new ones
-//        List<org.maplibre.geojson.Feature> mainVertexFeatures = vertexFeatures.stream()
-//                .filter(f -> !f.hasNonNullValueForProperty("middle"))
-//                .collect(Collectors.toList());
-
         List<org.maplibre.geojson.Feature> mainVertexFeatures = new ArrayList<>();
         for (org.maplibre.geojson.Feature f : vertexFeatures) {
             if (!f.hasNonNullValueForProperty("middle")) {
@@ -208,6 +179,52 @@ public class MultiLineEditClass extends MLGeometryEditClass {
     }
 
     @Override
+    public void addNewFlowPoint(LatLng newPoint) {
+        if (newPoint == null || selectedVertexIndex < 0 || selectedVertexIndex >= editingVertices.size()) {
+            return;
+        }
+
+        // new point to insert
+        Point geoPoint = Point.fromLngLat(
+                newPoint.getLongitude(),
+                newPoint.getLatitude());
+
+        // line with selectedVertexIndex
+        int cumulativeSize = 0;
+        int targetLineIndex = -1;
+
+        for (int i = 0; i < lineSizes.size(); i++) {
+            int currentLineSize = lineSizes.get(i);
+            if (selectedVertexIndex >= cumulativeSize &&
+                    selectedVertexIndex < cumulativeSize + currentLineSize) {
+                targetLineIndex = i;
+                break;
+            }
+            cumulativeSize += currentLineSize;
+        }
+
+        if (targetLineIndex == -1) {
+            return; // no line - exit
+        }
+
+        // insert new point after selectedVertex
+        int insertIndex = selectedVertexIndex + 1;
+        editingVertices.add(insertIndex, geoPoint);
+
+        lineSizes.set(targetLineIndex, lineSizes.get(targetLineIndex) + 1  );
+
+        selectedVertexIndex = insertIndex;
+
+        updateEditingPolygonAndVertex();
+
+        LatLng selected = getSelectedPoint();
+        if (selected != null) {
+            setMarker(selected);
+        }
+    }
+
+
+    @Override
     public void displayMiddlePoints(boolean isInit, boolean changeGeoJsonSource) {
         generateMiddlePointsAddAndDisplay(); // This populates middleVertices and adds them to vertexFeatures
 
@@ -215,10 +232,6 @@ public class MultiLineEditClass extends MLGeometryEditClass {
             if (!editingVertices.isEmpty()) {
                 selectedVertexIndex = 0;
                 // Apply color to the initially selected main vertex (if any)
-//                 vertexFeatures.stream()
-//                    .filter(f -> !f.hasNonNullValueForProperty("middle") && f.getNumberProperty("index").intValue() == selectedVertexIndex)
-//                    .findFirst()
-//                    .ifPresent(f -> f.addStringProperty("color", MPLFeaturesUtils.colorRED));
 
                 for (org.maplibre.geojson.Feature f : vertexFeatures) {
                     if (!f.hasNonNullValueForProperty("middle")) {
@@ -241,14 +254,9 @@ public class MultiLineEditClass extends MLGeometryEditClass {
                     feature.addStringProperty("color", feature.getNumberProperty("index").intValue() == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
                 }
             }
-//            vertexFeatures.forEach(f -> {
-//                if (!f.hasNonNullValueForProperty("middle")) {
-//                    f.addStringProperty("color", f.getNumberProperty("index").intValue() == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
-//                }
-//            });
         }
 
-        if (changeGeoJsonSource) {
+        if (changeGeoJsonSource && !vertextHided) {
             vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
         }
     }
@@ -301,9 +309,6 @@ public class MultiLineEditClass extends MLGeometryEditClass {
                 String key = it.next();
                 editingFeature.addProperty(key, originalEditingFeature.properties().get(key));
             }
-
-//            originalEditingFeature.properties().keySet().forEach(key -> {
-//                editingFeature.addProperty(key, originalEditingFeature.properties().get(key));});
         }
 
         // For display: color the selected line red, others light blue
@@ -321,17 +326,6 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(displayLineFeatures));
 
         // Regenerate main vertex features (middle points are handled by displayMiddlePoints)
-//        List<org.maplibre.geojson.Feature> mainVertexFeatures = IntStream.range(0, editingVertices.size())
-//            .mapToObj(index -> {
-//                Point pt = editingVertices.get(index);
-//                org.maplibre.geojson.Feature f = org.maplibre.geojson.Feature.fromGeometry(pt);
-//                f.addNumberProperty("index", index);
-//                f.addNumberProperty("radius", MPLFeaturesUtils.pointRaduis);
-//                f.addStringProperty("color", index == selectedVertexIndex ? MPLFeaturesUtils.colorRED : MPLFeaturesUtils.colorLightBlue);
-//                return f;
-//            })
-//            .collect(Collectors.toList());
-
         List<org.maplibre.geojson.Feature> mainVertexFeatures = new ArrayList<>();
         for (int index = 0; index < editingVertices.size(); index++) {
             Point pt = editingVertices.get(index);
@@ -347,7 +341,8 @@ public class MultiLineEditClass extends MLGeometryEditClass {
 
         displayMiddlePoints(false, false); // Regenerate middle points and add them to vertexFeatures, but don't update source yet
 
-        vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures)); // Now update source with all points
+        if (!vertextHided)
+            vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures)); // Now update source with all points
     }
 
     @Override

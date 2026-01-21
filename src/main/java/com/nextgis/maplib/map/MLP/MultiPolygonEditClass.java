@@ -19,7 +19,7 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
     // Flat list of all vertices for all rings of all polygons
     protected List<Point> editingVertices = new ArrayList<>(); // Inherited
 
-    List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
+    //List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
 
     // For each ring of each polygon, its end index in editingVertices
     private List<Integer> polygonRingEndIndices = new ArrayList<>();
@@ -228,7 +228,7 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
         middleVerticesPerPolygonPerRing.clear();
 
         if (editingVertices.isEmpty()) {
-            if (changeGeoJsonSource && vertexSource != null) {
+            if (changeGeoJsonSource && vertexSource != null && !vertextHided) {
                 vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
             }
             return;
@@ -303,7 +303,7 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
         }
 
 
-        if (changeGeoJsonSource && vertexSource != null) {
+        if (changeGeoJsonSource && vertexSource != null && !vertextHided) {
             vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
         }
     }
@@ -348,7 +348,63 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
         updateEditingPolygonAndVertex();
         // setMarker is called in updateEditingPolygonAndVertex
     }
-    
+
+    @Override
+    public void addNewFlowPoint(LatLng newPoint) {
+        if (selectedPolygonIndex == -1 ||
+                selectedRingIndexInPolygon == -1 ||
+                selectedVertexIndex == -1 ||
+                selectedVertexIndex >= editingVertices.size()) {
+            return;
+        }
+
+        Point point = Point.fromLngLat(newPoint.getLongitude(), newPoint.getLatitude());
+
+        // index ring at polygonRingEndIndices
+        int startRingMarkerForPolygon =
+                (selectedPolygonIndex == 0)
+                        ? 0
+                        : multiPolygonRingEndIndicesMarker.get(selectedPolygonIndex - 1);
+
+        int absoluteRingIndexInPRI =
+                startRingMarkerForPolygon + selectedRingIndexInPolygon;
+
+        if (absoluteRingIndexInPRI < 0 ||
+                absoluteRingIndexInPRI >= polygonRingEndIndices.size()) {
+            return;
+        }
+
+        // scope ring in common list
+        int ringStartGlobal =
+                (absoluteRingIndexInPRI == 0)
+                        ? 0
+                        : polygonRingEndIndices.get(absoluteRingIndexInPRI - 1);
+
+        int ringEndGlobal = polygonRingEndIndices.get(absoluteRingIndexInPRI);
+
+        // check selected vertex in ring
+        int insertIndex = selectedVertexIndex;
+
+        if (insertIndex < ringStartGlobal || insertIndex >= ringEndGlobal) {
+            // fallback — insert to end ring
+            insertIndex = ringEndGlobal;
+        }
+
+        // insert ppoint before selected
+        editingVertices.add(insertIndex, point);
+
+        // refresh polygonRingEndIndices
+        for (int i = absoluteRingIndexInPRI; i < polygonRingEndIndices.size(); i++) {
+            polygonRingEndIndices.set(i, polygonRingEndIndices.get(i) + 1);
+        }
+
+        // update  selection —new point becomes selected
+        updateDerivedSelectionIndices(insertIndex);
+        updateEditingPolygonAndVertex();
+    }
+
+
+
     @Override
     public void deleteCurrentPoint() {
         if (selectedVertexIndex == -1 || editingVertices.isEmpty()) return;
@@ -473,10 +529,10 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
             return;
         }
 
-        // 1. Remove vertices of the specified ring
+        // Remove vertices of the specified ring
         editingVertices.subList(ringStartGlobal, ringEndGlobal).clear();
 
-        // 2. Update polygonRingEndIndices
+        // Update polygonRingEndIndices
         // First, remove the entry for the deleted ring
         polygonRingEndIndices.remove(absoluteRingIndexInPRI);
         // Then, adjust all subsequent end indices by the number of vertices removed
@@ -484,7 +540,7 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
             polygonRingEndIndices.set(i, polygonRingEndIndices.get(i) - numVerticesInDeletedRing);
         }
 
-        // 3. Update multiPolygonRingEndIndicesMarker
+        // Update multiPolygonRingEndIndicesMarker
         // The polygon pIdxToDeleteRingFrom now has one less ring.
         // Adjust its marker and all subsequent polygon markers.
         for (int i = pIdxToDeleteRingFrom; i < multiPolygonRingEndIndicesMarker.size(); i++) {
@@ -498,7 +554,7 @@ public class MultiPolygonEditClass extends MLGeometryEditClass {
             return;
         }
 
-        // 4. Update selection: Default to the first vertex of the outer ring of the modified polygon.
+        // Update selection: Default to the first vertex of the outer ring of the modified polygon.
         // The current polygon (pIdxToDeleteRingFrom) is still the selected one.
         // Select its outer ring (index 0) and first vertex (index 0).
         this.selectedPolygonIndex = pIdxToDeleteRingFrom;

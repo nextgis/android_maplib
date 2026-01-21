@@ -330,10 +330,10 @@ public class MapUtil {
     }
 
     public final static Date convertTime(final Date currentTime, TimeZone sourceTimeZone, TimeZone targetTimeZone) {
-        // Разница между временными зонами в миллисекундах
+        // difference between time zones in milliseconds
         int timeZoneOffset = targetTimeZone.getRawOffset() - sourceTimeZone.getRawOffset();
 
-        // Конвертировать время из одной зоны в другую
+        // convert to target time zone
         return new Date(currentTime.getTime() + timeZoneOffset);
     }
 

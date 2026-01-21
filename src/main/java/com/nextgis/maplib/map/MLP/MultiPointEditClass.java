@@ -180,6 +180,11 @@ public class MultiPointEditClass extends MLGeometryEditClass {
         }
     }
 
+    @Override
+    public void addNewFlowPoint(LatLng newPoint) {
+
+    }
+
     public void addNewPoint(LatLng center){
         if (center == null)
             return; // Or throw an IllegalArgumentException

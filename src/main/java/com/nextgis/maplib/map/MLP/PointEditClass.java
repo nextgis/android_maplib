@@ -147,4 +147,9 @@ public class PointEditClass extends MLGeometryEditClass {
             setMarker(point);
         }
     }
+
+    @Override
+    public void addNewFlowPoint(LatLng newPoint) {
+
+    }
 }

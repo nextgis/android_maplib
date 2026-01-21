@@ -25,6 +25,9 @@ public abstract class MLGeometryEditClass {
 
     final GeoJsonSource markerSource;
 
+    List<org.maplibre.geojson.Feature> vertexFeatures = new ArrayList<>();
+    boolean vertextHided = false;
+
     public MLGeometryEditClass(int geoType,
                                GeoJsonSource selectedEditedSource,
                                org.maplibre.geojson.Feature editingFeature,
@@ -62,6 +65,21 @@ public abstract class MLGeometryEditClass {
     public void updateSelectionMiddlePoint(org.maplibre.geojson.Feature point) {
     }       // update selection
 
+
+    abstract public void addNewFlowPoint(LatLng newPoint);
+        // update with ByTouch and ByWalk(gps)
+        // add
+
+    public void hideVertext(){
+        vertexSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+        vertextHided = true;
+    };
+
+    public void showVertext(){
+        vertexSource.setGeoJson(FeatureCollection.fromFeatures(vertexFeatures));
+        vertextHided = false;
+    };
+
     public int getSelectedVertexIndex() {
         return selectedVertexIndex;
     }
@@ -76,7 +94,15 @@ public abstract class MLGeometryEditClass {
     public void regenerateVertexFeatures() {
     }
 
+    public void showCurrentMarker(){
+        LatLng point = getSelectedPoint();
+        if (point != null)
+            setMarker(point);
+    }
+
     public void setMarker(LatLng latLng) {
+        if (latLng == null)
+            return;
 
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
         FeatureCollection markerFeatureCollection = FeatureCollection.fromFeature(feature);

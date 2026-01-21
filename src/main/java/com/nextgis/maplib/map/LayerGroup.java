@@ -783,7 +783,7 @@ public class LayerGroup
     public static int indexOfLayer(LinkedHashMap<Integer, ILayer> map, ILayer layer) {
         int index = 0;
         for (ILayer value : map.values()) {
-            if (value == layer) { // или equals()
+            if (value == layer) { // or equals()
                 return index;
             }
             index++;
@@ -794,7 +794,7 @@ public class LayerGroup
     public static ILayer getLayerByindex(LinkedHashMap<Integer, ILayer> map, int index) {
         int indextmp = 0;
         for (ILayer value : map.values()) {
-            if (indextmp == index) { // или equals()
+            if (indextmp == index) { // or equals()
                 return value;
             }
             indextmp++;
