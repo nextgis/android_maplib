@@ -49,6 +49,7 @@ import com.nextgis.maplib.display.SimplePolygonStyle;
 import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
+import com.nextgis.maplib.map.MLP.MeasurmentLine;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
 import com.nextgis.maplib.map.MLP.MultiPointEditClass;
 import com.nextgis.maplib.map.MLP.MultiPolygonEditClass;
@@ -94,6 +95,7 @@ public class MPLFeaturesUtils {
     static public Number pointRaduis = 8;
     static public Number middleRaduis = 4;
     static public String colorLightBlue = "#03a9f4";
+    static public String colorVeryLightBlue = "#A2BCF8";
     static public String colorBlue = "#0000FF";
     static public String colorRED = "#FF0000";
 
@@ -157,6 +159,10 @@ public class MPLFeaturesUtils {
                     choosedSource, vertexSource, markerSource, layerPath);
         } else if (geoType == GeoConstants.GTMultiPolygon) {
             return new MultiPolygonEditClass(geoType, selectedEditedSource, editingFeature, polygonFeatures,
+                    choosedSource, vertexSource, markerSource, layerPath);
+        }
+        else if (geoType == GeoConstants.GT_MEASURMENT) {
+            return new MeasurmentLine(geoType, selectedEditedSource, editingFeature, polygonFeatures,
                     choosedSource, vertexSource, markerSource, layerPath);
         }
         else

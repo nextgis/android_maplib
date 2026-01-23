@@ -2799,7 +2799,7 @@ public class VectorLayer
         final Map<Long, Feature> featureListMap = new HashMap<>();
 
         final List<Field> fields = getFields();
-        String[] projection = new String[fields.size() +1] ; // только ID, а лучше все поля КРОМЕ geom
+        String[] projection = new String[fields.size() +1] ; // only ID, better all fields except  geom
         projection[0] = "_id";
         for (int i = 0; i < fields.size(); i++)
             projection[i+1] = fields.get(i).getName();

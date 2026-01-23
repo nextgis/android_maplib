@@ -55,6 +55,7 @@ public interface GeoConstants
     int GTGeometryCollection = 7;
     int GT_RASTER_WA         = 8;
     int GT_TRACK_WA         = 9;
+    int GT_MEASURMENT         = 10;
     int GTNone               = 100;
     int GTLinearRing         = 200;
 

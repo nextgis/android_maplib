@@ -4,6 +4,7 @@ import android.graphics.PointF;
 
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.GeoEnvelope;
+import com.nextgis.maplib.datasource.GeoGeometry;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 
 public interface MaplibreMapInteraction {
@@ -28,5 +29,12 @@ public interface MaplibreMapInteraction {
     public  boolean getLongLongClickProcesses();
 
     public  void setLongLongClickProcesses(boolean longLongCLickPrecesses);
+
+    public GeoGeometry getGeometryFromMaplibreGeometry(org.maplibre.geojson.Feature feature);
+
+    public void onLengthChanged(Double length);
+
+    public void onAreaChanged(Double length);
+
 
 }
