@@ -1978,7 +1978,10 @@ public class MapDrawable
                 featureToRecolor.addStringProperty("color", colorLightBlue);
                 // color for selection
 
-                choosed.setGeoJson(FeatureCollection.fromFeature(featureToRecolor));
+                if  (keepEditObj)
+                    choosed.setGeoJson(FeatureCollection.fromFeature(featureToRecolor));
+                else
+                    choosed.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
 
                 // clear vertex
                 vertexSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
@@ -1993,7 +1996,7 @@ public class MapDrawable
                 editingObject = null;
                 editingFeatureOriginal = null;
                 editingFeature = null;
-                originalSelectedFeature = null;
+                //originalSelectedFeature = null;
             }
         }
     }
