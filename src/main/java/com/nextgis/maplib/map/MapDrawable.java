@@ -26,8 +26,10 @@ import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -38,6 +40,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -139,6 +142,9 @@ import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
 import static com.nextgis.maplib.util.NetworkUtil.getBaseUrlpart;
 import static com.nextgis.maplib.util.NetworkUtil.getHTTPBaseAuth;
+import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_DARK;
+import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_LIGHT;
+import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_NEUTRAL;
 import static org.maplibre.android.style.layers.Property.NONE;
 import static org.maplibre.android.style.layers.Property.VISIBLE;
 import static org.maplibre.android.style.layers.PropertyFactory.visibility;
@@ -157,6 +163,7 @@ import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Projection;
 import org.maplibre.android.maps.Style;
 import org.maplibre.android.style.expressions.Expression;
+import org.maplibre.android.style.layers.BackgroundLayer;
 import org.maplibre.android.style.layers.CircleLayer;
 import org.maplibre.android.style.layers.FillLayer;
 import org.maplibre.android.style.layers.Layer;
@@ -304,7 +311,8 @@ public class MapDrawable
         final Style style = maplibreMap.get().getStyle();
         for (final Layer layer :maplibreMap.get().getStyle().getLayers()){
 //            Log.e("ZXZY", "delete layer" + layer.getId());
-            boolean result = style.removeLayer(layer);
+            if (!layer.getId().equals("background"))
+                style.removeLayer(layer);
         }
         // clear all layers - so - first tool layer also clear
         selectedDotCircleLayer = null;
@@ -744,8 +752,12 @@ public class MapDrawable
                     @Override
                     public void onDidFinishLoadingStyle() {
                         Style style = maplibreMap.get().getStyle();
+
+                        updateMapBackground();
+
                         for (Layer layer :maplibreMap.get().getStyle().getLayers()){
-                            boolean result = style.removeLayer(layer);
+                            if (!layer.getId().equals("background"))
+                                style.removeLayer(layer);
                         }
 
                         if (createSource) {
@@ -1050,7 +1062,8 @@ public class MapDrawable
             }
 
             for (Layer layer : maplibreMap.get().getStyle().getLayers()) {
-                boolean result = style.removeLayer(layer);
+                if (!layer.getId().equals("background"))
+                    style.removeLayer(layer);
             }
 
             List<Map.Entry<Integer, List<org.maplibre.geojson.Feature>>> listOf = new ArrayList<>(sourcesOrder.entrySet());
@@ -2868,7 +2881,6 @@ public class MapDrawable
                 mapFragment.get().onLengthChanged(length);
             }
 
-
             Polygon polygon = Polygon.fromLngLats(((MeasurmentLine)editingObject).getPoints());
             org.maplibre.geojson.Feature featurePoly =  org.maplibre.geojson.Feature.fromGeometry(polygon);
             GeoGeometry geometryPoly = mapFragment.get().getGeometryFromMaplibreGeometry(featurePoly);
@@ -2879,6 +2891,64 @@ public class MapDrawable
             }
         }
     }
+
+    public void updateMapBackground(){
+        if (maplibreMap.get()!= null){
+            SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+            int  colorRes = 0; // black
+            String KEY_PREF_MAP_BG = "map_bg"; // copy of
+            String namepart = "neutral_";
+            switch (mSharedPreferences.getString(KEY_PREF_MAP_BG, KEY_PREF_NEUTRAL)) {
+                    case KEY_PREF_LIGHT:
+                        colorRes = R.drawable.bk_tile_light;
+                        namepart = "light_";
+                        break;
+                    case KEY_PREF_DARK:
+                        colorRes = R.drawable.bk_tile_dark;
+                        namepart = "dark_";
+                        break;
+                    default:
+                        colorRes = R.drawable.bk_tile;
+                        namepart = "neutral_";
+                        break;
+                }
+
+            Bitmap bitmap = BitmapFactory.decodeResource(getContext().getResources(), colorRes);
+            maplibreMap.get().getStyle().addImage("bg-pattern" + namepart, bitmap);
+
+            BackgroundLayer bgLayer = (BackgroundLayer) maplibreMap.get().getStyle().getLayer("background");
+            if (bgLayer == null) {
+                bgLayer = new BackgroundLayer("background");
+                maplibreMap.get().getStyle().addLayerAt(bgLayer, 0);
+            }
+
+            bgLayer.setProperties(PropertyFactory.backgroundPattern("bg-pattern" + namepart));
+        }
+    }
+
+
+//    public void updateMapBackground(){
+//        if (maplibreMap.get()!= null){
+//            SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+//            String color = "#000000"; // black
+//            String KEY_PREF_MAP_BG               = "map_bg";
+//            switch (mSharedPreferences.getString(KEY_PREF_MAP_BG, KEY_PREF_NEUTRAL)) {
+//                case KEY_PREF_LIGHT:
+//                    color = "#FFFFFF";//backgroundResId = com.nextgis.maplibui.R.drawable.bk_tile_light;
+//                    break;
+//                case KEY_PREF_DARK:
+//                    color = "#000000";//backgroundResId = com.nextgis.maplibui.R.drawable.bk_tile_dark;
+//                    break;
+//                default:
+//                    color = "#888888";
+//                    //backgroundResId = com.nextgis.maplibui.R.drawable.bk_tile;
+//                    break;
+//            }
+//            maplibreMap.get().getStyle().getLayer("background").setProperties(
+//                    PropertyFactory.backgroundColor(color)
+//            );
+//        }
+//    }
 
 
 

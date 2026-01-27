@@ -44,4 +44,8 @@ public interface SettingsConstants
 
 
     String KEY_PREF_SD_CARD_NAME                = "sd_card_name";
+
+    String KEY_PREF_LIGHT                = "light";
+    String KEY_PREF_DARK                 = "dark";
+    String KEY_PREF_NEUTRAL              = "neutral";
 }
