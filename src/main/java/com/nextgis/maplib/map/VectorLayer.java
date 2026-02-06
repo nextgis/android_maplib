@@ -3513,9 +3513,8 @@ public class VectorLayer
                 MapBase map = MapDrawable.getInstance();
                 map.clearLayers();
                 ((MapDrawable)map).clearMaplLibreMap();
-                map.load();
                 ((MapDrawable)map).loadMarkersTopPart();
-
+                map.load();
                 new Sync().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             } catch (IOException | JSONException ignored) { }
         }

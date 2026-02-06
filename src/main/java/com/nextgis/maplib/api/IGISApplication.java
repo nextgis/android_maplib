@@ -221,5 +221,10 @@ public interface IGISApplication
 //        interceptorNG.addAuth(layerPart,authPart);
 //    };
 
+    boolean getGetingStyleInProgress();
+
+    void setGetingStyleInProgress(boolean value);
+
+
 
 }

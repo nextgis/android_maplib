@@ -84,7 +84,8 @@ public class Layer extends Table
     public void setVisible(boolean visible)
     {
         mIsVisible = visible;
-        notifyLayerChanged();
+        notifyLayerVisibleChanged();
+        //notifyLayerChanged();
     }
 
     @Override

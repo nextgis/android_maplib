@@ -36,5 +36,7 @@ public interface MaplibreMapInteraction {
 
     public void onAreaChanged(Double length);
 
+    public void changeProgress(boolean show);
+
 
 }

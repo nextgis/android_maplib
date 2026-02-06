@@ -106,6 +106,16 @@ public class Table implements ILayer, IJSONStore {
         return true;
     }
 
+
+    public void notifyLayerVisibleChanged()
+    {
+        if (mParent != null && mParent instanceof LayerGroup) {
+            LayerGroup group = (LayerGroup) mParent;
+            group.onLayerVisibleChanged(this);
+        }
+    }
+
+
     public void notifyLayerChanged()
     {
         if (mParent != null && mParent instanceof LayerGroup) {

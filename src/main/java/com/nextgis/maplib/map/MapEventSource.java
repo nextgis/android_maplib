@@ -68,6 +68,7 @@ public class MapEventSource
     protected final static int    EVENT_onLayerDrawFinished = 6;
     protected final static int    EVENT_onLayerDrawStarted  = 7;
     protected final static int    EVENT_onLayerChangedFeatureID      = 8;
+    protected final static int    EVENT_onLayerVisibleChanged      = 9;
     protected        List<MapEventListener> mListeners;
     protected static Handler                mHandler;
     protected        boolean                mFreeze;
@@ -187,6 +188,25 @@ public class MapEventSource
         Bundle bundle = new Bundle();
         bundle.putInt(BUNDLE_ID_KEY, layer.getId());
         bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerChanged);
+
+        Message msg = new Message();
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+    }
+
+
+    @Override
+    protected void onLayerVisibleChanged(ILayer layer)
+    {
+        super.onLayerVisibleChanged(layer);
+
+        if (mListeners == null) {
+            return;
+        }
+
+        Bundle bundle = new Bundle();
+        bundle.putInt(BUNDLE_ID_KEY, layer.getId());
+        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerVisibleChanged);
 
         Message msg = new Message();
         msg.setData(bundle);
@@ -382,6 +402,12 @@ public class MapEventSource
                         case EVENT_onLayerChanged:
                             listener.onLayerChanged(resultData.getInt(BUNDLE_ID_KEY));
                             break;
+                        case EVENT_onLayerVisibleChanged:
+                            listener.onLayerVisibleChanged(resultData.getInt(BUNDLE_ID_KEY));
+                            break;
+
+
+
                         case EVENT_onLayerChangedFeatureID:
                             listener.onLayerChangedFeatureId(
                                     resultData.getLong(BUNDLE_ID_OLD_FEATURE_KEY),

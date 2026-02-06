@@ -52,6 +52,13 @@ public interface MapEventListener
 
 
     /**
+     * Executed then layer changed visibility
+     * @param id The changed layer identificator.
+     */
+    void onLayerVisibleChanged(int id);
+
+
+    /**
      * Executed then layer changed
      * @param layerId The changed layer identificator.
      * @param oldFeatureId The changed feature identificator.
