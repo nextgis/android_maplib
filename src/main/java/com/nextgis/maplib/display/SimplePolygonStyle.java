@@ -171,6 +171,7 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
         mField = field;
     }
 
+    @Override
     public String getText() {
         return mText;
     }

@@ -129,6 +129,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_polygon_text;
 import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
+import static com.nextgis.maplib.util.Constants.MESSAGE_INTENT_STYLING;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
@@ -411,7 +412,6 @@ public class MapDrawable
     }
 
     public void addLayerByID(int id){
-        Log.e("STYLING", "add layerById " + id);
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -472,52 +472,40 @@ public class MapDrawable
 
                     if (iLayer instanceof VectorLayer) {
                         VectorLayer layer = (VectorLayer) iLayer;
-                        Log.e("STYLING", "add layerById " + layer.getName());
-
                         geoType = layer.getGeometryType();
                         // this layer
 
                         ((IGISApplication) getContext().getApplicationContext()).setGetingStyleInProgress(true);
 
                         mainHandler.post(()-> {
-                                    mapFragment.get().changeProgress(true);
-                                });
-
-                        Log.e("STYLING", "start progress ");
+                                    mapFragment.get().changeProgress(true); });
                         try {
-                            Log.e("STYLING", "send broadcast " + ((VectorLayer) iLayer).getName());
-                            //String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
-                            Intent msg = new Intent("com.nextgis.malibui.MESSAGE.STYLING");
-                            msg.putExtra("msg", "process data on layer: " + ((VectorLayer) iLayer).getName());
+                            Intent msg = new Intent(MESSAGE_INTENT_STYLING);
+
+                            String loadHint = getContext().getString(R.string.process_layer_hint);
+
+                            msg.putExtra("msg", loadHint + ((VectorLayer) iLayer).getName());
                             msg.setPackage(getContext().getPackageName());
                             getContext().sendBroadcast(msg);
-
-                            Log.e("STYLING", "start get features");
                             vectorPolygonFeatures.addAll(createFeatureListFromLayer(layer));
-
-                            Log.e("STYLING", "end get features size " + vectorPolygonFeatures.size());
                             sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
                             sourcesOrder.put(layer.getId(), new ArrayList<>());
                             ngStyle = ((VectorLayer) iLayer).getDefaultStyleNoExcept();
 
                         } catch (Exception ex) {
-                            Log.e("STYLING", "catch");
-                        } finally {
-                            Log.e("STYLING", "finally");
-                            Log.e("STYLING", "send broadcast empty");
+                            Log.e("fail", ex.getMessage());
 
-                            //String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
-                            Intent msg1 = new Intent("com.nextgis.malibui.MESSAGE.STYLING");
+                        } finally {
+                            Intent msg1 = new Intent(MESSAGE_INTENT_STYLING);
                             msg1.putExtra("msg", "");
                             msg1.setPackage(getContext().getPackageName());
+
                             getContext().sendBroadcast(msg1);
 
                             ((IGISApplication) getContext().getApplicationContext()).setGetingStyleInProgress(false);
                             mainHandler.post(()-> {
                                 mapFragment.get().changeProgress(false);
                             });
-
-                            Log.e("STYLING", "progress off both");
                         }
                     } else if (iLayer instanceof NGWRasterLayer) {
                         geoType = GT_RASTER_WA;
@@ -623,60 +611,64 @@ public class MapDrawable
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler mainHandler = new Handler(Looper.getMainLooper());
 
-        executor.execute(() -> {
-            if (maplibreMap.get() == null || maplibreMapView.get() == null)
-                return;
-            if (ilayer instanceof  TMSLayer){
+        Runnable r = () -> {
+            executor.execute(() -> {
+                if (maplibreMap.get() == null || maplibreMapView.get() == null)
+                    return;
+                if (ilayer instanceof  TMSLayer){
 
-                return;
-            }
-
-
-            if (!(ilayer instanceof VectorLayer))
-                return;
-            VectorLayer layer = (VectorLayer) ilayer;
-
-
-            ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(true);
-            mainHandler.post(() -> {
-                mapFragment.get().changeProgress(true);
-            });
-
-
-            //String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
-            Intent msg = new Intent("com.nextgis.malibui.MESSAGE.STYLING");
-            msg.putExtra("msg", "process data on layer: " + layer.getName());
-            msg.setPackage(getContext().getPackageName());
-            getContext().sendBroadcast(msg);
-
-
-            List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
-            sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
-            sourcesOrder.put(layer.getId(), new ArrayList<>());
-
-            ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(false);
-            mainHandler.post(() -> {
-                mapFragment.get().changeProgress(false);
-            });
-
-            // Switch to main thread
-            mainHandler.post(() -> {
-                GeoJsonSource layerSource = sourceHashMap.get(layer.getPath().toString());
-                List<org.maplibre.geojson.Feature> features = sourceFeaturesHashMap.get(layer.getId());
-                if (layerSource != null) {
-                    layerSource.setGeoJson(FeatureCollection.fromFeatures(features));
+                    return;
                 }
 
-                if (layer.mGeometryType == GTPolygon || layer.mGeometryType ==  GTMultiPolygon){
-                    GeoJsonSource layerSourceText = sourceHashMap.get(layer.getPath().toString() + source_polygon_text);
-                    if (layerSourceText != null){
-                        List<org.maplibre.geojson.Feature> points =  convertToPointFeatures(features);
-                        layerSourceText.setGeoJson(FeatureCollection.fromFeatures(points));
+
+                if (!(ilayer instanceof VectorLayer))
+                    return;
+                VectorLayer layer = (VectorLayer) ilayer;
+
+
+                ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(true);
+                mainHandler.post(() -> {
+                    mapFragment.get().changeProgress(true);
+                });
+
+                String loadHint = getContext().getString(R.string.process_layer_hint);
+
+                Intent msg = new Intent(MESSAGE_INTENT_STYLING);
+                msg.putExtra("msg", loadHint + layer.getName());
+                msg.setPackage(getContext().getPackageName());
+                getContext().sendBroadcast(msg);
+
+
+                List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
+                sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
+                sourcesOrder.put(layer.getId(), new ArrayList<>());
+
+                ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(false);
+                mainHandler.post(() -> {
+                    mapFragment.get().changeProgress(false);
+                });
+
+                // Switch to main thread
+                mainHandler.post(() -> {
+                    GeoJsonSource layerSource = sourceHashMap.get(layer.getPath().toString());
+                    List<org.maplibre.geojson.Feature> features = sourceFeaturesHashMap.get(layer.getId());
+                    if (layerSource != null) {
+                        layerSource.setGeoJson(FeatureCollection.fromFeatures(features));
                     }
-                }
+
+                    if (layer.mGeometryType == GTPolygon || layer.mGeometryType ==  GTMultiPolygon){
+                        GeoJsonSource layerSourceText = sourceHashMap.get(layer.getPath().toString() + source_polygon_text);
+                        if (layerSourceText != null){
+                            List<org.maplibre.geojson.Feature> points =  convertToPointFeatures(features);
+                            layerSourceText.setGeoJson(FeatureCollection.fromFeatures(points));
+                        }
+                    }
+                });
             });
-        });
-        executor.shutdown();
+            executor.shutdown();
+        };
+        mainHandler.postDelayed(r, 500);
+
     }
 
     public void loadLayersToMaplibreMap(final String styleJson,
@@ -725,9 +717,9 @@ public class MapDrawable
                         if (skipInvisibleLayers && !layer.isVisible())
                             continue;
 
-                        //String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
-                        Intent msg = new Intent("com.nextgis.malibui.MESSAGE.STYLING");
-                        msg.putExtra("msg", "process data on layer: " + ((VectorLayer)iLayer).getName());
+                        Intent msg = new Intent(MESSAGE_INTENT_STYLING);
+                        String loadHint = getContext().getString(R.string.process_layer_hint);
+                        msg.putExtra("msg", loadHint + ((VectorLayer)iLayer).getName());
                         msg.setPackage(getContext().getPackageName());
                         getContext().sendBroadcast(msg);
 

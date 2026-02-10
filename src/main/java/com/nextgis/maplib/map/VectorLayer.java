@@ -705,7 +705,7 @@ public class VectorLayer
         try {
             return ((SimpleFeatureRenderer)getRenderer()).getStyle();
         }catch (Exception ex){
-            Log.e("style", ex.getMessage());
+            Log.e("style fail", ex.getMessage());
             return null;
         }
     }

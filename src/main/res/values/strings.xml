@@ -110,8 +110,6 @@
     <string name="error_account_add_error">Cannot add Account - some error happen</string>
     <string name="error_no_access_403">No access right for operation</string>
     <string name="error_select_obj">Error on object select</string>
-
-
     <string name="outofmemory">Out of Memory layer: </string>
-
+    <string name="process_layer_hint">Load data on layer: </string>
 </resources>

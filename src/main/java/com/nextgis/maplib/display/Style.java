@@ -82,6 +82,10 @@ public abstract class Style implements IJSONStore, Cloneable {
         mWidth = width;
     }
 
+    public String getText() {
+        return null;
+    }
+
     public Style(final int color, int outColor) {
         this();
         mColor = color;

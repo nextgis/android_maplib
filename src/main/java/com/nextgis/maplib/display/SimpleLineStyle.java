@@ -316,6 +316,7 @@ public class SimpleLineStyle extends Style implements ITextStyle {
         mField = field;
     }
 
+    @Override
     public String getText() {
         return mText;
     }

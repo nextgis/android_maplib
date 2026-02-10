@@ -105,6 +105,8 @@ public interface Constants
 
     String NOTIFY_LAYER_NAME = "layer_name";
 
+    String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
+
     /**
      * JSON keys
      */

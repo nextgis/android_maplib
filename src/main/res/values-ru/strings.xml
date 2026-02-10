@@ -109,5 +109,5 @@
     <string name="error_no_access_403">Нет прав для операции</string>
     <string name="error_select_obj">Ошибка при выборе обьекта</string>
     <string name="outofmemory">Нехватка памяти при загрузке слоя: </string>
-
+    <string name="process_layer_hint">Загрузка данных для слоя: </string>
 </resources>

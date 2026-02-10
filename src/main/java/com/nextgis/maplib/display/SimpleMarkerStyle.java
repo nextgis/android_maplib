@@ -371,6 +371,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mField = field;
     }
 
+    @Override
     public String getText() {
         return mText;
     }
