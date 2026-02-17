@@ -10,7 +10,11 @@ import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_RIGHT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_LEFT;
 import static com.nextgis.maplib.display.SimpleMarkerStyle.ALIGN_TOP_RIGHT;
+import static com.nextgis.maplib.util.GeoConstants.GTLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
@@ -127,14 +131,6 @@ public class MPLFeaturesUtils {
     static final public String source_polygon_text = "-text"; // source for text part of polygon[s]
     static final public String id_name = "_id";
 
-    enum GeometryKind {
-        LINE,
-        MULTILINE,
-        POINT,
-        MULTIPOINT,
-        POLYGON,
-        MULTIPOLYGON
-    }
 
     public static MLGeometryEditClass createEditObject(
             int geoType,
@@ -229,36 +225,36 @@ public class MPLFeaturesUtils {
         String signatureField =  getLayerSignatureField(layer);
         com.nextgis.maplib.display.Style layerStyle = layer.getDefaultStyleNoExcept();
         String styleField = ((ITextStyle) layerStyle).getField();
-        String styleText = ((ITextStyle) layerStyle).getText();
+        String commonText = ((ITextStyle) layerStyle).getText();
 
         boolean needSignatures = false;
         if (layer.getRenderer() instanceof RuleFeatureRenderer ||
-                !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText)) {
+                !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(commonText)) {
             needSignatures = true;
         }
 
         if (layer.getGeometryType() == GeoConstants.GTPoint) {
-            return getPointFeatures(layer,signatureField, needSignatures, styleText);
+            return getPointFeatures(layer,signatureField, needSignatures, commonText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTMultiPoint) {
-            return getMultiPointFeatures(layer,signatureField, needSignatures, styleText);
+            return getMultiPointFeatures(layer,signatureField, needSignatures, commonText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTLineString) {
-            return getLineFeatures(layer,signatureField, needSignatures, styleText);
+            return getLineFeatures(layer,signatureField, needSignatures, commonText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTMultiLineString) {
-            return getMultiLineFeatures(layer,signatureField, needSignatures, styleText);
+            return getMultiLineFeatures(layer,signatureField, needSignatures, commonText);
         }
 
         if (layer.getGeometryType() == GTPolygon) {
-            return getPolygonFeatures(layer,signatureField, needSignatures, styleText);
+            return getPolygonFeatures(layer,signatureField, needSignatures, commonText);
         }
 
         if (layer.getGeometryType() == GeoConstants.GTMultiPolygon) {
-            return getMultiPolygonFeatures(layer,signatureField, needSignatures, styleText);
+            return getMultiPolygonFeatures(layer,signatureField, needSignatures, commonText);
         }
         return vectorFeatures;
     }
@@ -289,7 +285,7 @@ public class MPLFeaturesUtils {
                     layer,
                     feature,
                     lineFeature,
-                    GeometryKind.LINE,
+                    GTLineString,
                     ruleStyle,
                     needSignatures,
                     signatureField,
@@ -336,7 +332,7 @@ public class MPLFeaturesUtils {
                     layer,
                     feature,
                     lineFeature,
-                    GeometryKind.MULTILINE,
+                    GTMultiLineString,
                     ruleStyle,
                     needSignatures,
                     signatureField,
@@ -375,7 +371,7 @@ public class MPLFeaturesUtils {
                     layer,
                     feature,
                     pointFeature,
-                    GeometryKind.POINT,
+                    GTPoint,
                     ruleStyle,
                     needSignatures,
                     signatureField,
@@ -418,7 +414,7 @@ public class MPLFeaturesUtils {
                     layer,
                     feature,
                     mpointFeature,
-                    GeometryKind.MULTIPOINT,
+                    GTMultiPoint,
                     ruleStyle,
                     needSignatures,
                     signatureField,
@@ -456,7 +452,7 @@ public class MPLFeaturesUtils {
                     layer,
                     feature,
                     polyFeature,
-                    GeometryKind.POLYGON,
+                    GTPolygon,
                     ruleStyle,
                     needSignatures,
                     signatureField,
@@ -503,7 +499,7 @@ public class MPLFeaturesUtils {
                     layer,
                     feature,
                     mpolyFeature,
-                    GeometryKind.MULTIPOLYGON,
+                    GTMultiPolygon,
                     ruleStyle,
                     needSignatures,
                     signatureField,
@@ -515,11 +511,11 @@ public class MPLFeaturesUtils {
         return vectorFeatures;
     }
 
-    private static void applyTextAndStyle(
+    public static void applyTextAndStyle(
             VectorLayer layer,
             com.nextgis.maplib.datasource.Feature ngFeature,
             Feature feature,
-            GeometryKind kind,
+            int geoType,
             boolean ruleStyle,
             boolean needSignatures,
             String signatureField,
@@ -529,7 +525,7 @@ public class MPLFeaturesUtils {
                             layer,
                             ngFeature,
                             feature,
-                            kind,
+                            geoType,
                             commonText );
             return;
         }
@@ -539,7 +535,6 @@ public class MPLFeaturesUtils {
                 String text = "_id".equals(signatureField)
                         ? String.valueOf(ngFeature.getId())
                         : getNullableValue(ngFeature, signatureField);
-
                 feature.addStringProperty(
                         prop_signature_text,
                         getSpaceCorrectedText(text));
@@ -555,7 +550,7 @@ public class MPLFeaturesUtils {
             VectorLayer layer,
             com.nextgis.maplib.datasource.Feature ngFeature,
             Feature feature,
-            GeometryKind kind,
+            int geoType,
             String commonText  ) {
         RuleFeatureRenderer rfr =  (RuleFeatureRenderer) layer.getRenderer();
 
@@ -570,9 +565,10 @@ public class MPLFeaturesUtils {
         if (style != null) {
             String ruleCommonText = style.getText();
             applyText(style, ngFeature, feature, ruleCommonText != null? ruleCommonText : commonText);
-            applyGeometrySpecificStyle(style, feature, kind);
+            applyGeometrySpecificStyle(style, feature, geoType);
         } else {
             applyCommonStyleText(rfr, ngFeature, feature, commonText);
+            clearGeometrySpecificStyle(feature,geoType);
         }
     }
 
@@ -617,11 +613,11 @@ public class MPLFeaturesUtils {
     private static void applyGeometrySpecificStyle(
             com.nextgis.maplib.display.Style style,
             Feature feature,
-            GeometryKind kind ) {
-        switch (kind) {
+            int geoType ) {
+        switch (geoType) {
 
-            case POINT:
-            case MULTIPOINT:
+            case GTPoint:
+            case GTMultiPoint:
                 SimpleMarkerStyle ms = (SimpleMarkerStyle) style;
 
                 feature.addStringProperty(prop_text_color, getColorName(ms.getTextColor()) );
@@ -642,8 +638,8 @@ public class MPLFeaturesUtils {
                 feature.addStringProperty(prop_color_stroke, getColorName(style.getOutColor()));
                 feature.addNumberProperty(prop_size, getMPLThinkness(ms.getSize()));
                 break;
-            case LINE:
-            case MULTILINE:
+            case GTLineString:
+            case GTMultiLineString:
                 feature.addStringProperty(
                         prop_color_fill,
                         getColorName(style.getColor()));
@@ -661,8 +657,8 @@ public class MPLFeaturesUtils {
                 }
                 break;
 
-            case POLYGON:
-            case MULTIPOLYGON:
+            case GTPolygon:
+            case GTMultiPolygon:
                 feature.addStringProperty(
                         prop_color_fill_rule,
                         getColorName(style.getColor()));
@@ -678,6 +674,38 @@ public class MPLFeaturesUtils {
                             prop_opacity,
                             ((SimplePolygonStyle) style).isFill() ? 0.5f : 0f);
                 }
+                break;
+        }
+    }
+
+
+    private static void clearGeometrySpecificStyle(Feature feature,int geoType ) {
+        switch (geoType) {
+
+            case GTPoint:
+            case GTMultiPoint:
+                feature.removeProperty(prop_text_color);
+                feature.removeProperty( prop_text_textsize);
+                feature.removeProperty(prop_text_textanchor);
+                feature.removeProperty(prop_text_textoffsets);
+                feature.removeProperty(prop_color_fill);
+                feature.removeProperty(prop_color_stroke);
+                feature.removeProperty(prop_size);
+                break;
+            case GTLineString:
+            case GTMultiLineString:
+                feature.removeProperty(prop_color_fill);
+                feature.removeProperty(prop_text_color);
+                feature.removeProperty(prop_thinkness);
+                feature.removeProperty(prop_type);
+                break;
+
+            case GTPolygon:
+            case GTMultiPolygon:
+                feature.removeProperty(prop_color_fill_rule);
+                feature.removeProperty(prop_color_stroke);
+                feature.removeProperty(prop_thinkness);
+                feature.removeProperty(prop_opacity);
                 break;
         }
     }
@@ -868,11 +896,11 @@ public class MPLFeaturesUtils {
         if (addPolyTextSource){
 
             List<Feature> points =  convertToPointFeatures(layerFeatures);
-            Log.e("SSUURR", "get source for: " + layerPath + source_polygon_text);
+
             GeoJsonSource vectorTextSource = (GeoJsonSource) style.getSource(layerPath + source_polygon_text);
             if (vectorTextSource == null) {
                 vectorTextSource = new GeoJsonSource(layerPath + source_polygon_text, FeatureCollection.fromFeatures(points));
-                Log.e("SSUURR", "create source for: " + layerPath + source_polygon_text);
+                Log.d("Mbgl", "create source for: " + layerPath + source_polygon_text);
                 style.addSource(vectorTextSource);
 
             }
@@ -1185,8 +1213,8 @@ public class MPLFeaturesUtils {
             } else {
                 if (needSignatures) {
                     if (simbolLayer == null) {
-                        Log.e("SSUURR", "create layer name : " + currentNamePrefixSymbol + layer_namepart + layerId);
-                        Log.e("SSUURR", "create layer source : " + (layerPath + (isPolygon ? source_polygon_text : "")));
+                        Log.d("Mbgl", "create layer name : " + currentNamePrefixSymbol + layer_namepart + layerId);
+                        Log.d("Mbgl", "create layer source : " + (layerPath + (isPolygon ? source_polygon_text : "")));
                         simbolLayer = new SymbolLayer(currentNamePrefixSymbol + layer_namepart + layerId,
                                 layerPath + (isPolygon ? source_polygon_text : ""));
 

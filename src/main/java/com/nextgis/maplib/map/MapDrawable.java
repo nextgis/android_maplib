@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import android.accounts.AccountManager;
 import android.app.AlertDialog;
 import android.app.Fragment;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -66,6 +67,7 @@ import com.nextgis.maplib.datasource.GeoPolygon;
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.datasource.ngw.Connections;
 import com.nextgis.maplib.display.GISDisplay;
+import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MeasurmentLine;
 import com.nextgis.maplib.map.MLP.MultiLineEditClass;
@@ -95,6 +97,7 @@ import java.util.concurrent.RunnableFuture;
 
 import static com.nextgis.maplib.map.MLP.MultiLineEditClass.getNewLinePoints;
 import static com.nextgis.maplib.map.MLP.PolygonEditClass.createPointsForRing;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.applyTextAndStyle;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorLightBlue;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.colorRED;
@@ -113,6 +116,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMul
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeatureMultiPolygon;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePolygon;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.getLayerSignatureField;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getMPLThinkness;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getRasterLayer;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getSpaceCorrectedText;
@@ -133,8 +137,10 @@ import static com.nextgis.maplib.util.Constants.MESSAGE_INTENT_STYLING;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
+import static com.nextgis.maplib.util.GeoConstants.GTMultiPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GTNone;
+import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_MEASURMENT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
@@ -564,7 +570,7 @@ public class MapDrawable
     }
 
     public void reloadFillLayerStyleToMaplibre(final  int  id) {
-        if (!(mapFragment.get().getMode() == 0))
+        if (mapFragment.get() != null && (!(mapFragment.get().getMode() == 0)))
             return;
 
         List<ILayer> vectorss = new ArrayList<>();
@@ -1588,7 +1594,7 @@ public class MapDrawable
 
             int type = ((VectorLayer)layerd).getGeometryType();
 
-            if  (type == GeoConstants.GTPoint || type == GeoConstants.GTMultiPoint) {
+            if  (type == GTPoint || type == GTMultiPoint) {
                 selectedDotSource.setGeoJson(featureSelected);
             }
 
@@ -1657,11 +1663,11 @@ public class MapDrawable
             Point point = Point.fromLngLat(center.getLongitude(), center.getLatitude());
 
             switch (type){
-                case GeoConstants.GTPoint :
+                case GTPoint :
                     feature = org.maplibre.geojson.Feature.fromGeometry(point);
                     break;
 
-                case GeoConstants.GTMultiPoint:
+                case GTMultiPoint:
                     MultiPoint mpoint = MultiPoint.fromLngLats(Arrays.asList(point));
                     feature = org.maplibre.geojson.Feature.fromGeometry(mpoint);
                     break;
@@ -1731,7 +1737,7 @@ public class MapDrawable
 
             int type = ((VectorLayer)ilayerd).getGeometryType();
             GeoJsonSource choosed = null;
-            if  (type == GeoConstants.GTPoint || type == GeoConstants.GTMultiPoint) {
+            if  (type == GTPoint || type == GTMultiPoint) {
                 selectedDotSource.setGeoJson(FeatureCollection.fromFeature(editingFeature));
                 choosed = selectedDotSource;
                 editingFeature.addStringProperty("color", colorRED);
@@ -1811,12 +1817,17 @@ public class MapDrawable
             //polygonFeatures.removeIf(f -> Objects.equals(f.getStringProperty(prop_order), editingFeature.getStringProperty(prop_order)));
             selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(polygonFeatures));
             // need check sign
-            if (getLayerById(layerdID) instanceof VectorLayer vectorLayer){
+            ILayer iLayer = getLayerById(layerdID);
+            VectorLayer vectorLayer = null;
+            if (iLayer instanceof  VectorLayer)
+                vectorLayer = (VectorLayer)iLayer;
+
+            if (vectorLayer != null){
                 if (vectorLayer.mGeometryType == GTPolygon || vectorLayer.mGeometryType == GTMultiPolygon){
                     reAssembleSignPoly(
                             maplibreMap.get().getStyle(),
                             polygonFeatures,
-                            editingObject.layerPath);
+                            vectorLayer.getPath().toString());
                 }
             }
         }
@@ -2579,18 +2590,59 @@ public class MapDrawable
         return true;
     }
 
-    public void finishCreateNewFeature(long newFeatureID){
+    public void finishCreateNewFeature(
+            long newFeatureID,
+            VectorLayer layer){
+
         hideMarker();
+
         if (editingObject != null) {
             editingObject.finishCreateNewFeature(newFeatureID);
 
-            if (editingFeature != null  ){ // add to objects
-                // no need ?   twice creation if unquote
-//                Integer layerdID = Integer.valueOf(editingFeature.getStringProperty(prop_layerid));
-//                List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerdID);
-//                if (layerFeatures != null)
-//                    layerFeatures.add(editingObject.editingFeature);
+            boolean ruleStyle = false;
+            if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+                ruleStyle = true;
             }
+
+            String signatureField =  getLayerSignatureField(layer);
+            com.nextgis.maplib.display.Style layerStyle = layer.getDefaultStyleNoExcept();
+            String styleField = ((ITextStyle) layerStyle).getField();
+            String styleText = ((ITextStyle) layerStyle).getText();
+
+            boolean needSignatures = false;
+            if (layer.getRenderer() instanceof RuleFeatureRenderer ||
+                    !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText)) {
+                needSignatures = true;
+            }
+            String commonText = ((ITextStyle) layerStyle).getText();
+
+
+            // get created feature with fields
+            Uri uri = ContentUris.withAppendedId(layer.getContentUri(), newFeatureID);
+            uri = uri.buildUpon().fragment("no_sync").build();
+
+            // get it's cursor
+            try {
+                Cursor cursor = layer.query(uri, null, null, null, null, null);
+                if (cursor.moveToFirst()) {
+                    Feature newFeatureWithFields = layer.cursorToFeature(cursor);
+
+                    // update new feature properties
+                    applyTextAndStyle(
+                            layer,
+                            newFeatureWithFields,
+                            editingObject.editingFeature,
+                            layer.getGeometryType(),
+                            ruleStyle,
+                            needSignatures,
+                            signatureField,
+                            commonText);
+                }
+                cursor.close();
+            } catch (Exception ex){
+                Log.e("NGW", ex.getMessage());
+            }
+
         }
         originalSelectedFeature.setId(newFeatureID);
 
@@ -2602,15 +2654,117 @@ public class MapDrawable
         cancelFeatureEdit(false);
     }
 
+
+    public void reloadFeatureToMaplibre(
+            long newFeatureID,
+            VectorLayer layer){
+
+        if (viewedFeature != null) {
+
+
+            boolean ruleStyle = false;
+            if (layer.getRenderer() instanceof RuleFeatureRenderer) { // feature render
+                ruleStyle = true;
+            }
+
+            String signatureField =  getLayerSignatureField(layer);
+            com.nextgis.maplib.display.Style layerStyle = layer.getDefaultStyleNoExcept();
+            String styleField = ((ITextStyle) layerStyle).getField();
+            String styleText = ((ITextStyle) layerStyle).getText();
+
+            boolean needSignatures = false;
+            if (layer.getRenderer() instanceof RuleFeatureRenderer ||
+                    !TextUtils.isEmpty(styleField) || !TextUtils.isEmpty(styleText)) {
+                needSignatures = true;
+            }
+            String commonText = ((ITextStyle) layerStyle).getText();
+
+
+            // get created feature with fields
+            Uri uri = ContentUris.withAppendedId(layer.getContentUri(), newFeatureID);
+            uri = uri.buildUpon().fragment("no_sync").build();
+
+            // get it's cursor
+            try {
+                Cursor cursor = layer.query(uri, null, null, null, null, null);
+                if (cursor.moveToFirst()) {
+                    Feature newFeatureWithFields = layer.cursorToFeature(cursor);
+
+                    // update new feature properties
+                    applyTextAndStyle(
+                            layer,
+                            newFeatureWithFields,
+                            viewedFeature,
+                            layer.getGeometryType(),
+                            ruleStyle,
+                            needSignatures,
+                            signatureField,
+                            commonText);
+                }
+                cursor.close();
+            } catch (Exception ex){
+                Log.e("NGW", ex.getMessage());
+            }
+
+
+            // need add changes feature to list of objects
+
+
+                // remove old - add new
+
+            List<org.maplibre.geojson.Feature> targetFeatures = sourceFeaturesHashMap.get(layer.getId());
+                String targetOrder = String.valueOf(newFeatureID);
+                Iterator<org.maplibre.geojson.Feature> it = targetFeatures.iterator();
+                while (it.hasNext()) {
+                    org.maplibre.geojson.Feature f = it.next();
+                    if (Objects.equals(f.getStringProperty(prop_order), targetOrder)) {
+                        it.remove();
+                        break;
+                    }
+                }
+
+            targetFeatures.add(viewedFeature);
+
+            GeoJsonSource targetSource = sourceHashMap.get(layer.getPath().toString());
+            targetSource.setGeoJson(FeatureCollection.fromFeatures(targetFeatures));
+
+
+//                // re-assemble signs for poly
+            if (layer.getGeometryType() == GTPolygon || layer.getGeometryType() == GTMultiPolygon  )
+                reAssembleSignPoly(maplibreMap.get().getStyle(),
+                        targetFeatures,
+                        layer.getPath().toString());
+
+
+
+//                org.maplibre.geojson.Feature featureToRecolor = backToOriginal ? editingFeatureOriginal : editingObject.editingFeature;
+//                featureToRecolor.addStringProperty("color", colorLightBlue);
+                // color for selection
+
+//                if  (keepEditObj)
+//                    choosed.setGeoJson(FeatureCollection.fromFeature(featureToRecolor));
+//                else
+//                    choosed.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
+        }
+
+
+
+
+
+//        // WA for sign by id field for new feature
+//        if (editingObject.originalEditingFeature != null && editingObject.originalEditingFeature.getStringProperty(prop_signature_text) != null &&
+//                editingObject.originalEditingFeature.getStringProperty(prop_signature_text) .equals("-1"))
+//            editingObject.originalEditingFeature.addStringProperty(prop_signature_text, String.valueOf(newFeatureID));
+//
+//        cancelFeatureEdit(false);
+    }
+
     public void checkLayerVisibility(int id){
         if (maplibreMap.get().getStyle() == null)
             return;
 
         ILayer targetlayer = getVectorLayersById(this,  id);
         boolean isVisible = ((com.nextgis.maplib.map.Layer)targetlayer).isVisible();
-
-
-
 
         Layer layer = layersHashMap.get(id);
         if (layer != null)
@@ -2866,6 +3020,8 @@ public class MapDrawable
             return;
 
         List<org.maplibre.geojson.Feature> points =  convertToPointFeatures(polyFeatures);
+        if (points.size() == 0)
+            return;
         GeoJsonSource vectorTextSource = (GeoJsonSource) style.getSource(layerPath + source_polygon_text);
         if (vectorTextSource == null) {
             vectorTextSource = new GeoJsonSource(layerPath + source_polygon_text, FeatureCollection.fromFeatures(points));

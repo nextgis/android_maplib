@@ -442,7 +442,7 @@ public class Feature
 
     public void fromCursor(Cursor cursor)
     {
-        if (null == cursor) {
+        if (null == cursor ) {
             return;
         }
         mId = cursor.getLong(cursor.getColumnIndex(FIELD_ID));
