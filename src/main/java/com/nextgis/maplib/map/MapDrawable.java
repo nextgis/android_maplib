@@ -119,7 +119,6 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.getFeatureFromNGFeaturePol
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getLayerSignatureField;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getMPLThinkness;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.getRasterLayer;
-import static com.nextgis.maplib.map.MPLFeaturesUtils.getSpaceCorrectedText;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.id_name;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.latLngPointFromGeoPoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.layer_namepart;
@@ -391,6 +390,29 @@ public class MapDrawable
         }
     }
 
+    public void recreateNGWWebMapSourceById(final String path, int id){
+
+        if (maplibreMap.get().getStyle().getSource(path)!= null)
+            maplibreMap.get().getStyle().removeSource(path);
+
+        ILayer iLayer = getLayerById(id);
+        Handler mainHandler = new Handler(Looper.getMainLooper());
+        Style style = maplibreMap.get().getStyle();
+
+        Map<Integer, String> rasterLayersURL = new HashMap<>();
+        Map<Integer, Integer> rasterLayersTmsTypeMap = new HashMap<>();
+        rasterLayersTmsTypeMap.put(iLayer.getId(), -1);
+        rasterLayersURL.put(iLayer.getId(), ((NGWRasterLayer) iLayer).getURL());
+
+        mainHandler.post(() -> {
+            createSourceForLayer(iLayer.getId(), GT_RASTER_WA,
+                    new ArrayList<>(),
+                    style, sourceHashMap,
+                    rasterLayersURL, rasterLayersTmsTypeMap,
+                    iLayer.getPath().toString(), true);
+        });
+    }
+
     public void deleteLayerByID(int id){
         if (maplibreMap.get()!= null) {
             String sourceId = namePrefix + source_namepart + id;
@@ -550,7 +572,7 @@ public class MapDrawable
                                 signaturesRootLayer);
                         createSourceForLayer(iLayer.getId(), finalGeoType, vectorPolygonFeatures, style, sourceHashMap,
                                 rasterLayersURLMap, rasterLayersTmsTypeMap,
-                                iLayer.getPath().toString());
+                                iLayer.getPath().toString(), false);
 
                         checkLayerVisibility(iLayer.getId());
                     });
@@ -1012,7 +1034,7 @@ public class MapDrawable
                                 createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()),
                                         sourceFeaturesHashMap.get(entry.getKey()), style,
                                         sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap,
-                                        layersPath.get(entry.getKey()));
+                                        layersPath.get(entry.getKey()), false);
 
                             createFillLayerForLayer(entry.getKey(),
                                     layersType.get(entry.getKey()),

@@ -848,7 +848,8 @@ public class MPLFeaturesUtils {
                                             Map<String, GeoJsonSource> sourceHashMap,
                                             Map<Integer, String> rasterLayersURL,
                                             Map<Integer, Integer> rasterLayersTmsTypeMap,
-                                            String layerPath) {
+                                            String layerPath,
+                                            boolean forceCreate) {
         if (layerType == GT_TRACK_WA){
             return;
         }
@@ -859,7 +860,7 @@ public class MPLFeaturesUtils {
                     style.removeSource(layerPath);
                     rasterSource = null;
                 }
-                if (rasterSource == null) {
+                if (rasterSource == null || forceCreate) {
                     TileSet tileSet = new TileSet(
                             "tileset",
                             rasterLayersURL.get(layerId));
