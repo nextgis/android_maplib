@@ -35,7 +35,7 @@ import com.nextgis.maplib.datasource.ngw.SyncAdapter;
 import com.nextgis.maplib.util.Constants;
 
 
-public class NGWSyncService
+public class  NGWSyncService
         extends Service
 {
     protected static SyncAdapter mSyncAdapter = null;
@@ -44,7 +44,7 @@ public class NGWSyncService
     protected static final Object mSyncAdapterLock = new Object();
 
     protected SyncReceiver mSyncReceiver;
-    protected boolean      mIsSyncStarted;
+    public static boolean  mIsSyncStarted = false;
 
 
     /*
@@ -82,19 +82,14 @@ public class NGWSyncService
         }
     }
 
-
-    protected SyncAdapter createSyncAdapter(
-            Context context,
-            boolean autoInitialize)
-    {
+    protected SyncAdapter createSyncAdapter(Context context,boolean autoInitialize) {
         return new SyncAdapter(context, autoInitialize);
     }
-
 
     @Override
     public IBinder onBind(Intent intent)
     {
-        return mSyncAdapter.getSyncAdapterBinder();
+        return  mSyncAdapter.getSyncAdapterBinder();
     }
 
 
@@ -121,8 +116,7 @@ public class NGWSyncService
     }
 
 
-    public boolean isSyncStarted()
-    {
+    public static boolean isSyncStarted(){
         return mIsSyncStarted;
     }
 
@@ -133,25 +127,30 @@ public class NGWSyncService
         @Override
         public void onReceive(
                 Context context,
-                Intent intent)
-        {
+                Intent intent) {
+//             Log.e("RRFRSH", "SyncReceiver - onReceive");
             String action = intent.getAction();
 
             switch (action) {
                 case SyncAdapter.SYNC_START:
+//                    Log.e("RRFRSH", "SyncReceiver - SYNC_START");
                     mIsSyncStarted = true;
                     break;
 
                 case SyncAdapter.SYNC_FINISH:
+//                    Log.e("RRFRSH", "SyncReceiver - SYNC_FINISH");
                     mIsSyncStarted = false;
                     break;
 
                 case SyncAdapter.SYNC_CANCELED:
+//                    Log.e("RRFRSH", "SyncReceiver - SYNC_CANCELED");
                     Log.d(Constants.TAG, "SyncAdapter - SYNC_CANCELED is received");
                     mIsSyncStarted = false;
                     break;
 
                 case SyncAdapter.SYNC_CHANGES:
+//                    Log.e("RRFRSH", "SyncReceiver - SYNC_CHANGES");
+                    mIsSyncStarted = false;
                     // TODO:  ???  mIsSyncStarted = true;  ???
                     break;
             }

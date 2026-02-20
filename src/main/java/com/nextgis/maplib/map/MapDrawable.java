@@ -2267,6 +2267,16 @@ public class MapDrawable
         zoomToExtent(envelope, getMaxZoom() ,true);
     }
 
+
+    public void zoomToLatLng(GeoEnvelope envelope) {
+        GeoPoint center = envelope.getCenter();
+
+        double[] lonLatCenter = convert3857To4326(center.getX(),center.getY());
+        LatLng lngCenter = new LatLng(lonLatCenter[1], lonLatCenter[0]);
+
+        maplibreMap.get().moveCamera(CameraUpdateFactory.newLatLng(lngCenter));
+    }
+
     public void zoomToExtent(GeoEnvelope envelope, float maxZoom, boolean startSecondMaplibre) {
         if (envelope.isInit()) {
             double size = GeoConstants.MERCATOR_MAX * 2;

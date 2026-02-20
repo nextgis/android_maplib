@@ -125,6 +125,8 @@ public class SyncAdapter
             ContentProviderClient contentProviderClient,
             SyncResult syncResult)
     {
+
+//        Log.e("RRFRSH", "SyncAdapter ngw - onPerformSync for " + account.name);
         ((IGISApplication)getContext().getApplicationContext()).setError(
                 null,null,0);
 
@@ -135,15 +137,15 @@ public class SyncAdapter
         MapContentProviderHelper mapContentProviderHelper =(MapContentProviderHelper) MapBase.getInstance();
 
         getContext().sendBroadcast(
-                (new Intent(SYNC_START)).setPackage(getContext().getPackageName())
-        );
+                (new Intent(SYNC_START)).setPackage(getContext().getPackageName()));
 
         mVersions = new HashMap<>();
         HyperLog.v(Constants.TAG, "SyncAdapter: mapContentProviderHelper is " + mapContentProviderHelper);
         if (null != mapContentProviderHelper) {
             // FIXME Temporary fix till 3.0
 //            mapContentProviderHelper.load(); // reload map for deleted/added layers
-            sync(mapContentProviderHelper, authority, syncResult);
+
+            sync(account, mapContentProviderHelper, authority, syncResult);
         }
 
         if (isCanceled()) {
@@ -210,24 +212,35 @@ public class SyncAdapter
         HyperLog.v(Constants.TAG, "SyncAdapter: SYNC_FINISH is sent / mError is " + (TextUtils.isEmpty(mError) ? null:mError));
         finish.setPackage(getContext().getPackageName());
         getContext().sendBroadcast(finish);
+
+//        Log.e("RRFRSH", "SyncAdapter ngw - onPerformSync end");
+
     }
 
 
     protected void sync(
+            Account account,
             LayerGroup layerGroup,
             String authority,
             SyncResult syncResult)
     {
+
+//        Log.e("RRFRSH", "sync() ngw ");
+
         HyperLog.v(Constants.TAG, "SyncAdapter: StartSynchronization");
         HyperLog.v(Constants.TAG, "SyncAdapter: total layers for sync in " + layerGroup + " is " + layerGroup.getLayerCount());
 
         List<ILayer> layersToSync = new ArrayList<>();
         for (int i = 0; i < layerGroup.getLayerCount(); i++){
             ILayer layer = layerGroup.getLayer(i);
+
+            if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName()))
+                continue;
+
             boolean exists = false;
             for (ILayer added : layersToSync){
-                if (added instanceof INGWLayer && layer instanceof INGWLayer &&
-                added.getPath().equals(layer.getPath())){
+                if (added instanceof INGWLayer && layer instanceof INGWLayer
+                        && added.getPath().equals(layer.getPath()) ){
                     exists = true;
                     break;
                 }
@@ -237,13 +250,15 @@ public class SyncAdapter
         }
 
         for (ILayer layer : layersToSync) {
+//            Log.e("RRFRSH", "sync iterate for " + layer.getName());
+
             if (isCanceled()) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: Sync canceled");
                 return;
             }
             if (layer instanceof LayerGroup) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a layer group");
-                sync((LayerGroup) layer, authority, syncResult);
+                sync(account, (LayerGroup) layer, authority, syncResult);
             } else if (layer instanceof INGWLayer) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a NGW layer");
                 INGWLayer ngwLayer = (INGWLayer) layer;
