@@ -1107,10 +1107,15 @@ public class MPLFeaturesUtils {
                         PropertyFactory.circleStrokeOpacity(1f));
 
         } else if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString) {
-            if (changeLayer)
+            if (changeLayer) {
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
+                newLayer2 = style.getLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart);
+            }
             if (newLayer == null )
                 newLayer = new LineLayer(currentNamePrefix + layer_namepart + layerId,layerPath);
+
+            if (newLayer2 == null)
+                newLayer2 = new LineLayer(currentNamePrefix + layer_namepart + layerId + outline_namepart, layerPath);
 
             newLayer.setProperties(
                     PropertyFactory.lineColor(Expression.coalesce(
@@ -1121,36 +1126,22 @@ public class MPLFeaturesUtils {
                             Expression.get(prop_thinkness), // rule
                             Expression.literal(getMPLThinkness(thinkness)))),
 
-                    PropertyFactory.lineDasharray(type == 2 ?  new Float[]{2f, 2f} : null)
+                    PropertyFactory.lineDasharray(type == 2 ?  new Float[]{2f, 2f} : null));
 
-//                        PropertyFactory.lineDasharray(
-//
-//                        Expression.switchCase(
-//                                Expression.eq(Expression.get(prop_type), Expression.literal(1)),
-//                                // TRUE -> dashed
-//                                Expression.literal(new Float[]{2f, 2f}),
-//                                // DEFAULT -> "almost solid" (workaround instead of  null)
-//                                Expression.literal(new Float[]{1f, 0f})
-//                        ))
-//                          try to use coalesce - not work - commented
-//                        PropertyFactory.lineDasharray(Expression.coalesce(
-//                                Expression.get(prop_type), // rule
-//                                Expression.literal(type == 2 ?  new Float[]{2f, 2f} : null)))
-//                        PropertyFactory.circleStrokeWidth(Expression.coalesce(
-//                                Expression.get(prop_type), // rule
-//                                Expression.literal(
-//                                        Expression.step(
-//                                                Expression.get(prop_type2),  // your prop type
-//                                                Expression.literal(new Float[]{0f, 0f}),
-//                                                Expression.stop(1, null),  // if type == 2
-//                                                Expression.stop(2,  new Float[]{2f, 2f}),  // if type == 2
-//                                                Expression.stop (3, null)  // if type == 2
-//                                        )
-//                                )))
-                    /*
-                     */
+            // outline -  visible (alpha 1) if line  style set to outline (3)
+            newLayer2.setProperties(
+                    PropertyFactory.lineColor(Expression.coalesce(
+                            Expression.get(prop_color_fill), // rule
+                            Expression.literal(getColorName(outlineColor)))),
 
-                );
+                    PropertyFactory.lineWidth(Expression.coalesce(
+                            Expression.get(prop_thinkness), // rule
+                            Expression.literal(getMPLThinkness(thinkness) * 1.5))),
+
+                    PropertyFactory.lineOpacity(type == 3? 1.0f:0.0f)
+            );
+
+
         } else if (layerType == GTPolygon || layerType == GeoConstants.GTMultiPolygon) {
             if (changeLayer) {
                 newLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
@@ -1292,7 +1283,10 @@ public class MPLFeaturesUtils {
         if (newLayer2 != null) {
             if (!changeLayer) {
                 if (signaturesRootLayer != null && style.getLayer(signaturesRootLayer.getId()) != null  && newLayer != null){
-                    style.addLayerBelow (newLayer2, signaturesRootLayer.getId());
+                    if (layerType == GeoConstants.GTLineString || layerType == GeoConstants.GTMultiLineString)
+                        style.addLayerBelow (newLayer2, newLayer.getId());
+                    else
+                        style.addLayerBelow (newLayer2, signaturesRootLayer.getId());
                 }
                 else {
                     style.addLayer(newLayer2);
@@ -1381,3 +1375,32 @@ public class MPLFeaturesUtils {
     }
 
 }
+
+
+
+//                        PropertyFactory.lineDasharray(
+//
+//                        Expression.switchCase(
+//                                Expression.eq(Expression.get(prop_type), Expression.literal(1)),
+//                                // TRUE -> dashed
+//                                Expression.literal(new Float[]{2f, 2f}),
+//                                // DEFAULT -> "almost solid" (workaround instead of  null)
+//                                Expression.literal(new Float[]{1f, 0f})
+//                        ))
+//                          try to use coalesce - not work - commented
+//                        PropertyFactory.lineDasharray(Expression.coalesce(
+//                                Expression.get(prop_type), // rule
+//                                Expression.literal(type == 2 ?  new Float[]{2f, 2f} : null)))
+//                        PropertyFactory.circleStrokeWidth(Expression.coalesce(
+//                                Expression.get(prop_type), // rule
+//                                Expression.literal(
+//                                        Expression.step(
+//                                                Expression.get(prop_type2),  // your prop type
+//                                                Expression.literal(new Float[]{0f, 0f}),
+//                                                Expression.stop(1, null),  // if type == 2
+//                                                Expression.stop(2,  new Float[]{2f, 2f}),  // if type == 2
+//                                                Expression.stop (3, null)  // if type == 2
+//                                        )
+//                                )))
+/*
+ */
