@@ -62,6 +62,7 @@ import static com.nextgis.maplib.util.Constants.MESSAGE_ALERT_INTENT;
 import static com.nextgis.maplib.util.Constants.MESSAGE_EXTRA;
 import static com.nextgis.maplib.util.Constants.MESSAGE_NOTIFY_INTENT;
 import static com.nextgis.maplib.util.Constants.MESSAGE_TITLE_EXTRA;
+import static com.nextgis.maplib.util.Constants.SYNC_NONE;
 import static com.nextgis.maplib.util.Constants.TAG;
 
 /* useful links
@@ -214,7 +215,42 @@ public class SyncAdapter
         getContext().sendBroadcast(finish);
 
 //        Log.e("RRFRSH", "SyncAdapter ngw - onPerformSync end");
+}
 
+
+    public boolean isSomeToSync(Account account){
+
+        String name = getContext().getPackageName() + "_preferences";
+        SharedPreferences mSharedPreferences = getContext().getSharedPreferences(name, MODE_MULTI_PROCESS);
+        boolean trackSync = mSharedPreferences.getBoolean(SettingsConstants.KEY_PREF_TRACK_SEND, false);
+
+        MapContentProviderHelper layerGroup =(MapContentProviderHelper) MapBase.getInstance();
+        List<ILayer> layersToSync = new ArrayList<>();
+        for (int i = 0; i < layerGroup.getLayerCount(); i++){
+            ILayer layer = layerGroup.getLayer(i);
+
+            if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName()))
+                continue;
+
+            if (layer instanceof  INGWLayer && ((INGWLayer) layer).getSyncType() == SYNC_NONE)
+                continue;
+
+            // only ngw and track
+            if (! ((layer instanceof INGWLayer) || (layer instanceof TrackLayer && trackSync ) ) )
+                continue;
+
+
+            boolean exists = false;
+            for (ILayer added : layersToSync){
+                if (added.getPath().equals(layer.getPath())){
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists)
+                layersToSync.add(layer);
+        }
+        return layersToSync.size()>0;
     }
 
 
@@ -230,17 +266,30 @@ public class SyncAdapter
         HyperLog.v(Constants.TAG, "SyncAdapter: StartSynchronization");
         HyperLog.v(Constants.TAG, "SyncAdapter: total layers for sync in " + layerGroup + " is " + layerGroup.getLayerCount());
 
+
+        String name = getContext().getPackageName() + "_preferences";
+        SharedPreferences mSharedPreferences = getContext().getSharedPreferences(name, MODE_MULTI_PROCESS);
+        boolean trackSync = mSharedPreferences.getBoolean(SettingsConstants.KEY_PREF_TRACK_SEND, false);
+
         List<ILayer> layersToSync = new ArrayList<>();
         for (int i = 0; i < layerGroup.getLayerCount(); i++){
             ILayer layer = layerGroup.getLayer(i);
 
+            // no other account
             if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName()))
                 continue;
 
+            if (layer instanceof  INGWLayer && ((INGWLayer) layer).getSyncType() == SYNC_NONE)
+                continue;
+
             boolean exists = false;
+
+            // only ngw and track
+            if (! ((layer instanceof INGWLayer) || (layer instanceof TrackLayer && trackSync)))
+                continue;
+
             for (ILayer added : layersToSync){
-                if (added instanceof INGWLayer && layer instanceof INGWLayer
-                        && added.getPath().equals(layer.getPath()) ){
+                if (added.getPath().equals(layer.getPath()) ){
                     exists = true;
                     break;
                 }

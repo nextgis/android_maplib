@@ -2813,7 +2813,9 @@ public class MapDrawable
 
         if (isVisible && targetlayer instanceof VectorLayer){
             List<org.maplibre.geojson.Feature> features  = sourceFeaturesHashMap.get(targetlayer.getId());
-            if (features == null || features.isEmpty() ){
+            if (features == null
+            //        || features.isEmpty() // if only one feature - stuc on edit
+            ){
                 // layer was not uploaded by start - skipped
                 // start load layer
                 if (features == null)

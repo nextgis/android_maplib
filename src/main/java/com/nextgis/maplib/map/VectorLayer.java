@@ -2631,7 +2631,7 @@ public class VectorLayer
     {
         if (featureId != NOT_FOUND) {
             mIgnoreFeatures.add(featureId);
-            notifyLayerChanged();
+            //notifyLayerChanged();
         }
     }
 
