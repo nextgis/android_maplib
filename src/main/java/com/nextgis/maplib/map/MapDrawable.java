@@ -3201,6 +3201,12 @@ public class MapDrawable
         }
     }
 
+    public List<org.maplibre.geojson.Feature> getLayerFeatures(final ILayer  ilayerd){
+
+        List<org.maplibre.geojson.Feature> features =  sourceFeaturesHashMap.get(ilayerd.getId());
+        return features;
+    }
+
 
 //    public void updateMapBackground(){
 //        if (maplibreMap.get()!= null){
