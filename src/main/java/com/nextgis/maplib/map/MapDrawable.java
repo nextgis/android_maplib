@@ -2749,7 +2749,7 @@ public class MapDrawable
                 Iterator<org.maplibre.geojson.Feature> it = targetFeatures.iterator();
                 while (it.hasNext()) {
                     org.maplibre.geojson.Feature f = it.next();
-                    if (Objects.equals(f.getStringProperty(prop_order), targetOrder)) {
+                    if (Objects.equals(f.getStringProperty(prop_featureid), targetOrder)) {
                         it.remove();
                         break;
                     }
