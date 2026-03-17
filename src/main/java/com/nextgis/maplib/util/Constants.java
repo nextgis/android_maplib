@@ -107,6 +107,9 @@ public interface Constants
 
     String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
 
+    // future change prop raster
+//    String MESSAGE_INTENT_STYLING_RASTER = "com.nextgis.malibui.MESSAGE.STYLING.RASTER";
+
     /**
      * JSON keys
      */
@@ -152,6 +155,16 @@ public interface Constants
     String JSON_USER_ID_KEY       = "nextgis_guid";
     String JSON_SIGNATURE_KEY     = "sign";
 //    String JSON_DEFAULT_FORM_ID   = "default_form_id";
+
+
+    //  intent fields
+    String LAYER_ID_KEY = "layer_id";
+    String LAYER_NAME = "contrast";
+    String FIELD_CONTRAST = "contrast";
+    String FIELD_BRIGHTNESS_MIN = "brightnessmin";
+    String FIELD_BRIGHTNESS_MAX = "brightnessmax";
+    String FIELD_ALPHA = "alpha";
+
 
     /**
      * database fields

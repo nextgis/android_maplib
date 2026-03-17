@@ -750,6 +750,7 @@ public class NGWVectorLayer
 
             changeCursor.close();
 
+            final AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             while (true) {
 
                 changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName,
@@ -792,7 +793,7 @@ public class NGWVectorLayer
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
                         HyperLog.v(Constants.TAG, "NGWVectorLayer: feature add start featureID = "  + changeFeatureId );
 
-                        if (addFeatureOnServer(changeFeatureId, syncResult)) {
+                        if (addFeatureOnServer(changeFeatureId, syncResult, accountData)) {
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeChangesToLast(changeTableName, changeFeatureId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
@@ -808,7 +809,7 @@ public class NGWVectorLayer
                     } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_CHANGED)) {
                         HyperLog.v(Constants.TAG, "NGWVectorLayer: feature change start featureID = "  + changeFeatureId );
 
-                        if (changeFeatureOnServer(changeFeatureId, syncResult)) {
+                        if (changeFeatureOnServer(changeFeatureId, syncResult, accountData)) {
                             FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
                             FeatureChanges.removeChangesToLast(changeTableName, changeFeatureId,
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
@@ -1274,6 +1275,8 @@ public class NGWVectorLayer
             long newFeatureId)
     {
         if (oldFeatureId == newFeatureId) {
+//            Log.e("FEA", "changeFeatureId equals  - exit");
+
             return;
         }
 
@@ -1292,6 +1295,8 @@ public class NGWVectorLayer
         if (db.update(mPath.getName(), values, Constants.FIELD_ID + " = " + oldFeatureId, null)
                 != 1) {
             Log.w(Constants.TAG, "failed to set new id");
+//            Log.e("FEA", "changeFeatureId failed!!!");
+
         }
 
         //update id in cache
@@ -1905,9 +1910,13 @@ public class NGWVectorLayer
 
     protected boolean addFeatureOnServer(
             long featureId,
-            SyncResult syncResult)
+            SyncResult syncResult,
+            AccountUtil.AccountData accountData )
             throws SQLiteException
     {
+
+//        Log.e("FEA", "addFeatureOnServer " + featureId );
+
         if (!mNet.isNetworkAvailable()) {
             HyperLog.v(Constants.TAG, "addFeatureOnServer !mNet.isNetworkAvailable() no network!!! ");
             syncResult.stats.numIoExceptions++;
@@ -1916,7 +1925,7 @@ public class NGWVectorLayer
         Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
         uri = uri.buildUpon().fragment(NO_SYNC).build();
 
-        Cursor cursor = query(uri, null, null, null, null, null);
+        Cursor cursor = query(uri, null, null, null, "_id", null);
         if (null == cursor) {
             if (Constants.DEBUG_MODE) {
                 Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
@@ -1935,11 +1944,12 @@ public class NGWVectorLayer
                 }
 
                 // post to NGW
-                HttpResponse response = addFeatureOnServer(payload);
+                HttpResponse response = addFeatureOnServer(payload, accountData);
 
 
                 // add 403 processinge
                 if (!response.isOk()) {
+//                    Log.e("FEA", "addFeatureOnServer 403" );
                     if (response.getResponseCode() == 403){
                         // no access right
                         ((IGISApplication)mContext.getApplicationContext()).setError(
@@ -1958,6 +1968,7 @@ public class NGWVectorLayer
                 JSONObject result = new JSONObject(response.getResponseBody());
                 if (result.has(Constants.JSON_ID_KEY)) {
                     long id = result.getLong(Constants.JSON_ID_KEY);
+//                    Log.e("FEA", "addFeatureOnServer start changeFeatureId from " + featureId + " to " + id  );
                     changeFeatureId(featureId, id);
                 }
 
@@ -1996,8 +2007,8 @@ public class NGWVectorLayer
         }
     }
 
-    protected HttpResponse addFeatureOnServer(String payload) throws IOException {
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+    protected HttpResponse addFeatureOnServer(String payload, AccountUtil.AccountData accountData) throws IOException {
+//        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId) + appendix(),
                 payload, accountData.login, accountData.password, false);
@@ -2049,7 +2060,8 @@ public class NGWVectorLayer
 
     protected boolean changeFeatureOnServer(
             long featureId,
-            SyncResult syncResult)
+            SyncResult syncResult,
+            AccountUtil.AccountData accountData)
             throws SQLiteException
     {
         if (!mNet.isNetworkAvailable()) {
@@ -2080,7 +2092,7 @@ public class NGWVectorLayer
                 }
 
                 // change on server ERRROR
-                HttpResponse response = changeFeatureOnServer(featureId, payload);
+                HttpResponse response = changeFeatureOnServer(featureId, payload, accountData);
 
                 if (!response.isOk()) {
                     HyperLog.v(Constants.TAG, "changeFeatureOnServer !response.isOk()");
@@ -2121,8 +2133,9 @@ public class NGWVectorLayer
     }
 
 
-    protected HttpResponse changeFeatureOnServer(long featureId, String payload) throws IOException {
-        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+    protected HttpResponse changeFeatureOnServer(long featureId, String payload,
+                                                 AccountUtil.AccountData accountData) throws IOException {
+//        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         // change on server
         String url = NGWUtil.getFeatureUrl(accountData.url, mRemoteId, featureId);

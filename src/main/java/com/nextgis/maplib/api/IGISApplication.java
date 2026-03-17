@@ -226,5 +226,8 @@ public interface IGISApplication
     void setGetingStyleInProgress(boolean value);
 
 
+    void startCreateNGWLayerSync(String lpath);
+
+
 
 }

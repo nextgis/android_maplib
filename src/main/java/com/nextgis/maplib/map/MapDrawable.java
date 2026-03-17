@@ -153,6 +153,12 @@ import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_LIGHT;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_NEUTRAL;
 import static org.maplibre.android.style.layers.Property.NONE;
 import static org.maplibre.android.style.layers.Property.VISIBLE;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterBrightnessMax;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterBrightnessMin;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterContrast;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterHueRotate;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterOpacity;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterSaturation;
 import static org.maplibre.android.style.layers.PropertyFactory.visibility;
 import static java.util.Collections.emptyList;
 import androidx.annotation.NonNull;
@@ -175,6 +181,7 @@ import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
+import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
 import org.maplibre.android.style.sources.Source;
@@ -1031,9 +1038,13 @@ public class MapDrawable
                             // create source and FillLayer put to style
 
                             if (createSource)
-                                createSourceForLayer(entry.getKey(), layersType.get(entry.getKey()),
-                                        sourceFeaturesHashMap.get(entry.getKey()), style,
-                                        sourceHashMap, rasterLayersURLMap, rasterLayersTmsTypeMap,
+                                createSourceForLayer(entry.getKey(),
+                                        layersType.get(entry.getKey()),
+                                        sourceFeaturesHashMap.get(entry.getKey()),
+                                        style,
+                                        sourceHashMap,
+                                        rasterLayersURLMap,
+                                        rasterLayersTmsTypeMap,
                                         layersPath.get(entry.getKey()), false);
 
                             createFillLayerForLayer(entry.getKey(),
@@ -2792,7 +2803,7 @@ public class MapDrawable
     }
 
     public void checkLayerVisibility(int id){
-        if (maplibreMap.get().getStyle() == null)
+        if (maplibreMap.get() == null || maplibreMap.get().getStyle() == null)
             return;
 
         ILayer targetlayer = getVectorLayersById(this,  id);
@@ -3206,6 +3217,39 @@ public class MapDrawable
         List<org.maplibre.geojson.Feature> features =  sourceFeaturesHashMap.get(ilayerd.getId());
         return features;
     }
+
+    // future update raster prop
+//    public void updateRasterLayerProperties(Integer layerid, int alpha, float contrast,
+//                                            float brightnessMin, float brightnessMax ){
+//        if (layerid!= null && layerid != -1){
+//
+//            Style style = maplibreMap.get().getStyle();
+//            if (style == null)
+//                return;
+//            org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(namePrefix + layer_namepart + layerid);
+//
+//
+//            if (rasterLayer!= null && rasterLayer instanceof RasterLayer){
+////                float alphaF = alpha / 255.0f; // stored value 0 - 255 // need for maplibre 0 - 1
+////                float contrast = (tmsRenderer.getContrast() - 1) ; //stored value 0 - 100 ,  needed -1  +1
+////                float brightness = ((tmsRenderer.getBrightness()) / 255.0f) +1 ; // stored value 0  510 , need value 0  >1   1 norm
+//                //boolean isGray = tmsRenderer.isForceToGrayScale();
+//
+//
+////                Log.e("BRG", "ON MAP SET min=" + brightnessMin + " max:" + brightnessMax + " cont=" + contrast + " apllha=" +alphaF);
+//
+////                rasterLayer.setProperties(
+//////                        rasterOpacity(alphaF),
+//////                        rasterContrast(contrast),
+//////                        rasterBrightnessMin(brightnessMin),
+//////                        rasterBrightnessMax(brightnessMax)
+//////                        rasterSaturation(saturation),
+//////                        rasterHueRotate(hueRotate)
+////                );
+//            }
+//        }
+
+//    }
 
 
 //    public void updateMapBackground(){

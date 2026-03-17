@@ -60,8 +60,13 @@ public class TMSRenderer
     protected static final String JSON_TMSRENDERER_DITHER     = "dither";
     protected static final String JSON_TMSRENDERER_CONTRAST   = "contrast";
     protected static final String JSON_TMSRENDERER_BRIGHTNESS = "brightness";
+//    protected static final String JSON_TMSRENDERER_BRIGHTNESSMIN = "brightnessmin";
+//    protected static final String JSON_TMSRENDERER_BRIGHTNESSMAX = "brightnessmax";
     protected static final String JSON_TMSRENDERER_GRAYSCALE  = "greyscale";
     protected static final String JSON_TMSRENDERER_ALPHA      = "alpha";
+
+//    protected static final String JSON_TMSRENDERER_NEW_CONRAST= "newcontrast";
+
     protected ThreadPoolExecutor mDrawThreadPool;
     protected Paint              mRasterPaint;
     protected boolean            mAntiAlias;
@@ -69,6 +74,8 @@ public class TMSRenderer
     protected boolean            mDither;
     protected float              mContrast;
     protected float              mBrightness;
+//    protected float              mBrightnessMin;
+//    protected float              mBrightnessMax;
     protected boolean            mForceToGrayScale;
     protected int                mAlpha;
     //protected final Object lock = new Object();
@@ -82,8 +89,11 @@ public class TMSRenderer
         mAntiAlias = true;
         mFilterBitmap = true;
         mDither = true;
-        mContrast = 1;
+        mContrast = 0; // 0 - new value
         mBrightness = 0;
+//        mBrightnessMin = 0f;
+//        mBrightnessMax = 1f;
+
         mForceToGrayScale = false;
         mAlpha = 255;
 
@@ -105,8 +115,12 @@ public class TMSRenderer
         renderer.put(JSON_TMSRENDERER_DITHER, mDither);
         renderer.put(JSON_TMSRENDERER_CONTRAST, mContrast);
         renderer.put(JSON_TMSRENDERER_BRIGHTNESS, mBrightness);
+//        renderer.put(JSON_TMSRENDERER_BRIGHTNESSMIN, mBrightnessMin);
+//        renderer.put(JSON_TMSRENDERER_BRIGHTNESSMAX, mBrightnessMax);
         renderer.put(JSON_TMSRENDERER_GRAYSCALE, mForceToGrayScale);
         renderer.put(JSON_TMSRENDERER_ALPHA, mAlpha);
+//        renderer.put(JSON_TMSRENDERER_NEW_CONRAST, mContrast);
+
         return renderer;
     }
 
@@ -120,18 +134,34 @@ public class TMSRenderer
         mDither = jsonObject.getBoolean(JSON_TMSRENDERER_DITHER);
         mContrast = (float) jsonObject.getDouble(JSON_TMSRENDERER_CONTRAST);
         mBrightness = (float) jsonObject.getDouble(JSON_TMSRENDERER_BRIGHTNESS);
+//        if(jsonObject.has(JSON_TMSRENDERER_BRIGHTNESSMIN))
+//            mBrightnessMin = (float) jsonObject.getDouble(JSON_TMSRENDERER_BRIGHTNESSMIN);
+//        else
+//            mBrightnessMin = 0;
+//
+//        if(jsonObject.has(JSON_TMSRENDERER_BRIGHTNESSMAX))
+//            mBrightnessMax = (float) jsonObject.getDouble(JSON_TMSRENDERER_BRIGHTNESSMAX);
+//        else
+//            mBrightnessMax = 1;
         mForceToGrayScale = jsonObject.getBoolean(JSON_TMSRENDERER_GRAYSCALE);
 
         if(jsonObject.has(JSON_TMSRENDERER_ALPHA))
             mAlpha = jsonObject.getInt(JSON_TMSRENDERER_ALPHA);
         else
             mAlpha = 255;
+//        if(jsonObject.has(JSON_TMSRENDERER_NEW_CONRAST))
+//            mContrast = jsonObject.getInt(JSON_TMSRENDERER_NEW_CONRAST);
+//        else
+//            mContrast = 0; // new value
+
         mRasterPaint.setAntiAlias(mAntiAlias);
         mRasterPaint.setFilterBitmap(mFilterBitmap);
         mRasterPaint.setDither(mDither);
         mRasterPaint.setAlpha(mAlpha);
 
         setContrastBrightness(mContrast, mBrightness, mForceToGrayScale);
+
+//        setContrastBrightness(mContrast, mBrightnessMin, mBrightnessMax, mForceToGrayScale);
     }
 
 
@@ -357,6 +387,18 @@ public class TMSRenderer
     {
         return mBrightness;
     }
+
+
+//    public float getBrightnessMax()
+//    {
+//        return mBrightnessMax;
+//    }
+//
+//    public float getBrightnessMin()
+//    {
+//        return mBrightnessMin ;
+//    }
+
 
 
     public float getContrast()

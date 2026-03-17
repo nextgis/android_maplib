@@ -504,21 +504,40 @@ public class VectorLayer
             return;
         }
 
+
+
         final ContentValues values = getFeatureContentValues(feature);
-        long rowId = db.insert(mPath.getName(), "", values);
+
+
+        //if (!values.containsKey(Constants.FIELD_ID)) {
+            long id = getUniqId();
+            if (MIN_LOCAL_FEATURE_ID > id) {
+                id = MIN_LOCAL_FEATURE_ID;
+            }
+            values.put(FIELD_ID, id);
+        //}
+
+        long rowId = insertInternal(values);
+        //xxx
+
+
+        //long rowId = db.insert(mPath.getName(), "", values);
         if (rowId != Constants.NOT_FOUND) {
             //update bbox
             cacheGeometryEnvelope(rowId, feature.getGeometry());
             // add attach info
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    for ( String key :  feature.getAttachments().keySet()){
-                        final AttachItem item = feature.getAttachments().get(key);
-                        putOneAttachment(item, feature);
+
+            if (feature.getAttachments().keySet().size() > 0) {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        for ( String key :  feature.getAttachments().keySet()){
+                            final AttachItem item = feature.getAttachments().get(key);
+                            putOneAttachment(item, feature);
+                        }
                     }
-                }
-            }, 500);
+                }, 500);
+            }
         }
     }
 
@@ -2768,7 +2787,7 @@ public class VectorLayer
         return attachIds.size() > 0;
     }
 
-    public final  Map<Long, Feature> getFeatures(){
+    public final  LinkedHashMap<Long, Feature> getFeatures(){
         if (useNewLargeDataload)
             return getFeaturesLARGEDATA();
         else
@@ -2777,8 +2796,8 @@ public class VectorLayer
 
 
 
-    public final  Map<Long, Feature> getFeaturesOLDDATA(){
-        final Map<Long, Feature> featureListMap = new HashMap<>();
+    public final  LinkedHashMap<Long, Feature> getFeaturesOLDDATA(){
+        final LinkedHashMap<Long, Feature> featureListMap = new LinkedHashMap<>();
 
         final Cursor cursor = query(null, null, null, null, null);
         if (null == cursor) {
@@ -2795,16 +2814,16 @@ public class VectorLayer
         return featureListMap;
     }
 
-    public final  Map<Long, Feature> getFeaturesLARGEDATA(){
-        final Map<Long, Feature> featureListMap = new HashMap<>();
+    public final  LinkedHashMap<Long, Feature> getFeaturesLARGEDATA(){
+        final LinkedHashMap<Long, Feature> featureListMap = new LinkedHashMap<>();
 
         final List<Field> fields = getFields();
         String[] projection = new String[fields.size() +1] ; // only ID, better all fields except  geom
         projection[0] = "_id";
         for (int i = 0; i < fields.size(); i++)
-            projection[i+1] = fields.get(i).getName();
+            projection[i+1] = "\"" + fields.get(i).getName() + "\"";
 
-        Cursor cursor = query(projection,  null, null, null, null);
+        Cursor cursor = query(projection,  null, null, "_id", null);
 //        final Cursor cursor = query(null, null, null, null, null);
         if (null == cursor) {
             return featureListMap;
@@ -2916,7 +2935,7 @@ public class VectorLayer
         String[] projection = new String[fields.size() +1] ; // только ID, а лучше все поля КРОМЕ geom
         projection[0] = "_id";
         for (int i = 0; i < fields.size(); i++)
-            projection[i+1] = fields.get(i).getName();
+            projection[i+1] = "\"" + fields.get(i).getName() + "\"";
 
         Cursor cursor = query(projection,  FIELD_ID + " = " + featureId, null, null, null);
 //        final Cursor cursor = query(null, null, null, null, null);
@@ -3544,6 +3563,7 @@ public class VectorLayer
                 FeatureChanges.initialize(layer.getChangeTableName());
                 FeatureAttachments.initialize(layer.getAttachmentsTableName());
                 List<Long> ids = query(null);
+                Collections.sort(ids);
                 for (Long id : ids) {
                     Feature feature = getFeatureWithAttaches(id);
                     layer.addChange(feature.getId(), CHANGE_OPERATION_NEW);
@@ -3553,8 +3573,16 @@ public class VectorLayer
                 }
 
                 Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, layer.getAccountName());
+
+
+                ((IGISApplication)getContext().getApplicationContext()).startCreateNGWLayerSync(
+                        layer.getPath().toString());
+
                 layer.sync(mAuthority, ver, new SyncResult());
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+                Log.e("NGW", "send to ngw sync ERROR!!!!");
+                Log.e("NGW", ignored.getMessage());
+            }
 
             return null;
         }

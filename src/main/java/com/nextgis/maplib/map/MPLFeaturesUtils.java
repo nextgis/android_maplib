@@ -22,6 +22,7 @@ import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_NORMAL;
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 
 import static org.maplibre.android.style.layers.PropertyFactory.rasterBrightnessMax;
+import static org.maplibre.android.style.layers.PropertyFactory.rasterBrightnessMin;
 import static org.maplibre.android.style.layers.PropertyFactory.rasterContrast;
 import static org.maplibre.android.style.layers.PropertyFactory.rasterOpacity;
 import static org.maplibre.android.style.layers.PropertyFactory.rasterResampling;
@@ -1015,16 +1016,23 @@ public class MPLFeaturesUtils {
                     rasterLayer.setMaxZoom(maxZoom + 1);
 
                 if (iLayer != null && iLayer instanceof  TMSLayer) {
-                    TMSRenderer tmsRenderer = (TMSRenderer) ((TMSLayer) iLayer).getRenderer();
-                    float alpha = tmsRenderer.getAlpha() / 255.0f; // stored value 0 - 255 // need for maplibre 0 - 1
-                    float contrast = (tmsRenderer.getContrast() - 1) ; //stored value 0 - 100 ,  needed -1  +1
-                    float brightness = ((tmsRenderer.getBrightness()) / 255.0f) +1 ; // stored value 0  510 , need value 0  >1   1 norm
-                    boolean isGray = tmsRenderer.isForceToGrayScale();
+//                    TMSRenderer tmsRenderer = (TMSRenderer) ((TMSLayer) iLayer).getRenderer();
+//                    float alpha = tmsRenderer.getAlpha() / 255.0f; // stored value 0 - 255 // need for maplibre 0 - 1
+//                    float contrast = (tmsRenderer.getContrast() - 1) ; //stored value 0 - 100 ,  needed -1  +1
+//                    float brightness = ((tmsRenderer.getBrightness()) / 255.0f) +1 ; // stored value 0  510 , need value 0  >1   1 norm
 
-                    rasterLayer.setProperties(
-                            rasterOpacity(alpha),
-                            rasterContrast(contrast),
-                            rasterBrightnessMax(brightness));
+//                    float brightnessMin = tmsRenderer.getBrightnessMin();
+//                    float brightnessMax = tmsRenderer.getBrightnessMax();
+                    //boolean isGray = tmsRenderer.isForceToGrayScale();
+
+
+//                    rasterLayer.setProperties(
+//                            rasterOpacity(alpha),
+//                            rasterContrast(contrast)
+//
+////                            rasterBrightnessMin(brightnessMin),
+////                            rasterBrightnessMax(brightnessMax)
+//                    );
                 }
             return;
         }

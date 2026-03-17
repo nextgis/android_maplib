@@ -87,6 +87,9 @@ public class SyncAdapter
     public static final String SYNC_CANCELED = "com.nextgis.maplib.sync_canceled";
     public static final String SYNC_CHANGES  = "com.nextgis.maplib.sync_changes";
 
+
+    public static final String ACTION_LPATH = "com.nextgis.mobile.util.action.LPATH";
+
     public static final String EXCEPTION = "exception";
     protected String mError;
 
@@ -146,7 +149,7 @@ public class SyncAdapter
             // FIXME Temporary fix till 3.0
 //            mapContentProviderHelper.load(); // reload map for deleted/added layers
 
-            sync(account, mapContentProviderHelper, authority, syncResult);
+            sync(account, mapContentProviderHelper, authority, syncResult, bundle);
         }
 
         if (isCanceled()) {
@@ -258,7 +261,8 @@ public class SyncAdapter
             Account account,
             LayerGroup layerGroup,
             String authority,
-            SyncResult syncResult)
+            SyncResult syncResult,
+            Bundle bundle)
     {
 
 //        Log.e("RRFRSH", "sync() ngw ");
@@ -272,30 +276,45 @@ public class SyncAdapter
         boolean trackSync = mSharedPreferences.getBoolean(SettingsConstants.KEY_PREF_TRACK_SEND, false);
 
         List<ILayer> layersToSync = new ArrayList<>();
-        for (int i = 0; i < layerGroup.getLayerCount(); i++){
-            ILayer layer = layerGroup.getLayer(i);
 
-            // no other account
-            if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName()))
-                continue;
-
-            if (layer instanceof  INGWLayer && ((INGWLayer) layer).getSyncType() == SYNC_NONE)
-                continue;
-
-            boolean exists = false;
-
-            // only ngw and track
-            if (! ((layer instanceof INGWLayer) || (layer instanceof TrackLayer && trackSync)))
-                continue;
-
-            for (ILayer added : layersToSync){
-                if (added.getPath().equals(layer.getPath()) ){
-                    exists = true;
+        if (bundle != null && bundle.getString(ACTION_LPATH) != null){
+            String lpath = bundle.getString(ACTION_LPATH);
+            for (int i = 0; i < layerGroup.getLayerCount(); i++) {
+                ILayer layer = layerGroup.getLayer(i);
+                if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName()))
+                    continue;
+                if (layer.getPath().equals(lpath)){
+                    layersToSync.add(layer);
                     break;
                 }
             }
-            if (!exists)
-                layersToSync.add(layer);
+        }else {
+
+            for (int i = 0; i < layerGroup.getLayerCount(); i++) {
+                ILayer layer = layerGroup.getLayer(i);
+
+                // no other account
+                if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer) layer).getAccountName()))
+                    continue;
+
+                if (layer instanceof INGWLayer && ((INGWLayer) layer).getSyncType() == SYNC_NONE)
+                    continue;
+
+                boolean exists = false;
+
+                // only ngw and track
+                if (!((layer instanceof INGWLayer) || (layer instanceof TrackLayer && trackSync)))
+                    continue;
+
+                for (ILayer added : layersToSync) {
+                    if (added.getPath().equals(layer.getPath())) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists)
+                    layersToSync.add(layer);
+            }
         }
 
         for (ILayer layer : layersToSync) {
@@ -307,7 +326,7 @@ public class SyncAdapter
             }
             if (layer instanceof LayerGroup) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a layer group");
-                sync(account, (LayerGroup) layer, authority, syncResult);
+                sync(account, (LayerGroup) layer, authority, syncResult, bundle);
             } else if (layer instanceof INGWLayer) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a NGW layer");
                 INGWLayer ngwLayer = (INGWLayer) layer;

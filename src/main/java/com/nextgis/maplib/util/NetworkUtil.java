@@ -394,15 +394,15 @@ public class NetworkUtil
         // Allow Outputs
         conn.setDoOutput(true);
 
-        OutputStream os = conn.getOutputStream();
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+        final OutputStream os = conn.getOutputStream();
+        final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
         writer.write(payload);
 
         writer.flush();
         writer.close();
         os.close();
 
-        HttpResponse response = getHttpResponse(conn, true);
+        final HttpResponse response = getHttpResponse(conn, true);
         // no perm 403 - need add
         if (response.mResponseCode == HTTP_FORBIDDEN){ // 403
 
