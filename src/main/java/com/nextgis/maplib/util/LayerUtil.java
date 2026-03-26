@@ -70,8 +70,8 @@ public class LayerUtil {
         if(result.equals(Constants.FIELD_ID))
             return "_fixed_id";
 
-        if (containsCaseInsensitive(result, Constants.VECTOR_FORBIDDEN_FIELDS))
-            result = "\"" + result + "\"";
+//        if (containsCaseInsensitive(result, Constants.VECTOR_FORBIDDEN_FIELDS))
+//            result = "\"" + result + "\"";
 
         return result;
     }

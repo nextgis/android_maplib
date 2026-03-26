@@ -75,6 +75,7 @@ public class Connection
     public final static int NGWResourceTypeConnections       = 1 << 14;
     public final static int NGWResourceTypeWMSClient         = 1 << 15;
     public final static int NGWResourceTypeLookupTable       = 1 << 16;
+    //public final static int NGWResourceTypeDEMODEMO          = 1 << 17;
 //    public final static int NGWResourceTypeCollector         = 1 << 17;
 
 
@@ -217,6 +218,8 @@ public class Connection
                 return NGWResourceTypeWMSClient;
             case "lookup_table":
                 return NGWResourceTypeLookupTable;
+            case "demo_project":
+                return NGWResourceTypeResourceGroup;
 //            case "collector_project":
 //                    return NGWResourceTypeCollector;
             default:

@@ -193,6 +193,8 @@ import org.maplibre.geojson.MultiPolygon;
 import org.maplibre.geojson.Point;
 import org.maplibre.geojson.Polygon;
 
+import kotlin.Unit;
+
 
 public class MapDrawable
         extends MapEventSource
@@ -2690,14 +2692,16 @@ public class MapDrawable
         originalSelectedFeature.setId(newFeatureID);
 
         // WA for sign by id field for new feature
-        if (editingObject.originalEditingFeature != null && editingObject.originalEditingFeature.getStringProperty(prop_signature_text) != null &&
+        if (editingObject != null)
+            if (editingObject.originalEditingFeature != null && editingObject.originalEditingFeature.getStringProperty(prop_signature_text) != null &&
                 editingObject.originalEditingFeature.getStringProperty(prop_signature_text) .equals("-1"))
-            editingObject.originalEditingFeature.addStringProperty(prop_signature_text, String.valueOf(newFeatureID));
+                editingObject.originalEditingFeature.addStringProperty(prop_signature_text, String.valueOf(newFeatureID));
 
         cancelFeatureEdit(false);
     }
 
 
+    // reload geometry only for point
     public void reloadFeatureToMaplibre(
             long newFeatureID,
             VectorLayer layer){
@@ -2743,6 +2747,22 @@ public class MapDrawable
                             needSignatures,
                             signatureField,
                             commonText);
+                    if (newFeatureWithFields.getGeometry() instanceof  GeoPoint){
+                        // for create point directly from location
+                        String prid = viewedFeature.getStringProperty(prop_layerid);
+                        String prorder = viewedFeature.getStringProperty(prop_order);
+                        String prfid = viewedFeature.getStringProperty(prop_featureid);
+
+                        GeoPoint geoPointGeometry = (GeoPoint) newFeatureWithFields.getGeometry();
+
+                        double[] lonLat = convert3857To4326(geoPointGeometry.getX(), geoPointGeometry.getY());
+                        Point point = Point.fromLngLat(lonLat[0], lonLat[1]);
+
+                        viewedFeature = org.maplibre.geojson.Feature.fromGeometry(point);
+                        viewedFeature.addStringProperty(prop_layerid, prid);
+                        viewedFeature.addStringProperty(prop_order, prorder);
+                        viewedFeature.addStringProperty(prop_featureid, prfid);
+                    }
                 }
                 cursor.close();
             } catch (Exception ex){
@@ -3216,6 +3236,13 @@ public class MapDrawable
 
         List<org.maplibre.geojson.Feature> features =  sourceFeaturesHashMap.get(ilayerd.getId());
         return features;
+    }
+
+    public void updateSelectedMarker() {
+        if (viewedFeature != null) {
+            viewedFeature.addStringProperty("color", colorLightBlue);
+            selectedDotSource.setGeoJson(FeatureCollection.fromFeature(viewedFeature));
+        }
     }
 
     // future update raster prop

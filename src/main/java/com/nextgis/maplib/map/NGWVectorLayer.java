@@ -461,8 +461,7 @@ public class NGWVectorLayer
                 final Feature feature = NGWUtil.readNGWFeature(reader, fields, mCRS);
                 if (feature.getGeometry() == null || !feature.getGeometry().isValid())
                     continue;
-
-                createFeatureBatch(feature, db);
+                createFeatureBatch(feature, db, false);
             } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException |
                      NGException e) {
                 e.printStackTrace();
@@ -648,6 +647,8 @@ public class NGWVectorLayer
             Pair<Integer, Integer> ver,
             SyncResult syncResult)
     {
+
+        Log.d("SSYNC", "sync of " + getName());
         syncResult.clear();
         if (0 != (mSyncType & Constants.SYNC_NONE) || mFields == null) {
             if (Constants.DEBUG_MODE) {
@@ -1357,6 +1358,7 @@ public class NGWVectorLayer
             String authority,
             SyncResult syncResult)
     {
+        Log.d("SSYNC", "getChangesFromServer " + getName());
 
         int countChanges = 0;
         int createNewFeatureCount = 0;
@@ -1819,10 +1821,11 @@ public class NGWVectorLayer
         try {
             HttpURLConnection urlConnection = getConnection(accountData);
             if (Constants.DEBUG_MODE)
-                Log.d(TAG, "url: " + urlConnection.getURL().toString());
+                Log.d("SSYNC", "url: " + urlConnection.getURL().toString());
 
             int code = urlConnection.getResponseCode();
             if (code == 404){
+                Log.d("SSYNC", "url: " + urlConnection.getURL().toString() + " = FAIL 404");
                 return new ExistFeatureResult(null, false, 404);
             }
 

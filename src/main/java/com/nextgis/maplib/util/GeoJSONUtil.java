@@ -177,7 +177,7 @@ public class GeoJSONUtil {
                         }
 
                         if(feature.getGeometry() != null) {
-                            layer.createFeatureBatch(feature, db);
+                            layer.createFeatureBatch(feature, db, true);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
                                     layer.save();
@@ -236,7 +236,7 @@ public class GeoJSONUtil {
                         }
 
                         if (feature.getGeometry() != null) {
-                            layer.createFeatureBatch(feature, db);
+                            layer.createFeatureBatch(feature, db, true);
                             if(null != progressor){
                                 if (progressor.isCanceled()) {
                                     layer.save();

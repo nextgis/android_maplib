@@ -364,11 +364,17 @@ public class Feature
             String name = field.getName();
 
             String cleanName = unwrapQuotation(name);
-            if (containsCaseInsensitive(cleanName, Constants.VECTOR_FORBIDDEN_FIELDS) || cleanName.contains(" ") || cleanName.matches(".*[^\\w].*")) {
-                name = "\"" + cleanName + "\"";
-            } else {
+            // quotes no need
+//            if (
+//                    //containsCaseInsensitive(cleanName, Constants.VECTOR_FORBIDDEN_FIELDS) ||
+//                            //cleanName.contains(" ") ||
+//                                    cleanName.matches(".*[^\\w].*"
+//                            )
+//            ) {
+//                name = "\"" + cleanName + "\"";
+//            } else {
                 name = cleanName;
-            }
+//            }
 //            if (  containsCaseInsensitive( unwrapQuotation(name), Constants.VECTOR_FORBIDDEN_FIELDS))
 //                name = "'\"" + unwrapQuotation(name) + "\"'";
 //            if (unwrapQuotation(name).contains(" "))

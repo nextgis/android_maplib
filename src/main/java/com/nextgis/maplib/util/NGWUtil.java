@@ -54,6 +54,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -128,28 +129,40 @@ public class NGWUtil
         }
 
         sUrl += ngLoginPart;
-        if (useUrlEncode) {
-            login = URLEncoder.encode(login, "UTF-8").replaceAll("\\+", "%20");
-            password = URLEncoder.encode(password, "UTF-8").replaceAll("\\+", "%20");
+        // old auth
+//        if (useUrlEncode) {
+//            login = URLEncoder.encode(login, "UTF-8").replaceAll("\\+", "%20");
+//            password = URLEncoder.encode(password, "UTF-8").replaceAll("\\+", "%20");
+//        }
+
+        JSONObject  payload = new JSONObject();
+        try {
+            payload.put("login", login);
+            payload.put("password", password);
+        } catch (Exception ex){
+            ex.printStackTrace();
         }
-        String sPayload = "login=" + login + "&password=" + password;
-        final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null, null);
+
+        final HttpURLConnection conn = NetworkUtil.getHttpConnection("POST", sUrl, null,null);
         if (null == conn) {
             Log.d(TAG, "Error get connection object: " + sUrl);
             return null;
         }
+
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "application/json");
+
         conn.setInstanceFollowRedirects(false);
         conn.setDefaultUseCaches(false);
         conn.setDoOutput(true);
         conn.connect();
 
-        OutputStream os = conn.getOutputStream();
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-        writer.write(sPayload);
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = payload.toString().getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
 
-        writer.flush();
-        writer.close();
-        os.close();
 
         int responseCode = conn.getResponseCode();
         if (!(responseCode == HttpURLConnection.HTTP_MOVED_TEMP
@@ -177,7 +190,7 @@ public class NGWUtil
     }
 
     public static String appendix() {
-        return "?source=" + NGUA + "&ngid=" + NGID + "&deviceid=" + UUID;
+        return "?&dt_format=iso&source=" + NGUA + "&ngid=" + NGID + "&deviceid=" + UUID;
     }
 
     public static String getServerUrl(String server) {
@@ -450,8 +463,8 @@ public class NGWUtil
             String type = fieldJSONObject.getString("datatype");
             String alias = fieldJSONObject.getString("display_name");
             String name = fieldJSONObject.getString("keyname");
-            if (containsCaseInsensitive(name, Constants.VECTOR_FORBIDDEN_FIELDS))
-                name = "\"" + name + "\"";
+//            if (containsCaseInsensitive(name, Constants.VECTOR_FORBIDDEN_FIELDS))
+//                name = escapeIdentifier (name) ;// "\"" + name + "\"";
 
             int nType = LayerUtil.stringToType(type);
             if (Constants.NOT_FOUND != nType) {
@@ -460,6 +473,12 @@ public class NGWUtil
         }
         return fields;
     }
+
+
+    public static String escapeIdentifier(String name) {
+        return "\"" + name.replace("\"", "\"\"") + "\"";
+    }
+
 
 
     public static Feature readNGWFeature (

@@ -149,6 +149,7 @@ import static com.nextgis.maplib.util.GeoConstants.GTNone;
 import static com.nextgis.maplib.util.GeoConstants.GTPoint;
 import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
+import static com.nextgis.maplib.util.NGWUtil.escapeIdentifier;
 
 
 /**
@@ -330,6 +331,7 @@ public class VectorLayer
         tableCreate += Constants.FIELD_GEOM + " BLOB";
         for (Field field : mFields.values()) {
             tableCreate += ", '" + field.getName() + "'";
+//            tableCreate += ", \"" + field.getName().replace("\"", "\"\"") + "\""; // no need
             switch (field.getType()) {
                 case FTString:
                     tableCreate += " TEXT";
@@ -495,33 +497,33 @@ public class VectorLayer
         return rowId;
     }
 
+    // useExtraLargeStartId - for export fropm geojson start id from 10000000
+    // to be ensure correct sync be done after export layer to NGW (if user do export)
+    // import from NGW - usual record from 1
+
     public void createFeatureBatch(
             final Feature feature,
-            final SQLiteDatabase db)
+            final SQLiteDatabase db,
+            boolean useExtraLargeStartId)
             throws SQLiteException
     {
         if (null == feature.getGeometry() || !checkGeometryType(feature)) {
             return;
         }
 
-
-
         final ContentValues values = getFeatureContentValues(feature);
+        long rowId = -1;
 
-
-        //if (!values.containsKey(Constants.FIELD_ID)) {
+        if (useExtraLargeStartId ){
             long id = getUniqId();
             if (MIN_LOCAL_FEATURE_ID > id) {
                 id = MIN_LOCAL_FEATURE_ID;
             }
             values.put(FIELD_ID, id);
-        //}
+            rowId = insertInternal(values);
+        } else
+            rowId = insertInternal(values);
 
-        long rowId = insertInternal(values);
-        //xxx
-
-
-        //long rowId = db.insert(mPath.getName(), "", values);
         if (rowId != Constants.NOT_FOUND) {
             //update bbox
             cacheGeometryEnvelope(rowId, feature.getGeometry());
@@ -1351,7 +1353,12 @@ public class VectorLayer
         }
 
         SQLiteDatabase db = map.getDatabase(false);
-        long rowId = db.insert(mPath.getName(), null, contentValues);
+
+
+        //long rowId = db.insert(mPath.getName(), null, contentValues);
+        long rowId = insertViaSql(db, contentValues, mPath.getName());
+
+
 
         if (rowId != Constants.NOT_FOUND) {
             Intent notify = new Intent(Constants.NOTIFY_INSERT);
@@ -1364,6 +1371,96 @@ public class VectorLayer
         updateUniqId(rowId);
 
         return rowId;
+    }
+
+    public long insertViaSql(SQLiteDatabase db, ContentValues contentValues, String table){
+        StringBuilder cols = new StringBuilder();
+        StringBuilder vals = new StringBuilder();
+        List<Object> args = new ArrayList<>();
+
+        for (Map.Entry<String, Object> e : contentValues.valueSet()) {
+            if (cols.length() > 0) {
+                cols.append(", ");
+                vals.append(", ");
+            }
+            cols.append("\"").append(e.getKey().replace("\"", "\"\"")).append("\"");
+            vals.append("?");
+            args.add(e.getValue());
+        }
+
+        String sql = "INSERT INTO "  + escapeIdentifier (table) +
+                " (" + cols + ") VALUES (" + vals + ")";
+
+        Log.d("SSQL", sql);
+        Log.d("SSQL","args" +  args.toArray());
+
+        db.execSQL(sql, args.toArray());
+
+        Cursor c = db.rawQuery("SELECT last_insert_rowid()", null);
+        long id = -1;
+
+        if (c.moveToFirst()) {
+            id = c.getLong(0);
+        }
+        c.close();
+        return id;
+    }
+
+    public static int updateViaSql(SQLiteDatabase db,
+                                 String table,
+                                 ContentValues values,
+                                 String whereClause,
+                                 String[] whereArgs) {
+
+        if (values == null || values.size() == 0) {
+            return 0;
+        }
+
+        StringBuilder sql = new StringBuilder();
+        List<Object> bindArgs = new ArrayList<>();
+
+        sql.append("UPDATE ").append(escapeIdentifier(table)).append(" SET ");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Object> e : values.valueSet()) {
+            if (!first) {
+                sql.append(", ");
+            }
+            first = false;
+            sql.append(escapeIdentifier(e.getKey())).append(" = ?");
+            bindArgs.add(e.getValue());
+        }
+
+        if (whereClause != null && !whereClause.trim().isEmpty()) {
+            sql.append(" WHERE ").append(whereClause);
+
+            if (whereArgs != null) {
+                Collections.addAll(bindArgs, whereArgs);
+            }
+        }
+
+        SQLiteStatement stmt = db.compileStatement(sql.toString());
+
+        // bind args
+        for (int i = 0; i < bindArgs.size(); i++) {
+            Object arg = bindArgs.get(i);
+            int index = i + 1;
+
+            if (arg == null) {
+                stmt.bindNull(index);
+            } else if (arg instanceof byte[]) {
+                stmt.bindBlob(index, (byte[]) arg);
+            } else if (arg instanceof Float || arg instanceof Double) {
+                stmt.bindDouble(index, ((Number) arg).doubleValue());
+            } else if (arg instanceof Number) {
+                stmt.bindLong(index, ((Number) arg).longValue());
+            } else {
+                stmt.bindString(index, arg.toString());
+            }
+        }
+
+        return stmt.executeUpdateDelete(); // 🔥 return num of  updated rows
     }
 
 
@@ -1809,7 +1906,8 @@ public class VectorLayer
         }
 
         SQLiteDatabase db = map.getDatabase(false);
-        int result = db.update(mPath.getName(), values, selection, selectionArgs);
+        //int result = db.update(mPath.getName(), values, selection, selectionArgs);
+        int result = updateViaSql(db, mPath.getName(), values, selection, selectionArgs);
         if (result > 0) {
             Intent notify;
             if (rowId == Constants.NOT_FOUND) {
@@ -2932,7 +3030,7 @@ public class VectorLayer
         Feature feature = null;
 
         final List<Field> fields = getFields();
-        String[] projection = new String[fields.size() +1] ; // только ID, а лучше все поля КРОМЕ geom
+        String[] projection = new String[fields.size() +1] ; // only ID, but beter all fields exept  geom
         projection[0] = "_id";
         for (int i = 0; i < fields.size(); i++)
             projection[i+1] = "\"" + fields.get(i).getName() + "\"";
@@ -3578,7 +3676,7 @@ public class VectorLayer
                 ((IGISApplication)getContext().getApplicationContext()).startCreateNGWLayerSync(
                         layer.getPath().toString());
 
-                layer.sync(mAuthority, ver, new SyncResult());
+                //layer.sync(mAuthority, ver, new SyncResult());
             } catch (Exception ignored) {
                 Log.e("NGW", "send to ngw sync ERROR!!!!");
                 Log.e("NGW", ignored.getMessage());

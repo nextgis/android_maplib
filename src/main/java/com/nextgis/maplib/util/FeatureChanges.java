@@ -45,7 +45,7 @@ public class FeatureChanges
         if (Constants.DEBUG_MODE)
             Log.d(TAG, "init the change log for the layer " + tableName);
 
-        String sqlCreateTable = "CREATE TABLE IF NOT EXISTS " + tableName + " ( ";
+        String sqlCreateTable = " CREATE TABLE IF NOT EXISTS " + tableName + " ( ";
         sqlCreateTable += FIELD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, ";
         sqlCreateTable += FIELD_FEATURE_ID + " INTEGER, ";
         sqlCreateTable += FIELD_OPERATION + " INTEGER, ";
