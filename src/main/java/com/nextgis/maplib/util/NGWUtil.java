@@ -190,7 +190,8 @@ public class NGWUtil
     }
 
     public static String appendix() {
-        return "?&dt_format=iso&source=" + NGUA + "&ngid=" + NGID + "&deviceid=" + UUID;
+        //return "?source=" + NGUA + "&ngid=" + NGID + "&deviceid=" + UUID;
+        return "?source=" + NGUA + "&ngid=" + NGID + "&deviceid=" + UUID + "&dt_format=iso";
     }
 
     public static String getServerUrl(String server) {
@@ -658,44 +659,23 @@ public class NGWUtil
             dateformat.setTimeZone(gmtTimeZone);
 
             try {
-//                Log.e("TTIIMMMEE", "readNGWDateOrTime qdateOrTime: " + dateOrTime);
-
                 Date date = dateformat.parse(dateOrTime);
-
                 Date targetTime = convertTime(date, TimeZone.getDefault(), gmtTimeZone);
-
                 Calendar calendarT = Calendar.getInstance(TimeZone.getDefault());
                 calendarT.setTimeInMillis(targetTime.getTime());
-
-
                 nHour = calendarT.get(Calendar.HOUR_OF_DAY);
                 nMinute = calendarT.get(Calendar.MINUTE);
                 nSecond = calendarT.get(Calendar.SECOND);
-
-//                nHour = date.getHours();
-//                nMinute = date.getMinutes();
-//                nSecond = date.getSeconds();
-
-//                Log.e("TTIIMMMEE", "readNGWDateOrTime qst result H:m:s: " + nHour + ":" + nMinute +":"+ nSecond);
-
-
-
             } catch (ParseException e) {
                 e.printStackTrace();
             }
         }
 
         TimeZone timeZone = TimeZone.getDefault();
-//        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset: " + timeZone.getRawOffset());
-
         timeZone.setRawOffset(0); // set to UTC
-//        Log.e("TTIIMMMEE", "readNGWDateOrTime TimeZone ofset after 0: " + timeZone.getRawOffset());
         Calendar calendar = Calendar.getInstance(timeZone);
         calendar.set(nYear, nMonth - 1, nDay, nHour, nMinute, nSecond);
         calendar.set(Calendar.MILLISECOND, 0); // we must to reset millis
-
-//        Log.e("TTIIMMMEE", "readNGWDateOrTime calendar.getTimeInMillis(): " + calendar.getTimeInMillis());
-
         feature.setFieldValue(fieldName, calendar.getTimeInMillis());
     }
 

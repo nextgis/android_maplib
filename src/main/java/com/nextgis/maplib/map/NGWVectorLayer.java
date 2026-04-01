@@ -77,6 +77,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.ConcurrentModificationException;
@@ -85,6 +86,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -2161,110 +2163,109 @@ public class NGWVectorLayer
         JSONObject rootObject = new JSONObject();
         if (0 != (mSyncType & Constants.SYNC_ATTRIBUTES)) {
             JSONObject valueObject = new JSONObject();
+
             for (int i = 0; i < cursor.getColumnCount(); i++) {
-                String name = cursor.getColumnName(i);
-                if (name.equals(Constants.FIELD_ID) || name.equals(Constants.FIELD_GEOM)) {
+                String columnName = cursor.getColumnName(i);
+                if (columnName.equals(Constants.FIELD_ID) || columnName.equals(Constants.FIELD_GEOM)) {
                     continue;
                 }
 
-                name = unNormalizeName(name);
+                String fieldName = unNormalizeName(columnName);
 
-                Field field = mFields.get(cursor.getColumnName(i));
+                Field field = mFields.get(columnName);
                 if (null == field) {
                     continue;
                 }
 
-                switch (field.getType()) {
+                int type = field.getType();
+
+                switch (type) {
                     case GeoConstants.FTReal:
-                        valueObject.put(name, cursor.getDouble(i));
+                        valueObject.put(fieldName, cursor.getDouble(i));
                         break;
+
                     case GeoConstants.FTInteger:
-                        valueObject.put(name, cursor.getInt(i));
+                        valueObject.put(fieldName, cursor.getInt(i));
                         break;
+
                     case GeoConstants.FTLong:
-                        valueObject.put(name, cursor.getLong(i));
+                        valueObject.put(fieldName, cursor.getLong(i));
                         break;
+
                     case GeoConstants.FTString:
                         String stringVal = cursor.getString(i);
-                        if (null != stringVal && !stringVal.equals("null")) {
-                            valueObject.put(name, stringVal);
+                        if (stringVal != null && !stringVal.equals("null")) {
+                            valueObject.put(fieldName, stringVal);
                         }
                         break;
+
                     case GeoConstants.FTDateTime:
-                        TimeZone timeZoneDT = TimeZone.getDefault();
-                        timeZoneDT.setRawOffset(0); // set to UTC
-                        Calendar calendarDT = Calendar.getInstance(timeZoneDT);
-                        calendarDT.setTimeInMillis(cursor.getLong(i));
-                        JSONObject jsonDateTime = new JSONObject();
-                        jsonDateTime.put("year", calendarDT.get(Calendar.YEAR));
-                        jsonDateTime.put("month", calendarDT.get(Calendar.MONTH) + 1);
-                        jsonDateTime.put("day", calendarDT.get(Calendar.DAY_OF_MONTH));
-                        jsonDateTime.put("hour", calendarDT.get(Calendar.HOUR_OF_DAY));
-                        jsonDateTime.put("minute", calendarDT.get(Calendar.MINUTE));
-                        jsonDateTime.put("second", calendarDT.get(Calendar.SECOND));
-                        valueObject.put(name, jsonDateTime);
-                        break;
                     case GeoConstants.FTDate:
-                        TimeZone timeZoneD = TimeZone.getDefault();
-                        timeZoneD.setRawOffset(0); // set to UTC
-                        Calendar calendarD = Calendar.getInstance(timeZoneD);
-                        calendarD.setTimeInMillis(cursor.getLong(i));
-                        JSONObject jsonDate = new JSONObject();
-                        jsonDate.put("year", calendarD.get(Calendar.YEAR));
-                        jsonDate.put("month", calendarD.get(Calendar.MONTH) + 1);
-                        jsonDate.put("day", calendarD.get(Calendar.DAY_OF_MONTH));
-                        valueObject.put(name, jsonDate);
-                        break;
                     case GeoConstants.FTTime:
+                        if (cursor.isNull(i)) {
+                            valueObject.put(fieldName, JSONObject.NULL);
+                            break;
+                        }
 
+                        long millis = cursor.getLong(i);
+                        String ngwString = millisToNGWString(millis, type);
 
-//                        Log.e("TTIIMMMEE", "cursorToJson " );
-
-                        TimeZone timeZoneT = TimeZone.getDefault();
-
-                        TimeZone timeZoneUTC = TimeZone.getDefault();
-                        timeZoneUTC.setRawOffset(0); // set to UTC
-
-                        // time on device
-                        Date currentTime = new Date(cursor.getLong(i));
-
-                        // convert time to UTC zone time
-                        Date targetTime = convertTime(currentTime, timeZoneT, timeZoneUTC);
-
-                        Calendar calendarT = Calendar.getInstance(timeZoneT);
-                        calendarT.setTimeInMillis(targetTime.getTime());
-
-                        JSONObject jsonTime = new JSONObject();
-                        jsonTime.put("hour", calendarT.get(Calendar.HOUR_OF_DAY));
-                        jsonTime.put("minute", calendarT.get(Calendar.MINUTE));
-                        jsonTime.put("second", calendarT.get(Calendar.SECOND));
-
-//                        Log.e("TTIIMMMEE", "cursorToJson timestamp:" +  targetTime.getTime());
-//                        Log.e("TTIIMMMEE", "cursorToJson json result:" +  jsonTime.toString());
-
-                        valueObject.put(name, jsonTime);
+                        if (ngwString != null) {
+                            valueObject.put(fieldName, ngwString);
+                        } else {
+                            valueObject.put(fieldName, JSONObject.NULL);
+                        }
                         break;
+
                     default:
                         break;
                 }
             }
+
             rootObject.put(NGWUtil.NGWKEY_FIELDS, valueObject);
         }
 
-        if (0 != (mSyncType & Constants.SYNC_GEOMETRY)) {
-            //may be found geometry in cache by id is faster
-            GeoGeometry geometry = GeoGeometryFactory.fromBlob(
-                    cursor.getBlob(cursor.getColumnIndex(Constants.FIELD_GEOM)));
+        return rootObject.toString();
+    }
 
-            geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
-            if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
-                geometry.project(mCRS);
-
-            rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
-            //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
+    /**
+     * Преобразует millis (хранится в UTC) в строку, которую принимает NextGIS NGW
+     */
+    private String millisToNGWString(long millis, int fieldType) {
+        if (millis == 0) {
+            return "";
         }
 
-        return rootObject.toString();
+        SimpleDateFormat sdf;
+
+        switch (fieldType) {
+            case GeoConstants.FTDate:
+                sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                break;
+
+            case GeoConstants.FTTime:
+                sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                break;
+
+            case GeoConstants.FTDateTime:
+                //  RFC 3339 datetime
+                sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+                break;
+
+            default:
+                return null;
+        }
+
+        // time on device
+        Date currentTime = new Date(millis);
+
+        TimeZone timeZoneT = TimeZone.getDefault();
+        TimeZone timeZoneUTC = TimeZone.getDefault();
+        timeZoneUTC.setRawOffset(0); // set to UTC
+
+        // convert time to UTC zone time
+        Date targetTime = convertTime(currentTime, timeZoneT, timeZoneUTC);
+        return sdf.format(targetTime);
     }
 
 
