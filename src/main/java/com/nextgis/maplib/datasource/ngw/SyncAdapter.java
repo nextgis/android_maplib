@@ -129,6 +129,8 @@ public class SyncAdapter
             ContentProviderClient contentProviderClient,
             SyncResult syncResult)
     {
+
+        Log.d("SSYNC", "super.onPerformSync for " + account.name);
         
         ((IGISApplication)getContext().getApplicationContext()).setError(
                 null,null,0);
@@ -147,9 +149,12 @@ public class SyncAdapter
         if (null != mapContentProviderHelper) {
             // FIXME Temporary fix till 3.0
 //            mapContentProviderHelper.load(); // reload map for deleted/added layers
+            Log.d("SSYNC", "mapContentProviderHelper!=null start sync" );
 
             sync(account, mapContentProviderHelper, authority, syncResult, bundle);
-        }
+        } else
+            Log.d("SSYNC", "mapContentProviderHelper=null" );
+
 
         if (isCanceled()) {
             Log.d(Constants.TAG, "onPerformSync - SYNC_CANCELED is sent");
@@ -223,6 +228,7 @@ public class SyncAdapter
 
 
     public boolean isSomeToSync(Account account){
+        Log.d("SSYNC", "isSomeToSync start for " + account.name);
 
         String name = getContext().getPackageName() + "_preferences";
         SharedPreferences mSharedPreferences = getContext().getSharedPreferences(name, MODE_MULTI_PROCESS);
@@ -254,6 +260,9 @@ public class SyncAdapter
             if (!exists)
                 layersToSync.add(layer);
         }
+
+        Log.d("SSYNC", "isSomeToSync result  " + String.valueOf(layersToSync.size()>0));
+
         return layersToSync.size()>0;
     }
 
@@ -277,18 +286,35 @@ public class SyncAdapter
 
         List<ILayer> layersToSync = new ArrayList<>();
 
+        Log.d("SSYNC", "pre check bundle != null && bundle.getString(ACTION_LPATH) != null" );
+
         if (bundle != null && bundle.getString(ACTION_LPATH) != null){
+            Log.d("SSYNC", "bundle.getString(ACTION_LPATH) != null PASS" );
+
             String lpath = bundle.getString(ACTION_LPATH);
+            Log.d("SSYNC", "lpath = " + lpath );
+
             for (int i = 0; i < layerGroup.getLayerCount(); i++) {
+
                 ILayer layer = layerGroup.getLayer(i);
-                if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName()))
+                Log.d("SSYNC", "check layer  " + layer.getName() );
+                if (layer instanceof INGWLayer && !account.name.equals(((INGWLayer)layer).getAccountName())) {
+                    Log.d("SSYNC", "continue" );
                     continue;
-                if (layer.getPath().equals(lpath)){
+                }
+
+                Log.d("SSYNC", "layer.getPath() : " + layer.getPath().toString() );
+
+                if (layer.getPath().toString().equals(lpath)){
+                    Log.d("SSYNC", "layer.getPath().equals(lpath)" );
                     layersToSync.add(layer);
                     break;
-                }
+                } else
+                    Log.d("SSYNC", "NOT layer.getPath().equals(lpath)" );
             }
         }else {
+            Log.d("SSYNC", "check bundle != null && bundle.getString(ACTION_LPATH) != null  ELSEEEE" );
+
 
             for (int i = 0; i < layerGroup.getLayerCount(); i++) {
                 ILayer layer = layerGroup.getLayer(i);

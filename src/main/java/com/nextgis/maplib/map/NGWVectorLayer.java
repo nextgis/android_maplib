@@ -2225,6 +2225,19 @@ public class NGWVectorLayer
             rootObject.put(NGWUtil.NGWKEY_FIELDS, valueObject);
         }
 
+        if (0 != (mSyncType & Constants.SYNC_GEOMETRY)) {
+            //may be found geometry in cache by id is faster
+            GeoGeometry geometry = GeoGeometryFactory.fromBlob(
+                    cursor.getBlob(cursor.getColumnIndex(Constants.FIELD_GEOM)));
+
+            geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
+            if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
+                geometry.project(mCRS);
+
+            rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
+            //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
+        }
+
         return rootObject.toString();
     }
 
