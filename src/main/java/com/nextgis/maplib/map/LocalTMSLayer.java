@@ -133,16 +133,22 @@ public class LocalTMSLayer
 
                 jsonArray.put(oJSONLevel);
 
-                if (nMaxLevel < nLevelZ) {
-                    nMaxLevel = nLevelZ;
-                }
-                if (nMinLevel > nLevelZ) {
-                    nMinLevel = nLevelZ;
-                }
+                // commented
+                // if user want to keep change max/min zoom for offline tile layer -
+                // let him do it on his own responsibility
+//                if (nMaxLevel < nLevelZ) {
+//                    nMaxLevel = nLevelZ;
+//                }
+//                if (nMinLevel > nLevelZ) {
+//                    nMinLevel = nLevelZ;
+//                }
             }
 
-            rootConfig.put(JSON_MAXLEVEL_KEY, nMaxLevel);
-            rootConfig.put(JSON_MINLEVEL_KEY, nMinLevel);
+//            rootConfig.put(JSON_MAXLEVEL_KEY, nMaxLevel);
+//            rootConfig.put(JSON_MINLEVEL_KEY, nMinLevel);
+
+            rootConfig.put(JSON_MAXLEVEL_KEY, mMaxZoom);
+            rootConfig.put(JSON_MINLEVEL_KEY, mMinZoom);
         }
         return rootConfig;
     }
