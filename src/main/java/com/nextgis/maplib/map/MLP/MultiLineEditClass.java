@@ -179,10 +179,20 @@ public class MultiLineEditClass extends MLGeometryEditClass {
     }
 
     @Override
-    public void addNewFlowPoint(LatLng newPoint) {
-        if (newPoint == null || selectedVertexIndex < 0 || selectedVertexIndex >= editingVertices.size()) {
+    public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected) {
+        if (newPoint == null )
             return;
-        }
+
+        boolean zeropoint = false;
+        if (selectedVertexIndex < 0 ) {
+            selectedVertexIndex = 0;
+            lineSizes.add(0,0);
+            zeropoint = true;
+
+        } else
+            if (selectedVertexIndex > editingVertices.size()) {
+                return;
+            }
 
         // new point to insert
         Point geoPoint = Point.fromLngLat(
@@ -202,6 +212,8 @@ public class MultiLineEditClass extends MLGeometryEditClass {
             }
             cumulativeSize += currentLineSize;
         }
+        if (lineSizes.size() == 1 && zeropoint)
+            targetLineIndex = lineSizes.get(0);
 
         if (targetLineIndex == -1) {
             return; // no line - exit
@@ -209,9 +221,13 @@ public class MultiLineEditClass extends MLGeometryEditClass {
 
         // insert new point after selectedVertex
         int insertIndex = selectedVertexIndex + 1;
+        if (zeropoint)
+            if (insertIndex > editingVertices.size())
+                insertIndex = editingVertices.size();
         editingVertices.add(insertIndex, geoPoint);
 
-        lineSizes.set(targetLineIndex, lineSizes.get(targetLineIndex) + 1  );
+
+        lineSizes.set(targetLineIndex, zeropoint? 1 :  lineSizes.get(targetLineIndex) + 1  );
 
         selectedVertexIndex = insertIndex;
 
@@ -221,6 +237,10 @@ public class MultiLineEditClass extends MLGeometryEditClass {
         if (selected != null) {
             setMarker(selected);
         }
+    }
+
+    public void selectLastPoint(){
+        selectedVertexIndex = editingVertices.size() -1 ;
     }
 
 

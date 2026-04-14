@@ -118,7 +118,7 @@ public class MeasurmentLine extends MLGeometryEditClass {
     }
 
     @Override
-    public void addNewFlowPoint(LatLng newPoint) {
+    public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected) {
 
         List<org.maplibre.geojson.Point> newEditVertex = new ArrayList<>();
 

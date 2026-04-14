@@ -181,7 +181,7 @@ public class MultiPointEditClass extends MLGeometryEditClass {
     }
 
     @Override
-    public void addNewFlowPoint(LatLng newPoint) {
+    public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected) {
 
     }
 

@@ -149,7 +149,7 @@ public class PointEditClass extends MLGeometryEditClass {
     }
 
     @Override
-    public void addNewFlowPoint(LatLng newPoint) {
+    public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected) {
 
     }
 }

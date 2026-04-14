@@ -43,6 +43,9 @@ public abstract class MLGeometryEditClass {
         this.layerPath = layerPath;
     }
 
+    public void selectLastPoint(){
+    }
+
     // extract vertices from feature -
     abstract public void extractVertices(org.maplibre.geojson.Feature feature, boolean selectRandomVertex);       // edit points  //);
 
@@ -66,7 +69,7 @@ public abstract class MLGeometryEditClass {
     }       // update selection
 
 
-    abstract public void addNewFlowPoint(LatLng newPoint);
+    abstract public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected);
         // update with ByTouch and ByWalk(gps)
         // add
 
@@ -101,14 +104,13 @@ public abstract class MLGeometryEditClass {
     }
 
     public void setMarker(LatLng latLng) {
-        if (latLng == null)
+        if (latLng == null || vertextHided)
             return;
 
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
         FeatureCollection markerFeatureCollection = FeatureCollection.fromFeature(feature);
         markerSource.setGeoJson(markerFeatureCollection);
     }
-
 
     public List<org.maplibre.geojson.Point> prepareNewPolyPoints(LatLng center, Projection projection) {
 

@@ -259,18 +259,37 @@ public class PolygonEditClass extends MLGeometryEditClass {
     }
 
     @Override
-    public void addNewFlowPoint(LatLng newPoint) {
-        if (newPoint == null ||
-                selectedVertexIndex < 0 ||
+    public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected) {
+        if (newPoint == null)
+            return;
+
+        if (selectedVertexIndex == -1  ){
+            Point geoPoint = Point.fromLngLat(newPoint.getLongitude(),newPoint.getLatitude());
+            editingVertices.add( geoPoint);
+            selectedVertexIndex = 0;
+            selectedRingIndex = 0;
+            return;
+        }
+
+        if (editingVertices.size() < 2){
+            Point geoPoint = Point.fromLngLat(
+                    newPoint.getLongitude(),
+                    newPoint.getLatitude());
+            editingVertices.add( geoPoint);
+            selectedVertexIndex = editingVertices.size() -1;
+            selectedRingIndex = 0;
+            polygonRingEndIndices.add(editingVertices.size());
+            return;
+        }
+
+        if ( selectedVertexIndex < 0 ||
                 selectedRingIndex < 0 ||
                 selectedRingIndex >= polygonRingEndIndices.size()) {
-            return;
         }
 
         Point geoPoint = Point.fromLngLat(
                 newPoint.getLongitude(),
-                newPoint.getLatitude()
-        );
+                newPoint.getLatitude());
 
         // start of ring at commmon list
         int ringStartIndex = (selectedRingIndex == 0)
@@ -300,7 +319,7 @@ public class PolygonEditClass extends MLGeometryEditClass {
         updateSelectedRingAndVertexInRingIndices(selectedVertexIndex);
 
         updateEditingPolygonAndVertex();
-        setMarker(getSelectedPoint());
+        //setMarker(getSelectedPoint());
     }
 
 

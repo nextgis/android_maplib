@@ -155,27 +155,37 @@ public class LineEditClass extends MLGeometryEditClass {
         displayMiddlePoints(false, true);
     }
 
+    // addAfterSelected for Walking adding type
     @Override
-    public void addNewFlowPoint(LatLng newPoint) {
+    public void addNewFlowPoint(LatLng newPoint, boolean addAfterSelected) {
 
         List<org.maplibre.geojson.Point> newEditVertex = new ArrayList<>();
 
-//        Log.e("POINT", "add" + newPoint.getLatitude() + newPoint.getLongitude());
-//
-//        Log.e("POINT", "editingVertices size" + editingVertices.size());
-//        Log.e("POINT", "selectedVertexIndex " + selectedVertexIndex);
+        if (!editingVertices.isEmpty()) {
+            if (!addAfterSelected){
+                newEditVertex.addAll(editingVertices.subList(0, selectedVertexIndex));
+                newEditVertex.add(org.maplibre.geojson.Point.fromLngLat(newPoint.getLongitude() ,newPoint.getLatitude()) );
+                selectedVertexIndex = newEditVertex.size() - 1;
+                newEditVertex.addAll(editingVertices.subList( selectedVertexIndex , editingVertices.size()));
 
-        newEditVertex.addAll(editingVertices.subList(0, selectedVertexIndex));
-        newEditVertex.add(org.maplibre.geojson.Point.fromLngLat(newPoint.getLongitude() ,newPoint.getLatitude()) );
-        selectedVertexIndex = newEditVertex.size() - 1;
-        newEditVertex.addAll(editingVertices.subList( selectedVertexIndex , editingVertices.size()));
+                editingVertices.clear();
+                editingVertices.addAll(newEditVertex);
+            } else {
 
-        editingVertices.clear();
-        editingVertices.addAll(newEditVertex);
+                int originalSelectedIndex = selectedVertexIndex;
+                newEditVertex.addAll(editingVertices.subList(0, selectedVertexIndex+1));
+                newEditVertex.add(org.maplibre.geojson.Point.fromLngLat(newPoint.getLongitude(), newPoint.getLatitude()));
+                selectedVertexIndex = newEditVertex.size() -1 ;
+                newEditVertex.addAll(editingVertices.subList(originalSelectedIndex +1, editingVertices.size()));
 
-//        Log.e("POINT", "selectedVertexIndex " + selectedVertexIndex);
-//        Log.e("POINT", "editingVertices new size" + editingVertices.size());
+                editingVertices.clear();
+                editingVertices.addAll(newEditVertex);
+            }
 
+        } else {
+            editingVertices.add(org.maplibre.geojson.Point.fromLngLat(newPoint.getLongitude(), newPoint.getLatitude()));
+            selectedVertexIndex = 0;
+        }
         vertexFeatures.clear();
         for (int index = 0; index < editingVertices.size(); index++) {
             Point pt = editingVertices.get(index);
@@ -335,5 +345,10 @@ public class LineEditClass extends MLGeometryEditClass {
                 setMarker(newpoint);
             }
         }
+    }
+
+    @Override
+    public void selectLastPoint(){
+        selectedVertexIndex = editingVertices.size() -1 ;
     }
 }
