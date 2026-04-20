@@ -24,13 +24,17 @@
 package com.nextgis.maplib.api;
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 
+import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.LayerFactory;
 import com.nextgis.maplib.map.MLP.AuthInterceptorNG;
 import com.nextgis.maplib.map.MapBase;
+
+import java.util.List;
 
 
 /**
@@ -227,6 +231,11 @@ public interface IGISApplication
 
 
     void startCreateNGWLayerSync(String lpath);
+
+    void setLayerToRefresh(int id);
+    void removeLayerToRefresh(int id);
+    List<Integer> getlayersToRefresh();
+
 
 
 

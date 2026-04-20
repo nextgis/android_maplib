@@ -106,6 +106,7 @@ public interface Constants
     String NOTIFY_LAYER_NAME = "layer_name";
 
     String MESSAGE_INTENT_STYLING = "com.nextgis.malibui.MESSAGE.STYLING";
+    String MESSAGE_INTENT_RELOAD = "com.nextgis.malibui.MESSAGE.RELOAD";
 
     // future change prop raster
 //    String MESSAGE_INTENT_STYLING_RASTER = "com.nextgis.malibui.MESSAGE.STYLING.RASTER";

@@ -57,7 +57,7 @@ public class ResourceGroup extends Resource {
         mChildrenLoaded = false;
     }
 
-    public void loadChildren() {
+    public void loadChildren(boolean skipSubLoad) {
         if (mChildrenLoaded)
             return;
 
@@ -70,7 +70,7 @@ public class ResourceGroup extends Resource {
 
             JSONArray children = new JSONArray(response.getResponseBody());
             for (int i = 0; i < children.length(); i++)
-                addResource(children.getJSONObject(i));
+                addResource(children.getJSONObject(i), skipSubLoad);
 
             Collections.sort(mChildren, new Comparator<Resource>() {
                 @Override
@@ -94,7 +94,7 @@ public class ResourceGroup extends Resource {
         }
     }
 
-    protected void addResource(JSONObject data) {
+    protected void addResource(JSONObject data, boolean skipSubLoad) {
         int type = getType(data);
         Resource resource = null;
         switch (type) {
@@ -107,8 +107,10 @@ public class ResourceGroup extends Resource {
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
-                layer.fillExtent();
-                layer.fillStyles();
+                if (!skipSubLoad) {
+                    layer.fillExtent();
+                    layer.fillStyles();
+                }
                 resource = layer;
                 break;
 
@@ -130,7 +132,8 @@ public class ResourceGroup extends Resource {
 
         if (null != resource) {
             resource.setParent(this);
-            resource.fillPermissions();
+            if (!skipSubLoad)
+                resource.fillPermissions();
             mChildren.add(resource);
         }
     }

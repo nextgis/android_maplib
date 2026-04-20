@@ -144,6 +144,8 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_MEASURMENT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_NORMAL;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
 import static com.nextgis.maplib.util.NetworkUtil.getBaseUrlpart;
@@ -184,7 +186,9 @@ import org.maplibre.android.style.layers.PropertyFactory;
 import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
+import org.maplibre.android.style.sources.RasterSource;
 import org.maplibre.android.style.sources.Source;
+import org.maplibre.android.style.sources.TileSet;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -861,8 +865,6 @@ public class MapDrawable
                 maplibreMapView.get().addOnDidFinishLoadingStyleListener(new MapView.OnDidFinishLoadingStyleListener() {
                     @Override
                     public void onDidFinishLoadingStyle() {
-                        // xxx clear all?
-
 
                         Style style = maplibreMap.get().getStyle();
                         updateMapBackground();
@@ -1573,7 +1575,8 @@ public class MapDrawable
 
     public void hideMarker(){
         markerFeatureCollection = FeatureCollection.fromFeatures(emptyList());
-        markerSource.setGeoJson(markerFeatureCollection);
+        if (markerSource != null)
+            markerSource.setGeoJson(markerFeatureCollection);
     }
 
     private static Bitmap drawableToBitmap(Drawable drawable) {
@@ -1659,10 +1662,12 @@ public class MapDrawable
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerd.getId());
 
         for (org.maplibre.geojson.Feature item : layerFeatures){
-            long id = item.getNumberProperty(prop_featureid).longValue();
-            if (id == selectedFeatureId) {
-                viewedFeature = item;
-                break;
+            if (item!= null && item.hasProperty(prop_featureid)) {
+                long id = item.getNumberProperty(prop_featureid).longValue();
+                if (id == selectedFeatureId) {
+                    viewedFeature = item;
+                    break;
+                }
             }
         }
 
@@ -2911,7 +2916,32 @@ public class MapDrawable
 //        cancelFeatureEdit(false);
     }
 
-    public void checkLayerVisibility(int id){
+    public boolean getLayerVisible(int id){
+        ILayer targetlayer = getVectorLayersById(this,  id);
+        if (targetlayer != null)
+            return ((com.nextgis.maplib.map.Layer)targetlayer).isVisible();
+        else
+            return false;
+    }
+
+    public void refreshLayerVisibility(int id, boolean visible){
+        if (maplibreMap.get() == null || maplibreMap.get().getStyle() == null)
+            return;
+
+        ILayer targetlayer = getVectorLayersById(this,  id);
+
+        if (targetlayer instanceof NGWRasterLayer || targetlayer instanceof  RemoteTMSLayer ||
+                targetlayer instanceof  LocalTMSLayer){
+            Layer layerRaster = getRasterLayer(id,  maplibreMap.get().getStyle());
+            if (layerRaster != null){
+                layerRaster.setProperties(visibility(visible ? VISIBLE:NONE));
+            }
+        }
+    }
+
+
+
+        public void checkLayerVisibility(int id){
         if (maplibreMap.get() == null || maplibreMap.get().getStyle() == null)
             return;
 

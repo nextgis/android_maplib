@@ -77,6 +77,9 @@ public class Connection
     public final static int NGWResourceTypeLookupTable       = 1 << 16;
     //public final static int NGWResourceTypeDEMODEMO          = 1 << 17;
 //    public final static int NGWResourceTypeCollector         = 1 << 17;
+//    public final static int layerTypes = NGWResourceTypePostgisLayer &
+//            NGWResourceTypeBaseLayers & NGWResourceTypeWebMap &;
+
 
 
     public Connection(
@@ -308,10 +311,10 @@ public class Connection
     }
 
 
-    public void loadChildren()
+    public void loadChildren(boolean skipSubLoad)
     {
         if (null != mRootResource) {
-            mRootResource.loadChildren();
+            mRootResource.loadChildren(skipSubLoad);
         }
     }
 

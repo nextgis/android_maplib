@@ -894,10 +894,10 @@ public class NGWUtil
     public static boolean getResourceByKey(Context context, INGWResource resource, Map<String, Resource> keys) {
         if (resource instanceof Connection) {
             Connection connection = (Connection) resource;
-            connection.loadChildren();
+            connection.loadChildren(false);
         } else if (resource instanceof ResourceGroup) {
             ResourceGroup resourceGroup = (ResourceGroup) resource;
-            resourceGroup.loadChildren();
+            resourceGroup.loadChildren(false);
         }
 
         for (int i = 0; i < resource.getChildrenCount(); ++i) {
