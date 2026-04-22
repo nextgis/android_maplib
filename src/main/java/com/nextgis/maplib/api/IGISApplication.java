@@ -31,9 +31,12 @@ import android.app.Activity;
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.LayerFactory;
+import com.nextgis.maplib.map.LayerGroup;
 import com.nextgis.maplib.map.MLP.AuthInterceptorNG;
 import com.nextgis.maplib.map.MapBase;
+import com.nextgis.maplib.util.Constants;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -236,7 +239,7 @@ public interface IGISApplication
     void removeLayerToRefresh(int id);
     List<Integer> getlayersToRefresh();
 
-
+    void checkTracksLayerExist();
 
 
 }
