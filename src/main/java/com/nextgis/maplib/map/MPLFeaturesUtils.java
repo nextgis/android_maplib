@@ -898,10 +898,19 @@ public class MPLFeaturesUtils {
                     rasterSource = null;
                 }
                 if (rasterSource == null || forceCreate) {
+
+                    String url = rasterLayersURL.get(layerId);
+                    if (url.contains("{q}")){
+                        // replace for zxy scheme
+                        url = url.replace("{q}", "quadtiles{z}/{x}/{y}");
+                    }
+
                     TileSet tileSet = new TileSet(
                             "tileset",
-                            rasterLayersURL.get(layerId));
+                            url);
+
                     Integer tileTmsType =rasterLayersTmsTypeMap.get(layerId);
+
                     if ( tileTmsType != null && tileTmsType != -1){
                         if (tileTmsType == TMSTYPE_NORMAL) {
                             tileSet.setScheme( "tms");
@@ -910,6 +919,7 @@ public class MPLFeaturesUtils {
                             tileSet.setScheme("xyz");
                         }
                     }
+
                     rasterSource = new RasterSource(layerPath,tileSet, 256 );
                     style.addSource(rasterSource);
                 }

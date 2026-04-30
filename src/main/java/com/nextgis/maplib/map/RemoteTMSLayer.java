@@ -343,7 +343,9 @@ public class RemoteTMSLayer
         int endSubDomains = NOT_FOUND;
         for (int i = 0; i < url.length(); ++i) {
             if (begin_block) {
-                if (url.charAt(i) == 'x' || url.charAt(i) == 'y' || url.charAt(i) == 'z' || url.charAt(i) == 's' || url.charAt(i) == 'e') {
+                if (url.charAt(i) == 'x' || url.charAt(i) == 'y' || url.charAt(i) == 'z' || url.charAt(i) == 's' || url.charAt(i) == 'e'
+                        || url.charAt(i) == 'q') {
+                    // q to process q tile scheme
                     begin_block = false;
                 } else if (url.charAt(i) == ',') {
                     subdomain = subdomain.trim();
