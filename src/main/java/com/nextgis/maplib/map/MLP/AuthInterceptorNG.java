@@ -46,6 +46,8 @@ public class AuthInterceptorNG implements Interceptor {
             int idx = url.indexOf(keyword);
             int start = idx + keyword.length();
             int dotIndex = url.indexOf('.', start);
+            if (dotIndex == -1)
+                dotIndex = url.indexOf('?', start);
             String coordsPart = url.substring(start, dotIndex);
             if (coordsPart.startsWith("/")) {
                 coordsPart = coordsPart.substring(1);
