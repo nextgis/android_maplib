@@ -376,6 +376,7 @@ public class GpsEventSource {
                 for (GpsEventListener listener : mListeners) {
                     listener.onBestLocationChanged(mCurrentBestLocation);
                 }
+                return;
             }
 
             for (GpsEventListener listener : mListeners) {

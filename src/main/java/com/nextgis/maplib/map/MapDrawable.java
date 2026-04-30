@@ -144,8 +144,6 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_MEASURMENT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
-import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_NORMAL;
-import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_OSM;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
 import static com.nextgis.maplib.util.NetworkUtil.getBaseUrlpart;
@@ -183,12 +181,9 @@ import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
-import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
-import org.maplibre.android.style.sources.RasterSource;
 import org.maplibre.android.style.sources.Source;
-import org.maplibre.android.style.sources.TileSet;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -196,8 +191,6 @@ import org.maplibre.geojson.MultiPoint;
 import org.maplibre.geojson.MultiPolygon;
 import org.maplibre.geojson.Point;
 import org.maplibre.geojson.Polygon;
-
-import kotlin.Unit;
 
 
 public class MapDrawable
@@ -288,7 +281,7 @@ public class MapDrawable
     protected int  mLimitsType;
     protected RunnableFuture<Void> mDrawThreadTask;
 
-    public WeakReference<MaplibreMapInteraction> mapFragment = new WeakReference(null);
+    public WeakReference<MaplibreMapInteraction> mapContext = new WeakReference(null);
 
     WeakReference<MapLibreMap> maplibreMap = new WeakReference(null);
     WeakReference<org.maplibre.android.maps.MapView> maplibreMapView = new WeakReference(null);
@@ -309,8 +302,8 @@ public class MapDrawable
         mLimitsType = MAP_LIMITS_Y;
     }
 
-    public void setMapFragment(final MaplibreMapInteraction mapFragment){
-        this.mapFragment = new WeakReference<>(mapFragment);
+    public void setMapContext(final MaplibreMapInteraction mapContext){
+        this.mapContext = new WeakReference<>(mapContext);
     }
 
     public void setMaplibreMap(final MapLibreMap maplibreMap){
@@ -523,7 +516,7 @@ public class MapDrawable
                         ((IGISApplication) getContext().getApplicationContext()).setGetingStyleInProgress(true);
 
                         mainHandler.post(()-> {
-                                    mapFragment.get().changeProgress(true); });
+                                    mapContext.get().changeProgress(true); });
                         try {
                             Intent msg = new Intent(MESSAGE_INTENT_STYLING);
 
@@ -549,7 +542,7 @@ public class MapDrawable
 
                             ((IGISApplication) getContext().getApplicationContext()).setGetingStyleInProgress(false);
                             mainHandler.post(()-> {
-                                mapFragment.get().changeProgress(false);
+                                mapContext.get().changeProgress(false);
                             });
                         }
                     } else if (iLayer instanceof NGWRasterLayer) {
@@ -595,11 +588,11 @@ public class MapDrawable
                     });
                 }
             } catch (OutOfMemoryError outOfMemoryError) {
-                if (mapFragment.get() != null) {
+                if (mapContext.get() != null) {
                     String layerName = (crashLayer == null ? "null" : crashLayer.getName());
-                    AlertDialog builder = new AlertDialog.Builder(((Fragment) mapFragment.get()).getActivity())
+                    AlertDialog builder = new AlertDialog.Builder(((Fragment) mapContext.get()).getActivity())
                             .setTitle("MemoryError")
-                            .setMessage(((Fragment) mapFragment.get()).getActivity().getString(R.string.outofmemory) + layerName)
+                            .setMessage(((Fragment) mapContext.get()).getActivity().getString(R.string.outofmemory) + layerName)
                             .setPositiveButton(android.R.string.ok, null)
                             .show();
                 }
@@ -609,7 +602,7 @@ public class MapDrawable
     }
 
     public void reloadFillLayerStyleToMaplibre(final  int  id) {
-        if (mapFragment.get() != null && (!(mapFragment.get().getMode() == 0)))
+        if (mapContext.get() != null && (!(mapContext.get().getMode() == 0)))
             return;
 
         List<ILayer> vectorss = new ArrayList<>();
@@ -673,7 +666,7 @@ public class MapDrawable
 
                 ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(true);
                 mainHandler.post(() -> {
-                    mapFragment.get().changeProgress(true);
+                    mapContext.get().changeProgress(true);
                 });
 
                 String loadHint = getContext().getString(R.string.process_layer_hint);
@@ -690,7 +683,7 @@ public class MapDrawable
 
                 ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(false);
                 mainHandler.post(() -> {
-                    mapFragment.get().changeProgress(false);
+                    mapContext.get().changeProgress(false);
                 });
 
                 // Switch to main thread
@@ -721,7 +714,7 @@ public class MapDrawable
                                         final boolean createSource,
                                         final boolean skipInvisibleLayers) {
 
-        mapFragment.get().changeProgress(true);
+        mapContext.get().changeProgress(true);
 
         maplibreMapView.get().setOnTouchListener(this);
         maplibreMap.get().addOnMapClickListener(this);
@@ -1077,7 +1070,7 @@ public class MapDrawable
                         }
 
                         ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(false);
-                        mapFragment.get().changeProgress(((IGISApplication)getContext().getApplicationContext()).getGetingStyleInProgress());
+                        mapContext.get().changeProgress(((IGISApplication)getContext().getApplicationContext()).getGetingStyleInProgress());
 
                         if (layerForWalkRestore != null) {
                             editingObject = null;
@@ -1101,6 +1094,8 @@ public class MapDrawable
                             layerForWalkRestore = null;
                             featureToRestore = null;
                         }
+                        // call edit for collector
+                        mapContext.get().checkCreateIfNeed();
                     }
                 });
 
@@ -1358,13 +1353,13 @@ public class MapDrawable
         android.graphics.PointF screenPoint = new android.graphics.PointF(event.getX(), event.getY());
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
-                if (mapFragment.get()!= null)
-                    mapFragment.get().setLongLongClickProcesses(false);
+                if (mapContext.get()!= null)
+                    mapContext.get().setLongLongClickProcesses(false);
                 clickPoint = new PointF(event.getX(), event.getY());
                 android.graphics.RectF rect = new android.graphics.RectF(event.getX() - 20,event.getY() - 20,event.getX() + 20,event.getY() + 20);
                 List<org.maplibre.geojson.Feature> featuresMarker = maplibreMap.get().queryRenderedFeatures(rect, "marker-layer");
 
-                if (mapFragment.get().getMode() == MODE_EDIT_BY_TOUCH ){
+                if (mapContext.get().getMode() == MODE_EDIT_BY_TOUCH ){
                     isDraggingByTouchGPS = true;
                     startEvent = event;
 
@@ -1400,7 +1395,7 @@ public class MapDrawable
                             editingObject.updateSelectionMiddlePoint(features.get(0));
                             //editingObject.updateSelectionVerticeIndex(index);
                             editingObject.updateEditingPolygonAndVertex();
-                            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+                            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
 
                         }
                         Point point = ((Point)clickedFeature.geometry());
@@ -1421,7 +1416,7 @@ public class MapDrawable
                             editingObject.updateSelectionVerticeIndex(index);
                             editingObject.updateEditingPolygonAndVertex();
                             editingObject.displayMiddlePoints(false, true);
-                            mapFragment.get().updateActions(editingObject);
+                            mapContext.get().updateActions(editingObject);
                         }
                         Point point = ((Point)clickedFeature.geometry());
                         setMarker(new LatLng(point.latitude(), point.longitude()));
@@ -1439,7 +1434,7 @@ public class MapDrawable
                     selectedVertexIndex = editingObject.getSelectedVertexIndex();
 
                 if (isDraggingByTouchGPS && editingObject!= null){
-                    if (mapFragment.get().getMode() == MODE_EDIT_BY_TOUCH){
+                    if (mapContext.get().getMode() == MODE_EDIT_BY_TOUCH){
                         PointF  newPoint = new PointF(screenPoint.x,screenPoint.y);
                         LatLng latLng = maplibreMap.get().getProjection().fromScreenLocation(newPoint);
                         editingObject.addNewFlowPoint(latLng, false);
@@ -1484,8 +1479,8 @@ public class MapDrawable
             }
 
             case MotionEvent.ACTION_UP: {
-                if (mapFragment.get()!=null && mapFragment.get().getLongLongClickProcesses()){
-                    mapFragment.get().setLongLongClickProcesses(false);
+                if (mapContext.get()!=null && mapContext.get().getLongLongClickProcesses()){
+                    mapContext.get().setLongLongClickProcesses(false);
                     return false;
                 }
 
@@ -1494,7 +1489,7 @@ public class MapDrawable
                 float distance = (float) Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
                 if (isDraggingByTouchGPS){
-                    mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+                    mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
                     isDraggingByTouchGPS = false;
                     isDragging = false;
                     isDraggingByTouchGPS = false;
@@ -1521,13 +1516,13 @@ public class MapDrawable
                                 return false;
 
                             } else
-                                mapFragment.get().processMapClick(screenPoint.x, screenPoint.y);
+                                mapContext.get().processMapClick(screenPoint.x, screenPoint.y);
                         }
                     clickPoint = null;
 
                     if (isDragging || isSwitchVertex) {
                         if (editingObject != null) {
-                            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+                            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
                             editingObject.regenerateVertexFeatures();
                             editingObject.displayMiddlePoints(false, true);
                             LatLng pointReleased = editingObject.getSelectedPoint();
@@ -1554,7 +1549,7 @@ public class MapDrawable
 
 
     public void updateHistoryByWalkEnd(){
-        mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+        mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
     }
 
     public void setMarker(MotionEvent motionEvent){
@@ -1605,9 +1600,9 @@ public class MapDrawable
         PointF clickPoint = maplibreMap.get().getProjection().toScreenLocation(latLng);
         GeoEnvelope clickeEnelope = getClickEnelope(clickPoint);
 
-        boolean result = mapFragment.get().processMapLongClick(clickeEnelope, clickPoint);
-        if (result && mapFragment.get()!= null)
-            mapFragment.get().setLongLongClickProcesses(true);
+        boolean result = mapContext.get().processMapLongClick(clickeEnelope, clickPoint);
+        if (result && mapContext.get()!= null)
+            mapContext.get().setLongLongClickProcesses(true);
         return false;
     }
 
@@ -2114,7 +2109,7 @@ public class MapDrawable
 
 
         if (originalSelectedFeature!= null && originalSelectedFeature.getId() != -1)
-            startFeatureSelectionForView(mapFragment.get().getSelectedLayer(), originalSelectedFeature );
+            startFeatureSelectionForView(mapContext.get().getSelectedLayer(), originalSelectedFeature );
     }
 
     public void unselectFeatureFromView(){
@@ -2335,7 +2330,8 @@ public class MapDrawable
     @Override
     public void setZoomAndCenter(
             float zoom,
-            GeoPoint center, boolean startSecondMaplibre)
+            GeoPoint center, boolean startSecondMaplibre,
+            int delay)
     {
         if (mDisplay != null) {
             float newZoom = zoom;
@@ -2354,7 +2350,9 @@ public class MapDrawable
 
         if (!startSecondMaplibre)
             if (maplibreMap.get()!= null)
-                maplibreMap.get().easeCamera(CameraUpdateFactory.newLatLngZoom(latLngPointFromGeoPoint(center), zoom), 800);
+                maplibreMap.get().moveCamera(CameraUpdateFactory.
+                        newLatLngZoom(latLngPointFromGeoPoint(center), zoom)
+                );
     }
 
 
@@ -2394,7 +2392,7 @@ public class MapDrawable
             if (zoom > maxZoom)
                 zoom = maxZoom;
 
-            setZoomAndCenter((float) zoom, envelope.getCenter(), startSecondMaplibre);
+            setZoomAndCenter((float) zoom, envelope.getCenter(), startSecondMaplibre, 800);
             if (!startSecondMaplibre)
                 return;
 
@@ -2408,7 +2406,8 @@ public class MapDrawable
                     .include(sw)
                     .include(ne)
                     .build();
-            maplibreMap.get().easeCamera(CameraUpdateFactory.newLatLngBounds(bounds, 50), 800);
+            if (maplibreMap != null &&  maplibreMap.get() != null)
+                maplibreMap.get().easeCamera(CameraUpdateFactory.newLatLngBounds(bounds, 50), 800);
         }
     }
 
@@ -2651,7 +2650,7 @@ public class MapDrawable
     public boolean deleteCurrentPoint(){
         if (editingObject != null) {
             editingObject.deleteCurrentPoint();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -2659,7 +2658,7 @@ public class MapDrawable
     public boolean deleteCurrentLine(){
         if (editingObject != null && editingObject instanceof MultiLineEditClass) {
             ((MultiLineEditClass)editingObject).deleteCurrentLine();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -2667,7 +2666,7 @@ public class MapDrawable
     public boolean addNewPoint(LatLng center){
         if (editingObject != null && editingObject instanceof MultiPointEditClass) {
             ((MultiPointEditClass)editingObject).addNewPoint(center);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -2675,7 +2674,7 @@ public class MapDrawable
     public boolean addNewLine(LatLng center, Projection projection){
         if (editingObject != null && editingObject instanceof MultiLineEditClass) {
             ((MultiLineEditClass)editingObject).addNewLine(center, projection);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
 
         }
         return true;
@@ -2684,12 +2683,12 @@ public class MapDrawable
     public boolean deleteCurrentHole(){
         if (editingObject != null && editingObject instanceof PolygonEditClass) {
             ((PolygonEditClass)editingObject).deleteCurrentHole();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
 
         if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
             ((MultiPolygonEditClass)editingObject).deleteSelectedPolygon();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -2697,11 +2696,11 @@ public class MapDrawable
     public boolean addHole(LatLng center, Projection projection){
         if (editingObject != null && editingObject instanceof PolygonEditClass) {
             ((PolygonEditClass)editingObject).addHole(center, projection);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
             ((MultiPolygonEditClass)editingObject).addHole(center, projection);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -2709,7 +2708,7 @@ public class MapDrawable
     public boolean deleteCurrentPolygon(){
         if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
             ((MultiPolygonEditClass)editingObject).deleteSelectedPolygon();
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -2717,7 +2716,7 @@ public class MapDrawable
     public boolean addNewPolygon(LatLng center, Projection projection){
         if (editingObject != null && editingObject instanceof MultiPolygonEditClass) {
             ((MultiPolygonEditClass)editingObject).addNewPolygonAt(center,projection);
-            mapFragment.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
         }
         return true;
     }
@@ -3301,21 +3300,21 @@ public class MapDrawable
     }
 
     public void updateMeasurmentCaptions(MLGeometryEditClass editingObject) {
-        if (mapFragment.get() != null) {
-            GeoGeometry geometry = mapFragment.get().getGeometryFromMaplibreGeometry(editingObject.editingFeature);
+        if (mapContext.get() != null) {
+            GeoGeometry geometry = mapContext.get().getGeometryFromMaplibreGeometry(editingObject.editingFeature);
 
             if (geometry != null && geometry instanceof GeoLineString) {
                 double length = ((GeoLineString) (geometry)).getLength();
-                mapFragment.get().onLengthChanged(length);
+                mapContext.get().onLengthChanged(length);
             }
 
             Polygon polygon = Polygon.fromLngLats(((MeasurmentLine)editingObject).getPoints());
             org.maplibre.geojson.Feature featurePoly =  org.maplibre.geojson.Feature.fromGeometry(polygon);
-            GeoGeometry geometryPoly = mapFragment.get().getGeometryFromMaplibreGeometry(featurePoly);
+            GeoGeometry geometryPoly = mapContext.get().getGeometryFromMaplibreGeometry(featurePoly);
 
             if (geometryPoly instanceof GeoPolygon){
                 double area = ((GeoPolygon) (geometryPoly)).getArea();
-                mapFragment.get().onAreaChanged(area);
+                mapContext.get().onAreaChanged(area);
             }
         }
     }
