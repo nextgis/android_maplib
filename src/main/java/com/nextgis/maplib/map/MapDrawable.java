@@ -516,7 +516,9 @@ public class MapDrawable
                         ((IGISApplication) getContext().getApplicationContext()).setGetingStyleInProgress(true);
 
                         mainHandler.post(()-> {
-                                    mapContext.get().changeProgress(true); });
+                                    if (mapContext.get()!= null)
+                                        mapContext.get().changeProgress(true);
+                        });
                         try {
                             Intent msg = new Intent(MESSAGE_INTENT_STYLING);
 
@@ -1095,6 +1097,7 @@ public class MapDrawable
                             featureToRestore = null;
                         }
                         // call edit for collector
+                        mapContext.get().setMapLayersLoaded();
                         mapContext.get().checkCreateIfNeed();
                     }
                 });
@@ -1107,16 +1110,12 @@ public class MapDrawable
         executor.shutdown();
     }
 
-
     public void updateWalkingFeature(Feature featureToUpate){
-
         editingFeature = MPLFeaturesUtils.getFeatureFromNGFeature(featureToUpate.getGeometry());
-
         editingObject.editingFeature = editingFeature;
         editingObject.extractVertices(editingFeature,  false);
         editingObject.hideVertext();
         editingObject.selectLastPoint();
-
     }
 
     public void loadLayersToMaplibreMapLite(final  List<ILayer> allLayers, boolean skipUserLayers){
@@ -3373,6 +3372,31 @@ public class MapDrawable
                 Feature originalSelectedFeature){
         featureToRestore = originalSelectedFeature;
         layerForWalkRestore = vectorLayer;
+    }
+
+    // use from collector
+    public void loadViewFeature(long selectedFeatureId, int layerid){
+        List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerid);
+
+        for (org.maplibre.geojson.Feature item : layerFeatures){
+            if (item!= null && item.hasProperty(prop_featureid)) {
+                long id = item.getNumberProperty(prop_featureid).longValue();
+                if (id == selectedFeatureId) {
+                    viewedFeature = item;
+                    break;
+                }
+            }
+        }
+    }
+
+    // use from collector
+    public void updateEditedId(long newId){
+        if (originalSelectedFeature != null && originalSelectedFeature.getId() == -1)
+            originalSelectedFeature.setId(newId);
+
+        if (editingObject!= null && editingObject.editingFeature!= null && editingObject.editingFeature.hasProperty(prop_featureid)
+        && editingObject.editingFeature.getStringProperty(prop_featureid).equals("-1"))
+            editingObject.editingFeature.addStringProperty(prop_featureid, "" + newId);
     }
 
 
