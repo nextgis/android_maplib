@@ -266,7 +266,7 @@ public class MapDrawable
     public boolean isMeasurmentChangeVertex = false;
     private org.maplibre.geojson.Feature  editingFeature = null;    // current edit
     private org.maplibre.geojson.Feature  editingFeatureOriginal = null;
-    private org.maplibre.geojson.Feature  viewedFeature = null;   // who looking
+    public org.maplibre.geojson.Feature  viewedFeature = null;   // who looking
     private boolean hasEditeometry = false; // was edit
 
     private boolean isDragging = false;
@@ -1696,8 +1696,18 @@ public class MapDrawable
         // clear prev edit state
         if (editingObject != null) {
             if (editingFeature != null) {
-                Integer lID = Integer.valueOf(editingFeature.getStringProperty(prop_layerid));
-                Long fID = Long.valueOf(editingFeature.getStringProperty(prop_featureid));
+                Integer lID = null;
+                if (editingFeature.hasProperty(prop_layerid))
+                    lID = Integer.valueOf(editingFeature.getStringProperty(prop_layerid));
+                else
+                    lID = ilayer.getId();
+
+
+                Long fID = null;
+                if (editingFeature.hasProperty(prop_featureid))
+                    fID = Long.valueOf(editingFeature.getStringProperty(prop_featureid));
+                else
+                    fID = originalSelectedFeature.getId();
 
                 if (ilayer.getId() != lID || !selectedFeatureId.equals(fID)) {
                     // need clear previous edited obj
@@ -1840,6 +1850,7 @@ public class MapDrawable
             }
 
 
+            sourceFeaturesHashMap.computeIfAbsent(ilayer.getId(), k -> new ArrayList<>());
             int size = sourceFeaturesHashMap.get(ilayer.getId()).size();
             feature.addStringProperty(prop_order, String.valueOf(size+1));
             feature.addStringProperty(prop_featureid, String.valueOf(originalSelectedFeature.getId()));
@@ -3370,6 +3381,8 @@ public class MapDrawable
     public void startEditByWalkFromRestore(
             final VectorLayer  vectorLayer,
                 Feature originalSelectedFeature){
+        Log.e("WWALK", "MapDrawable startEditByWalkFromRestore featureid = "
+                +  (originalSelectedFeature ==null ? "null" : originalSelectedFeature.getId()) );
         featureToRestore = originalSelectedFeature;
         layerForWalkRestore = vectorLayer;
     }
