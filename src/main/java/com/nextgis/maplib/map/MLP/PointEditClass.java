@@ -31,7 +31,7 @@ public class PointEditClass extends MLGeometryEditClass {
 
         while (it.hasNext()) {
             Feature f = it.next();
-            if (Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
+            if (f.hasProperty(MPLFeaturesUtils.prop_order) &&Objects.equals(f.getStringProperty(MPLFeaturesUtils.prop_order), targetOrder)) {
                 it.remove();
             }
         }
@@ -93,14 +93,11 @@ public class PointEditClass extends MLGeometryEditClass {
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(newPoint);
 
         if (originalEditingFeature != null && originalEditingFeature.properties() != null) {
-
             Iterator<String> it = originalEditingFeature.properties().keySet().iterator();
             while (it.hasNext()) {
                 String key = it.next();
                 feature.addProperty(key, originalEditingFeature.properties().get(key));
             }
-
-
 //            originalEditingFeature.properties().keySet().forEach(key -> {
 //                feature.addProperty(key, originalEditingFeature.properties().get(key));});
         }

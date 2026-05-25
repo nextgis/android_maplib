@@ -824,14 +824,26 @@ public class LayerGroup
 
     public static int removeLayerAndGetIndex(
             LinkedHashMap<Integer, ILayer> map,
-            ILayer layer
-    ) {
+            ILayer layer){
         int index = 0;
         Iterator<Map.Entry<Integer, ILayer>> it = map.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Integer, ILayer> e = it.next();
             if (e.getValue() == layer) {
                 it.remove();
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+
+    public int getIndex( ILayer layer) {
+        int index = 0;
+        Iterator<Map.Entry<Integer, ILayer>> it = mLayers.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, ILayer> e = it.next();
+            if (e.getValue() == layer) {
                 return index;
             }
             index++;

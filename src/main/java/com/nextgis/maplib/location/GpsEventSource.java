@@ -107,15 +107,12 @@ public class GpsEventSource {
                     for (GpsEventListener listener : mListeners) {
                         listener.onGpsStatusChanged(GpsStatus.GPS_EVENT_FIRST_FIX);
                     }
-
                 }
             };
         }
-
         mHasGPSFix = false;
         updateActiveListeners();
     }
-
 
     /**
      * Add new listener for GPS events. You will likely want to call addListener() from your
@@ -135,7 +132,6 @@ public class GpsEventSource {
                     return;
 
                 requestUpdates();
-
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     mLocationManager.registerGnssStatusCallback(mGnssCallback);
@@ -164,6 +160,7 @@ public class GpsEventSource {
                 return;
 
             if (mListeners.size() == 0) {
+                Log.d("TRACCK", "GPSEVEntSRC  unregister" );
                 mLocationManager.removeUpdates(mGpsLocationListener);
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -203,47 +200,47 @@ public class GpsEventSource {
     }
 
 
-    public Location getLastKnownBestLocation() {
-        if (!PermissionUtil.hasLocationPermissions(mContext))
-            return null;
-
-        if (null != mCurrentBestLocation) {
-            return mCurrentBestLocation;
-        }
-
-        if (null != mLocationManager) {
-            Location gpsLocation = null;
-            Location networkLocation = null;
-
-            if (0 != (mListenProviders & GPS_PROVIDER)) {
-                gpsLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            }
-
-            if (0 != (mListenProviders & NETWORK_PROVIDER)) {
-                networkLocation =
-                        mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            }
-
-            if (null == gpsLocation) {
-                mCurrentBestLocation = networkLocation;
-                return mCurrentBestLocation;
-            }
-
-            if (null == networkLocation) {
-                mCurrentBestLocation = gpsLocation;
-                return mCurrentBestLocation;
-            }
-
-            if (isBetterLocation(gpsLocation, networkLocation)) {
-                mCurrentBestLocation = gpsLocation;
-            } else {
-                mCurrentBestLocation = networkLocation;
-            }
-            return mCurrentBestLocation;
-        }
-
-        return null;
-    }
+//    public Location getLastKnownBestLocation() {
+//        if (!PermissionUtil.hasLocationPermissions(mContext))
+//            return null;
+//
+//        if (null != mCurrentBestLocation) {
+//            return mCurrentBestLocation;
+//        }
+//
+//        if (null != mLocationManager) {
+//            Location gpsLocation = null;
+//            Location networkLocation = null;
+//
+//            if (0 != (mListenProviders & GPS_PROVIDER)) {
+//                gpsLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+//            }
+//
+//            if (0 != (mListenProviders & NETWORK_PROVIDER)) {
+//                networkLocation =
+//                        mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+//            }
+//
+//            if (null == gpsLocation) {
+//                mCurrentBestLocation = networkLocation;
+//                return mCurrentBestLocation;
+//            }
+//
+//            if (null == networkLocation) {
+//                mCurrentBestLocation = gpsLocation;
+//                return mCurrentBestLocation;
+//            }
+//
+//            if (isBetterLocation(gpsLocation, networkLocation)) {
+//                mCurrentBestLocation = gpsLocation;
+//            } else {
+//                mCurrentBestLocation = networkLocation;
+//            }
+//            return mCurrentBestLocation;
+//        }
+//
+//        return null;
+//    }
 
 
     public void updateActiveListeners() {
@@ -266,14 +263,15 @@ public class GpsEventSource {
             requestUpdates();
     }
 
-
     private void requestUpdates() {
+        Log.d("TRACCK", "GPSEVEntSRC  requestUpdates" );
         if (0 != (mListenProviders & GPS_PROVIDER) &&
                 mLocationManager.getAllProviders().contains(LocationManager.GPS_PROVIDER)) {
 
             mLocationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
+            Log.d("TRACCK", "GPSEVEntSRC  requestUpdates GPS" );
 
             if(Constants.DEBUG_MODE)
                 Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.GPS_PROVIDER);
@@ -285,6 +283,7 @@ public class GpsEventSource {
             mLocationManager.requestLocationUpdates(
                     LocationManager.NETWORK_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
+            Log.d("TRACCK", "GPSEVEntSRC  requestUpdates NETWORK_PROVIDER" );
 
             if(Constants.DEBUG_MODE)
                 Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.NETWORK_PROVIDER);
@@ -359,31 +358,35 @@ public class GpsEventSource {
         return provider1.equals(provider2);
     }
 
-
     protected final class GpsLocationListener
             implements LocationListener
     {
-
-        public void onLocationChanged(Location location)
-        {
-            if(mHasGPSFix && !location.getProvider().equals(LocationManager.GPS_PROVIDER))
+        public void onLocationChanged(Location location) {
+            Log.d("TRACCK", "GpsEventSource   onLocationChanged " );
+            if(mHasGPSFix && !location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+                Log.d("TRACCK", "GpsEventSource   onLocationChanged return by if(mHasGPSFix && !location.getProvider().equals(LocationManager.GPS_PROVIDER))" );
                 return;
+            }
 
             mLastLocation = location;
 
             if (isBetterLocation(mLastLocation, mCurrentBestLocation)) {
+                Log.d("TRACCK", "GpsEventSource   onLocationChanged  isBetterLocation TRUE + iterate listeners" );
                 mCurrentBestLocation = mLastLocation;
                 for (GpsEventListener listener : mListeners) {
                     listener.onBestLocationChanged(mCurrentBestLocation);
                 }
+                Log.d("TRACCK", "GpsEventSource   onLocationChanged  isBetterLocation RETURN" );
                 return;
+            } else {
+                Log.d("TRACCK", "GpsEventSource   onLocationChanged  iterate listeners" );
             }
 
-            for (GpsEventListener listener : mListeners) {
-                listener.onLocationChanged(mLastLocation);
-            }
+            if (location.getProvider().equals(LocationManager.GPS_PROVIDER))
+                for (GpsEventListener listener : mListeners) {
+                    listener.onLocationChanged(mLastLocation);
+                }
         }
-
 
         public void onProviderDisabled(String arg0)
         {
@@ -399,12 +402,9 @@ public class GpsEventSource {
         public void onStatusChanged(
                 String provider,
                 int status,
-                Bundle extras)
-        {
-
+                Bundle extras){
         }
     }
-
 
     protected final class GpsStatusListener
             implements GpsStatus.Listener
@@ -429,5 +429,9 @@ public class GpsEventSource {
                 listener.onGpsStatusChanged(event);
             }
         }
+    }
+
+    public void setLastLocationFromTracker(Location location){
+        mLastLocation = location;
     }
 }

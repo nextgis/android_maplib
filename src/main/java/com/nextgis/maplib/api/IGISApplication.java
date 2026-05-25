@@ -25,8 +25,10 @@ package com.nextgis.maplib.api;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
+import android.location.Location;
 
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.location.GpsEventSource;
@@ -133,6 +135,8 @@ public interface IGISApplication
      * @return An @see AccountManagerFuture which resolves to a Boolean, true if the account has been successfully removed
      */
     AccountManagerFuture<Boolean> removeAccount(Account account);
+
+    AccountManagerFuture<Boolean> removeAccount(Account account, AccountManagerCallback<Boolean> callback);
 
     /**
      * @param account Account object
@@ -241,5 +245,10 @@ public interface IGISApplication
 
     void checkTracksLayerExist();
 
+    void setPostponedLayerId(int layerId);
+
+    int getPostponedLayerId();
+
+    void updateLocation(Location location);
 
 }

@@ -350,15 +350,15 @@ public class TrackLayer
             case TYPE_TRACKS:
                 cursor = mSQLiteDatabase.query(
                         TABLE_TRACKS, projection, selection, selectionArgs, null, null, sortOrder, limit);
-                cursor.setNotificationUri(getContext().getContentResolver(), mContentUriTracks);
+//                cursor.setNotificationUri(getContext().getContentResolver(), mContentUriTracks);
                 return cursor;
             case TYPE_TRACKPOINTS:
                 cursor = mSQLiteDatabase.query(
                         TABLE_TRACKPOINTS, projection, selection, selectionArgs, null, null,
                         sortOrder, limit);
 
-                cursor.setNotificationUri(
-                        getContext().getContentResolver(), mContentUriTrackpoints);
+//                cursor.setNotificationUri(
+//                        getContext().getContentResolver(), mContentUriTrackpoints);
                 return cursor;
             case TYPE_SINGLE_TRACK:
                 String id = uri.getLastPathSegment();
@@ -378,11 +378,9 @@ public class TrackLayer
         }
     }
 
-
     public Uri insert(
             Uri uri,
-            ContentValues values)
-    {
+            ContentValues values)    {
         mSQLiteDatabase = mMap.getDatabase(false);
         long id;
         Uri inserted;
@@ -407,7 +405,6 @@ public class TrackLayer
             reloadTracks(INSERT);
             getContext().getContentResolver().notifyChange(inserted, null);
         }
-
         return inserted;
     }
 

@@ -877,7 +877,6 @@ public class MPLFeaturesUtils {
         return new LatLng(lonLat[1], lonLat[0]);
     }
 
-
     static public void createSourceForLayer(int layerId,
                                             int layerType,
                                             final List<org.maplibre.geojson.Feature> layerFeatures,
@@ -994,7 +993,6 @@ public class MPLFeaturesUtils {
         for (List<List<Point>> polygonRings : multiPolygon.coordinates()) {
             allPoints.addAll(polygonRings.get(0)); //external ring of each poly
         }
-
         return getAveragePoint(allPoints);
     }
 
@@ -1007,7 +1005,6 @@ public class MPLFeaturesUtils {
             sumLon += point.longitude();
             sumLat += point.latitude();
         }
-
         return Point.fromLngLat(sumLon / count, sumLat / count);
     }
 
@@ -1018,6 +1015,7 @@ public class MPLFeaturesUtils {
         return rasterLayer;
     }
 
+    // int targetRasterLayerId = for collector offline layer insertion
     static public void createFillLayerForLayer(int layerId, int layerType,
                                                final Style style,
                                                Map<Integer,org.maplibre.android.style.layers.Layer> layersHashMap,
@@ -1028,7 +1026,8 @@ public class MPLFeaturesUtils {
                                                ILayer iLayer,
                                                String layerPath,
                                                org.maplibre.android.style.layers.Layer firstToolLayer,
-                                               org.maplibre.android.style.layers.Layer signaturesRootLayer){ // layers below signaturesRootLayer
+                                               org.maplibre.android.style.layers.Layer signaturesRootLayer,
+                                               int targetRasterLayerId){ // layers below signaturesRootLayer
         // signatures between firstToolLayer and signaturesRootLayer
         float minZoom = -1;
         float maxZoom = -1;
@@ -1045,11 +1044,15 @@ public class MPLFeaturesUtils {
 
         if (layerType == GT_RASTER_WA){
             org.maplibre.android.style.layers.Layer rasterLayer = style.getLayer(currentNamePrefix + layer_namepart + layerId);
-
             if (rasterLayer == null){
                 rasterLayer = new RasterLayer(currentNamePrefix + layer_namepart + layerId, layerPath);
-
-                if (signaturesRootLayer != null && style.getLayer(signaturesRootLayer.getId()) != null ) {
+                org.maplibre.android.style.layers.Layer rasterBaseLayer = null;
+                if (targetRasterLayerId != -1){
+                    rasterBaseLayer = style.getLayer(currentNamePrefix + layer_namepart + targetRasterLayerId);
+                }
+                if (rasterBaseLayer != null)
+                    style.addLayerAbove(rasterLayer, rasterBaseLayer.getId());
+                else if (signaturesRootLayer != null && style.getLayer(signaturesRootLayer.getId()) != null ) {
                     style.addLayerBelow(rasterLayer, signaturesRootLayer.getId());
                 }
                 else {
@@ -1070,8 +1073,6 @@ public class MPLFeaturesUtils {
 //                    float brightnessMin = tmsRenderer.getBrightnessMin();
 //                    float brightnessMax = tmsRenderer.getBrightnessMax();
                     //boolean isGray = tmsRenderer.isForceToGrayScale();
-
-
 //                    rasterLayer.setProperties(
 //                            rasterOpacity(alpha),
 //                            rasterContrast(contrast)
