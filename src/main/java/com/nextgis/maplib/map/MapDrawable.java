@@ -349,6 +349,7 @@ public class MapDrawable
 
     // change feature id at map objects - features // objects
     public void changeFeatureId(Long oldFeatureId,Long newFeatureId, int layerId){
+        Log.d("SELECC", "MapDrawable !!! changeFeatureId " + oldFeatureId + " to " + newFeatureId);
 
         String oldFeatureIdString = String.valueOf(oldFeatureId);
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerId);
@@ -364,6 +365,47 @@ public class MapDrawable
                 feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
                 break;// only one feature with same id
             }
+        }
+
+        if (editingObject != null){
+            if (editingObject.editingFeature != null &&
+                    editingObject.editingFeature.hasProperty(prop_featureid) &&
+                    editingObject.editingFeature.getStringProperty(prop_featureid).
+                            equals(oldFeatureIdString)){
+                editingObject.editingFeature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
+                Log.d("SELECC", "MapDrawable !!! changeFeatureId CHANGE editingFeature" );
+
+            }
+            if (editingObject.originalEditingFeature!=null && editingObject.originalEditingFeature.hasProperty(prop_featureid)
+                        && editingObject.originalEditingFeature.getStringProperty(prop_featureid).
+                            equals(oldFeatureIdString)) {
+                editingObject.originalEditingFeature
+                        .addStringProperty(prop_featureid, String.valueOf(newFeatureId));
+                Log.d("SELECC", "MapDrawable !!! changeFeatureId CHANGE originalEditingFeature" );
+            }
+
+            if (originalSelectedFeature != null && originalSelectedFeature.getId() == oldFeatureId)
+                originalSelectedFeature.setId(newFeatureId);
+
+            if (selectedEditedSource != null) {
+
+                List<org.maplibre.geojson.Feature> layerFeaturesE = sourceFeaturesHashMap.get(layerId);
+                for (org.maplibre.geojson.Feature feature : layerFeaturesE){
+                    if (feature.getStringProperty(prop_featureid).equals(newFeatureId)) {
+                    }
+                }
+
+                Iterator<org.maplibre.geojson.Feature> it = layerFeaturesE.iterator();
+                while (it.hasNext()) {
+                    org.maplibre.geojson.Feature f = it.next();
+                    if (Objects.equals(f.getStringProperty(prop_featureid), newFeatureId)) {
+                        Log.d("SELECC", "MapDrawable layerFeaturesE " + it.toString() );
+                        it.remove();
+                    }
+                }
+                selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(layerFeaturesE));
+            }
+
         }
     }
 
@@ -497,7 +539,6 @@ public class MapDrawable
 
                         } catch (Exception ex) {
                             Log.e("fail", ex.getMessage());
-
                         } finally {
                             Intent msg1 = new Intent(MESSAGE_INTENT_STYLING);
                             msg1.putExtra("msg", "");
@@ -571,6 +612,9 @@ public class MapDrawable
     }
 
     public void reloadFillLayerStyleToMaplibre(final  int  id) {
+
+        Log.d("SELECC", "reloadFillLayerStyleToMaplibre");
+
         if (mapContext.get() != null && (!(mapContext.get().getMode() == 0)))
             return;
 
@@ -1040,7 +1084,7 @@ public class MapDrawable
 
                         for (int i = 0; i < layers.size(); i++) {
                             Layer layer = layers.get(i);
-                            Log.e("LAYERS",
+                            Log.d("LAYERS",
                                     i +
                                             " -> id=" + layer.getId() +
                                             ", type=" + layer.getClass().getSimpleName()
@@ -1091,6 +1135,9 @@ public class MapDrawable
     }
 
     public void loadLayersToMaplibreMapLite(final  List<ILayer> allLayers, boolean skipUserLayers){
+
+        Log.d("SELECC", "loadLayersToMaplibreMapLite");
+
         Style style = maplibreMap.get().getStyle();
         for (Layer layer : maplibreMap.get().getStyle().getLayers()) {
             if (!layer.getId().equals("background"))
@@ -1524,7 +1571,7 @@ public class MapDrawable
 
     public void setMarker(LatLng latLng){
         if (latLng == null) {
-            Log.e(TAG, "set marker on null point");
+            Log.d(TAG, "set marker on null point");
             return;
         }
         org.maplibre.geojson.Feature feature = org.maplibre.geojson.Feature.fromGeometry(Point.fromLngLat(latLng.getLongitude(), latLng.getLatitude()));
@@ -1605,6 +1652,7 @@ public class MapDrawable
             return;
         Long selectedFeatureId = originalSelectedFeature.getId();
 
+        Log.d("SELECC", "select for " + selectedFeatureId);
         if (editingFeature != null  ){
             Integer lID = null;
             Long fID = null;
@@ -1625,21 +1673,25 @@ public class MapDrawable
 
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerd.getId());
 
-        for (org.maplibre.geojson.Feature item : layerFeatures){
-            if (item!= null && item.hasProperty(prop_featureid)) {
-                long id = 0;
-                try {
-                    id = item.getNumberProperty(prop_featureid).longValue();
-                } catch (Exception ex) {
-                    break;
-                }
+        if (layerFeatures != null)
+            for (org.maplibre.geojson.Feature item : layerFeatures){
+                if (item!= null && item.hasProperty(prop_featureid)) {
+                    long id = 0;
+                    try {
+                        id = item.getNumberProperty(prop_featureid).longValue();
+                    } catch (Exception ex) {
+                        break;
+                    }
 
-                if (id == selectedFeatureId) {
-                    viewedFeature = item;
-                    break;
+                    if (id == selectedFeatureId) {
+                        viewedFeature = item;
+                        break;
+                    }
                 }
             }
-        }
+
+        if (viewedFeature == null)
+            Log.d("SELECC", "viewedFeature == null");
 
         if (viewedFeature != null) {
             var featureSelected = copyFeature(viewedFeature);
@@ -1649,11 +1701,13 @@ public class MapDrawable
 
             if  (type == GTPoint || type == GTMultiPoint) {
                 selectedDotSource.setGeoJson(featureSelected);
+                selectedPolySource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             }
 
             if  (type == GeoConstants.GTPolygon || type == GTMultiPolygon
                     || type == GTLineString ||type == GTMultiLineString ) {
                 selectedPolySource.setGeoJson(featureSelected);
+                selectedDotSource.setGeoJson(FeatureCollection.fromFeatures(new ArrayList<>()));
             }
             this.originalSelectedFeature = originalSelectedFeature;
         }
@@ -1999,7 +2053,7 @@ public class MapDrawable
             oldIndex = editingObject.getSelectedVertexIndex();
         }
 
-        if  (newGeometry == null)
+        if  (newGeometry == null || editingObject == null)
             return;
 
         if (newGeometry instanceof GeoLineString){

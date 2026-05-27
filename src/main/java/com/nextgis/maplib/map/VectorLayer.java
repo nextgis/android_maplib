@@ -572,7 +572,7 @@ public class VectorLayer
                 //Log.e(TAG, "insert " + uri.toString() + " values: " + values.toString());
 
                 Uri result = context.getContentResolver().insert(uri, values);  //uri content://com.nextgis.mobile.provider.debug/layer_20241129144701242/1/attach
-                Log.e(TAG, result == null ? "resul isNULL" : "result " + result.toString());
+                Log.d(TAG, result == null ? "resul isNULL" : "result " + result.toString());
 
 //                if (result == null) {
 //                    Toast.makeText(this, getText(com.keenfin.easypicker.R.string.photo_fail_attach), Toast.LENGTH_SHORT).show();
@@ -2531,6 +2531,8 @@ public class VectorLayer
             long oldRowId,
             boolean attributesOnly)
     {
+        Log.d("SELECC", "vectorLayer notifyUpdate from " + oldRowId + " to " + rowId);
+
         if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "notifyUpdate id: " + rowId + ", old_id: " + oldRowId);
         }
@@ -2755,12 +2757,12 @@ public class VectorLayer
 
     public void showFeature(long featureId)
     {
-        if (mIgnoreFeatures.isEmpty() || featureId == NOT_FOUND) {
-            return;
-        }
-
-        mIgnoreFeatures.remove(featureId);
-        notifyLayerChanged();
+//        if (mIgnoreFeatures.isEmpty() || featureId == NOT_FOUND) {
+//            return;
+//        }
+//
+//        mIgnoreFeatures.remove(featureId);
+//        notifyLayerChanged();
     }
 
 

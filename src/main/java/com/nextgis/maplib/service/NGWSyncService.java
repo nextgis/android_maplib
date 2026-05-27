@@ -121,7 +121,7 @@ public class  NGWSyncService
     }
 
 
-    public class SyncReceiver
+    static public class SyncReceiver
             extends BroadcastReceiver
     {
         @Override

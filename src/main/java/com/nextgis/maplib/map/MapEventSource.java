@@ -218,6 +218,8 @@ public class MapEventSource
     {
         super.onLayerChangedFeatureId(layer, oldFeatureId,  newFeatureId, layerId);
 
+        Log.d("SELECC", "MapEventSource onLayerChangedFeatureId  call" +oldFeatureId + " to " + newFeatureId );
+
         if (mListeners == null) {
             return;
         }
@@ -409,6 +411,10 @@ public class MapEventSource
 
 
                         case EVENT_onLayerChangedFeatureID:
+                            Log.d("SELECC", "MapEventSource EVENT_onLayerChangedFeatureID");
+                            Log.d("SELECC", "MapEventSource EVENT_onLayerChangedFeatureID + " +
+                                            resultData.getLong(BUNDLE_ID_OLD_FEATURE_KEY) + " to "
+                            + resultData.getLong(BUNDLE_ID_NEW_FEATURE_KEY));
                             listener.onLayerChangedFeatureId(
                                     resultData.getLong(BUNDLE_ID_OLD_FEATURE_KEY),
                                     resultData.getLong(BUNDLE_ID_NEW_FEATURE_KEY),

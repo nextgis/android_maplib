@@ -105,6 +105,45 @@ public class MapUtil {
         return GeoConstants.MERCATOR_MAX * 2 / sizeOneDimensionPixels;
     }
 
+
+
+    public static long getTileCount(
+            GeoEnvelope bounds,
+            double zoom)
+    {
+        int decimalZoom = (int) zoom;
+        int tilesInMapOneDimension = 1 << decimalZoom;
+
+        double halfTilesInMapOneDimension = tilesInMapOneDimension * 0.5;
+        double tileSize = GeoConstants.MERCATOR_MAX / halfTilesInMapOneDimension;
+
+        int begX = (int) Math.floor(
+                bounds.getMinX() / tileSize + halfTilesInMapOneDimension);
+
+        int begY = (int) Math.floor(
+                bounds.getMinY() / tileSize + halfTilesInMapOneDimension);
+
+        int endX = (int) Math.ceil(
+                bounds.getMaxX() / tileSize + halfTilesInMapOneDimension);
+
+        int endY = (int) Math.ceil(
+                bounds.getMaxY() / tileSize + halfTilesInMapOneDimension);
+
+        if (begX == endX)
+            endX++;
+
+        if (begY == endY)
+            endY++;
+
+        begY = Math.max(0, begY);
+        endY = Math.min(tilesInMapOneDimension, endY);
+
+        int width = Math.max(0, endX - begX);
+        int height = Math.max(0, endY - begY);
+
+        return (long) width * height;
+    }
+
     public static long getTileCount(AsyncTask task, GeoEnvelope bounds, double zoom, int tmsType) {
         int decimalZoom = (int) zoom;
         int tilesInMapOneDimension = 1 << decimalZoom;

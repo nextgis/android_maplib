@@ -33,6 +33,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.util.Log;
+
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.INGWLayer;
 import com.nextgis.maplib.datasource.DatabaseHelper;
@@ -246,6 +248,8 @@ public class MapContentProviderHelper
 
                 case Constants.NOTIFY_UPDATE:
                 case Constants.NOTIFY_UPDATE_FIELDS:
+                    Log.d("SELECC", "mapContent action " + intent.getAction() );
+                    Log.d("SELECC", "mapContent action " + intent.getExtras().toString() );
                     layer.notifyUpdate(
                             intent.getLongExtra(FIELD_ID, NOT_FOUND),
                             intent.getLongExtra(FIELD_OLD_ID, NOT_FOUND),

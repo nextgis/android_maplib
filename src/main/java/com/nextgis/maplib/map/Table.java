@@ -98,7 +98,7 @@ public class Table implements ILayer, IJSONStore {
     public boolean delete(boolean keepTrack)
     {
         if (!FileUtil.deleteRecursive(mPath))
-            Log.e("DDELETE", "Delete fail for "  + mPath);
+            Log.d("DDELETE", "Delete fail for "  + mPath);
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
             group.onLayerDeleted(mId);
@@ -126,6 +126,7 @@ public class Table implements ILayer, IJSONStore {
 
     public void notifyLayerChangedFeature(long oldFeatureId, long newFeatureId, int layerId)
     {
+        Log.d("SELECC", "Table notifyLayerChangedFeature from " + oldFeatureId + " to " + newFeatureId);
         if (mParent != null && mParent instanceof LayerGroup) {
             LayerGroup group = (LayerGroup) mParent;
             group.onLayerChangedFeatureId(this, oldFeatureId, newFeatureId, layerId);
