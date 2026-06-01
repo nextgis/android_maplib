@@ -41,6 +41,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -48,6 +50,7 @@ import java.util.TimeZone;
 import static com.nextgis.maplib.util.Constants.*;
 import static com.nextgis.maplib.util.GeoConstants.*;
 import static com.nextgis.maplib.util.LayerUtil.containsCaseInsensitive;
+import static com.nextgis.maplib.util.LayerUtil.getColumnIndexSafely;
 import static com.nextgis.maplib.util.LayerUtil.unwrapQuotation;
 import static com.nextgis.maplib.util.MapUtil.convertTime;
 
@@ -462,7 +465,7 @@ public class Feature
 
         for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
-            int index = cursor.getColumnIndex(field.getName());
+            int index = getColumnIndexSafely(cursor, field.getName()); //cursor.getColumnIndex(field.getName());
             if (cursor.isNull(index)) {
                 setFieldValue(i, null);
             } else {
@@ -498,6 +501,16 @@ public class Feature
         }
     }
 
+    public int getColumnIndexSafely(Cursor cursor, String targetColumnName) {
+        String[] columnNames = cursor.getColumnNames();
+        for (int i = 0; i < columnNames.length; i++) {
+            if (columnNames[i].equals(targetColumnName)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public void fromCursorWithoutGeometry(Cursor cursor)
     {
         if (null == cursor) {
@@ -507,7 +520,8 @@ public class Feature
 
         for (int i = 0; i < mFields.size(); i++) {
             Field field = mFields.get(i);
-            int index = cursor.getColumnIndex(field.getName());
+            //int index = cursor.getColumnIndex(field.getName());
+            int index = getColumnIndexSafely(cursor, field.getName());
             if (cursor.isNull(index)) {
                 setFieldValue(i, null);
             } else {

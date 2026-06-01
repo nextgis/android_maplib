@@ -24,6 +24,8 @@
 package com.nextgis.maplib.util;
 
 import android.content.Context;
+import android.database.Cursor;
+
 import com.nextgis.maplib.R;
 
 import java.util.List;
@@ -177,5 +179,15 @@ public class LayerUtil {
         }
 
         return sb.toString();
+    }
+
+    static public int getColumnIndexSafely(Cursor cursor, String targetColumnName) {
+        String[] columnNames = cursor.getColumnNames();
+        for (int i = 0; i < columnNames.length; i++) {
+            if (columnNames[i].equals(targetColumnName)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }
