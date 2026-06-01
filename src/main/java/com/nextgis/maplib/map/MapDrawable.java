@@ -3135,6 +3135,8 @@ public class MapDrawable
     }
 
     public void reloadTrackListToMap(){
+        if (maplibreMap.get() == null)
+            return;
         List<ILayer> tracks = new ArrayList<>();
         LayerGroup.getLayersByType(this, Constants.LAYERTYPE_TRACKS, tracks);
         if (tracks.size() > 0){
