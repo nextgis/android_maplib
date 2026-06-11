@@ -23,6 +23,9 @@
 
 package com.nextgis.maplib.datasource.ngw;
 
+import static com.nextgis.maplib.datasource.ngw.Connection.NGWResourceTypeRasterLayerStyle;
+import static com.nextgis.maplib.datasource.ngw.Connection.NGWResourceTypeVectorLayerStyle;
+
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -55,6 +58,53 @@ public class ResourceGroup extends Resource {
         super(json, connection);
         mChildren = new ArrayList<>();
         mChildrenLoaded = false;
+    }
+
+    public class ResourceResult {
+        public Resource resource;
+        public int respCode;
+    }
+
+
+    public ResourceResult reloadRoot() {
+
+        try {
+            String sURL = NGWUtil.getResourceUrl(mConnection.getURL(), mRemoteId);
+            HttpResponse response =
+                    NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
+            if (!response.isOk()) {
+                ResourceResult resourceResult = new ResourceResult();
+                resourceResult.respCode = response.getResponseCode();
+                resourceResult.resource = null;
+                //404
+                // -1
+                return resourceResult;
+            }
+
+            JSONObject data = new JSONObject(response.getResponseBody());
+            int type = getType(data);
+            if (type == NGWResourceTypeVectorLayerStyle || type == NGWResourceTypeRasterLayerStyle){ // its style - need get parent - vectorLayer
+                Integer id = null;
+                try {
+                    id = data.getJSONObject("resource").getJSONObject("parent").getInt("id");
+                } catch (Exception ex){
+                    return null;
+                }
+                if (id != null){
+                    sURL = NGWUtil.getResourceUrl(mConnection.getURL(), id);
+                    response =
+                            NetworkUtil.get(sURL, mConnection.getLogin(), mConnection.getPassword(), false);
+                    if (!response.isOk())
+                        return null;
+                }
+            }
+
+            return getSelfResource(new JSONObject(response.getResponseBody()));
+
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            return  null;
+        }
     }
 
     public void loadChildren(boolean skipSubLoad) {
@@ -92,6 +142,54 @@ public class ResourceGroup extends Resource {
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    protected ResourceResult getSelfResource(JSONObject data) {
+        int type = getType(data);
+        Resource resource = null;
+        switch (type) {
+            case Connection.NGWResourceTypeResourceGroup:
+                resource = new ResourceGroup(data, mConnection);
+                break;
+            case Connection.NGWResourceTypePostgisLayer:
+                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
+                    break;
+            case Connection.NGWResourceTypeVectorLayer:
+            case Connection.NGWResourceTypeRasterLayer:
+                LayerWithStyles layer = new LayerWithStyles(data, mConnection);
+
+                    layer.fillExtent();
+                    layer.fillStyles();
+
+                resource = layer;
+                break;
+
+//            case Connection.NGWResourceTypeCollector:
+//                CollectorResource collectorResource = new CollectorResource(data, mConnection);
+//                resource = collectorResource;
+//                break;
+
+            case Connection.NGWResourceTypeWMSClient:
+                resource = new LayerWithStyles(data, mConnection);
+                break;
+            case Connection.NGWResourceTypeLookupTable:
+                resource = new ResourceWithoutChildren(data, mConnection);
+                break;
+            case Connection.NGWResourceTypeWebMap:
+                resource = new WebMap(data, mConnection);
+                break;
+        }
+
+        if (null != resource) {
+            resource.setParent(this);
+            resource.fillPermissions();
+
+        }
+        ResourceResult resourceResult =  new ResourceResult();
+        resourceResult.resource = resource;
+        resourceResult.respCode = 200;
+
+        return resourceResult;
     }
 
     protected void addResource(JSONObject data, boolean skipSubLoad) {

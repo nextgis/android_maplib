@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import static com.nextgis.maplib.map.MLP.AuthInterceptorNG.tileXYToQuadKey;
 import static com.nextgis.maplib.util.Constants.DEFAULT_TILE_MAX_AGE;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_REMOTE_TMS;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
@@ -135,6 +136,11 @@ public class RemoteTMSLayer
 
         // Try to get tile from remote.
         String url = tile.toString(getURLSubdomain());
+        if ( url.contains("{q}")){
+            String qPart = tileXYToQuadKey(tile.getX(), tile.getY(), tile.getZoomLevel());
+            url = url.replace("{q}", qPart);
+        }
+
         if (Constants.DEBUG_MODE) {
             Log.d(TAG, "url: " + url);
         }

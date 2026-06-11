@@ -86,7 +86,7 @@ public class AuthInterceptorNG implements Interceptor {
         return chain.proceed(originalRequest);
     }
 
-    private String tileXYToQuadKey(int x, int y, int z) {
+    static public String tileXYToQuadKey(int x, int y, int z) {
         StringBuilder quadKey = new StringBuilder();
         for (int i = z; i > 0; i--) {
             int digit = 0;

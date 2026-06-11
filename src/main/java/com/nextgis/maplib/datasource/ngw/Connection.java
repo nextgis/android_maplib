@@ -121,6 +121,30 @@ public class Connection
         return true;
     }
 
+    public boolean connect(boolean guest, long newRemoteId) {
+        setNgwVersion();
+        fillCapabilities();
+
+        mRootResource = new ResourceGroup(newRemoteId, this);
+        mRootResource.setParent(this);
+
+        if (!guest) {
+            try {
+                AtomicReference<String> reference = new AtomicReference<>(mURL);
+                mCookie = NGWUtil.getConnectionCookie(reference, mLogin, mPassword, true);
+                if (null == mCookie || null == mCookie.token) {
+                    return false;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        mIsConnected = true;
+        return true;
+    }
+
     protected void setNgwVersion()
     {
         Pair<Integer, Integer> ver = null;
@@ -221,6 +245,10 @@ public class Connection
                 return NGWResourceTypeWMSClient;
             case "lookup_table":
                 return NGWResourceTypeLookupTable;
+            case "qgis_vector_style":
+                return NGWResourceTypeVectorLayerStyle;
+            case "qgis_raster_style":
+                return NGWResourceTypeRasterLayerStyle;
             case "demo_project":
                 return NGWResourceTypeResourceGroup;
 //            case "collector_project":

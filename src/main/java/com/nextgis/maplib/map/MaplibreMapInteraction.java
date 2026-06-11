@@ -38,6 +38,8 @@ public interface MaplibreMapInteraction {
 
     public void changeProgress(boolean show);
 
+    public void changeProgress(boolean show, String text);
+
     // only for collector - check after map get - need create new feature or not
     public void checkCreateIfNeed();
 

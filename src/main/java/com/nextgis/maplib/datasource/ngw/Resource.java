@@ -46,7 +46,7 @@ public abstract class Resource
     protected String       mName;
     protected String       mKeyName;
     protected long         mOwnerId;
-    protected JSONObject   mPermissions;
+    public JSONObject      mPermissions;
     protected int          mType;
     protected int          mId;
     protected INGWResource mParent;
