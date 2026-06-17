@@ -1070,4 +1070,24 @@ public class NGWUtil
 
         return createNewResource(table.getContext(), connection, payload);
     }
+
+    static public boolean hasWritePerm(Resource resource){
+        if (resource == null){
+            return false;
+        }
+        try {
+            if (resource.mPermissions!= null
+                        && resource.mPermissions.has("data")
+                        && resource.mPermissions.getJSONObject("data").has("write")){
+
+                    boolean readPerm = (boolean)resource.mPermissions.getJSONObject("data").get("write");
+                    return  readPerm;
+            }
+        } catch (Exception ex){
+            return  false;
+        }
+        return false;
+    }
+
+
 }

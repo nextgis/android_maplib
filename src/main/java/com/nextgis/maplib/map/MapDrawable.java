@@ -21,6 +21,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.nextgis.maplib.map;
+import static android.widget.Toast.LENGTH_LONG;
+
 import android.accounts.AccountManager;
 import android.app.AlertDialog;
 import android.app.Fragment;
@@ -632,6 +634,11 @@ public class MapDrawable
                 Style maplbrStyle = maplibreMap.get().getStyle();
                 if (! ((VectorLayer) iLayer).isVisible())
                     return;
+                if (maplbrStyle == null){
+                    Toast.makeText(getContext(), getContext().getString(R.string.strange_error), LENGTH_LONG).show();
+                    return;
+                }
+
                 createFillLayerForLayer(id, ((VectorLayer) iLayer).getGeometryType(),maplbrStyle ,layersHashMap,layersHashMap2,
                         symbolsLayerHashMap,
                         newStyle, true, iLayer,
@@ -861,7 +868,7 @@ public class MapDrawable
                     }
                 } catch (OutOfMemoryError outOfMemoryError){
                     mainHandler.post(()-> {
-                        Toast.makeText(mContext, mContext.getString(R.string.outofmemory) + iLayer.getName(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(mContext, mContext.getString(R.string.outofmemory) + iLayer.getName(), LENGTH_LONG).show();
                     });
                 }
             }

@@ -110,4 +110,8 @@
     <string name="error_select_obj">Ошибка при выборе обьекта</string>
     <string name="outofmemory">Нехватка памяти при загрузке слоя: </string>
     <string name="process_layer_hint">Загрузка данных для слоя: </string>
+    <string name="layer_not_editable">Недостаточно прав для редактирования слоя. </string>
+    <string name="layer_not_editable_url">Обратитесь к администратору Веб ГИС</string>
+    <string name="strange_error">Что-то пошло не так, перезапустите приложение</string>
+
 </resources>

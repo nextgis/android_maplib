@@ -662,6 +662,11 @@ public class NGWVectorLayer
             return;
         }
 
+        // 0 check server changes
+//        if ( !isEditable()){
+//              future - add check perm for layer
+//        }
+
         // 1. check for old UUID URL and replace it
         replaceUuidWithUrl(syncResult);
 
