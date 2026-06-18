@@ -443,17 +443,26 @@ public class MapDrawable
             String currentNamePrefixSymbol = "symbol-" +  namePrefix;
             String vectorLayerIdSymbols =currentNamePrefixSymbol + layer_namepart + id;
 
-            if (maplibreMap.get().getStyle().getLayer(vectorLayerId)!= null)
-                maplibreMap.get().getStyle().removeLayer(vectorLayerId);
+            Style style = maplibreMap.get().getStyle();
+            if (style == null){
+                try {
+                    Toast.makeText(getContext(), getContext().getString(R.string.strange_error), LENGTH_LONG).show();
+                } catch (Exception ex) {
 
-            if (maplibreMap.get().getStyle().getLayer(vectorLayerId2)!= null)
-                maplibreMap.get().getStyle().removeLayer(vectorLayerId2);
+                }
+                return;
+            }
+            if (style.getLayer(vectorLayerId)!= null)
+                style.removeLayer(vectorLayerId);
 
-            if (maplibreMap.get().getStyle().getLayer(vectorLayerIdSymbols)!= null)
-                maplibreMap.get().getStyle().removeLayer(vectorLayerIdSymbols);
+            if (style.getLayer(vectorLayerId2)!= null)
+                style.removeLayer(vectorLayerId2);
 
-            if (maplibreMap.get().getStyle().getSource(sourceId)!= null)
-                maplibreMap.get().getStyle().removeSource(sourceId);
+            if (style.getLayer(vectorLayerIdSymbols)!= null)
+                style.removeLayer(vectorLayerIdSymbols);
+
+            if (style.getSource(sourceId)!= null)
+                style.removeSource(sourceId);
         }
     }
 
@@ -476,7 +485,6 @@ public class MapDrawable
                     if (iLayer instanceof NGWRasterLayer) {
                         // need add auth
                         Connection found = null;
-                        if (iLayer instanceof NGWRasterLayer) {
                             for (int i = 0; i < connections.getChildrenCount(); i++) {
                                 if (connections.getChild(i).getName().equals((((NGWRasterLayer) iLayer).getAccountName()))) {
                                     found = (Connection) connections.getChild(i);
@@ -496,7 +504,6 @@ public class MapDrawable
                                     }
                                 }
                             }
-                        }
                     } else if (iLayer instanceof RemoteTMSLayer) {
                         final String url = ((RemoteTMSLayer) iLayer).getURL();
                         final String getBaseUrl = getBaseUrlpart(url);
@@ -1133,12 +1140,14 @@ public class MapDrawable
         executor.shutdown();
     }
 
-    public void updateWalkingFeature(Feature featureToUpate){
-        editingFeature = getFeatureFromNGFeature(featureToUpate.getGeometry());
-        editingObject.editingFeature = editingFeature;
-        editingObject.extractVertices(editingFeature,  false);
-        editingObject.hideVertext();
-        editingObject.selectLastPoint();
+    public void updateWalkingFeature(Feature featureToUpdate){
+        editingFeature = getFeatureFromNGFeature(featureToUpdate.getGeometry());
+        if (editingObject != null) {
+            editingObject.editingFeature = editingFeature;
+            editingObject.extractVertices(editingFeature,  false);
+            editingObject.hideVertext();
+            editingObject.selectLastPoint();
+        }
     }
 
     public void loadLayersToMaplibreMapLite(final  List<ILayer> allLayers, boolean skipUserLayers){
@@ -2961,6 +2970,8 @@ public class MapDrawable
             return;
 
         ILayer targetlayer = getVectorLayersById(this,  id);
+        if (targetlayer== null)
+            return;
         boolean isVisible = ((com.nextgis.maplib.map.Layer)targetlayer).isVisible();
 
         Layer layer = layersHashMap.get(id);
