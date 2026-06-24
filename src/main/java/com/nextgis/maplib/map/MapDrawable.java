@@ -355,12 +355,13 @@ public class MapDrawable
 
         String oldFeatureIdString = String.valueOf(oldFeatureId);
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerId);
-        for (org.maplibre.geojson.Feature feature : layerFeatures){
-            if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
-                feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
-                break;// only one feature with same id
+        if (layerFeatures != null)
+            for (org.maplibre.geojson.Feature feature : layerFeatures){
+                if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
+                    feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
+                    break;// only one feature with same id
+                }
             }
-        }
 
         for (org.maplibre.geojson.Feature feature : polygonFeatures){
             if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
@@ -379,8 +380,8 @@ public class MapDrawable
 
             }
             if (editingObject.originalEditingFeature!=null && editingObject.originalEditingFeature.hasProperty(prop_featureid)
-                        && editingObject.originalEditingFeature.getStringProperty(prop_featureid).
-                            equals(oldFeatureIdString)) {
+                    && editingObject.originalEditingFeature.getStringProperty(prop_featureid).
+                    equals(oldFeatureIdString)) {
                 editingObject.originalEditingFeature
                         .addStringProperty(prop_featureid, String.valueOf(newFeatureId));
                 Log.d("SELECC", "MapDrawable !!! changeFeatureId CHANGE originalEditingFeature" );

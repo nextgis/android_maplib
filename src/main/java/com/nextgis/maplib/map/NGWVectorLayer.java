@@ -1186,6 +1186,7 @@ public class NGWVectorLayer
         //postJsonData.put("file_upload", uploadMetaArray.get(0));
         postJsonData.put("file_upload", result);
         postJsonData.put("description", attach.getDescription());
+        postJsonData.put("name",attach.getDisplayName() ); //  result.has("name") ? result.getString("name") : "");
         String postload = postJsonData.toString();
         if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "postload: " + postload);
