@@ -149,7 +149,7 @@ public class SimpleFeatureRenderer
         int counter = 0;
         for (int i = 0; i < featureIds.size(); i += GEOMETRY_PER_TASK) {
 
-            DrawTask task = new DrawTask(finalDecimalZoom, vectorLayer, display);
+            DrawTask task = new DrawTask(finalDecimalZoom, vectorLayer, display, env);
 
             for(int j = 0; j < GEOMETRY_PER_TASK; j++) {
                 if (Thread.currentThread().isInterrupted()) {
@@ -328,11 +328,13 @@ public class SimpleFeatureRenderer
         protected final int mZoom;
         protected final VectorLayer mLayer;
         protected final List<Long> mFeatureIds = new ArrayList<>(GEOMETRY_PER_TASK);
+        protected final GeoEnvelope mEnvelope;
 
-        public DrawTask(final int zoom, final VectorLayer layer, final GISDisplay display) {
+        public DrawTask(final int zoom, final VectorLayer layer, final GISDisplay display, final GeoEnvelope envelope) {
             mDisplay = display;
             mZoom = zoom;
             mLayer = layer;
+            mEnvelope = envelope;
         }
 
         public void addTaskData(final Long featureId){
@@ -351,7 +353,7 @@ public class SimpleFeatureRenderer
                 if(mLayer.isFeatureHidden(id))
                     continue;
                 final GeoGeometry geometry = mLayer.getGeometryForId(id, mZoom, db);
-                if (geometry != null) {
+                if (geometry != null && mEnvelope.intersects(geometry.getEnvelope())) {
                     final Style style = getStyle(id);
                     style.onDraw(geometry, mDisplay);
                 }
