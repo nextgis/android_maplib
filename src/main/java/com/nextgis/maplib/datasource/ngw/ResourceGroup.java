@@ -152,8 +152,8 @@ public class ResourceGroup extends Resource {
                 resource = new ResourceGroup(data, mConnection);
                 break;
             case Connection.NGWResourceTypePostgisLayer:
-                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
-                    break;
+//                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
+//                    break;
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
@@ -200,8 +200,8 @@ public class ResourceGroup extends Resource {
                 resource = new ResourceGroup(data, mConnection);
                 break;
             case Connection.NGWResourceTypePostgisLayer:
-                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
-                    break;
+//                if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
+//                    break;
             case Connection.NGWResourceTypeVectorLayer:
             case Connection.NGWResourceTypeRasterLayer:
                 LayerWithStyles layer = new LayerWithStyles(data, mConnection);
@@ -283,8 +283,8 @@ public class ResourceGroup extends Resource {
                     mChildren.add(resourceGroup);
                     break;
                 case Connection.NGWResourceTypePostgisLayer:
-                    if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
-                        break;
+//                    if (mConnection.getNgwVersionMajor() < Constants.NGW_v3)
+//                        break;
                 case Connection.NGWResourceTypeRasterLayer:
                 case Connection.NGWResourceTypeVectorLayer:
                 case Connection.NGWResourceTypeWMSClient:

@@ -93,7 +93,7 @@ public class SyncAdapter
     public static final String EXCEPTION = "exception";
     protected String mError;
 
-    private HashMap<String, Pair<Integer, Integer>> mVersions;
+//    private HashMap<String, Pair<Integer, Integer>> mVersions;
 
     public SyncAdapter(
             Context context,
@@ -144,7 +144,7 @@ public class SyncAdapter
         getContext().sendBroadcast(
                 (new Intent(SYNC_START)).setPackage(getContext().getPackageName()));
 
-        mVersions = new HashMap<>();
+//        mVersions = new HashMap<>();
         HyperLog.v(Constants.TAG, "SyncAdapter: mapContentProviderHelper is " + mapContentProviderHelper);
         if (null != mapContentProviderHelper) {
             // FIXME Temporary fix till 3.0
@@ -356,12 +356,12 @@ public class SyncAdapter
             } else if (layer instanceof INGWLayer) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync " + layer.getName() + " is a NGW layer");
                 INGWLayer ngwLayer = (INGWLayer) layer;
-                String accountName = ngwLayer.getAccountName();
-                if (!mVersions.containsKey(accountName))
-                    mVersions.put(accountName, NGWUtil.getNgwVersion(getContext(), accountName));
-
-                Pair<Integer, Integer> ver = mVersions.get(accountName);
-                ngwLayer.sync(authority, ver, syncResult);
+//                String accountName = ngwLayer.getAccountName();
+//                if (!mVersions.containsKey(accountName))
+//                    mVersions.put(accountName, NGWUtil.getNgwVersion(getContext(), accountName));
+//
+//                Pair<Integer, Integer> ver = mVersions.get(accountName);
+                ngwLayer.sync(authority, syncResult);
             } else if (layer instanceof TrackLayer) {
                 HyperLog.v(Constants.TAG, "SyncAdapter: start sync" + layer.getName() + " is a tracking layer");
                 ((TrackLayer) layer).sync();

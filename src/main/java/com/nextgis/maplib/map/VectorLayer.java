@@ -3618,15 +3618,15 @@ public class VectorLayer
         return mIsLocked;
     }
 
-    public void toNGW(Long id, String account, int syncType, Pair<Integer, Integer> ver) {
+    public void toNGW(Long id, String account, int syncType) {
         if (id != null && id != NOT_FOUND) {
             mLayerType = Constants.LAYERTYPE_NGW_VECTOR;
             try {
                 JSONObject rootConfig = toJSON();
-                if (ver != null) {
-                    rootConfig.put(NGWVectorLayer.JSON_NGW_VERSION_MAJOR_KEY, ver.first);
-                    rootConfig.put(NGWVectorLayer.JSON_NGW_VERSION_MINOR_KEY, ver.second);
-                }
+//                if (ver != null) {
+//                    rootConfig.put(NGWVectorLayer.JSON_NGW_VERSION_MAJOR_KEY, ver.first);
+//                    rootConfig.put(NGWVectorLayer.JSON_NGW_VERSION_MINOR_KEY, ver.second);
+//                }
 
                 rootConfig.put(NGWVectorLayer.JSON_ACCOUNT_KEY, account);
                 rootConfig.put(Constants.JSON_ID_KEY, id);
@@ -3676,7 +3676,7 @@ public class VectorLayer
                         layer.addChange(feature.getId(), Long.parseLong(attach.getAttachId()), CHANGE_OPERATION_NEW);
                 }
 
-                Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, layer.getAccountName());
+                // Pair<Integer, Integer> ver = NGWUtil.getNgwVersion(mContext, layer.getAccountName());
 
 
                 ((IGISApplication)getContext().getApplicationContext()).startCreateNGWLayerSync(

@@ -49,7 +49,6 @@ import com.nextgis.maplib.display.RuleFeatureRenderer;
 import com.nextgis.maplib.display.SimpleLineStyle;
 import com.nextgis.maplib.display.SimpleMarkerStyle;
 import com.nextgis.maplib.display.SimplePolygonStyle;
-import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.map.MLP.LineEditClass;
 import com.nextgis.maplib.map.MLP.MLGeometryEditClass;
 import com.nextgis.maplib.map.MLP.MeasurmentLine;

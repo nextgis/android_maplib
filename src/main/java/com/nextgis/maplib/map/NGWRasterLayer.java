@@ -111,7 +111,7 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
     }
 
     @Override
-    public void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult) {
+    public void sync(String authority, SyncResult syncResult) {
         // TODO: 26.07.15 By now nothing to sync
     }
 

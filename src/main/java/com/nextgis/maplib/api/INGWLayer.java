@@ -54,7 +54,9 @@ public interface INGWLayer
      * @param authority the account authority
      * @param syncResult object for storing results of operations
      */
-    void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult);
+    void sync(String authority,
+//              Pair<Integer, Integer> ver,
+              SyncResult syncResult);
 
     /**
      * Return the sync type (i.e. sync only attributes or the whole feature)

@@ -44,8 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Connection
         implements INGWResource
 {
-    protected int mNgwVersionMajor = Constants.NOT_FOUND;
-    protected int mNgwVersionMinor = Constants.NOT_FOUND;
+//    protected int mNgwVersionMajor = Constants.NOT_FOUND;
+//    protected int mNgwVersionMinor = Constants.NOT_FOUND;
 
     protected String        mName;
     protected String        mLogin;
@@ -98,7 +98,7 @@ public class Connection
     }
 
     public boolean connect(boolean guest) {
-        setNgwVersion();
+//        setNgwVersion();
         fillCapabilities();
 
         mRootResource = new ResourceGroup(0, this);
@@ -122,7 +122,7 @@ public class Connection
     }
 
     public boolean connect(boolean guest, long newRemoteId) {
-        setNgwVersion();
+//        setNgwVersion();
         fillCapabilities();
 
         mRootResource = new ResourceGroup(newRemoteId, this);
@@ -145,30 +145,30 @@ public class Connection
         return true;
     }
 
-    protected void setNgwVersion()
-    {
-        Pair<Integer, Integer> ver = null;
-        try {
-            ver = NGWUtil.getNgwVersion(mURL, mLogin, mPassword);
-        } catch (IOException | JSONException | NumberFormatException ignored) { }
-
-        if (null != ver) {
-            mNgwVersionMajor = ver.first;
-            mNgwVersionMinor = ver.second;
-        }
-    }
-
-
-    public int getNgwVersionMajor()
-    {
-        return mNgwVersionMajor;
-    }
+//    protected void setNgwVersion()
+//    {
+//        Pair<Integer, Integer> ver = null;
+//        try {
+//            ver = NGWUtil.getNgwVersion(mURL, mLogin, mPassword);
+//        } catch (IOException | JSONException | NumberFormatException ignored) { }
+//
+//        if (null != ver) {
+//            mNgwVersionMajor = ver.first;
+//            mNgwVersionMinor = ver.second;
+//        }
+//    }
 
 
-    public int getNgwVersionMinor()
-    {
-        return mNgwVersionMinor;
-    }
+//    public int getNgwVersionMajor()
+//    {
+//        return mNgwVersionMajor;
+//    }
+//
+//
+//    public int getNgwVersionMinor()
+//    {
+//        return mNgwVersionMinor;
+//    }
 
 
     public TokenContainer getCookie()

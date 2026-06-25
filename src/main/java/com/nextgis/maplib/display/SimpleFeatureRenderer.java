@@ -46,7 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.nextgis.maplib.util.Constants.*;
@@ -57,7 +57,7 @@ public class SimpleFeatureRenderer
 {
 
     protected Style              mStyle;
-    protected ThreadPoolExecutor mDrawThreadPool;
+    //protected ThreadPoolExecutor mDrawThreadPool;
     //protected final Object lock = new Object();
 
     public static final String JSON_STYLE_KEY = "style";
@@ -82,127 +82,127 @@ public class SimpleFeatureRenderer
     @Override
     public void runDraw(final GISDisplay display)
     {
-        long startTime = 0;
-        if(Constants.DEBUG_MODE) {
-            startTime = System.currentTimeMillis();
-        }
+//        long startTime = 0;
+//        if(Constants.DEBUG_MODE) {
+//            startTime = System.currentTimeMillis();
+//        }
+//
+//        if (null == mStyle) {
+//            Log.d(TAG, "mStyle == null");
+//            return;
+//        }
+//        final double zoom = display.getZoomLevel();
+//
+//        GeoEnvelope env = display.getBounds();
+//
+//        final VectorLayer vectorLayer = (VectorLayer) getLayer();
+//
+//        //GeoEnvelope layerEnv = vectorLayer.getExtents();
+//        //if (null == layerEnv || !env.intersects(layerEnv)) {
+//        //    return;
+//        //}
+//
+//        int decimalZoom = (int) zoom;
+//        if(decimalZoom % 2 != 0)
+//            decimalZoom++;
+//
+//        List<Long> featureIds = vectorLayer.query(env);
+//
+//        cancelDraw();
+//
+//        int threadCount = DRAWING_SEPARATE_THREADS;
+//        int coreCount = Runtime.getRuntime().availableProcessors();
+//
+//        // FIXME more than 1 pool size causing strange behaviour on 6.0
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+//            coreCount = 1;
 
-        if (null == mStyle) {
-            Log.d(TAG, "mStyle == null");
-            return;
-        }
-        final double zoom = display.getZoomLevel();
+//        mDrawThreadPool = new ThreadPoolExecutor(
+//                coreCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
+//                new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+//        {
+//            @Override
+//            public void rejectedExecution(
+//                    Runnable r,
+//                    ThreadPoolExecutor executor)
+//            {
+//                try {
+//                    executor.getQueue().put(r);
+//                } catch (InterruptedException e) {
+//                    //e.printStackTrace();
+//                }
+//            }
+//        });
 
-        GeoEnvelope env = display.getBounds();
-
-        final VectorLayer vectorLayer = (VectorLayer) getLayer();
-
-        //GeoEnvelope layerEnv = vectorLayer.getExtents();
-        //if (null == layerEnv || !env.intersects(layerEnv)) {
-        //    return;
-        //}
-
-        int decimalZoom = (int) zoom;
-        if(decimalZoom % 2 != 0)
-            decimalZoom++;
-
-        List<Long> featureIds = vectorLayer.query(env);
-
-        cancelDraw();
-
-        int threadCount = DRAWING_SEPARATE_THREADS;
-        int coreCount = Runtime.getRuntime().availableProcessors();
-
-        // FIXME more than 1 pool size causing strange behaviour on 6.0
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            coreCount = 1;
-
-        mDrawThreadPool = new ThreadPoolExecutor(
-                coreCount, threadCount, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT,
-                new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
-        {
-            @Override
-            public void rejectedExecution(
-                    Runnable r,
-                    ThreadPoolExecutor executor)
-            {
-                try {
-                    executor.getQueue().put(r);
-                } catch (InterruptedException e) {
-                    //e.printStackTrace();
-                }
-            }
-        });
-
-        if(Constants.DEBUG_MODE) {
-            long stopTime = System.currentTimeMillis();
-            long elapsedTime = stopTime - startTime;
-
-            Log.d(TAG, "Vector layer " + vectorLayer.getName() + " prepare time: " + elapsedTime);
-        }
-
-        // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
-        int tilesSize = featureIds.size() / GEOMETRY_PER_TASK + 1;
-        List<Future> futures = new ArrayList<>(tilesSize);
-
-        final int finalDecimalZoom = decimalZoom;
-        int counter = 0;
-        for (int i = 0; i < featureIds.size(); i += GEOMETRY_PER_TASK) {
-
-            DrawTask task = new DrawTask(finalDecimalZoom, vectorLayer, display);
-
-            for(int j = 0; j < GEOMETRY_PER_TASK; j++) {
-                if (Thread.currentThread().isInterrupted()) {
-                    break;
-                }
-                if (counter >= featureIds.size())
-                    break;
-
-                final long featureId = featureIds.get(counter);
-
-                task.addTaskData(featureId);
-                counter++;
-            }
-
-            futures.add(mDrawThreadPool.submit(task));
-            vectorLayer.onDrawFinished(vectorLayer.getId(), 0.01f);
-        }
-
-        // wait for draw ending
-        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
-        if(nStep == 0)
-            nStep = 1;
-        for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
-            }
-
-            try {
-                Future future = futures.get(i);
-                future.get(); // wait for task ending
-
-                float percent = (float) i / futuresSize;
-                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
-                    vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
-
-                //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
-                //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
-
-            } catch (CancellationException | InterruptedException e) {
-                //e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-
-        vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
-
-        if(Constants.DEBUG_MODE) {
-            long stopTime = System.currentTimeMillis();
-            long elapsedTime = stopTime - startTime;
-
-            Log.d(TAG, "Vector layer " + vectorLayer.getName() + " exec time: " + elapsedTime);
-        }
+//        if(Constants.DEBUG_MODE) {
+//            long stopTime = System.currentTimeMillis();
+//            long elapsedTime = stopTime - startTime;
+//
+//            Log.d(TAG, "Vector layer " + vectorLayer.getName() + " prepare time: " + elapsedTime);
+//        }
+//
+//        // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
+//        int tilesSize = featureIds.size() / GEOMETRY_PER_TASK + 1;
+//        List<Future> futures = new ArrayList<>(tilesSize);
+//
+//        final int finalDecimalZoom = decimalZoom;
+//        int counter = 0;
+//        for (int i = 0; i < featureIds.size(); i += GEOMETRY_PER_TASK) {
+//
+//            DrawTask task = new DrawTask(finalDecimalZoom, vectorLayer, display);
+//
+//            for(int j = 0; j < GEOMETRY_PER_TASK; j++) {
+//                if (Thread.currentThread().isInterrupted()) {
+//                    break;
+//                }
+//                if (counter >= featureIds.size())
+//                    break;
+//
+//                final long featureId = featureIds.get(counter);
+//
+//                task.addTaskData(featureId);
+//                counter++;
+//            }
+//
+//            futures.add(mDrawThreadPool.submit(task));
+//            vectorLayer.onDrawFinished(vectorLayer.getId(), 0.01f);
+//        }
+//
+//        // wait for draw ending
+//        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
+//        if(nStep == 0)
+//            nStep = 1;
+//        for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
+//            if (Thread.currentThread().isInterrupted()) {
+//                break;
+//            }
+//
+//            try {
+//                Future future = futures.get(i);
+//                future.get(); // wait for task ending
+//
+//                float percent = (float) i / futuresSize;
+//                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
+//                    vectorLayer.onDrawFinished(vectorLayer.getId(), percent);
+//
+//                //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
+//                //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
+//
+//            } catch (CancellationException | InterruptedException e) {
+//                //e.printStackTrace();
+//            } catch (ExecutionException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        vectorLayer.onDrawFinished(vectorLayer.getId(), 1.0f);
+//
+//        if(Constants.DEBUG_MODE) {
+//            long stopTime = System.currentTimeMillis();
+//            long elapsedTime = stopTime - startTime;
+//
+//            Log.d(TAG, "Vector layer " + vectorLayer.getName() + " exec time: " + elapsedTime);
+//        }
     }
 
 
@@ -256,17 +256,17 @@ public class SimpleFeatureRenderer
     @Override
     public void cancelDraw()
     {
-        if (mDrawThreadPool != null) {
-            //synchronized (lock) {
-                mDrawThreadPool.shutdownNow();
-            //}
-            try {
-                mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
-                //mDrawThreadPool.purge();
-            } catch (InterruptedException e) {
-                //e.printStackTrace();
-            }
-        }
+//        if (mDrawThreadPool != null) {
+//            //synchronized (lock) {
+//                mDrawThreadPool.shutdownNow();
+//            //}
+//            try {
+//                mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
+//                //mDrawThreadPool.purge();
+//            } catch (InterruptedException e) {
+//                //e.printStackTrace();
+//            }
+//        }
     }
 
 

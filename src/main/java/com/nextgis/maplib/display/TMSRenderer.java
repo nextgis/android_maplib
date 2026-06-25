@@ -46,7 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
+
 
 import static com.nextgis.maplib.util.Constants.*;
 
@@ -67,7 +67,7 @@ public class TMSRenderer
 
 //    protected static final String JSON_TMSRENDERER_NEW_CONRAST= "newcontrast";
 
-    protected ThreadPoolExecutor mDrawThreadPool;
+//    protected ThreadPoolExecutor mDrawThreadPool;
     protected Paint              mRasterPaint;
     protected boolean            mAntiAlias;
     protected boolean            mFilterBitmap;
@@ -239,141 +239,141 @@ public class TMSRenderer
     public void runDraw(final GISDisplay display)
             throws NullPointerException
     {
-        long startTime=0;
-        if(Constants.DEBUG_MODE) {
-            startTime = System.currentTimeMillis();
-        }
-
-        final double zoom = display.getZoomLevel();
-
-
-        //get tiled for zoom and bounds
-        final TMSLayer tmsLayer = (TMSLayer) getLayer();
-
-        if (tmsLayer instanceof RemoteTMSLayer) {
-            RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer) tmsLayer;
-            remoteTMSLayer.onPrepare();
-        }
-
-        final List<TileItem> tiles = MapUtil.getTileItems(display.getBounds(), zoom, tmsLayer.getTMSType());
-        if (tiles.size() == 0) {
-            return;
-        }
-
-        cancelDraw();
-
-        int threadCount = DRAWING_SEPARATE_THREADS;
-        int coreCount = Runtime.getRuntime().availableProcessors();
-
-        // FIXME more than 1 pool size causing strange behaviour on 6.0 -> tiles do not render from some threads, exception appears:
-        // Fatal signal 11 (SIGSEGV), code 1, fault addr 0xX in tid X (pool-X-thread-X)
-        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.M)
-            coreCount = 1;
-        // SOLUTION: Add syncronized in drawing raster
-
-        //synchronized (lock) {
-            mDrawThreadPool = new ThreadPoolExecutor(
-                    coreCount,
-                    threadCount,
-                    KEEP_ALIVE_TIME,
-                    KEEP_ALIVE_TIME_UNIT,
-                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
-            {
-                @Override
-                public void rejectedExecution(
-                        Runnable r,
-                        ThreadPoolExecutor executor)
-                {
-                    try {
-                        executor.getQueue().put(r);
-                    } catch (InterruptedException e) {
-                        //e.printStackTrace();
-                    }
-                }
-            });
-        //}
-
-        // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
-        int tilesSize = tiles.size();
-        List<Future> futures = new ArrayList<>(tilesSize);
-
-        for (int i = 0; i < tilesSize; ++i) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
-            }
-
-            final TileItem tile = tiles.get(i);
-
-            futures.add(
-                    mDrawThreadPool.submit(
-                            new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    android.os.Process.setThreadPriority(
-                                            Constants.DEFAULT_DRAW_THREAD_PRIORITY);
-
-                                    final Bitmap bmp = tmsLayer.getBitmap(tile);
-                                    if (bmp != null) {
-                                        display.drawTile(bmp, tile.getPoint(), mRasterPaint);
-                                    }
-                                }
-                            }));
-        }
-
-        // wait for draw ending
-        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
-        if(nStep == 0)
-            nStep = 1;
-        for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
-            }
-
-            try {
-                Future future = futures.get(i);
-                future.get(); // wait for task ending
-
-                float percent = (float) i / futuresSize;
-                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
-                    tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
-
-                //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
-                //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
-
-            } catch (CancellationException | InterruptedException e) {
-                //e.printStackTrace();
-            } catch (ExecutionException e) {
-                //e.printStackTrace();
-            }
-        }
-
-        tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
-
-        if(Constants.DEBUG_MODE) {
-            long stopTime = System.currentTimeMillis();
-            long elapsedTime = stopTime - startTime;
-
-            Log.d(TAG, "Raster layer " + tmsLayer.getName() + " exec time: " + elapsedTime);
-        }
+//        long startTime=0;
+//        if(Constants.DEBUG_MODE) {
+//            startTime = System.currentTimeMillis();
+//        }
+//
+//        final double zoom = display.getZoomLevel();
+//
+//
+//        //get tiled for zoom and bounds
+//        final TMSLayer tmsLayer = (TMSLayer) getLayer();
+//
+//        if (tmsLayer instanceof RemoteTMSLayer) {
+//            RemoteTMSLayer remoteTMSLayer = (RemoteTMSLayer) tmsLayer;
+//            remoteTMSLayer.onPrepare();
+//        }
+//
+//        final List<TileItem> tiles = MapUtil.getTileItems(display.getBounds(), zoom, tmsLayer.getTMSType());
+//        if (tiles.size() == 0) {
+//            return;
+//        }
+//
+//        cancelDraw();
+//
+//        int threadCount = DRAWING_SEPARATE_THREADS;
+//        int coreCount = Runtime.getRuntime().availableProcessors();
+//
+//        // FIXME more than 1 pool size causing strange behaviour on 6.0 -> tiles do not render from some threads, exception appears:
+//        // Fatal signal 11 (SIGSEGV), code 1, fault addr 0xX in tid X (pool-X-thread-X)
+//        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.M)
+//            coreCount = 1;
+//        // SOLUTION: Add syncronized in drawing raster
+//
+//        //synchronized (lock) {
+//            mDrawThreadPool = new ThreadPoolExecutor(
+//                    coreCount,
+//                    threadCount,
+//                    KEEP_ALIVE_TIME,
+//                    KEEP_ALIVE_TIME_UNIT,
+//                    new LinkedBlockingQueue<Runnable>(), new RejectedExecutionHandler()
+//            {
+//                @Override
+//                public void rejectedExecution(
+//                        Runnable r,
+//                        ThreadPoolExecutor executor)
+//                {
+//                    try {
+//                        executor.getQueue().put(r);
+//                    } catch (InterruptedException e) {
+//                        //e.printStackTrace();
+//                    }
+//                }
+//            });
+//        //}
+//
+//        // http://developer.android.com/reference/java/util/concurrent/ExecutorCompletionService.html
+//        int tilesSize = tiles.size();
+//        List<Future> futures = new ArrayList<>(tilesSize);
+//
+//        for (int i = 0; i < tilesSize; ++i) {
+//            if (Thread.currentThread().isInterrupted()) {
+//                break;
+//            }
+//
+//            final TileItem tile = tiles.get(i);
+//
+//            futures.add(
+//                    mDrawThreadPool.submit(
+//                            new Runnable()
+//                            {
+//                                @Override
+//                                public void run()
+//                                {
+//                                    android.os.Process.setThreadPriority(
+//                                            Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+//
+//                                    final Bitmap bmp = tmsLayer.getBitmap(tile);
+//                                    if (bmp != null) {
+//                                        display.drawTile(bmp, tile.getPoint(), mRasterPaint);
+//                                    }
+//                                }
+//                            }));
+//        }
+//
+//        // wait for draw ending
+//        int nStep = futures.size() / Constants.DRAW_NOTIFY_STEP_PERCENT;
+//        if(nStep == 0)
+//            nStep = 1;
+//        for (int i = 0, futuresSize = futures.size(); i < futuresSize; i++) {
+//            if (Thread.currentThread().isInterrupted()) {
+//                break;
+//            }
+//
+//            try {
+//                Future future = futures.get(i);
+//                future.get(); // wait for task ending
+//
+//                float percent = (float) i / futuresSize;
+//                if(i % nStep == 0) //0..10..20..30..40..50..60..70..80..90..100
+//                    tmsLayer.onDrawFinished(tmsLayer.getId(), percent);
+//
+//                //Log.d(TAG, "TMS percent: " + percent + " complete: " + i +
+//                //       " tiles count: " + tilesSize + " layer: " + mLayer.getName());
+//
+//            } catch (CancellationException | InterruptedException e) {
+//                //e.printStackTrace();
+//            } catch (ExecutionException e) {
+//                //e.printStackTrace();
+//            }
+//        }
+//
+//        tmsLayer.onDrawFinished(tmsLayer.getId(), 1.0f);
+//
+//        if(Constants.DEBUG_MODE) {
+//            long stopTime = System.currentTimeMillis();
+//            long elapsedTime = stopTime - startTime;
+//
+//            Log.d(TAG, "Raster layer " + tmsLayer.getName() + " exec time: " + elapsedTime);
+//        }
     }
 
 
     @Override
     public void cancelDraw()
     {
-        if (mDrawThreadPool != null) {
-            //synchronized (lock) {
-                mDrawThreadPool.shutdownNow();
-                try {
-                    mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
-                    mDrawThreadPool.purge();
-                } catch (InterruptedException e) {
-                    //e.printStackTrace();
-                }
-            //}
-        }
+//        if (mDrawThreadPool != null) {
+//            //synchronized (lock) {
+//                mDrawThreadPool.shutdownNow();
+//                try {
+//                    mDrawThreadPool.awaitTermination(TERMINATE_TIME, KEEP_ALIVE_TIME_UNIT);
+//                    mDrawThreadPool.purge();
+//                } catch (InterruptedException e) {
+//                    //e.printStackTrace();
+//                }
+//            //}
+//        }
     }
 
 

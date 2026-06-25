@@ -273,7 +273,7 @@ public class MapDrawable
     public GeoPoint centerSaved = new GeoPoint(0,0); //
 
     protected int  mLimitsType;
-    protected RunnableFuture<Void> mDrawThreadTask;
+    //protected RunnableFuture<Void> mDrawThreadTask;
 
     public WeakReference<MaplibreMapInteraction> mapContext = new WeakReference(null);
 
@@ -2563,47 +2563,47 @@ public class MapDrawable
     @Override
     public void runDraw(final GISDisplay display)
     {
-        try {
-            cancelDraw();
-        }
-        catch (Exception e) {
-
-        }
+//        try {
+//            cancelDraw();
+//        }
+//        catch (Exception e) {
+//
+//        }
         onLayerDrawStarted();
 
         if (null != display && mDisplay != display) {
             mDisplay = display;
         }
 
-        mDisplay.clearLayer();
+//        mDisplay.clearLayer();
 
-        mDrawThreadTask = new FutureTask<Void>(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        android.os.Process.setThreadPriority(
-                                Constants.DEFAULT_DRAW_THREAD_PRIORITY);
-                        MapDrawable.super.runDraw(mDisplay);
-                    }
-
-                }, null)
-        {
-            @Override
-            protected void done()
-            {
-                super.done();
-                if (!isCancelled()) {
-                    onDrawFinished(DRAW_FINISH_ID, 1.0f);
-                }
-                else {
-                    onDrawFinished(MapDrawable.this.getId(), 1.0f);
-                }
-            }
-        };
-
-        new Thread(mDrawThreadTask).start();
+//        mDrawThreadTask = new FutureTask<Void>(
+//                new Runnable()
+//                {
+//                    @Override
+//                    public void run()
+//                    {
+//                        android.os.Process.setThreadPriority(
+//                                Constants.DEFAULT_DRAW_THREAD_PRIORITY);
+//                        MapDrawable.super.runDraw(mDisplay);
+//                    }
+//
+//                }, null)
+//        {
+//            @Override
+//            protected void done()
+//            {
+//                super.done();
+//                if (!isCancelled()) {
+//                    onDrawFinished(DRAW_FINISH_ID, 1.0f);
+//                }
+//                else {
+//                    onDrawFinished(MapDrawable.this.getId(), 1.0f);
+//                }
+//            }
+//        };
+//
+//        new Thread(mDrawThreadTask).start();
     }
 
 
@@ -2612,10 +2612,10 @@ public class MapDrawable
     {
         super.cancelDraw();
 
-        FutureTask task = (FutureTask) mDrawThreadTask;
-        if (null != task) {
-            task.cancel(true);
-        }
+//        FutureTask task = (FutureTask) mDrawThreadTask;
+//        if (null != task) {
+//            task.cancel(true);
+//        }
     }
 
 

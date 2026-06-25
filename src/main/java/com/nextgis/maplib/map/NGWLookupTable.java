@@ -146,7 +146,7 @@ public class NGWLookupTable extends Table
     }
 
     @Override
-    public void sync(String authority, Pair<Integer, Integer> ver, SyncResult syncResult) {
+    public void sync(String authority, SyncResult syncResult) {
         if (0 != (mSyncType & Constants.SYNC_NONE)) {
             HyperLog.v(Constants.TAG, "Lookup table: " + getName() + " sync type is SYNC_NONE");
             return;

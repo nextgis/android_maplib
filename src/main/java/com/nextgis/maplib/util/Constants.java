@@ -36,7 +36,7 @@ public interface Constants
     int     NOT_FOUND          = -1;
     boolean DEBUG_MODE         = BuildConfig.DEBUG;
 
-    int NGW_v3 = 3;
+//    int NGW_v3 = 3;
 
     /**
      * HTTP parameters

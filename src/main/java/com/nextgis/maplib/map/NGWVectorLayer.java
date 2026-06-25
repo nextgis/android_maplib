@@ -119,8 +119,8 @@ public class NGWVectorLayer
         implements INGWLayer
 {
     protected static final String JSON_ACCOUNT_KEY           = "account";
-    protected static final String JSON_NGW_VERSION_MAJOR_KEY = "ngw_version_major";
-    protected static final String JSON_NGW_VERSION_MINOR_KEY = "ngw_version_minor";
+//    protected static final String JSON_NGW_VERSION_MAJOR_KEY = "ngw_version_major";
+//    protected static final String JSON_NGW_VERSION_MINOR_KEY = "ngw_version_minor";
     protected static final String JSON_SYNC_TYPE_KEY         = "sync_type";
     protected static final String JSON_NGWLAYER_TYPE_KEY     = "ngw_layer_type";
     protected static final String JSON_SERVERWHERE_KEY       = "server_where";
@@ -140,8 +140,8 @@ public class NGWVectorLayer
 
     protected NetworkUtil mNet;
 
-    protected int mNgwVersionMajor = Constants.NOT_FOUND;
-    protected int mNgwVersionMinor = Constants.NOT_FOUND;
+//    protected int mNgwVersionMajor = Constants.NOT_FOUND;
+//    protected int mNgwVersionMinor = Constants.NOT_FOUND;
 
     protected String mAccountName;
     protected long   mRemoteId;
@@ -254,8 +254,8 @@ public class NGWVectorLayer
             throws JSONException
     {
         JSONObject rootConfig = super.toJSON();
-        rootConfig.put(JSON_NGW_VERSION_MAJOR_KEY, mNgwVersionMajor);
-        rootConfig.put(JSON_NGW_VERSION_MINOR_KEY, mNgwVersionMinor);
+//        rootConfig.put(JSON_NGW_VERSION_MAJOR_KEY, mNgwVersionMajor);
+//        rootConfig.put(JSON_NGW_VERSION_MINOR_KEY, mNgwVersionMinor);
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
         rootConfig.put(Constants.JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_SYNC_TYPE_KEY, mSyncType);
@@ -277,12 +277,12 @@ public class NGWVectorLayer
 
         mTracked = jsonObject.optBoolean(JSON_TRACKED_KEY);
         mCRS = jsonObject.optInt(GeoConstants.GEOJSON_CRS, GeoConstants.CRS_WEB_MERCATOR);
-        if (jsonObject.has(JSON_NGW_VERSION_MAJOR_KEY)) {
-            mNgwVersionMajor = jsonObject.getInt(JSON_NGW_VERSION_MAJOR_KEY);
-        }
-        if (jsonObject.has(JSON_NGW_VERSION_MINOR_KEY)) {
-            mNgwVersionMinor = jsonObject.getInt(JSON_NGW_VERSION_MINOR_KEY);
-        }
+//        if (jsonObject.has(JSON_NGW_VERSION_MAJOR_KEY)) {
+//            mNgwVersionMajor = jsonObject.getInt(JSON_NGW_VERSION_MAJOR_KEY);
+//        }
+//        if (jsonObject.has(JSON_NGW_VERSION_MINOR_KEY)) {
+//            mNgwVersionMinor = jsonObject.getInt(JSON_NGW_VERSION_MINOR_KEY);
+//        }
 
         setAccountName(jsonObject.optString(JSON_ACCOUNT_KEY));
 
@@ -319,7 +319,10 @@ public class NGWVectorLayer
     @Override
     protected boolean checkGeometryType(Feature feature)
     {
-        return mNgwVersionMajor < Constants.NGW_v3 || super.checkGeometryType(feature);
+        return
+                //mNgwVersionMajor < Constants.NGW_v3 ||
+                super.checkGeometryType(feature);
+
     }
 
 
@@ -373,16 +376,16 @@ public class NGWVectorLayer
             throw new NGException(getContext().getString(R.string.error_404));
         }
 
-        // get NGW version
-        Pair<Integer, Integer> ver = null;
-        try {
-            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
-        } catch (IOException | JSONException | NumberFormatException ignored) { }
-
-        if (null != ver) {
-            mNgwVersionMajor = ver.first;
-            mNgwVersionMinor = ver.second;
-        }
+//        // get NGW version
+//        Pair<Integer, Integer> ver = null;
+//        try {
+//            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+//        } catch (IOException | JSONException | NumberFormatException ignored) { }
+//
+//        if (null != ver) {
+//            mNgwVersionMajor = ver.first;
+//            mNgwVersionMinor = ver.second;
+//        }
 
         // get layer description
         JSONObject geoJSONObject;
@@ -403,7 +406,9 @@ public class NGWVectorLayer
         if (geoJSONObject.has(getRequiredCls())) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject(getRequiredCls());
             mNGWLayerType = Connection.NGWResourceTypeVectorLayer;
-        } else if (mNgwVersionMajor >= Constants.NGW_v3 && geoJSONObject.has("postgis_layer")) {
+        } else if (
+                //mNgwVersionMajor >= Constants.NGW_v3 &&
+                geoJSONObject.has("postgis_layer")) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
             mNGWLayerType = NGWResourceTypePostgisLayer;
         }
@@ -508,11 +513,11 @@ public class NGWVectorLayer
             List<Field> fields)
             throws SQLiteException
     {
-        if (mNgwVersionMajor < Constants.NGW_v3 && geometryType < 4
-                && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) {
-            // to multi
-            geometryType += 3;
-        }
+//        if (mNgwVersionMajor < Constants.NGW_v3 && geometryType < 4
+//                && mNGWLayerType == Connection.NGWResourceTypeVectorLayer) {
+//            // to multi
+//            geometryType += 3;
+//        }
 
         super.create(geometryType, fields);
         FeatureChanges.initialize(getChangeTableName());
@@ -646,7 +651,7 @@ public class NGWVectorLayer
     @Override
     public void sync(
             String authority,
-            Pair<Integer, Integer> ver,
+//            Pair<Integer, Integer> ver,
             SyncResult syncResult)
     {
 
