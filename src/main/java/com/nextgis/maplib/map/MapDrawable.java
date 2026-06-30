@@ -363,12 +363,13 @@ public class MapDrawable
                 }
             }
 
-        for (org.maplibre.geojson.Feature feature : polygonFeatures){
-            if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
-                feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
-                break;// only one feature with same id
+        if (polygonFeatures != null)
+            for (org.maplibre.geojson.Feature feature : polygonFeatures){
+                if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
+                    feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
+                    break;// only one feature with same id
+                }
             }
-        }
 
         if (editingObject != null){
             if (editingObject.editingFeature != null &&
@@ -391,24 +392,25 @@ public class MapDrawable
                 originalSelectedFeature.setId(newFeatureId);
 
             if (selectedEditedSource != null) {
-
                 List<org.maplibre.geojson.Feature> layerFeaturesE = sourceFeaturesHashMap.get(layerId);
-                for (org.maplibre.geojson.Feature feature : layerFeaturesE){
-                    if (feature.getStringProperty(prop_featureid).equals(newFeatureId)) {
-                    }
-                }
+//                if (layerFeaturesE!= null)
+//                    for (org.maplibre.geojson.Feature feature : layerFeaturesE){
+//                        if (feature.getStringProperty(prop_featureid).equals(newFeatureId)) {
+//                        }
+//                    }
 
-                Iterator<org.maplibre.geojson.Feature> it = layerFeaturesE.iterator();
-                while (it.hasNext()) {
-                    org.maplibre.geojson.Feature f = it.next();
-                    if (Objects.equals(f.getStringProperty(prop_featureid), newFeatureId)) {
-                        Log.d("SELECC", "MapDrawable layerFeaturesE " + it.toString() );
-                        it.remove();
+                if (layerFeaturesE != null) {
+                    Iterator<org.maplibre.geojson.Feature> it = layerFeaturesE.iterator();
+                    while (it.hasNext()) {
+                        org.maplibre.geojson.Feature f = it.next();
+                        if (Objects.equals(f.getStringProperty(prop_featureid), newFeatureId)) {
+                            Log.d("SELECC", "MapDrawable layerFeaturesE " + it.toString());
+                            it.remove();
+                        }
                     }
+                    selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(layerFeaturesE));
                 }
-                selectedEditedSource.setGeoJson(FeatureCollection.fromFeatures(layerFeaturesE));
             }
-
         }
     }
 
@@ -2755,7 +2757,21 @@ public class MapDrawable
 
     public boolean moveToPoint(LatLng point){
         if (editingObject != null) {
+
             editingObject.movePointTo(point);
+
+            mapContext.get().updateGeometryFromMaplibre(editingObject.editingFeature, originalSelectedFeature, editingObject);
+            editingObject.regenerateVertexFeatures();
+            editingObject.displayMiddlePoints(false, true);
+            LatLng pointReleased = editingObject.getSelectedPoint();
+
+            if (pointReleased != null)
+                setMarker(pointReleased);
+
+            if (editingObject  instanceof  MeasurmentLine)
+                updateMeasurmentCaptions(editingObject);
+
+
         }
         return true;
     }
