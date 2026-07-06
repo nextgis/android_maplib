@@ -1568,7 +1568,7 @@ public class VectorLayer
                             addChange(rowID, CHANGE_OPERATION_NEW);
                         }
 
-                        getContext().getContentResolver().notifyChange(resultUri, null, true);
+                        getContext().getContentResolver().notifyChange(resultUri, null, false);
                     }
                     return resultUri;
                 }
@@ -1610,7 +1610,7 @@ public class VectorLayer
                             if (hasNotFlags) {
                                 addChange(featureIdL, attachIdL, CHANGE_OPERATION_NEW);
                             }
-                            getContext().getContentResolver().notifyChange(resultUri, null, true);
+                            getContext().getContentResolver().notifyChange(resultUri, null, false);
                         }
                         return resultUri;
                     }
@@ -1739,7 +1739,7 @@ public class VectorLayer
                         if (hasNotFlags) {
                             addChange(NOT_FOUND, CHANGE_OPERATION_DELETE);
                         }
-                        getContext().getContentResolver().notifyChange(uri, null, true);
+                        getContext().getContentResolver().notifyChange(uri, null, false);
                     }
                 }
                 return result;
@@ -1775,7 +1775,7 @@ public class VectorLayer
                             addChange(featureIdL, CHANGE_OPERATION_DELETE);
                         }
 
-                        getContext().getContentResolver().notifyChange(uri, null, true);
+                        getContext().getContentResolver().notifyChange(uri, null, false);
                     }
                 }
                 return result;

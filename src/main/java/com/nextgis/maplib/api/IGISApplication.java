@@ -28,6 +28,7 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
+import android.content.Context;
 import android.location.Location;
 
 import com.nextgis.maplib.datasource.ngw.Connection;
@@ -251,4 +252,5 @@ public interface IGISApplication
 
     void updateLocation(Location location);
 
+    Context getSelfContext();
 }

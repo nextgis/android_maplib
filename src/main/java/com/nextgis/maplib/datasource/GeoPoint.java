@@ -23,6 +23,7 @@
 package com.nextgis.maplib.datasource;
 
 import android.util.JsonReader;
+import android.util.Log;
 
 import com.nextgis.maplib.util.GeoConstants;
 
@@ -217,9 +218,9 @@ public class GeoPoint
     public String toWKT(boolean full)
     {
         if (full) {
-            return String.format(Locale.US, "POINT (%.8f %.8f)", mX, mY);//"POINT ( " + mX + " " + mY + " )";
+            return String.format(Locale.US, "POINT (%s %s)", mX, mY);//"POINT ( " + mX + " " + mY + " )";
         } else {
-            return String.format(Locale.US, "%.8f %.8f", mX, mY);//mX + " " + mY;
+            return String.format(Locale.US, "%s %s", mX, mY);//mX + " " + mY;
         }
 
     }

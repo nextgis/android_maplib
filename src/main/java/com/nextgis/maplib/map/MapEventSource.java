@@ -339,16 +339,16 @@ public class MapEventSource
      */
     protected void onLayerDrawStarted()
     {
-        if (mListeners == null) {
-            return;
-        }
-
-        Bundle bundle = new Bundle();
-        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDrawStarted);
-
-        Message msg = new Message();
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+//        if (mListeners == null) {
+//            return;
+//        }
+//
+//        Bundle bundle = new Bundle();
+//        bundle.putInt(BUNDLE_TYPE_KEY, EVENT_onLayerDrawStarted);
+//
+//        Message msg = new Message();
+//        msg.setData(bundle);
+//        mHandler.sendMessage(msg);
     }
 
 

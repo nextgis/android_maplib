@@ -27,8 +27,10 @@ import android.accounts.Account;
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.SyncInfo;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -44,6 +46,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 
+import static com.nextgis.maplib.util.Constants.DEFAULT_SYNC_PERIOD;
 import static com.nextgis.maplib.util.Constants.JSON_END_DATE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_SIGNATURE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_START_DATE_KEY;
@@ -181,5 +184,15 @@ public class AccountUtil {
         public String url;
         public String login;
         public String password;
+    }
+
+    public static void saveSyncPeriodForAccount(Context context, String accountName, long syncPeriod){
+        final SharedPreferences mPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        mPreferences.edit().putLong(accountName + "_sync_period", syncPeriod).apply();
+    }
+
+    public static long getSyncPeriodForAccount(Context context, String accountName, long defValue){
+        final SharedPreferences mPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return mPreferences.getLong(accountName + "_sync_period", defValue);
     }
 }

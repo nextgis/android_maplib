@@ -233,15 +233,15 @@ public class NGWUtil
     }
 
 
-    public static Pair<Integer, Integer> getNgwVersion(Context context, String account) {
-        Pair<Integer, Integer> ver = new Pair<>(-1, -1);
-        try {
-            AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, account);
-            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
-        } catch (IOException | JSONException | NumberFormatException | IllegalStateException ignored) { }
-
-        return ver;
-    }
+//    public static Pair<Integer, Integer> getNgwVersion(Context context, String account) {
+//        Pair<Integer, Integer> ver = new Pair<>(-1, -1);
+//        try {
+//            AccountUtil.AccountData accountData = AccountUtil.getAccountData(context, account);
+//            ver = NGWUtil.getNgwVersion(accountData.url, accountData.login, accountData.password);
+//        } catch (IOException | JSONException | NumberFormatException | IllegalStateException ignored) { }
+//
+//        return ver;
+//    }
 
 
     public static Pair<Integer, Integer> getNgwVersion(

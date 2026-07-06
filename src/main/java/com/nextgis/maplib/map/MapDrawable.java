@@ -2569,7 +2569,7 @@ public class MapDrawable
 //        catch (Exception e) {
 //
 //        }
-        onLayerDrawStarted();
+        //onLayerDrawStarted();
 
         if (null != display && mDisplay != display) {
             mDisplay = display;

@@ -252,6 +252,7 @@ public class GeoGeometryFactory
         if (null == raw) {
             return null;
         }
+
         ByteArrayInputStream in = new ByteArrayInputStream(raw);
         DataInputStream dataInputStream = new DataInputStream(in);
         return fromDataStream(dataInputStream);

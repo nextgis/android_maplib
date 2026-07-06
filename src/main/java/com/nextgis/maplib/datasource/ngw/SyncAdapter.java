@@ -53,6 +53,7 @@ import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.NGWUtil;
 import com.nextgis.maplib.util.SettingsConstants;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,6 +131,7 @@ public class SyncAdapter
             SyncResult syncResult)
     {
 
+        Log.e("SYNC2S", "super.performSync for " + account.name );
         Log.d("SSYNC", "super.onPerformSync for " + account.name);
         
         ((IGISApplication)getContext().getApplicationContext()).setError(
@@ -274,6 +276,7 @@ public class SyncAdapter
             SyncResult syncResult,
             Bundle bundle)
     {
+        Log.e("SYNC2S", "sync syncAdapter account  " + account.name );
         Log.d("SSYNC", "sync syncAdapter account - " + account.name);
 
         HyperLog.v(Constants.TAG, "SyncAdapter: StartSynchronization");
@@ -371,21 +374,21 @@ public class SyncAdapter
         Log.d("SSYNC", "END sync syncAdapter account - " + account.name);
     }
 
-    @SuppressLint("MissingPermission")
-    public static void setSyncPeriod(
-            IGISApplication application,
-            Bundle extras,
-            long pollFrequency)
-    {
-        Context context = ((Context) application).getApplicationContext();
-        final AccountManager accountManager = AccountManager.get(context);
-        Log.d(TAG, "SyncAdapter: AccountManager.get(" + context + ")");
-
-//      for (Account account : accountManager.getAccountsByType(application.getAccountsType())) {
-//          ContentResolver.addPeriodicSync(account, application.getAuthority(), extras, pollFrequency);
-//      }
-
-    }
+//    @SuppressLint("MissingPermission")
+//    public static void setSyncPeriod(
+//            IGISApplication application,
+//            Bundle extras,
+//            long pollFrequency)
+//    {
+////        Context context = ((Context) application).getApplicationContext();
+////        final AccountManager accountManager = AccountManager.get(context);
+////        Log.d(TAG, "SyncAdapter: AccountManager.get(" + context + ")");
+//
+////      for (Account account : accountManager.getAccountsByType(application.getAccountsType())) {
+////          ContentResolver.addPeriodicSync(account, application.getAuthority(), extras, pollFrequency);
+////      }
+//
+//    }
 
     public boolean isCanceled()
     {
