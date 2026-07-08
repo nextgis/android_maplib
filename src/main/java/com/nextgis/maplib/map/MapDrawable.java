@@ -1155,6 +1155,8 @@ public class MapDrawable
 
     public void loadLayersToMaplibreMapLite(final  List<ILayer> allLayers, boolean skipUserLayers){
 
+
+        TrackLayer trackLayerSaved = null;
         Log.d("SELECC", "loadLayersToMaplibreMapLite");
 
         Style style = maplibreMap.get().getStyle();
@@ -1294,6 +1296,7 @@ public class MapDrawable
                     sourcesOrder.put(layer.getId(), new ArrayList<>());
                 } else if (iLayer instanceof TrackLayer) {
                     TrackLayer layer = (TrackLayer) iLayer;
+                    trackLayerSaved = layer;
                     layersType.put(layer.getId(), GT_TRACK_WA);
                     tracksFeatures.clear();
                     tracksFeatures.addAll(createFeatureListFromTrackLayer(layer));
@@ -1379,6 +1382,10 @@ public class MapDrawable
 
                 checkLayerVisibility(entry.getKey());
             }
+
+            if (trackLayerSaved != null && trackLayerSaved.getId() != 0)
+                checkLayerVisibility(trackLayerSaved.getId());
+
         }
     }
 
