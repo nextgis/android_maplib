@@ -131,6 +131,7 @@ public class SyncAdapter
             SyncResult syncResult)
     {
 
+        HyperLog.v(Constants.TAG, "xxx NGW onPerformSync for" + account.name );
         Log.e("SYNC2S", "super.performSync for " + account.name );
         Log.d("SSYNC", "super.onPerformSync for " + account.name);
         
@@ -276,6 +277,7 @@ public class SyncAdapter
             SyncResult syncResult,
             Bundle bundle)
     {
+        HyperLog.v(Constants.TAG, "xxx sync for" + account.name );
         Log.e("SYNC2S", "sync syncAdapter account  " + account.name );
         Log.d("SSYNC", "sync syncAdapter account - " + account.name);
 
@@ -346,6 +348,12 @@ public class SyncAdapter
             }
         }
 
+        String layersStr = "";
+        for (ILayer layer : layersToSync) {
+            layersStr = layersStr + layer.getName() + ", ";
+        }
+
+        HyperLog.v(Constants.TAG, "xxx sync for" + layersStr );
         for (ILayer layer : layersToSync) {
 //            Log.e("RRFRSH", "sync iterate for " + layer.getName());
 

@@ -655,6 +655,8 @@ public class NGWVectorLayer
             SyncResult syncResult)
     {
 
+        HyperLog.v(Constants.TAG, "xxx NGWVectorLayer sync " + getName() );
+
         Log.d("SSYNC", "sync of " + getName());
         syncResult.clear();
         if (0 != (mSyncType & Constants.SYNC_NONE) || mFields == null) {

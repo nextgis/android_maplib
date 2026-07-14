@@ -284,7 +284,7 @@ public class GeoEnvelope
     }
 
 
-    public final double getMinX()
+    public final Double getMinX()
     {
         return mMinX;
     }
@@ -296,7 +296,7 @@ public class GeoEnvelope
     }
 
 
-    public final double getMinY()
+    public final Double getMinY()
     {
         return mMinY;
     }
@@ -308,7 +308,7 @@ public class GeoEnvelope
     }
 
 
-    public final double getMaxX()
+    public final Double getMaxX()
     {
         return mMaxX;
     }
@@ -320,7 +320,7 @@ public class GeoEnvelope
     }
 
 
-    public final double getMaxY()
+    public final Double getMaxY()
     {
         return mMaxY;
     }
