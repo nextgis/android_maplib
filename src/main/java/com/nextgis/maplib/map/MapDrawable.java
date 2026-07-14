@@ -24,6 +24,7 @@ package com.nextgis.maplib.map;
 import static android.widget.Toast.LENGTH_LONG;
 
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.content.ContentUris;
@@ -149,6 +150,7 @@ import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
+import static com.nextgis.maplib.util.NetworkUtil.get;
 import static com.nextgis.maplib.util.NetworkUtil.getBaseUrlpart;
 import static com.nextgis.maplib.util.NetworkUtil.getHTTPBaseAuth;
 import static com.nextgis.maplib.util.SettingsConstants.KEY_PREF_DARK;
@@ -300,9 +302,9 @@ public class MapDrawable
         this.mapContext = new WeakReference<>(mapContext);
     }
 
-    public void setMaplibreMap(final MapLibreMap maplibreMap){
-        this.maplibreMap = new WeakReference<>(maplibreMap);
-    }
+//    public void setMaplibreMap(final MapLibreMap maplibreMap){
+//        this.maplibreMap = new WeakReference<>(maplibreMap);
+//    }
 
     public void setMaplibreMapView(final org.maplibre.android.maps.MapView maplibreMapView){
         this.maplibreMapView = new WeakReference<>(maplibreMapView);
@@ -512,6 +514,7 @@ public class MapDrawable
                         final String getBaseUrl = getBaseUrlpart(url);
                         final String resPart = "resource=" + extractResourceValue(url);
                         final String[] authPart = new String[4];
+                        // try get
                         authPart[0] = getBaseUrl;
                         authPart[1] = resPart;
                         authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
@@ -843,13 +846,26 @@ public class MapDrawable
                             sourcesOrder.put(layer.getId(), new ArrayList<>());
                         }
                     } else if (iLayer instanceof RemoteTMSLayer) {
+
+                        Connection found = null;
+                        String basicAuth = "no";
+                        if (!TextUtils.isEmpty(((RemoteTMSLayer) iLayer).mAccountName)){
+                            for (int i = 0; i < connections.getChildrenCount(); i++) {
+                                if (connections.getChild(i).getName().equals((((RemoteTMSLayer) iLayer).getAccountName()))) {
+                                    found = (Connection) connections.getChild(i);
+                                    basicAuth = getHTTPBaseAuth(found.getLogin(), found.getPassword());
+                                }
+                        }
+                        }
+
+
                         final String url = ((RemoteTMSLayer) iLayer).getURL();
                         final String getBaseUrl = getBaseUrlpart(url);
                         final String resPart = "resource=" + extractResourceValue(url);
                         final String[] authPart = new String[4];
                         authPart[0] = getBaseUrl;
                         authPart[1] = resPart;
-                        authPart[2] = "no";//no auth RemoteTMSLayer - geoservice map
+                        authPart[2] = basicAuth;
                         authPart[3] = iLayer.getPath().toString();
                         ((IGISApplication) getContext().getApplicationContext()).updateAuthPair(authPart);
 
@@ -1132,12 +1148,22 @@ public class MapDrawable
                         // call edit for collector
                         mapContext.get().setMapLayersLoaded();
                         mapContext.get().checkCreateIfNeed();
+
+                        if (! ((IGISApplication)getContext().getApplicationContext()).getBordersWasApply()
+                                && ((IGISApplication)getContext().getApplicationContext()).getPostponedExtent() != null){
+                            ((IGISApplication)getContext().getApplicationContext()).setBordersWasApply(true);
+                            zoomToExtent(((IGISApplication)getContext().getApplicationContext()).getPostponedExtent());
+                        }
                     }
                 });
 
                 // Set map style NG
                 ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(true);
-                maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
+
+                if (maplibreMap.get() == null) {
+                    Toast.makeText(getContext(), getContext().getString(R.string.strange_error), LENGTH_LONG).show();
+                } else
+                    maplibreMap.get().setStyle(new Style.Builder().fromJson(styleJson));
             });
         });
         executor.shutdown();

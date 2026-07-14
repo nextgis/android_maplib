@@ -31,6 +31,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
 
+import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.ngw.Connection;
 import com.nextgis.maplib.location.GpsEventSource;
 import com.nextgis.maplib.map.LayerFactory;
@@ -249,6 +250,16 @@ public interface IGISApplication
     void setPostponedLayerId(int layerId);
 
     int getPostponedLayerId();
+
+
+    void setBordersWasApply(boolean apply);
+
+    boolean getBordersWasApply();
+
+
+    void setPostponedExtent(GeoEnvelope geoEnvelope);
+
+    GeoEnvelope getPostponedExtent();
 
     void updateLocation(Location location);
 

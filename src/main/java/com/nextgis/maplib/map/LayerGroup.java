@@ -299,26 +299,27 @@ public class LayerGroup
     }
 
 
-//    public void replaceAllLayers(ArrayList<ILayer> newList)
-//    {
-//        ILayer trackLayer = null;
-//        synchronized (this) {
-//            for (ILayer layer : mLayers.values()){
-//                if (layer instanceof  TrackLayer){
-//                    trackLayer = layer;
-//                    break;
-//                }
-//            }
-//
-//            mLayers.clear();
-//
-//            if (trackLayer != null)
-//                newList.add(trackLayer);
-//
-//            for (ILayer iLayer : newList)
-//                mLayers.put(iLayer.getId(), iLayer);
-//
-//        }
+    public void replaceAllLayers(ArrayList<ILayer> newList)
+    {
+        ILayer trackLayer = null;
+        synchronized (this) {
+            for (ILayer layer : mLayers.values()){
+                if (layer instanceof  TrackLayer){
+                    trackLayer = layer;
+                    break;
+                }
+            }
+
+            mLayers.clear();
+
+            if (trackLayer != null)
+                newList.add(trackLayer);
+
+            for (ILayer iLayer : newList)
+                mLayers.put(iLayer.getId(), iLayer);
+
+        }
+    }
 //
 //
 ////        //save changes to file

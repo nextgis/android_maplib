@@ -65,7 +65,9 @@ public class RemoteTMSLayer
     protected static final String JSON_TILE_AGE_KEY = "tile_age";
     protected static final String JSON_IS_OFFLINELAYER_KEY = "is_offline_layer";
 
+    protected static final String JSON_ACCOUNT_KEY           = "account";
 
+    protected String mAccountName = "";
 
     protected       String       mURL;
     protected       NetworkUtil  mNet;
@@ -96,6 +98,18 @@ public class RemoteTMSLayer
         mLayerType = LAYERTYPE_REMOTE_TMS;
         mTileMaxAge = DEFAULT_TILE_MAX_AGE;
         setViewSize(100, 100);
+    }
+
+
+    public String getAccountName()
+    {
+        return mAccountName;
+    }
+
+
+    public void setAccountName(String accountName)
+    {
+        mAccountName = accountName;
     }
 
 
@@ -259,6 +273,8 @@ public class RemoteTMSLayer
 
         rootConfig.put(JSON_IS_OFFLINELAYER_KEY, mIsOfflineLayer);
 
+        rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
+
 
         return rootConfig;
     }
@@ -287,6 +303,10 @@ public class RemoteTMSLayer
 
         if(jsonObject.has(JSON_IS_OFFLINELAYER_KEY)) {
             mIsOfflineLayer = jsonObject.getBoolean(JSON_IS_OFFLINELAYER_KEY);
+        }
+
+        if (jsonObject.has(JSON_ACCOUNT_KEY)) {
+            mAccountName = jsonObject.getString(JSON_ACCOUNT_KEY);
         }
 
         analizeURL(mURL);
