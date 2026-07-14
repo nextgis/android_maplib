@@ -249,8 +249,8 @@ public class GISDisplay
         GeoEnvelope outEnv = new GeoEnvelope();
         RectF rect = new RectF();
         rect.set(
-                (float) env.getMinX(), (float) env.getMaxY(), (float) env.getMaxX(),
-                (float) env.getMinY());
+                 env.getMinX().floatValue(),  env.getMaxY().floatValue(), env.getMaxX().floatValue(),
+                 env.getMinY().floatValue());
 
         mTransformMatrix.mapRect(rect);
         outEnv.setMin(rect.left, rect.bottom);
@@ -702,8 +702,8 @@ public class GISDisplay
         GeoEnvelope outEnv = new GeoEnvelope();
         RectF rect = new RectF();
         rect.set(
-                (float) env.getMinX(), (float) env.getMaxY(), (float) env.getMaxX(),
-                (float) env.getMinY());
+                (float) env.getMinX().floatValue(), (float) env.getMaxY().floatValue(), (float) env.getMaxX().floatValue(),
+                (float) env.getMinY().floatValue());
 
         mInvertTransformMatrix.mapRect(rect);
         outEnv.setMin(rect.left, rect.top); // screen axis Y and geo axis Y are inverse

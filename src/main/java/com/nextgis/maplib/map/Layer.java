@@ -37,6 +37,7 @@ import org.json.JSONObject;
 import java.io.File;
 
 import static com.nextgis.maplib.util.Constants.*;
+import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 
 
 public class Layer extends Table

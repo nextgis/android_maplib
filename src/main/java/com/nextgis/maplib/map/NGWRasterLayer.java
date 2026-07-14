@@ -77,10 +77,12 @@ public class NGWRasterLayer extends RemoteTMSLayer implements INGWLayer {
         JSONObject rootConfig = super.toJSON();
         rootConfig.put(JSON_ID_KEY, mRemoteId);
         rootConfig.put(JSON_ACCOUNT_KEY, mAccountName);
-        rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
-        rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
-        rootConfig.put(Constants.JSON_BBOX_MAXY_KEY, mExtents.getMaxY());
-        rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
+        if  (mExtents.getMaxX() != null &&  mExtents.getMinX()!= null && mExtents.getMaxY()!= null && mExtents.getMinY()!= null) {
+            rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
+            rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
+            rootConfig.put(Constants.JSON_BBOX_MAXY_KEY, mExtents.getMaxY());
+            rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
+        }
 
         return rootConfig;
     }
