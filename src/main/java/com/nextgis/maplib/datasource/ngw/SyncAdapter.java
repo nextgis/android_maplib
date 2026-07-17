@@ -132,7 +132,7 @@ public class SyncAdapter
     {
 
         HyperLog.v(Constants.TAG, "xxx NGW onPerformSync for" + account.name );
-        Log.e("SYNC2S", "super.performSync for " + account.name );
+        Log.d("SYNC2S", "super.performSync for " + account.name );
         Log.d("SSYNC", "super.onPerformSync for " + account.name);
         
         ((IGISApplication)getContext().getApplicationContext()).setError(
@@ -278,7 +278,7 @@ public class SyncAdapter
             Bundle bundle)
     {
         HyperLog.v(Constants.TAG, "xxx sync for" + account.name );
-        Log.e("SYNC2S", "sync syncAdapter account  " + account.name );
+        Log.d("SYNC2S", "sync syncAdapter account  " + account.name );
         Log.d("SSYNC", "sync syncAdapter account - " + account.name);
 
         HyperLog.v(Constants.TAG, "SyncAdapter: StartSynchronization");
