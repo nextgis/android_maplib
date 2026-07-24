@@ -128,6 +128,7 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.latLngPointFromGeoPoint;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.layer_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.namePrefix;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.outline_namepart;
+import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_color;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_featureid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_layerid;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
@@ -302,9 +303,10 @@ public class MapDrawable
         this.mapContext = new WeakReference<>(mapContext);
     }
 
-//    public void setMaplibreMap(final MapLibreMap maplibreMap){
-//        this.maplibreMap = new WeakReference<>(maplibreMap);
-//    }
+    public void setMaplibreMap(final MapLibreMap maplibreMap){
+        if (maplibreMap != null)
+            this.maplibreMap = new WeakReference<>(maplibreMap);
+    }
 
     public void setMaplibreMapView(final org.maplibre.android.maps.MapView maplibreMapView){
         this.maplibreMapView = new WeakReference<>(maplibreMapView);
@@ -999,11 +1001,15 @@ public class MapDrawable
                         if (createSource) {
                             tracksLineSource = new GeoJsonSource("track-line-source", FeatureCollection.fromFeatures(tracksFeatures));
                             style.addSource(tracksLineSource);
+
+                            for (org.maplibre.geojson.Feature feature :tracksFeatures){
+                                Log.e("TTRK", feature.id() + " : " + feature.getStringProperty(prop_color));
+                            }
                         }
 
                         Layer trackLayer = new LineLayer( "track-line-layer", "track-line-source").
                                 withProperties(
-                                        PropertyFactory.lineColor("#0000FF"),
+                                        PropertyFactory.lineColor(Expression.get("color")),
                                         PropertyFactory.lineWidth(getMPLThinkness(5)));
                         style.addLayer(trackLayer);
 
@@ -1252,7 +1258,7 @@ public class MapDrawable
         // saved track line
         Layer trackLayer = new LineLayer( "track-line-layer", "track-line-source").
                 withProperties(
-                        PropertyFactory.lineColor("#0000FF"),
+                        PropertyFactory.lineColor(Expression.get("color")),
                         PropertyFactory.lineWidth(getMPLThinkness(5)));
         style.addLayer(trackLayer);
 
@@ -3219,6 +3225,12 @@ public class MapDrawable
                 if (tracksLineSource!=null)
                     tracksLineSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeatures));
 
+                for (org.maplibre.geojson.Feature feature :tracksFeatures){
+                    Log.e("TTRK", feature.id() + " : " + feature.getStringProperty(prop_color));
+                }
+
+
+
                 GeoJsonSource tracksLineFlagsSource = (GeoJsonSource)style.getSource("track-flag-source");
                 if (tracksLineFlagsSource!=null)
                     tracksLineFlagsSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeaturesFlags));
@@ -3456,6 +3468,8 @@ public class MapDrawable
         && editingObject.editingFeature.getStringProperty(prop_featureid).equals("-1"))
             editingObject.editingFeature.addStringProperty(prop_featureid, "" + newId);
     }
+
+
 
     // future update raster prop
 //    public void updateRasterLayerProperties(Integer layerid, int alpha, float contrast,

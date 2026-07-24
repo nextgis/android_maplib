@@ -111,7 +111,7 @@ public class TrackLayer
 
     private static String CONTENT_TYPE, CONTENT_TYPE_TRACKPOINTS, CONTENT_ITEM_TYPE;
 
-    protected static int    mColor = Color.LTGRAY;
+    protected static int    mColor = Color.RED;
     protected Cursor mCursor;
     String         mAuthority;
     SQLiteDatabase mSQLiteDatabase;
@@ -119,7 +119,7 @@ public class TrackLayer
     private Uri        mContentUriTracks, mContentUriTrackpoints;
     private MapContentProviderHelper    mMap;
     private Map<Integer, GeoLineString> mTracks;
-
+    private Map<Integer, Integer> mTracksColor;
 
     public TrackLayer(
             Context context,
@@ -165,6 +165,7 @@ public class TrackLayer
         mLayerType = Constants.LAYERTYPE_TRACKS;
         mRenderer = new TrackRenderer(this);
         mTracks = new HashMap<>();
+        mTracksColor = new HashMap<>();
     }
 
 
@@ -182,6 +183,14 @@ public class TrackLayer
         }
 
         return mTracks;
+    }
+
+    public Map<Integer, Integer> getTracksColor()
+    {
+        if (mTracks.size() == 0) {
+            reloadTracks(INSERT);
+        }
+        return mTracksColor;
     }
 
 
@@ -270,6 +279,7 @@ public class TrackLayer
         }
 
         mTracks.put(trackId, trackLine);
+        mTracksColor.put(trackId, getColor(trackId));
     }
 
 

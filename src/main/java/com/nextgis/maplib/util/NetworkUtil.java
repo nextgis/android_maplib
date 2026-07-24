@@ -320,7 +320,31 @@ public class NetworkUtil
         String method = conn.getRequestMethod();
         int code = conn.getResponseCode();
         String message = conn.getResponseMessage();
+
+        if (!(code == HttpURLConnection.HTTP_OK  || code ==  HttpURLConnection.HTTP_MOVED_PERM
+                    || (code == HttpURLConnection.HTTP_CREATED && method.equals(HTTP_POST)))) {
+            String errorBody = "";
+            InputStream inputStream = conn.getErrorStream();
+            if (inputStream != null) {
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[4096];
+                int len;
+
+                while ((len = inputStream.read(buffer)) != -1) {
+                    baos.write(buffer, 0, len);
+                }
+
+                errorBody = baos.toString("UTF-8");
+
+            }
+            Log.d(TAG, "HTTP ERROR code" +code + " " + message + "  " +errorBody );
+            HyperLog.v(Constants.TAG, "HTTP query error url" + conn.getURL() + " " +conn.getRequestMethod());
+            HyperLog.v(Constants.TAG, "HTTP query res: code" +code + " " + message + " " +errorBody) ;
+        }
+
         HttpResponse response = new HttpResponse(code, message);
+
 
         if (code == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
             if (method.equals("PUT") || method.equals("POST")) {

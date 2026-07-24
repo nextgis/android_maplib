@@ -113,7 +113,7 @@
     <string name="outofmemory">Out of Memory layer: </string>
     <string name="process_layer_hint">Load data on layer: </string>
     <string name="layer_not_editable">Insufficient permissions to edit the layer.</string>
-    <string name="layer_not_editable_url">Please contact with administrator</string>
+    <string name="layer_not_editable_url">Please contact your Web GIS administrator</string>
     <string name="strange_error">Something wrong. Please restart application</string>
 
 </resources>

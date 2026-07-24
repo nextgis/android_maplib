@@ -33,14 +33,30 @@ import static com.nextgis.maplib.util.Constants.JSON_ALPHA_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_COLOR_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_OUTALPHA_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_OUTCOLOR_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_TEXT_COLOR_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_TEXT_SIZE_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_WIDTH_KEY;
 
+import android.graphics.Color;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public abstract class Style implements IJSONStore, Cloneable {
+
+    public final static float SIZE_SMALL = 3;
+    public final static float SIZE_MEDIUM = 6;
+    public final static float SIZE_BIG = 10;
+
+    public final static ArrayList<Float> SIZES = new ArrayList<>(Arrays.asList(new Float[]{SIZE_SMALL, SIZE_MEDIUM, SIZE_BIG}));
+
     protected float mWidth;
     protected int mColor;
     protected int mOutColor;
     protected int mOuterAlpha = 255;
     protected int mInnerAlpha = 255;
+    protected int mTextColor = Color.BLACK;
+    protected float mTextSize = 3;
 
     public Style() {
         mWidth = 3;
@@ -53,6 +69,7 @@ public abstract class Style implements IJSONStore, Cloneable {
         obj.mOutColor = mOutColor;
         obj.mInnerAlpha = mInnerAlpha;
         obj.mOuterAlpha = mOuterAlpha;
+        obj.mTextColor = mTextColor;
         return obj;
     }
 
@@ -102,6 +119,8 @@ public abstract class Style implements IJSONStore, Cloneable {
         rootConfig.put(JSON_OUTCOLOR_KEY, mOutColor);
         rootConfig.put(JSON_ALPHA_KEY, mInnerAlpha);
         rootConfig.put(JSON_OUTALPHA_KEY, mOuterAlpha);
+        rootConfig.put(JSON_TEXT_COLOR_KEY, mTextColor);
+        rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
         return rootConfig;
     }
 
@@ -112,6 +131,8 @@ public abstract class Style implements IJSONStore, Cloneable {
         mOutColor = jsonObject.optInt(JSON_OUTCOLOR_KEY, mColor);
         mInnerAlpha = jsonObject.optInt(JSON_ALPHA_KEY, 255);
         mOuterAlpha = jsonObject.optInt(JSON_OUTALPHA_KEY, 255);
+        mTextColor = jsonObject.optInt(JSON_TEXT_COLOR_KEY, Color.BLACK);
+        mTextSize = (float) jsonObject.optDouble(JSON_TEXT_SIZE_KEY, 3);
     }
 
     public int getAlpha() {
@@ -128,5 +149,21 @@ public abstract class Style implements IJSONStore, Cloneable {
 
     public void setOutAlpha(int alpha) {
         mOuterAlpha = alpha;
+    }
+
+    public int getTextColor() {
+        return mTextColor;
+    }
+
+    public void setTextColor(int color) {
+        mTextColor = color;
+    }
+
+    public float getTextSize() {
+        return mTextSize;
+    }
+
+    public void setTextSize(float size) {
+        mTextSize = size;
     }
 }

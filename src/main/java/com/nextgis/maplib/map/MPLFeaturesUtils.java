@@ -182,6 +182,8 @@ public class MPLFeaturesUtils {
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFromTrackLayer(final TrackLayer layer) {
         Map<Integer, GeoLineString> tracks = layer.getTracks();
+        Map<Integer, Integer> tracksColor = layer.getTracksColor();
+
         List<org.maplibre.geojson.Feature> lineFeatures = new ArrayList<>();
 
         for (Map.Entry<Integer, GeoLineString> entry : tracks.entrySet()) {
@@ -189,13 +191,16 @@ public class MPLFeaturesUtils {
             LineString lineString = getLineString(entry.getValue());
             Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
             lineFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
-            lineFeatures.add(lineFeature);
+            lineFeature.addStringProperty(prop_color, String.valueOf(
+                    String.format("#%06X", (0xFFFFFF & tracksColor.get(entry.getKey())))));
+             lineFeatures.add(lineFeature);
         }
         return lineFeatures;
     }
 
     static public List<org.maplibre.geojson.Feature> createFeatureListFlagsFromTrackLayer(final TrackLayer layer) {
         Map<Integer, GeoLineString> tracks = layer.getTracks();
+
         List<org.maplibre.geojson.Feature> pointsFeatures = new ArrayList<>();
 
         for (Map.Entry<Integer, GeoLineString> entry : tracks.entrySet()) {
@@ -617,16 +622,15 @@ public class MPLFeaturesUtils {
             com.nextgis.maplib.display.Style style,
             Feature feature,
             int geoType ) {
-        switch (geoType) {
 
+        float textSize = (style.getTextSize() + 3) * 3;
+        feature.addNumberProperty( prop_text_textsize,textSize );
+        feature.addStringProperty(prop_text_color, getColorName(style.getTextColor()) );
+
+        switch (geoType) {
             case GTPoint:
             case GTMultiPoint:
                 SimpleMarkerStyle ms = (SimpleMarkerStyle) style;
-
-                feature.addStringProperty(prop_text_color, getColorName(ms.getTextColor()) );
-
-                float textSize = (ms.getTextSize() + 3) * 3;
-                feature.addNumberProperty( prop_text_textsize,textSize );
 
                 int align = ms.getTextAlignment();
                 feature.addStringProperty(prop_text_textanchor,getTextAnchor(align));
@@ -643,12 +647,11 @@ public class MPLFeaturesUtils {
                 break;
             case GTLineString:
             case GTMultiLineString:
+
                 feature.addStringProperty(
                         prop_color_fill,
                         getColorName(style.getColor()));
-                feature.addStringProperty(
-                        prop_text_color,
-                        getColorName(style.getOutColor()));
+
                 feature.addNumberProperty(
                         prop_thinkness,
                         getMPLThinkness(style.getWidth()));
@@ -936,13 +939,10 @@ public class MPLFeaturesUtils {
         }
         else
             vectorSource.setGeoJson(FeatureCollection.fromFeatures(layerFeatures));
-
         sourceHashMap.put(layerPath, vectorSource);
 
         if (addPolyTextSource){
-
             List<Feature> points =  convertToPointFeatures(layerFeatures);
-
             GeoJsonSource vectorTextSource = (GeoJsonSource) style.getSource(layerPath + source_polygon_text);
             if (vectorTextSource == null) {
                 vectorTextSource = new GeoJsonSource(layerPath + source_polygon_text, FeatureCollection.fromFeatures(points));
@@ -1111,16 +1111,16 @@ public class MPLFeaturesUtils {
             alpha = layerStyle.getAlpha() / 256.0f;
             thinkness = layerStyle.getWidth();
 
+            textColor = (layerStyle).getTextColor();
+
             if (layerStyle instanceof SimpleMarkerStyle){ // dots
                 rasuis = ((SimpleMarkerStyle)layerStyle).getSize();
                 type = ((SimpleMarkerStyle)layerStyle).getType();
                 textAlignment = ((SimpleMarkerStyle) layerStyle).getTextAlignment();
-                textSize = ((SimpleMarkerStyle) layerStyle).getTextSize();
-                textColor = ((SimpleMarkerStyle) layerStyle).getTextColor();
             }
+            textSize = ( layerStyle).getTextSize();
             if (layerStyle instanceof SimpleLineStyle){ //line
                 type = ((SimpleLineStyle)layerStyle).getType();
-                textColor = ( layerStyle).getOutColor();
             }
             if (layerStyle instanceof SimplePolygonStyle){ //line
                 isFilled = ((SimplePolygonStyle)layerStyle ).isFill();

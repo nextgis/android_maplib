@@ -1957,8 +1957,12 @@ public class NGWVectorLayer
             if (cursor.moveToFirst()) {
                 // feature to string
                 String payload = cursorToJson(cursor);
+
+
+                HyperLog.v(Constants.TAG, "add Feature payload: " +payload) ;
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
+
                 }
 
                 // post to NGW
@@ -2105,6 +2109,8 @@ public class NGWVectorLayer
             if (cursor.moveToFirst()) {
                 // get payload from cursor
                 String payload = cursorToJson(cursor);
+
+                HyperLog.v(Constants.TAG, "change Feature payload: " + payload) ;
                 if (Constants.DEBUG_MODE) {
                     Log.d(Constants.TAG, "payload: " + payload);
                 }
@@ -2259,7 +2265,7 @@ public class NGWVectorLayer
      */
     private String millisToNGWString(long millis, int fieldType) {
         if (millis == 0) {
-            return "";
+            return null; // todo
         }
 
         SimpleDateFormat sdf;

@@ -49,7 +49,7 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
     protected boolean mFill;
     protected String mField;
     protected String mText;
-    protected Float mTextSize = 12f;
+    protected Float mTextSize = 10f; // default change to 10 - cos its reset on run due to default sizes = 3  6   10
 
     protected static final String JSON_FILL_KEY = "fill";
 
@@ -181,10 +181,6 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
             mText = text;
         else
             mText = null;
-    }
-
-    public Float getTextSize() {
-        return mTextSize;
     }
 
     public void setTextSize(Float textSize) {

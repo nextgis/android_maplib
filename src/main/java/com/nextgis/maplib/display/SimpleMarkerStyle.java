@@ -55,10 +55,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
     public final static int MarkerEditStyleCircle = 7;
     public final static int MarkerStyleCrossedBox = 8;
 
-    public final static float SIZE_SMALL = 3;
-    public final static float SIZE_MEDIUM = 6;
-    public final static float SIZE_BIG = 10;
-    public final static ArrayList<Float> SIZES = new ArrayList<>(Arrays.asList(new Float[]{SIZE_SMALL, SIZE_MEDIUM, SIZE_BIG}));
+
 
     public final static int ALIGN_TOP = 0;
     public final static int ALIGN_TOP_RIGHT = 1;
@@ -72,13 +69,13 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
             new Integer[]{ALIGN_TOP, ALIGN_TOP_RIGHT, ALIGN_RIGHT, ALIGN_BOTTOM_RIGHT, ALIGN_BOTTOM, ALIGN_BOTTOM_LEFT, ALIGN_LEFT, ALIGN_TOP_LEFT}));
 
     protected int mType;
-    protected float mSize, mTextSize = 3;
+    protected float mSize = 3;
     protected Paint mOutPaint;
     protected Paint mFillPaint;
     protected String mField;
     protected String mText;
     protected int mTextAlignment;
-    protected int mTextColor = Color.BLACK;
+
 
     public SimpleMarkerStyle() {
         super();
@@ -103,7 +100,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         obj.mSize = mSize;
         obj.mTextSize = mTextSize;
         obj.mTextAlignment = mTextAlignment;
-        obj.mTextColor = mTextColor;
         obj.mText = mText;
         obj.mField = mField;
         return obj;
@@ -332,14 +328,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mSize = size;
     }
 
-    public float getTextSize() {
-        return mTextSize;
-    }
-
-    public void setTextSize(float size) {
-        mTextSize = size;
-    }
-
     public int getTextAlignment() {
         return mTextAlignment;
     }
@@ -348,13 +336,6 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         mTextAlignment = alignment;
     }
 
-    public int getTextColor() {
-        return mTextColor;
-    }
-
-    public void setTextColor(int color) {
-        mTextColor = color;
-    }
 
     @Override
     public void setColor(int color) {
@@ -389,9 +370,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         rootConfig.put(JSON_NAME_KEY, "SimpleMarkerStyle");
         rootConfig.put(JSON_TYPE_KEY, mType);
         rootConfig.put(JSON_SIZE_KEY, mSize);
-        rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
         rootConfig.put(JSON_TEXT_ALIGN_KEY, mTextAlignment);
-        rootConfig.put(JSON_TEXT_COLOR_KEY, mTextColor);
 
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
@@ -408,9 +387,7 @@ public class SimpleMarkerStyle extends Style implements ITextStyle {
         super.fromJSON(jsonObject);
         mType = jsonObject.getInt(JSON_TYPE_KEY);
         mSize = (float) jsonObject.getDouble(JSON_SIZE_KEY);
-        mTextSize = (float) jsonObject.getDouble(JSON_TEXT_SIZE_KEY);
         mTextAlignment = jsonObject.getInt(JSON_TEXT_ALIGN_KEY);
-        mTextColor = jsonObject.getInt(JSON_TEXT_COLOR_KEY);
 
         if (jsonObject.has(JSON_DISPLAY_NAME)) {
             mText = jsonObject.getString(JSON_DISPLAY_NAME);
