@@ -269,7 +269,7 @@ public class MapUtil {
         return result;
     }
 
-    public static boolean isZippedGeoJSON(Context context, AtomicReference<Uri> uri) {
+    public static boolean isZippedWithExtension(Context context, AtomicReference<Uri> uri, String targetExtension) {
         try {
             InputStream inputStream = context.getContentResolver().openInputStream(uri.get());
             if (inputStream == null)
@@ -280,7 +280,7 @@ public class MapUtil {
             ZipEntry ze;
 
             while ((ze = zis.getNextEntry()) != null) {
-                if (ze.getName().toLowerCase().endsWith(".geojson")) {
+                if (ze.getName().toLowerCase().endsWith(targetExtension)) { //".geojson"
                     File temp = prepareTempDir(context, null, false);
                     FileUtil.unzipEntry(zis, ze, buffer, temp);
                     temp = new File(temp, ze.getName());

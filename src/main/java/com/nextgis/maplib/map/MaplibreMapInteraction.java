@@ -1,5 +1,6 @@
 package com.nextgis.maplib.map;
 
+import android.content.Context;
 import android.graphics.PointF;
 
 import com.nextgis.maplib.datasource.Feature;
@@ -45,6 +46,8 @@ public interface MaplibreMapInteraction {
 
     // called after map layers loaded
     public void setMapLayersLoaded();
+
+    public Context getSelfContext();
 
 
 

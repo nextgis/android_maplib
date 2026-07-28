@@ -135,7 +135,6 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_order;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_polygon_text;
-import static com.nextgis.maplib.util.Constants.DRAW_FINISH_ID;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
 import static com.nextgis.maplib.util.Constants.MESSAGE_INTENT_STYLING;
 import static com.nextgis.maplib.util.Constants.TAG;
@@ -149,6 +148,8 @@ import static com.nextgis.maplib.util.GeoConstants.GTPolygon;
 import static com.nextgis.maplib.util.GeoConstants.GT_MEASURMENT;
 import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
+import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_MBTILES_RASTER;
+import static com.nextgis.maplib.util.MbTilesInfo.MBTILES_FILENAME;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
 import static com.nextgis.maplib.util.NetworkUtil.get;
@@ -169,6 +170,7 @@ import org.maplibre.android.annotations.IconFactory;
 import org.maplibre.android.camera.CameraUpdateFactory;
 import org.maplibre.android.geometry.LatLng;
 import org.maplibre.android.geometry.LatLngBounds;
+import org.maplibre.android.maps.MapFragment;
 import org.maplibre.android.maps.MapLibreMap;
 import org.maplibre.android.maps.MapView;
 import org.maplibre.android.maps.Projection;
@@ -181,9 +183,12 @@ import org.maplibre.android.style.layers.Layer;
 import org.maplibre.android.style.layers.LineLayer;
 import org.maplibre.android.style.layers.Property;
 import org.maplibre.android.style.layers.PropertyFactory;
+import org.maplibre.android.style.layers.RasterLayer;
 import org.maplibre.android.style.layers.SymbolLayer;
 import org.maplibre.android.style.sources.GeoJsonSource;
+import org.maplibre.android.style.sources.RasterSource;
 import org.maplibre.android.style.sources.Source;
+import org.maplibre.android.style.sources.TileSet;
 import org.maplibre.geojson.FeatureCollection;
 import org.maplibre.geojson.LineString;
 import org.maplibre.geojson.MultiLineString;
@@ -242,6 +247,9 @@ public class MapDrawable
     GeoJsonSource vertexSource = null;      // edit points  //
 
     FillLayer fillPolyEditLayer = null; // fill poly on edit layer (while on move points)
+
+    String errorMessage = null;
+
 
     public org.maplibre.geojson.Feature hiddedFeature = null;
     Long hiddedFeatureId = null;
@@ -588,7 +596,21 @@ public class MapDrawable
                     } else if (iLayer instanceof LocalTMSLayer) {
                         geoType = GT_RASTER_WA;
                         LocalTMSLayer layer = (LocalTMSLayer) iLayer;
-                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+
+                        if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER){
+                            // check file
+                            File fileSource = new File((layer).getPath().toString() + "/" + MBTILES_FILENAME);
+                            if (!fileSource.exists()){
+                                errorMessage = mapContext.get()
+                                        .getSelfContext()
+                                        .getString(R.string.mbtiles_problem_load_maplibre)
+                                        + iLayer.getName();
+                            }
+                        }
+                        if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER)
+                            rasterLayersURLMap.put(layer.getId(), "mbtiles://" + (layer).getPath().toString() + "/" + MBTILES_FILENAME);
+                        else
+                            rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                         rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                     }
 
@@ -617,7 +639,7 @@ public class MapDrawable
             } catch (OutOfMemoryError outOfMemoryError) {
                 if (mapContext.get() != null) {
                     String layerName = (crashLayer == null ? "null" : crashLayer.getName());
-                    AlertDialog builder = new AlertDialog.Builder(((Fragment) mapContext.get()).getActivity())
+                    AlertDialog builder = new AlertDialog.Builder((mapContext.get().getSelfContext()))
                             .setTitle("MemoryError")
                             .setMessage(((Fragment) mapContext.get()).getActivity().getString(R.string.outofmemory) + layerName)
                             .setPositiveButton(android.R.string.ok, null)
@@ -767,6 +789,7 @@ public class MapDrawable
         final List<org.maplibre.geojson.Feature> tracksFeatures = new ArrayList<>();
         final List<org.maplibre.geojson.Feature> tracksFlagsFeatures = new ArrayList<>();
 
+
         executor.execute(() -> {
 
             TrackLayer trackLayerNGW = null;
@@ -885,11 +908,24 @@ public class MapDrawable
                         sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
                         sourcesOrder.put(layer.getId(), new ArrayList<>());
                     } else if (iLayer instanceof LocalTMSLayer) {
+
                         TMSLayer layer = (TMSLayer) iLayer;
+                        if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER){
+                            // check file
+                            File fileSource = new File((layer).getPath().toString() + "/" + MBTILES_FILENAME);
+                            if (!fileSource.exists()){
+                                errorMessage = mapContext.get().getSelfContext().getString(R.string.mbtiles_problem_load_maplibre) + iLayer.getName();
+                                continue;
+                            }
+                        }
+
                         layersType.put(layer.getId(), GT_RASTER_WA);
                         layersPath.put(layer.getId(), layer.getPath().toString());
 
-                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                        if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER)
+                            rasterLayersURLMap.put(layer.getId(), "mbtiles://" + (layer).getPath().toString() + "/" + MBTILES_FILENAME);
+                        else
+                            rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                         rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                         sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
                         sourcesOrder.put(layer.getId(), new ArrayList<>());
@@ -1116,6 +1152,16 @@ public class MapDrawable
                             checkLayerVisibility(entry.getKey());
                         }
 
+//                        //String pmTilesPath = "mbtiles:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/input.mbtiles";
+//                        String pmTilesPath = "mbtiles:///storage/emulated/0/Android/data/com.nextgis.mobile.debug/files/map/OSM-OpenCPN2-MagellanStrait.mbtiles";
+//
+//                        TileSet tileSet = new  TileSet("tileformat", pmTilesPath);
+//                        // add mbtiles
+//                        RasterSource sourceMB = new RasterSource("raster-mbtiles-source", pmTilesPath, 256);
+//                        style.addSource(sourceMB);
+//                        RasterLayer layerBM = new RasterLayer("raster-pmtiles-layer", "raster-mbtiles-source");
+//                        style.addLayer(layerBM);
+
                         ((IGISApplication)getContext().getApplicationContext()).setGetingStyleInProgress(false);
                         mapContext.get().changeProgress(((IGISApplication)getContext().getApplicationContext()).getGetingStyleInProgress());
 
@@ -1160,6 +1206,22 @@ public class MapDrawable
                             ((IGISApplication)getContext().getApplicationContext()).setBordersWasApply(true);
                             zoomToExtent(((IGISApplication)getContext().getApplicationContext()).getPostponedExtent());
                         }
+
+
+                        if (errorMessage!= null){
+                            final String messaage = new String(errorMessage);
+                            if (mapContext.get() != null) {
+                                AlertDialog builder = new AlertDialog.Builder((mapContext.get().getSelfContext()))
+                                        .setTitle("Error")
+                                        .setMessage(messaage)
+                                        .setPositiveButton(android.R.string.ok, null)
+                                        .show();
+                            } else
+                                Toast.makeText(getContext().getApplicationContext(),
+                                        messaage,LENGTH_LONG).show();
+                            errorMessage = null;
+                        }
+
                     }
                 });
 
@@ -1387,9 +1449,21 @@ public class MapDrawable
                     sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
                     sourcesOrder.put(layer.getId(), new ArrayList<>());
                 } else if (iLayer instanceof LocalTMSLayer) {
+
                     TMSLayer layer = (TMSLayer) iLayer;
+                    if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER){
+                        // check file
+                        File fileSource = new File((layer).getPath().toString() + "/" + MBTILES_FILENAME);
+                        if (!fileSource.exists()){
+                            errorMessage = mapContext.get().getSelfContext().getString(R.string.mbtiles_problem_load_maplibre) + iLayer.getName();
+                            continue;
+                        }
+                    }
                     layersType.put(layer.getId(), GT_RASTER_WA);
-                    rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
+                    if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER)
+                        rasterLayersURLMap.put(layer.getId(), "mbtiles://" + (layer).getPath().toString() + "/" + MBTILES_FILENAME);
+                    else
+                        rasterLayersURLMap.put(layer.getId(), "file://" + (layer).getPath().toString() + "/{z}/{x}/{y}.tile");
                     rasterLayersTmsTypeMap.put(layer.getId(), layer.getTMSType());
                     sourceFeaturesHashMap.put(layer.getId(), new ArrayList<>());
                     sourcesOrder.put(layer.getId(), new ArrayList<>());

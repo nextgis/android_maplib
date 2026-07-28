@@ -113,7 +113,17 @@
     <string name="outofmemory">Out of Memory layer: </string>
     <string name="process_layer_hint">Load data on layer: </string>
     <string name="layer_not_editable">Insufficient permissions to edit the layer.</string>
-    <string name="layer_not_editable_url">Please contact your Web GIS administrator</string>
+
+    <string name="layer_not_editable_url">contact Web GIS administrator.</string>
+
+    <string name="resource_no_perm">Access denied. Cannot add the requested layer. Please </string>
+
+
     <string name="strange_error">Something wrong. Please restart application</string>
+
+    <string name="mbtiles_problem_load_maplibre">Maplibre problem on load mbtiles layer</string>
+    <string name="mbtiles_problem_not_found">No file for mbtiles layer</string>
+    <string name="mbtiles_problem_vector">Only MBTiles with raster data supported.</string>
+    <string name="mbtiles_problem_integry">mbtiles SQLite integrity check failed</string>
 
 </resources>

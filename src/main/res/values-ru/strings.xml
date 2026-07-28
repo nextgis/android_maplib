@@ -111,7 +111,14 @@
     <string name="outofmemory">Нехватка памяти при загрузке слоя: </string>
     <string name="process_layer_hint">Загрузка данных для слоя: </string>
     <string name="layer_not_editable">Недостаточно прав для редактирования слоя. </string>
-    <string name="layer_not_editable_url">Обратитесь к администратору Веб ГИС</string>
+
+    <string name="resource_no_perm">Недостаточно прав. Невозможно добавить слой. Вы можете </string>
+    <string name="layer_not_editable_url">связаться с администратором Веб ГИС</string>
+
     <string name="strange_error">Что-то пошло не так, перезапустите приложение</string>
 
+    <string name="mbtiles_problem_vector">Поддерживаются только MBTiles с растровыми данными.</string>
+    <string name="mbtiles_problem_load_maplibre">Проблема у Maplibre при загрузке mbtiles слоя</string>
+    <string name="mbtiles_problem_not_found">Файл для mbtiles не найден</string>
+    <string name="mbtiles_problem_integry">mbtiles файл поврежден - SQLite integrity check failed</string>
 </resources>

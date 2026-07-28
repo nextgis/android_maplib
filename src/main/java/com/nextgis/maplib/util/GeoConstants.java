@@ -38,6 +38,7 @@ public interface GeoConstants
      */
     int TMSTYPE_NORMAL = 1;
     int TMSTYPE_OSM    = 2;
+    int TMSTYPE_MBTILES_RASTER    = 3;
 
     int DEFAULT_MAX_ZOOM = 25;
     int DEFAULT_CACHE_MAX_ZOOM = 18;

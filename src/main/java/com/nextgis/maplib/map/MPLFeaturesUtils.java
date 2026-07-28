@@ -451,6 +451,8 @@ public class MPLFeaturesUtils {
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
 
             GeoPolygon geoPolygonGeometry = (GeoPolygon) feature.getGeometry();
+            if (geoPolygonGeometry == null)
+                continue;
             org.maplibre.geojson.Feature polyFeature = getFeatureFromNGFeaturePolygon(geoPolygonGeometry);
             polyFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
             polyFeature.addStringProperty(prop_order, String.valueOf(i));
@@ -921,7 +923,7 @@ public class MPLFeaturesUtils {
                         }
                     }
 
-                    rasterSource = new RasterSource(layerPath,tileSet, 256 );
+                    rasterSource = new RasterSource(layerPath, tileSet, 256 );
                     style.addSource(rasterSource);
                 }
             return;
@@ -1064,6 +1066,7 @@ public class MPLFeaturesUtils {
                     rasterLayer.setMaxZoom(maxZoom + 1);
 
                 if (iLayer != null && iLayer instanceof  TMSLayer) {
+                    // future settings for raster
 //                    TMSRenderer tmsRenderer = (TMSRenderer) ((TMSLayer) iLayer).getRenderer();
 //                    float alpha = tmsRenderer.getAlpha() / 255.0f; // stored value 0 - 255 // need for maplibre 0 - 1
 //                    float contrast = (tmsRenderer.getContrast() - 1) ; //stored value 0 - 100 ,  needed -1  +1

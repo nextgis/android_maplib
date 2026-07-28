@@ -24,6 +24,8 @@
 package com.nextgis.maplib.map;
 
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.util.Log;
@@ -31,10 +33,12 @@ import android.util.Log;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IJSONStore;
 import com.nextgis.maplib.api.IProgressor;
+import com.nextgis.maplib.datasource.Geo;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.display.TMSRenderer;
 import com.nextgis.maplib.util.Constants;
 import com.nextgis.maplib.util.FileUtil;
+import com.nextgis.maplib.util.MbTilesInfo;
 import com.nextgis.maplib.util.NGException;
 import com.nextgis.maplib.util.NetworkUtil;
 
@@ -42,6 +46,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -50,7 +55,14 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static com.nextgis.maplib.util.Constants.JSON_MAX_LAT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MAX_LON_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MIN_LAT_KEY;
+import static com.nextgis.maplib.util.Constants.JSON_MIN_LON_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
+import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
+import static com.nextgis.maplib.util.MbTilesInfo.MBTILES_FILENAME;
+import static com.nextgis.maplib.util.MbTilesInfo.checkMbTiles;
 
 
 public abstract class TMSLayer
@@ -59,6 +71,7 @@ public abstract class TMSLayer
     protected static final String JSON_TMSTYPE_KEY     = "tms_type";
     protected static final String JSON_CACHE_SIZE_MULT = "cache_size_multiply";
     public static final String TILE_EXT = ".tile";
+
 
     protected int mTMSType;
     protected static final int HTTP_SEPARATE_THREADS = 2;
@@ -137,6 +150,13 @@ public abstract class TMSLayer
             rootConfig.put(JSON_RENDERERPROPS_KEY, jsonStore.toJSON());
         }
 
+        if  (mExtents.getMaxX() != null &&  mExtents.getMinX()!= null && mExtents.getMaxY()!= null && mExtents.getMinY()!= null) {
+            rootConfig.put(Constants.JSON_BBOX_MAXX_KEY, mExtents.getMaxX());
+            rootConfig.put(Constants.JSON_BBOX_MINX_KEY, mExtents.getMinX());
+            rootConfig.put(Constants.JSON_BBOX_MAXY_KEY, mExtents.getMaxY());
+            rootConfig.put(Constants.JSON_BBOX_MINY_KEY, mExtents.getMinY());
+        }
+
 
         rootConfig.put(JSON_CACHE_SIZE_MULT, mCacheSizeMult);
         return rootConfig;
@@ -164,6 +184,11 @@ public abstract class TMSLayer
             Log.d(Constants.TAG, "Raster layer " + getName() + " mTMSType " + mTMSType);
             Log.d(Constants.TAG, "Raster layer " + getName() + " mCacheSizeMult " + mCacheSizeMult);
         }
+
+        mExtents.setMaxX(jsonObject.optDouble(Constants.JSON_BBOX_MAXX_KEY, MERCATOR_MAX));
+        mExtents.setMinX(jsonObject.optDouble(Constants.JSON_BBOX_MINX_KEY, -MERCATOR_MAX));
+        mExtents.setMaxY(jsonObject.optDouble(Constants.JSON_BBOX_MAXY_KEY, MERCATOR_MAX));
+        mExtents.setMinY(jsonObject.optDouble(Constants.JSON_BBOX_MINY_KEY, -MERCATOR_MAX));
     }
 
 
@@ -186,12 +211,10 @@ public abstract class TMSLayer
         setCacheSizeMultiply(mCacheSizeMult);
     }
 
-
     public int getCacheSizeMultiply()
     {
         return mCacheSizeMult;
     }
-
 
     public void setCacheSizeMultiply(int cacheSizeMult)
     {
@@ -278,6 +301,65 @@ public abstract class TMSLayer
     public void fillFromNgrc(Uri uri, IProgressor progressor) throws IOException, NumberFormatException, SecurityException, NGException {
         fillFromZipInt(uri, progressor);
         load();
+    }
+
+
+    public void fillFromMBTiles(Uri uri, IProgressor progressor, boolean isDirectMBtilesLoad) throws IOException, NumberFormatException, SecurityException, NGException {
+        fillForMBTilesFromFile(uri, progressor);
+
+        File mbtileFile = new File(mPath, MBTILES_FILENAME);
+        MbTilesInfo checkMbTiles = checkMbTiles(mbtileFile, getContext());
+
+        if (checkMbTiles.raster) {
+            if (checkMbTiles.maxZoom > 0 && checkMbTiles.maxZoom < 26)
+                setMaxZoom(checkMbTiles.maxZoom);
+            if (checkMbTiles.minZoom > 0 && checkMbTiles.minZoom < 26)
+                setMinZoom(checkMbTiles.minZoom);
+            if (checkMbTiles.boundsValid){
+                double x = Geo.wgs84ToMercatorSphereX(checkMbTiles.west);
+                double y = Geo.wgs84ToMercatorSphereY(checkMbTiles.south);
+                mExtents.setMin(x, y);
+
+                x = Geo.wgs84ToMercatorSphereX(checkMbTiles.east);
+                y = Geo.wgs84ToMercatorSphereY(checkMbTiles.north);
+                mExtents.setMax(x, y);
+
+            }
+            save();
+
+            load();
+        } else
+        if (checkMbTiles.vector)
+            throw new NGException(getContext().getString(R.string.mbtiles_problem_vector));
+         else
+            throw new NGException(checkMbTiles.error);
+    }
+
+    // copy mbtiles file to layer folder with name from MBTILES_FILENAME const
+    protected void fillForMBTilesFromFile(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
+        InputStream inputStream;
+        inputStream = mContext.getContentResolver().openInputStream(uri);
+
+        if (inputStream == null)
+            throw new NGException(mContext.getString(R.string.error_download_data));
+
+        int streamSize = inputStream.available();
+        if (null != progressor)
+            progressor.setMax(streamSize);
+
+        byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+
+        if (!mPath.exists())
+            mPath.mkdirs();
+
+
+        File outputFile = new File(mPath, MBTILES_FILENAME);
+        if (!outputFile.getParentFile().exists()) {
+            FileUtil.createDir(outputFile.getParentFile());
+        }
+        FileOutputStream fout = new FileOutputStream(outputFile);
+        FileUtil.copyStream(inputStream, fout, buffer, Constants.IO_BUFFER_SIZE);
+
     }
 
 }
