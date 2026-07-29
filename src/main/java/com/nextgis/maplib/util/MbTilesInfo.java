@@ -7,6 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 import com.nextgis.maplib.R;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class MbTilesInfo {
 
@@ -149,4 +152,54 @@ public class MbTilesInfo {
 
         return info;
     }
+
+
+    public static boolean isSQLiteFile(File file) {
+        if (file == null || !file.isFile() || file.length() < 100)
+            return false;
+
+        byte[] magic = new byte[16];
+
+        try (FileInputStream in = new FileInputStream(file)) {
+            if (in.read(magic) != 16)
+                return false;
+
+            String header = new String(magic, StandardCharsets.US_ASCII);
+            return "SQLite format 3\u0000".equals(header);
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static boolean isValidSQLite(File file) {
+        SQLiteDatabase db = null;
+
+        try {
+            db = SQLiteDatabase.openDatabase(
+                    file.getAbsolutePath(),
+                    null,
+                    SQLiteDatabase.OPEN_READONLY);
+
+            db.rawQuery("SELECT name FROM sqlite_master LIMIT 1", null).close();
+
+            return true;
+
+        } catch (Exception e) {
+            return false;
+
+        } finally {
+            if (db != null)
+                db.close();
+        }
+    }
+
+    // check if file ready to load from maplibre lib
+    public static boolean isMbtileFileReadyForLoad(String filepath){
+        File file = new File(filepath);
+        if (file.exists() && file.length() > 0)
+            if (isSQLiteFile(file) && isValidSQLite(file))
+                return true;
+        return false;
+    }
+
 }

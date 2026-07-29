@@ -150,6 +150,7 @@ import static com.nextgis.maplib.util.GeoConstants.GT_RASTER_WA;
 import static com.nextgis.maplib.util.GeoConstants.GT_TRACK_WA;
 import static com.nextgis.maplib.util.GeoConstants.TMSTYPE_MBTILES_RASTER;
 import static com.nextgis.maplib.util.MbTilesInfo.MBTILES_FILENAME;
+import static com.nextgis.maplib.util.MbTilesInfo.isMbtileFileReadyForLoad;
 import static com.nextgis.maplib.util.NetworkUtil.extractResourceValue;
 import static com.nextgis.maplib.util.NetworkUtil.fillConnections;
 import static com.nextgis.maplib.util.NetworkUtil.get;
@@ -599,12 +600,13 @@ public class MapDrawable
 
                         if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER){
                             // check file
-                            File fileSource = new File((layer).getPath().toString() + "/" + MBTILES_FILENAME);
-                            if (!fileSource.exists()){
+                            String filePath = (layer).getPath().toString() + "/" + MBTILES_FILENAME;
+                            if (!isMbtileFileReadyForLoad(filePath)) {
                                 errorMessage = mapContext.get()
                                         .getSelfContext()
                                         .getString(R.string.mbtiles_problem_load_maplibre)
                                         + iLayer.getName();
+                                return;
                             }
                         }
                         if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER)
@@ -910,14 +912,19 @@ public class MapDrawable
                     } else if (iLayer instanceof LocalTMSLayer) {
 
                         TMSLayer layer = (TMSLayer) iLayer;
+
                         if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER){
                             // check file
-                            File fileSource = new File((layer).getPath().toString() + "/" + MBTILES_FILENAME);
-                            if (!fileSource.exists()){
-                                errorMessage = mapContext.get().getSelfContext().getString(R.string.mbtiles_problem_load_maplibre) + iLayer.getName();
+                            String filePath = (layer).getPath().toString() + "/" + MBTILES_FILENAME;
+                            if (!isMbtileFileReadyForLoad(filePath)) {
+                                errorMessage = mapContext.get()
+                                        .getSelfContext()
+                                        .getString(R.string.mbtiles_problem_load_maplibre)
+                                        + iLayer.getName();
                                 continue;
                             }
                         }
+
 
                         layersType.put(layer.getId(), GT_RASTER_WA);
                         layersPath.put(layer.getId(), layer.getPath().toString());
@@ -1453,12 +1460,16 @@ public class MapDrawable
                     TMSLayer layer = (TMSLayer) iLayer;
                     if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER){
                         // check file
-                        File fileSource = new File((layer).getPath().toString() + "/" + MBTILES_FILENAME);
-                        if (!fileSource.exists()){
-                            errorMessage = mapContext.get().getSelfContext().getString(R.string.mbtiles_problem_load_maplibre) + iLayer.getName();
+                        String filePath = (layer).getPath().toString() + "/" + MBTILES_FILENAME;
+                        if (!isMbtileFileReadyForLoad(filePath)) {
+                            errorMessage = mapContext.get()
+                                    .getSelfContext()
+                                    .getString(R.string.mbtiles_problem_load_maplibre)
+                                    + iLayer.getName();
                             continue;
                         }
                     }
+
                     layersType.put(layer.getId(), GT_RASTER_WA);
                     if (layer.getTMSType() == TMSTYPE_MBTILES_RASTER)
                         rasterLayersURLMap.put(layer.getId(), "mbtiles://" + (layer).getPath().toString() + "/" + MBTILES_FILENAME);

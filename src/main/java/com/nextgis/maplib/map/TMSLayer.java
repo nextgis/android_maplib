@@ -28,6 +28,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.nextgis.maplib.R;
@@ -63,6 +64,9 @@ import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
 import static com.nextgis.maplib.util.GeoConstants.MERCATOR_MAX;
 import static com.nextgis.maplib.util.MbTilesInfo.MBTILES_FILENAME;
 import static com.nextgis.maplib.util.MbTilesInfo.checkMbTiles;
+import static com.nextgis.maplib.util.MbTilesInfo.isMbtileFileReadyForLoad;
+import static com.nextgis.maplib.util.MbTilesInfo.isSQLiteFile;
+import static com.nextgis.maplib.util.MbTilesInfo.isValidSQLite;
 
 
 public abstract class TMSLayer
@@ -306,8 +310,11 @@ public abstract class TMSLayer
 
     public void fillFromMBTiles(Uri uri, IProgressor progressor, boolean isDirectMBtilesLoad) throws IOException, NumberFormatException, SecurityException, NGException {
         fillForMBTilesFromFile(uri, progressor);
-
         File mbtileFile = new File(mPath, MBTILES_FILENAME);
+
+        if (!isMbtileFileReadyForLoad(mbtileFile.getAbsolutePath()))
+            throw new NGException( getContext().getString(R.string.mbtiles_problem_filecorrupted));
+
         MbTilesInfo checkMbTiles = checkMbTiles(mbtileFile, getContext());
 
         if (checkMbTiles.raster) {
@@ -323,16 +330,17 @@ public abstract class TMSLayer
                 x = Geo.wgs84ToMercatorSphereX(checkMbTiles.east);
                 y = Geo.wgs84ToMercatorSphereY(checkMbTiles.north);
                 mExtents.setMax(x, y);
-
             }
             save();
-
             load();
         } else
         if (checkMbTiles.vector)
             throw new NGException(getContext().getString(R.string.mbtiles_problem_vector));
-         else
-            throw new NGException(checkMbTiles.error);
+         else { //
+             // try add anyway 
+            save();
+            load();
+        }
     }
 
     // copy mbtiles file to layer folder with name from MBTILES_FILENAME const

@@ -121,9 +121,10 @@
 
     <string name="strange_error">Something wrong. Please restart application</string>
 
-    <string name="mbtiles_problem_load_maplibre">Maplibre problem on load mbtiles layer</string>
+    <string name="mbtiles_problem_load_maplibre">Maplibre problem on load mbtiles layer: </string>
     <string name="mbtiles_problem_not_found">No file for mbtiles layer</string>
     <string name="mbtiles_problem_vector">Only MBTiles with raster data supported.</string>
     <string name="mbtiles_problem_integry">mbtiles SQLite integrity check failed</string>
+    <string name="mbtiles_problem_filecorrupted">mbtiles file corrupted</string>
 
 </resources>
