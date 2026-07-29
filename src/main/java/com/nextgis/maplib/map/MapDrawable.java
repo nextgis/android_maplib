@@ -1045,9 +1045,6 @@ public class MapDrawable
                             tracksLineSource = new GeoJsonSource("track-line-source", FeatureCollection.fromFeatures(tracksFeatures));
                             style.addSource(tracksLineSource);
 
-                            for (org.maplibre.geojson.Feature feature :tracksFeatures){
-                                Log.e("TTRK", feature.id() + " : " + feature.getStringProperty(prop_color));
-                            }
                         }
 
                         Layer trackLayer = new LineLayer( "track-line-layer", "track-line-source").
@@ -3309,11 +3306,6 @@ public class MapDrawable
                 GeoJsonSource tracksLineSource = (GeoJsonSource)style.getSource("track-line-source");
                 if (tracksLineSource!=null)
                     tracksLineSource.setGeoJson(FeatureCollection.fromFeatures(tracksFeatures));
-
-                for (org.maplibre.geojson.Feature feature :tracksFeatures){
-                    Log.e("TTRK", feature.id() + " : " + feature.getStringProperty(prop_color));
-                }
-
 
 
                 GeoJsonSource tracksLineFlagsSource = (GeoJsonSource)style.getSource("track-flag-source");
