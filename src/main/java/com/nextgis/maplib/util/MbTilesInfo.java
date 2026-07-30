@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 
 public class MbTilesInfo {
 
@@ -182,7 +183,11 @@ public class MbTilesInfo {
 
             db.rawQuery("SELECT name FROM sqlite_master LIMIT 1", null).close();
 
-            return true;
+
+            return  isValidMBTiles(db);
+
+
+            //return true;
 
         } catch (Exception e) {
             return false;
@@ -200,6 +205,67 @@ public class MbTilesInfo {
             if (isSQLiteFile(file) && isValidSQLite(file))
                 return true;
         return false;
+    }
+
+
+    public static boolean isValidMBTiles(SQLiteDatabase db) {
+        return hasTableWithColumns(
+                db,
+                "tiles",
+                new String[]{
+                        "zoom_level",
+                        "tile_column",
+                        "tile_row",
+                        "tile_data"
+                })
+                &&
+                hasTableWithColumns(
+                        db,
+                        "metadata",
+                        new String[]{
+                                "name",
+                                "value"
+                        });
+    }
+
+    private static boolean hasTableWithColumns(SQLiteDatabase db,
+                                               String table,
+                                               String[] requiredColumns) {
+
+        // check table exists
+        Cursor c = db.rawQuery(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                new String[]{table});
+
+        try {
+            if (!c.moveToFirst())
+                return false;
+        } finally {
+            c.close();
+        }
+
+        // list of fields
+        c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
+
+        try {
+            HashSet<String> columns = new HashSet<>();
+
+            int nameIndex = c.getColumnIndexOrThrow("name");
+
+            while (c.moveToNext()) {
+                columns.add(c.getString(nameIndex));
+            }
+
+            for (String required : requiredColumns) {
+                if (!columns.contains(required))
+                    return false;
+            }
+
+            return true;
+
+        } finally {
+            c.close();
+        }
     }
 
 }
