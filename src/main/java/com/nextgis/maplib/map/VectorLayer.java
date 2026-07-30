@@ -494,6 +494,7 @@ public class VectorLayer
         long rowId = db.insert(mPath.getName(), "", values);
         if (rowId != Constants.NOT_FOUND) {
             //update bbox
+//            Log.e("CCACHH","create feature: " + rowId);
             cacheGeometryEnvelope(rowId, feature.getGeometry());
             save();
         }
@@ -530,6 +531,7 @@ public class VectorLayer
 
         if (rowId != Constants.NOT_FOUND) {
             //update bbox
+//            Log.e("CCACHH","createFeatureBatch: " + rowId);
             cacheGeometryEnvelope(rowId, feature.getGeometry());
             // add attach info
 
@@ -650,8 +652,10 @@ public class VectorLayer
             envelope = geoGeometry.getEnvelope();
         }
         mExtents.merge(envelope);
-//        Log.e("CCACHH","addItem");
-        mCache.addItem(rowId, envelope);
+//        Log.e("CCACHH","cacheGeometryEnvelope addItem: " + rowId);
+        List<IGeometryCacheItem> list= mCache.getItem(rowId);
+        if (list == null || list.isEmpty())
+            mCache.addItem(rowId, envelope);
     }
 
 
@@ -2487,6 +2491,7 @@ public class VectorLayer
                     prepareGeometry(values);
                     int result = sqLiteDatabase.update(mPath.getName(), values, selection, null);
                     if (result > 0) {
+//                        Log.e("CCACHH","onUpgrade: " + pair.first);
                         cacheGeometryEnvelope(pair.first, pair.second);
                     }
 
@@ -2522,6 +2527,8 @@ public class VectorLayer
 
         GeoGeometry geom = getGeometryForId(rowId);
         if (null != geom) {
+//            Log.e("CCACHH","notifyInsert: " + rowId);
+
             cacheGeometryEnvelope(rowId, geom);
             save();
             notifyLayerChanged();
@@ -2567,6 +2574,7 @@ public class VectorLayer
         if (null != geom && !attributesOnly) {
 //            Log.e("CCACHH","mCache.removeItem: " + rowId);
             mCache.removeItem(rowId);
+//            Log.e("CCACHH","notifyUpdate: " + rowId);
             cacheGeometryEnvelope(rowId, geom);
             if (DEBUG_MODE)
                 Log.d(Constants.TAG, "mCache: removing item " + oldRowId + " and caching env");
