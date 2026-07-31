@@ -1520,9 +1520,9 @@ public class NGWVectorLayer
 
             if (!mTracked) {
                 Cursor changeCursor = FeatureChanges.getChanges(changeTableName);
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " changeCursorSize is " + changeCursor.getCount());
                 // remove changes already applied on server (delete already deleted id or add already added)
                 if (null != changeCursor) {
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " changeCursorSize is " + changeCursor.getCount());
                     try {
                         if (changeCursor.moveToFirst()) {
                             int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
