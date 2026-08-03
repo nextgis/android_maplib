@@ -324,13 +324,16 @@ public class FileUtil
         return "/";
     }
 
-    public static void unzipEntry(
+    // return true if congig.json was in file
+
+    public static boolean unzipEntry(
             ZipInputStream zis,
             ZipEntry entry,
             byte[] buffer,
             File outputDir)
             throws IOException, RuntimeException
     {
+        boolean returnResult = false;
         String entryName = entry.getName();
         int pos = entryName.indexOf('/');
 
@@ -344,7 +347,7 @@ public class FileUtil
 
         if (entry.isDirectory()) {
             FileUtil.createDir(new File(outputDir, entryName));
-            return;
+            return returnResult;
         }
 
         //for prevent searching by media library
@@ -352,8 +355,10 @@ public class FileUtil
         entryName = entryName.replace(".jpg", TMSLayer.TILE_EXT);
         entryName = entryName.replace(".jpeg", TMSLayer.TILE_EXT);
 
-        if (entryName.toLowerCase().equals("mapnik.json"))
+        if (entryName.toLowerCase().equals("mapnik.json")){
             entryName = "config.json";
+            returnResult = true;
+        }
 
         File outputFile = new File(outputDir, entryName);
         if (!outputFile.getParentFile().exists()) {
@@ -362,5 +367,6 @@ public class FileUtil
         FileOutputStream fout = new FileOutputStream(outputFile);
         FileUtil.copyStream(zis, fout, buffer, Constants.IO_BUFFER_SIZE);
         fout.close();
+        return returnResult;
     }
 }

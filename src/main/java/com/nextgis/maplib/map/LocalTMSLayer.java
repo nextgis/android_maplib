@@ -34,6 +34,7 @@ import com.nextgis.maplib.api.IProgressor;
 import com.nextgis.maplib.datasource.GeoEnvelope;
 import com.nextgis.maplib.datasource.TileItem;
 import com.nextgis.maplib.util.Constants;
+import com.nextgis.maplib.util.FileUtil;
 import com.nextgis.maplib.util.GeoConstants;
 import com.nextgis.maplib.util.NGException;
 
@@ -190,7 +191,7 @@ public class LocalTMSLayer
 
     @Override
     public void fillFromZip(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
-        fillFromZipInt(uri, progressor);
+        boolean isConfigInFile = fillFromZipInt(uri, progressor);
 
         int nMaxLevel = 0;
         int nMinLevel = 512;
@@ -267,6 +268,15 @@ public class LocalTMSLayer
             addLimits(nLevelZ, nMaxX, nMaxY, nMinX, nMinY);
         }
 
+        if (isConfigInFile) {
+            try {
+                JSONObject jsonObject = new JSONObject(FileUtil.readFromFile(getFileName()));
+                int tmsType = jsonObject.optInt("tms_type", 1);
+                setTMSType(tmsType);
+            }catch (Exception ex){
+                Log.e("FILE", "erro filke read " + ex.getMessage());
+            }
+        }
         save();
     }
 

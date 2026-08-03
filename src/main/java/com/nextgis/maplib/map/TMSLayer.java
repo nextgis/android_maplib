@@ -263,7 +263,7 @@ public abstract class TMSLayer
         };
     }
 
-    protected void fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
+    protected boolean fillFromZipInt(Uri uri, IProgressor progressor) throws IOException, NGException, RuntimeException {
         InputStream inputStream;
         String url = uri.toString();
         if (NetworkUtil.isValidUri(url))
@@ -283,17 +283,23 @@ public abstract class TMSLayer
 
         ZipInputStream zis = new ZipInputStream(inputStream);
         ZipEntry ze;
+
+        boolean isConfigInFile = false;
+
         while ((ze = zis.getNextEntry()) != null) {
-            FileUtil.unzipEntry(zis, ze, buffer, mPath);
+            boolean readResult = FileUtil.unzipEntry(zis, ze, buffer, mPath);
+            if (readResult)
+                isConfigInFile  = true;
             increment += ze.getCompressedSize();
             zis.closeEntry();
             if (null != progressor) {
                 if(progressor.isCanceled())
-                    return;
+                    return isConfigInFile;
                 progressor.setValue(increment);
                 progressor.setMessage(getContext().getString(R.string.processed) + " " + increment + " " + getContext().getString(R.string.of) + " " + streamSize);
             }
         }
+        return isConfigInFile;
     }
 
 
