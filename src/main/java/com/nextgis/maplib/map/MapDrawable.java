@@ -2154,7 +2154,9 @@ public class MapDrawable
                     hiddedlayerdID = layerdID;
                 }
             }
-            if (getLayerById(layerdID) instanceof VectorLayer vectorLayer){
+            ILayer iLayer =  getLayerById(layerdID);
+            if (iLayer!=null && getLayerById(layerdID) instanceof VectorLayer){
+                VectorLayer vectorLayer = (VectorLayer )getLayerById(layerdID);
                 if (vectorLayer.mGeometryType == GTPolygon || vectorLayer.mGeometryType == GTMultiPolygon){
                     reAssembleSignPoly(
                             maplibreMap.get().getStyle(),

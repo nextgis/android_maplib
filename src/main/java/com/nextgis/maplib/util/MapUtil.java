@@ -390,4 +390,62 @@ public class MapUtil {
 //        }
 
     }
+
+
+//    public static double area(Polygon polygon) {
+//        List<List<Point>> rings = polygon.coordinates();
+//        if (rings == null || rings.isEmpty()) return 0;
+//
+//        return Math.abs(ringArea(rings.get(0)));
+//    }
+
+//    public static double area(MultiPolygon multiPolygon) {
+//        List<List<List<Point>>> polygons = multiPolygon.coordinates();
+//        if (polygons == null || polygons.isEmpty()) return 0;
+//
+//        double total = 0;
+//        for (List<List<Point>> rings : polygons) {
+//            if (rings.isEmpty()) continue;
+//            total += Math.abs(ringArea(rings.get(0)));
+//        }
+//        return total;
+//    }
+
+//    private static double ringArea(List<Point> coords) {
+//        int n = coords.size();
+//        double area = 0;
+//
+//        if (n <= 2) return 0;
+//
+//        for (int i = 0; i < n; i++) {
+//            int lowerIndex, middleIndex, upperIndex;
+//
+//            if (i == n - 2) {
+//                lowerIndex = n - 2;
+//                middleIndex = n - 1;
+//                upperIndex = 0;
+//            } else if (i == n - 1) {
+//                lowerIndex = n - 1;
+//                middleIndex = 0;
+//                upperIndex = 1;
+//            } else {
+//                lowerIndex = i;
+//                middleIndex = i + 1;
+//                upperIndex = i + 2;
+//            }
+//
+//            Point p1 = coords.get(lowerIndex);
+//            Point p2 = coords.get(middleIndex);
+//            Point p3 = coords.get(upperIndex);
+//
+//            area += (toRad(p3.longitude()) - toRad(p1.longitude()))
+//                    * Math.sin(toRad(p2.latitude()));
+//        }
+//
+//        return area * mEarthMajorRadius * mEarthMajorRadius / 2.0;
+//    }
+
+//    private static double toRad(double deg) {
+//        return deg * Math.PI / 180.0;
+//    }
 }

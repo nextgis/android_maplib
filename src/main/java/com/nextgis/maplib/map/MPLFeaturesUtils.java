@@ -33,6 +33,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.nextgis.maplib.api.ILayer;
 import com.nextgis.maplib.api.ITextStyle;
 import com.nextgis.maplib.datasource.GeoGeometry;
@@ -123,11 +124,15 @@ public class MPLFeaturesUtils {
     static public String prop_signature_text = "signature";
     static public String prop_start_flag = "type";
 
+    //static public String prop_signature_item_square = "signature_area";
+    //static public String prop_signature_item_size = "signature_size";
+
+
     static final public String layer_namepart = "layer-";
     static final public String source_namepart = "source-";
     static final public String outline_namepart = "_outline";
-    static final public String track_namepart = "track-";
-    static final public String track_flags_namepart = "track-flags-";
+//    static final public String track_namepart = "track-";
+//    static final public String track_flags_namepart = "track-flags-";
 
     static final public String source_polygon_text = "-text"; // source for text part of polygon[s]
     static final public String id_name = "_id";
@@ -965,16 +970,24 @@ public class MPLFeaturesUtils {
             Geometry geometry = feature.geometry();
             Point centroid = null;
 
+//            double areaPoly = 0;
             if (geometry instanceof Polygon) {
                 centroid = calculatePolygonCentroid((Polygon) geometry);
+  //              areaPoly = area((Polygon) geometry);
             } else if (geometry instanceof MultiPolygon) {
                 centroid = calculateMultiPolygonCentroid((MultiPolygon) geometry);
+    //            areaPoly = area((MultiPolygon) geometry);
             }
+      ///      areaPoly = sqrt(areaPoly);
 
             if (centroid != null) {
+                JsonObject prop = feature.properties().deepCopy();
+                //prop.addProperty(prop_signature_item_square, areaPoly);
+                //Log.e("CENTR", "" + areaPoly);
+                //Log.e("CENTR", "text: " + feature.getProperty(prop_signature_text));
                 Feature centroidFeature = Feature.fromGeometry(
                         centroid,
-                        feature.properties()
+                        prop
                 );
                 centroidFeatures.add(centroidFeature);
             }
@@ -1291,6 +1304,33 @@ public class MPLFeaturesUtils {
                     String anchor = getTextAnchor(textAlignment); // def - Property.TEXT_ANCHOR_TOP
                     Float[] offsets =  isPolygon? new Float[]{0.0f, 0f} :  getTextAnchorOffsets(textAlignment, textSize); // {0f, 0f};
 
+//                    Expression sizeBySquare = Expression.interpolate(
+//                            Expression.linear(),
+//                            Expression.get(prop_signature_item_square),
+//                            Expression.stop(1, 0.7),
+//                            Expression.stop(2, 1.0),
+//                            Expression.stop(1000, 2.0),
+//                            Expression.stop(10000, 3.0),
+//                            Expression.stop(50000, 4.0),
+//                            Expression.stop(100000, 14.0),
+//                            Expression.stop(10000000, 20.0)
+//                    );
+/*
+* simbolLayer.setProperties(
+                            signatureProperty,
+                            PropertyFactory.textSize(
+                                    Expression.interpolate(
+                                            Expression.linear(),
+                                            Expression.zoom(),
+                                            Expression.stop(1, Expression.product(Expression.literal(0.5), sizeBySquare)),
+                                            Expression.stop(5, Expression.product(Expression.literal(4.0), sizeBySquare)),
+                                            Expression.stop(10, Expression.product(Expression.literal(7.0), sizeBySquare)),
+                                            Expression.stop(15, Expression.product(Expression.literal(10.0), sizeBySquare)),
+                                            Expression.stop(17, Expression.product(Expression.literal(15.0), sizeBySquare)),
+                                            Expression.stop(20, Expression.product(Expression.literal(17.0), sizeBySquare))
+                                    )
+                            ),*/
+
                     simbolLayer.setProperties(
                             signatureProperty,
 
@@ -1317,8 +1357,8 @@ public class MPLFeaturesUtils {
                                     Expression.literal(offsets)  // def value
                             )),
 
-                            PropertyFactory.textAllowOverlap(true),
-                            PropertyFactory.textIgnorePlacement(true),
+                            PropertyFactory.textAllowOverlap(false),
+                            PropertyFactory.textIgnorePlacement(false),
                             PropertyFactory.textFont(font),
                             PropertyFactory.textMaxWidth(0f));
                 }
