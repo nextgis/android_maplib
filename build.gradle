@@ -26,8 +26,8 @@ apply plugin: 'com.android.library'
 android {
     defaultConfig {
         minSdkVersion 26
-        compileSdk 36
-        versionName '3.1.0' // DONT REMOVE!!! update with mobile app
+        compileSdk 37
+        versionName '3.2.1' // DONT REMOVE!!! update with mobile app
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
@@ -50,29 +50,28 @@ android {
         viewBinding = true
         buildConfig = true
     }
-    compileOptions {
-        sourceCompatibility "21"
-        targetCompatibility "21"
-    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
     namespace 'com.nextgis.maplib'
     lint {
-        targetSdk 36
+        targetSdk 37
     }
     testOptions {
-        targetSdk 36
+        targetSdk 37
     }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation 'org.maplibre.gl:android-sdk:13.4.1'
+    //implementation 'org.maplibre.gl:android-sdk:13.6.0'
+    //implementation 'org.maplibre.gl:android-sdk-opengl:13.6.0' // old ardeno work with opengl correctly
+    implementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.6.1'
 
-    implementation 'com.squareup.okhttp3:okhttp:5.3.2'
+    implementation 'com.squareup.okhttp3:okhttp:5.5.0'
 
 //    implementation 'org.maplibre.gl:android-sdk-turf:6.0.1'
 
@@ -82,7 +81,7 @@ dependencies {
     implementation 'com.android.volley:volley:1.2.1'
 
 
-    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'com.google.code.gson:gson:2.14.0'
 
     implementation 'io.tus.java.client:tus-java-client:0.5.1'
     implementation 'io.tus.android.client:tus-android-client:0.1.12'
