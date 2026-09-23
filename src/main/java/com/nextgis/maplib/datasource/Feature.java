@@ -59,7 +59,7 @@ public class Feature
         implements IJSONStore
 {
     protected long                    mId;
-    protected GeoGeometry             mGeometry;
+    protected GeoGeometry             mGeometry = null;
     protected List<Object>            mFieldValues;
     protected final List<Field>       mFields;
     protected Map<String, AttachItem> mAttachments;

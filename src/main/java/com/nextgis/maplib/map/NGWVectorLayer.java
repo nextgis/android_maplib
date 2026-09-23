@@ -466,8 +466,10 @@ public class NGWVectorLayer
         while (reader.hasNext()) {
             try {
                 final Feature feature = NGWUtil.readNGWFeature(reader, fields, mCRS);
-                if (feature.getGeometry() == null || !feature.getGeometry().isValid())
-                    continue;
+
+                // now geometry null is allowed
+//                if (feature.getGeometry() == null || !feature.getGeometry().isValid())
+//                    continue;
                 createFeatureBatch(feature, db, false);
             } catch (OutOfMemoryError | IllegalStateException | IOException | NumberFormatException |
                      NGException e) {
@@ -1439,10 +1441,7 @@ public class NGWVectorLayer
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " features = null");
             return true;
         }
-
-        if (Constants.DEBUG_MODE) {
-            Log.d(Constants.TAG, "Got " + features.size() + " feature(s) from server");
-        }
+        Log.d(Constants.TAG, "Got " + features.size() + " feature(s) from server");
 
         try {
             if (!mCacheLoaded) {
@@ -1919,8 +1918,10 @@ public class NGWVectorLayer
         reader.beginArray();
         while (reader.hasNext()) {
             final Feature feature = NGWUtil.readNGWFeature(reader, getFields(), mCRS);
-            if (feature.getGeometry() == null || !feature.getGeometry().isValid())
-                continue;
+
+            // null geometry (feature without geo now allowed)
+//            if (feature.getGeometry() == null || !feature.getGeometry().isValid())
+//                continue;
             features.add(feature);
         }
         reader.endArray();
@@ -2250,11 +2251,12 @@ public class NGWVectorLayer
             GeoGeometry geometry = GeoGeometryFactory.fromBlob(
                     cursor.getBlob(cursor.getColumnIndex(Constants.FIELD_GEOM)));
 
-            geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
-            if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
-                geometry.project(mCRS);
-
-            rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
+            if (geometry != null) {
+                geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
+                if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
+                    geometry.project(mCRS);
+                rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
+            }
             //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
         }
 

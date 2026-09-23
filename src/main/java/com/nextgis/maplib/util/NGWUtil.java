@@ -416,6 +416,23 @@ public class NGWUtil
     }
 
 
+    public static String getTransactionFeaturesOperationUrl(
+            String server,
+            long remoteId,
+            int tid)
+    {           //POST /api/resource/{id}/feature/transaction/{tid}
+        return getResourceUrl(server, remoteId) + "/feature/transaction/" + tid;
+    }
+
+
+    public static String getTransactionFeaturesUrl(
+            String server,
+            long remoteId)
+    {
+        return getResourceUrl(server, remoteId) + "/feature/transaction/";
+    }
+
+
     public static String getFeaturesUrl(
             String server,
             long remoteId,
@@ -496,19 +513,29 @@ public class NGWUtil
                 feature.setId(reader.nextLong());
             } else if (name.equals(NGWUtil.NGWKEY_GEOM)) {
 
+                String wkt = null;
+                if (reader.peek() == JsonToken.NULL) {
+                    reader.nextNull();
+                    wkt = null;
+                } else {
+                    wkt = reader.nextString();
+                }
 
-                String wkt = reader.nextString();
-                if (wkt.startsWith("POINT Z") || wkt.startsWith("MULTIPOINT Z") ||
+                if (wkt != null && (wkt.startsWith("POINT Z") || wkt.startsWith("MULTIPOINT Z") ||
                         wkt.startsWith("LINESTRING Z") || wkt.startsWith("MULTILINESTRING Z") ||
-                        wkt.startsWith("POLYGON Z") || wkt.startsWith("MULTIPOLYGON Z")) {
+                        wkt.startsWith("POLYGON Z") || wkt.startsWith("MULTIPOLYGON Z"))) {
                     throw new NGException("POINTZ");
                 }
-                GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt, nSRS);
-                geom.setCRS(nSRS);
-                if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
-                    geom.project(GeoConstants.CRS_WEB_MERCATOR);
+
+                if (wkt!= null) {
+
+                    GeoGeometry geom = GeoGeometryFactory.fromWKT(wkt, nSRS);
+                    geom.setCRS(nSRS);
+                    if (nSRS != GeoConstants.CRS_WEB_MERCATOR) {
+                        geom.project(GeoConstants.CRS_WEB_MERCATOR);
+                    }
+                    feature.setGeometry(geom);
                 }
-                feature.setGeometry(geom);
             } else if (name.equals(NGWUtil.NGWKEY_FIELDS)) {
                 readNGWFeatureFields(feature, reader, fields);
             } else if (name.equals(NGWUtil.NGWKEY_EXTENSIONS)) {
