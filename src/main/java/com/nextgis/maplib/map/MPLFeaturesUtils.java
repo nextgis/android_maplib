@@ -285,6 +285,10 @@ public class MPLFeaturesUtils {
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
             GeoLineString geoLineGeometry = (GeoLineString) feature.getGeometry();
+
+            if (geoLineGeometry == null)
+                continue;
+
             LineString lineString = getLineString(geoLineGeometry);
             Feature lineFeature = org.maplibre.geojson.Feature.fromGeometry(lineString);
             lineFeature.addStringProperty(prop_layerid, String.valueOf(layer.getId()));
@@ -300,7 +304,7 @@ public class MPLFeaturesUtils {
                     ruleStyle,
                     needSignatures,
                     signatureField,
-                    commonText  );
+                    commonText);
             lineFeatures.add(lineFeature);
             iterator.remove();
         }
@@ -327,6 +331,8 @@ public class MPLFeaturesUtils {
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
             GeoMultiLineString geoMultiLineString = (GeoMultiLineString) feature.getGeometry();
+            if (geoMultiLineString == null)
+                continue;
             for (int j = 0; j < geoMultiLineString.size(); j++) {
                 GeoLineString geoLineString = geoMultiLineString.get(j);
                 LineString lineString = getLineString(geoLineString);
@@ -410,6 +416,8 @@ public class MPLFeaturesUtils {
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
             GeoMultiPoint geoMultiPointtGeometry = (GeoMultiPoint) feature.getGeometry();
+            if (geoMultiPointtGeometry == null)
+                continue;
             List<Point> pointList = new ArrayList<>();
             for (int j = 0; j < geoMultiPointtGeometry.size(); j++) {
                 GeoPoint geoPointGeometry = (GeoPoint) geoMultiPointtGeometry.get(j);
@@ -495,6 +503,8 @@ public class MPLFeaturesUtils {
             Long id = entry.getKey();
             com.nextgis.maplib.datasource.Feature feature = entry.getValue();
             GeoGeometryCollection geoGeometryCollection = (GeoGeometryCollection) feature.getGeometry();
+            if (geoGeometryCollection == null)
+                continue;
             ArrayList<Polygon> polygons = new ArrayList<>();
             for (int j = 0; j < geoGeometryCollection.size(); j++) {
                 GeoPolygon polygonNG = (GeoPolygon) geoGeometryCollection.getGeometry(j);
@@ -725,6 +735,8 @@ public class MPLFeaturesUtils {
 
 
     static public LineString getLineString(GeoLineString geoLineGeometry) {
+        if (geoLineGeometry == null)
+            return  null;
         List<Point> pointList = new ArrayList<>();
         for (int j = 0; j < geoLineGeometry.getPointCount(); j++) {
             GeoPoint geoPointGeometry = (GeoPoint) geoLineGeometry.getPoint(j);

@@ -54,6 +54,8 @@ import static com.nextgis.maplib.util.LayerUtil.getColumnIndexSafely;
 import static com.nextgis.maplib.util.LayerUtil.unwrapQuotation;
 import static com.nextgis.maplib.util.MapUtil.convertTime;
 
+import androidx.annotation.Nullable;
+
 
 public class Feature
         implements IJSONStore
@@ -113,6 +115,7 @@ public class Feature
     }
 
 
+    @Nullable
     public GeoGeometry getGeometry()
     {
         return mGeometry;
