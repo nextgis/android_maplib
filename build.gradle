@@ -27,7 +27,7 @@ android {
     defaultConfig {
         minSdkVersion 26
         compileSdk 37
-        versionName '3.2.1' // DONT REMOVE!!! update with mobile app
+        versionName '3.2.2' // DONT REMOVE!!! update with mobile app
         buildConfigField "String", "VERSION_NAME", "\"$versionName\""
     }
     productFlavors {
@@ -70,6 +70,8 @@ dependencies {
     //implementation 'org.maplibre.gl:android-sdk:13.6.0'
     //implementation 'org.maplibre.gl:android-sdk-opengl:13.6.0' // old ardeno work with opengl correctly
     implementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.6.1'
+
+    implementation("org.locationtech.jts:jts-core:1.20.0")
 
     implementation 'com.squareup.okhttp3:okhttp:5.5.0'
 

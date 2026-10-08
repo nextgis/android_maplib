@@ -30,8 +30,7 @@ public final class PermissionUtil {
     public static boolean hasPermission(Context context, String permission) {
         PackageManager pm = context.getPackageManager();
         if (pm == null) {
-            if(Constants.DEBUG_MODE)
-                Log.d(Constants.TAG, "Permission " + permission + " is not granted");
+            Log.d(Constants.TAG, "Permission " + permission + " is not granted");
             return false;
         }
         int hasPerm = pm.checkPermission(permission, context.getPackageName());

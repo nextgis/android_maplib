@@ -142,10 +142,8 @@ public class Layer extends Table
 
         mIsVisible = jsonObject.getBoolean(JSON_VISIBILITY_KEY);
 
-        if(Constants.DEBUG_MODE){
-            Log.d(Constants.TAG, "Layer " + getName() + " is visible " + mIsVisible);
-            Log.d(Constants.TAG, "Layer " + getName() + " zoom limits from " + mMinZoom + " to " + mMaxZoom);
-        }
+        Log.d(Constants.TAG, "Layer " + getName() + " is visible " + mIsVisible);
+        Log.d(Constants.TAG, "Layer " + getName() + " zoom limits from " + mMinZoom + " to " + mMaxZoom);
     }
 
     @Override

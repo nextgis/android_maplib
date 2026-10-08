@@ -26,10 +26,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.ParcelFileDescriptor;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.datasource.Feature;
 import com.nextgis.maplib.datasource.GeoEnvelope;
@@ -41,9 +43,12 @@ import com.nextgis.maplib.datasource.TileItem;
 import org.json.JSONException;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,6 +56,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 public class MapUtil {
@@ -275,11 +281,13 @@ public class MapUtil {
             if (inputStream == null)
                 return false;
 
-            byte[] buffer = new byte[Constants.IO_BUFFER_SIZE];
+            byte[] buffer = new byte[Constants. IO_BUFFER_SIZE];
             ZipInputStream zis = new ZipInputStream(inputStream);
             ZipEntry ze;
 
             while ((ze = zis.getNextEntry()) != null) {
+                if (ze.getName().toLowerCase().endsWith(".png")) // we use isZippedWithExtension not for tiles zip
+                    return false;
                 if (ze.getName().toLowerCase().endsWith(targetExtension)) { //".geojson"
                     File temp = prepareTempDir(context, null, false);
                     FileUtil.unzipEntry(zis, ze, buffer, temp);
@@ -292,7 +300,44 @@ public class MapUtil {
         } catch (IOException | RuntimeException e) {
             e.printStackTrace();
         }
+        return false;
+    }
 
+    public static boolean isHasMapnikConfigFile(Context context, AtomicReference<Uri> uri) {
+        try {
+            File tempFile = new File(context.getCacheDir(), "check.zip");
+            try (InputStream in = context.getContentResolver().openInputStream(uri.get());
+                 OutputStream out = new FileOutputStream(tempFile)) {
+                if (in == null)
+                    return false;
+
+                byte[] buffer = new byte[64 * 1024];
+                int count;
+
+                while ((count = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, count);
+                }
+            }
+
+            try (ZipFile zipFile = new ZipFile(tempFile)) {
+                Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    String name = entry.getName();
+                    String lName = name.toLowerCase();
+
+                    if (lName.toLowerCase().endsWith("mapnik.json")
+                            ||  lName.endsWith("config.json")) {
+                        return true;
+                    }
+                }
+                return false;
+            } finally {
+                tempFile.delete();
+            }
+        } catch (Exception ex){
+            HyperLog.v(Constants.TAG, "isHasMapnikConfigFile exception: " + ex.getMessage());
+        }
         return false;
     }
 

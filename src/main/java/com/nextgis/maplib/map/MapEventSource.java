@@ -374,21 +374,9 @@ public class MapEventSource
                     boolean filter = !(EVENT_onExtentChanged == resultData.getInt(BUNDLE_TYPE_KEY) ||
                             EVENT_onLayerDrawFinished == resultData.getInt(BUNDLE_TYPE_KEY));
                     if(filter) {
-                        if(Constants.DEBUG_MODE) {
-                            Log.d(TAG, "handleMessage: skip event: " + resultData.getInt(BUNDLE_TYPE_KEY));
-                        }
+                        Log.d(TAG, "handleMessage: skip event: " + resultData.getInt(BUNDLE_TYPE_KEY));
                         return;
                     }
-//                    else{
-//                        if(resultData.getFloat(BUNDLE_DONE_KEY) < 1){
-//
-//                            if(Constants.DEBUG_MODE) {
-//                                Log.d(TAG, "handleMessage: skip event: " + resultData.getInt(BUNDLE_TYPE_KEY));
-//                            }
-//
-//                            return;
-//                        }
-//                    }
                 }
                 mLastMessages.put(resultData.getInt(BUNDLE_TYPE_KEY), System.currentTimeMillis());
 

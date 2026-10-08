@@ -34,9 +34,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.JsonReader;
 import android.util.Log;
-import android.util.Pair;
 
 import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
@@ -67,7 +67,11 @@ import com.nextgis.maplib.util.SettingsConstants;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKBWriter;
+import org.locationtech.jts.io.WKTReader;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -77,9 +81,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
@@ -87,6 +91,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,8 +115,19 @@ import static com.nextgis.maplib.util.Constants.URI_ATTACH;
 import static com.nextgis.maplib.util.Constants.URI_CHANGES;
 import static com.nextgis.maplib.util.MapUtil.convertTime;
 import static com.nextgis.maplib.util.NGWUtil.appendix;
+import static com.nextgis.maplib.util.NGWUtil.getNgwUrlResolverUrl;
 import static com.nextgis.maplib.util.NetworkUtil.configureSSLdefault;
+import static com.nextgis.maplib.util.NetworkUtil.getHttpResponse;
 import static com.nextgis.maplib.util.NetworkUtil.getUserAgent;
+import static com.nextgis.maplib.util.Transactions.clearCurrentTransactionId;
+import static com.nextgis.maplib.util.Transactions.clearCurrentTransactionList;
+import static com.nextgis.maplib.util.Transactions.loadCurrentTransactionId;
+import static com.nextgis.maplib.util.Transactions.loadCurrentTransactionsList;
+import static com.nextgis.maplib.util.Transactions.loadEpoch;
+import static com.nextgis.maplib.util.Transactions.loadPairs;
+import static com.nextgis.maplib.util.Transactions.saveCurrentTransactionId;
+import static com.nextgis.maplib.util.Transactions.saveEpoch;
+import static com.nextgis.maplib.util.Transactions.savePairs;
 
 
 public class NGWVectorLayer
@@ -119,7 +135,7 @@ public class NGWVectorLayer
         implements INGWLayer
 {
     protected static final String JSON_ACCOUNT_KEY           = "account";
-//    protected static final String JSON_NGW_VERSION_MAJOR_KEY = "ngw_version_major";
+    //    protected static final String JSON_NGW_VERSION_MAJOR_KEY = "ngw_version_major";
 //    protected static final String JSON_NGW_VERSION_MINOR_KEY = "ngw_version_minor";
     protected static final String JSON_SYNC_TYPE_KEY         = "sync_type";
     protected static final String JSON_NGWLAYER_TYPE_KEY     = "ngw_layer_type";
@@ -139,6 +155,10 @@ public class NGWVectorLayer
     protected static boolean mIsAddedToUriMatcher = false;
 
     protected NetworkUtil mNet;
+
+
+
+    static public Integer currentTransactionId = null;
 
 //    protected int mNgwVersionMajor = Constants.NOT_FOUND;
 //    protected int mNgwVersionMinor = Constants.NOT_FOUND;
@@ -389,6 +409,7 @@ public class NGWVectorLayer
 
         // get layer description
         JSONObject geoJSONObject;
+
         HttpResponse response = NetworkUtil.get(getResourceMetaUrl(accountData), accountData.login,
                 accountData.password, false);
         if (!response.isOk()) {
@@ -407,7 +428,7 @@ public class NGWVectorLayer
             vectorLayerJSONObject = geoJSONObject.getJSONObject(getRequiredCls());
             mNGWLayerType = Connection.NGWResourceTypeVectorLayer;
         } else if (
-                //mNgwVersionMajor >= Constants.NGW_v3 &&
+            //mNgwVersionMajor >= Constants.NGW_v3 &&
                 geoJSONObject.has("postgis_layer")) {
             vectorLayerJSONObject = geoJSONObject.getJSONObject("postgis_layer");
             mNGWLayerType = NGWResourceTypePostgisLayer;
@@ -501,7 +522,34 @@ public class NGWVectorLayer
         urlConnection.disconnect();
         mTracked = vectorLayerJSONObject.optBoolean(JSON_TRACKED_KEY);
 
-        save();
+        if (save()){
+            // fill EPOCH
+            Integer epoch = null;
+            try {
+                epoch = getEpochFromResponse(geoJSONObject);
+//                if  (featureLayerJSONObject != null && !TextUtils.isEmpty(geoJSONObject.toString())){
+//                    if (featureLayerJSONObject.has("versioning")) {
+//                        JSONObject versioning = (JSONObject)featureLayerJSONObject.get("versioning");
+//                        if (versioning != null && versioning.has("enabled") && versioning.getBoolean("enabled"))
+//                            versioningValue = true;
+//                            epoch = versioning.getInt("epoch");
+//                        }
+//                }
+            } catch (Exception ex){
+            }
+
+            if (epoch!= null){
+                saveEpoch(getContext(), mAccountName, getId(),epoch );
+            }
+
+//            JSONObject geoJSONObject;
+//            HttpResponse response = NetworkUtil.get(getResourceMetaUrl(accountData), accountData.login,
+//                    accountData.password, false);
+//            if (!response.isOk()) {
+//                throw new NGException(NetworkUtil.getError(mContext, response.getResponseCode()));
+//            }
+//            geoJSONObject = new JSONObject(response.getResponseBody());
+        }
 
         if (Constants.DEBUG_MODE) {
             Log.d(Constants.TAG, "feature count: " + featureCount);
@@ -656,18 +704,12 @@ public class NGWVectorLayer
 //            Pair<Integer, Integer> ver,
             SyncResult syncResult)
     {
-
         HyperLog.v(Constants.TAG, "xxx NGWVectorLayer sync " + getName() );
-
         Log.d("SSYNC", "sync of " + getName());
         syncResult.clear();
         if (0 != (mSyncType & Constants.SYNC_NONE) || mFields == null) {
-            if (Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG,
-                        "Layer " + getName() + " is not checked to sync or not inited");
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sync type is SYNC_NONE");
-            }
-            HyperLog.v(Constants.TAG, "NGWVectorLayer: sync for " + getName() + "  - sync type is SYNC_NONE - exit");
+            Log.d(Constants.TAG,"Layer " + getName() + " is not checked to sync or not inited");
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sync type is SYNC_NONE");
             return;
         }
 
@@ -691,11 +733,8 @@ public class NGWVectorLayer
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteGetAllowed is " + isRemoteGetAllowed());
         if (isRemoteGetAllowed())
             if (!getChangesFromServer(authority, syncResult)) {
-                if (Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Get remote changes failed");
-                }
+                Log.d(Constants.TAG, "Get remote changes failed");
                 HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " getChangesFromServer return null - EXIT" );
-
                 return; // layer not exist - exits
             }
 
@@ -707,14 +746,67 @@ public class NGWVectorLayer
 
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " isRemoteSendAllowed is " + isRemoteSendAllowed());
         // 3. send current changes
-        if (isRemoteSendAllowed())
-            if (!sendLocalChanges(syncResult)) {
-                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges failed - return false" );
+        if (isRemoteSendAllowed()) {
+            processLastTransactionIfExist();
 
-                if (Constants.DEBUG_MODE) {
+            String payloadForTransaction = getPayloadChangesForTransaction();
+            if (!TextUtils.isEmpty(payloadForTransaction)) {
+                // we have payload for operations // and pairs saved at pref
+
+                final AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+                boolean result = sendChangesViaNewTransaction(payloadForTransaction, syncResult,  accountData, true);
+
+                if (!result){
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges failed - return false");
                     Log.d(Constants.TAG, "Set local changes failed");
                 }
             }
+
+            // attachments only
+            if (!sendLocalChangesAttachments(syncResult)) {
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges failed - return false");
+                Log.d(Constants.TAG, "Set local changes failed");
+            }
+        }
+    }
+
+    public void processLastTransactionIfExist(){
+//        Log.e("TTRR", "--------");
+//        Log.e("TTRR", "processLastTransactionIfExist");
+        final AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        // 1 read last transaction exists
+        Integer lastTid = loadCurrentTransactionId(getContext(), mAccountName, getId());
+
+        if (lastTid != null){
+            // we have old transaction - get status
+//            Log.e("TTRR", "processLastTransactionIfExist we have old transaction - get status");
+            try {
+                HttpResponse responseTResult = NetworkUtil.get(
+                        NGWUtil.getTransactionFeaturesOperationUrl(accountData.url, mRemoteId, lastTid)
+                                + appendix(),
+                        accountData.login,
+                        accountData.password,
+                        true);
+                if (responseTResult.isOk()){
+                    Log.d("TTRR", "processLastTransactionIfExist responseTResult.isOk()");
+                    List<int[]> tList = loadCurrentTransactionsList(getContext(), mAccountName, getId());
+                    if (processTransactionResults(responseTResult.getResponseBody(), tList)){
+                        clearCurrentTransactionId(getContext(), mAccountName, getId());
+                        clearCurrentTransactionList(getContext(), mAccountName, getId());
+                    }
+                } else {
+                    HyperLog.v(Constants.TAG, "getTransactionFeaturesOperationUrl fail: " + responseTResult.getResponseCode() +  " " +
+                            responseTResult.getResponseBody());
+                    Log.e("TTRR", "processLastTransactionIfExist NOT responseTResult.isOk()");
+                    Log.e("TTRR", "code " + responseTResult.getResponseCode());
+                    Log.e("TTRR", "resp " + responseTResult.getResponseBody());
+                }
+            } catch ( Exception ex){
+                HyperLog.v(Constants.TAG, "processLastTransactionIfExist ex: " + ex.getMessage());
+                Log.e("TTRR", "ex " + ex.getMessage());
+            }
+        }
     }
 
     private boolean isRemoteGetAllowed() {
@@ -733,15 +825,115 @@ public class NGWVectorLayer
         mSyncDirection = direction;
     }
 
-    public boolean sendLocalChanges(SyncResult syncResult)
+    public String getPayloadChangesForTransaction()
     {
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges START" );
 
         String changeTableName = getChangeTableName();
         long changesCount = FeatureChanges.getChangeCount(changeTableName);
-        if (Constants.DEBUG_MODE) {
-            Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
+        Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
+
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges changesCount " + changesCount);
+        if (0 == changesCount) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges 0 - EXIT" );
+            return "";
         }
+
+        // some changes for 1 fature makes many records in changes table
+        // need not make twice changes operation
+
+        List<Integer> changesOperations = new ArrayList<>();
+
+        Cursor changeCursor = null;
+        try {
+            // get column's IDs, there is at least one entry
+            //changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName, 0);
+            changeCursor = FeatureChanges.getChanges(changeTableName);
+
+            final long lastChangeRecordId = FeatureChanges.getLastChangeRecordId(changeTableName);
+            List<int[]> payloadPairs = new ArrayList<>(); // pairs for create/edit/delete
+
+            String allOperationPlayload = ""; // common payload
+            int payloadPartCount = 0;
+
+            if (changeCursor.moveToFirst()) {
+                do {
+                    payloadPartCount ++;
+
+                    int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
+                    int featureIdColumn = changeCursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
+                    int operationColumn = changeCursor.getColumnIndex(Constants.FIELD_OPERATION);
+                    long changeRecordId = changeCursor.getLong(recordIdColumn);
+                    long changeFeatureId = changeCursor.getLong(featureIdColumn);
+                    int changeOperation = changeCursor.getInt(operationColumn);
+
+                    if (0 == (changeOperation & Constants.CHANGE_OPERATION_ATTACH)) {
+                        if (0 != (changeOperation & Constants.CHANGE_OPERATION_DELETE)) {
+
+                            String delete4Payload = getDeltePayload(changeFeatureId);
+                            allOperationPlayload = allOperationPlayload +  "["
+                                    + payloadPartCount
+                                    + ", " + delete4Payload
+                                    + "],";
+
+                            // save 4 digits // pairID , featureID, chgangeID, lastChangeId (on send moment)
+                            payloadPairs.add(new int[]{payloadPartCount, (int)changeFeatureId, (int)changeRecordId,  (int)lastChangeRecordId});
+                        } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_NEW)) {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: feature add start featureID = "  + changeFeatureId );
+                            String add4Payload = getAddFeaturePayload(changeFeatureId, true);
+                            allOperationPlayload = allOperationPlayload +  "["
+                                    + payloadPartCount
+                                    + ", " + add4Payload
+                                    + "],";
+                            payloadPairs.add(new int[]{payloadPartCount, (int)changeFeatureId, (int)changeRecordId,  (int)lastChangeRecordId});
+
+                        } else if (0 != (changeOperation & Constants.CHANGE_OPERATION_CHANGED)) {
+                            boolean exists = false;
+                            for (Integer element : changesOperations){
+                                if (element == changeFeatureId) {
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                            if (!exists) {
+                                HyperLog.v(Constants.TAG, "NGWVectorLayer: feature change start featureID = " + changeFeatureId);
+                                HyperLog.v(Constants.TAG, "NGWVectorLayer: feature add start featureID = " + changeFeatureId);
+                                String change4Payload = getAddFeaturePayload(changeFeatureId, false);
+                                allOperationPlayload = allOperationPlayload + "["
+                                        + payloadPartCount
+                                        + ", " + change4Payload
+                                        + "],";
+                                payloadPairs.add(new int[]{payloadPartCount, (int) changeFeatureId, (int) changeRecordId, (int) lastChangeRecordId});
+                                changesOperations.add((int) changeFeatureId);
+                            } else
+                                payloadPartCount--; // revert increment
+                        }
+                    }
+                } while ( changeCursor.moveToNext());
+
+                if (!TextUtils.isEmpty(allOperationPlayload)){
+                    allOperationPlayload = allOperationPlayload.substring(0, allOperationPlayload.length() - 1);
+                    savePairs(getContext(), mAccountName, getId(), payloadPairs);
+                    return allOperationPlayload;
+                }
+            }
+        } catch (SQLiteException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " SQLiteException " + e.getMessage());
+            Log.d(Constants.TAG, "proceed sendLocalChanges() failed");
+            e.printStackTrace();
+        } finally {
+            if (changeCursor!= null)
+                changeCursor.close();
+        }
+        return "";
+    }
+
+    public boolean sendLocalChangesAttachments(SyncResult syncResult)
+    {
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChangesAttachments START" );
+        String changeTableName = getChangeTableName();
+        long changesCount = FeatureChanges.getChangeCount(changeTableName);
+        Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
 
         HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges changesCount " + changesCount);
         if (0 == changesCount) {
@@ -750,6 +942,7 @@ public class NGWVectorLayer
         }
 
         boolean isError = false;
+        final AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
 
         try {
             // get column's IDs, there is at least one entry
@@ -767,18 +960,155 @@ public class NGWVectorLayer
 
             changeCursor.close();
 
-            final AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
             while (true) {
 
-                changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName,
-                        nextChangeRecordId);
+                changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName,nextChangeRecordId);
+                if (null == changeCursor)
+                    break;
 
-                if (null == changeCursor) {
+                if (isError)
+                    break;
+
+                if (!changeCursor.moveToFirst()) {                     // no more change records
+                    changeCursor.close();
                     break;
                 }
 
-                if (!changeCursor.moveToFirst()) {
-                    // no more change records
+                long changeRecordId = changeCursor.getLong(recordIdColumn);
+                nextChangeRecordId = changeRecordId + 1;
+
+                long changeFeatureId = changeCursor.getLong(featureIdColumn);
+                int changeOperation = changeCursor.getInt(operationColumn);
+                long changeAttachId = changeCursor.getLong(attachIdColumn);
+                int changeAttachOperation = changeCursor.getInt(attachOperationColumn);
+                changeCursor.close();
+                long lastChangeRecordId = FeatureChanges.getLastChangeRecordId(changeTableName);
+
+                String payloadPart = "";
+                List<int[]> payloadPairs = new ArrayList<>(); // pairs for create/edit/delete
+
+                if (0 == (changeOperation & Constants.CHANGE_OPERATION_ATTACH)) {
+                    // old part feature - skip here
+                }
+
+                //process attachments
+                else { // 0 != (changeOperation & CHANGE_OPERATION_ATTACH)
+                    if (changeAttachOperation == Constants.CHANGE_OPERATION_DELETE) {
+                        payloadPart = getAttacheDeletePayload(changeFeatureId, changeAttachId);
+                        payloadPairs.add(new int[]{1, (int)changeFeatureId, (int)changeRecordId,  (int)lastChangeRecordId});
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttacheDelete start");
+
+                        if (deleteAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                        } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttacheDelete FAILED");
+                            isError = true;
+                            Log.d(Constants.TAG, "proceed deleteAttachOnServer() failed");
+                        }
+                    } else if (changeAttachOperation == Constants.CHANGE_OPERATION_NEW) {
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachNew start with Fid =" + changeFeatureId + " attachId= "+ changeAttachId);
+                        payloadPart = uploadAttachOnServer(changeFeatureId, changeAttachId, true, syncResult);
+
+                        if (!TextUtils.isEmpty(payloadPart)){
+                            payloadPairs.add(new int[]{1, (int)changeFeatureId, (int)changeRecordId,  (int)changeAttachId});
+                            payloadPart = "["+ 1  + ", " + payloadPart+ "]"; // always one operation
+
+                        }else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachNew FAILED");
+                            isError = true;
+                            Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
+                        }
+
+                    } else if (changeAttachOperation == Constants.CHANGE_OPERATION_CHANGED) {
+
+                        AttachItem attach = getAttach("" + changeFeatureId, "" + changeAttachId);
+                        payloadPart = getAttachChangePayload(changeFeatureId, changeAttachId, attach.getDescription());
+                        payloadPairs.add(new int[]{1, (int)changeFeatureId, (int)changeRecordId,  (int)lastChangeRecordId});
+
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachChange start with Fid =" + changeFeatureId + " attachId= "+ changeAttachId);
+
+                        if (changeAttachOnServer(changeFeatureId, changeAttachId, syncResult)) {
+                            FeatureChanges.removeAttachChangesToLast(changeTableName,
+                                    changeFeatureId, changeAttachId,
+                                    Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                        } else {
+                            HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachChange FAILED");
+                            isError = true;
+                            Log.d(Constants.TAG, "proceed changeAttachOnServer() failed");
+                        }
+                    }
+                }
+
+                if (!TextUtils.isEmpty(payloadPart) ){
+                    savePairs(getContext(), mAccountName, getId(), payloadPairs);
+                    boolean result = sendChangesViaNewTransaction(payloadPart, syncResult,  accountData, true);
+                    if (!result){
+                        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges failed - return false");
+                        Log.d(Constants.TAG, "Set local attach changes failed");
+                    }
+                }
+            }
+
+            // check records count changing
+            if (changesCount != FeatureChanges.getChangeCount(changeTableName)) {
+                //notify to reload changes
+                getContext().sendBroadcast(
+                        new Intent(SyncAdapter.SYNC_CHANGES)
+                                .setPackage(getContext().getPackageName())
+                );
+            }
+
+        } catch (SQLiteException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " SQLiteException " + e.getMessage());
+            isError = true;
+            syncResult.stats.numConflictDetectedExceptions++;
+            if (Constants.DEBUG_MODE) {
+                Log.d(Constants.TAG, "proceed sendLocalChanges() failed");
+            }
+            e.printStackTrace();
+        }
+        return !isError;
+    }
+
+    public boolean sendLocalChanges(SyncResult syncResult)
+    {
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges START" );
+
+        String changeTableName = getChangeTableName();
+        long changesCount = FeatureChanges.getChangeCount(changeTableName);
+        Log.d(Constants.TAG, "sendLocalChanges: " + changesCount);
+
+        HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges changesCount " + changesCount);
+        if (0 == changesCount) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " sendLocalChanges 0 - EXIT" );
+            return true;
+        }
+
+        boolean isError = false;
+        final AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+
+        try {
+            // get column's IDs, there is at least one entry
+            Cursor changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName, 0);
+            changeCursor.moveToFirst();
+
+            int recordIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ID);
+            int featureIdColumn = changeCursor.getColumnIndex(Constants.FIELD_FEATURE_ID);
+            int operationColumn = changeCursor.getColumnIndex(Constants.FIELD_OPERATION);
+            int attachIdColumn = changeCursor.getColumnIndex(Constants.FIELD_ATTACH_ID);
+            int attachOperationColumn =
+                    changeCursor.getColumnIndex(Constants.FIELD_ATTACH_OPERATION);
+
+            long nextChangeRecordId = changeCursor.getLong(recordIdColumn);
+
+            changeCursor.close();
+
+            while (true) {
+                changeCursor = FeatureChanges.getFirstChangeFromRecordId(changeTableName,nextChangeRecordId);
+                if (null == changeCursor)
+                    break;
+
+                if (!changeCursor.moveToFirst()) {                     // no more change records
                     changeCursor.close();
                     break;
                 }
@@ -843,7 +1173,6 @@ public class NGWVectorLayer
 
                 //process attachments
                 else { // 0 != (changeOperation & CHANGE_OPERATION_ATTACH)
-
                     if (changeAttachOperation == Constants.CHANGE_OPERATION_DELETE) {
                         HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttacheDelete start");
 
@@ -868,11 +1197,8 @@ public class NGWVectorLayer
                                     Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
                         } else {
                             HyperLog.v(Constants.TAG, "NGWVectorLayer: changeAttachNew FAILED");
-
                             isError = true;
-                            if (Constants.DEBUG_MODE) {
-                                Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
-                            }
+                            Log.d(Constants.TAG, "proceed sendAttachOnServer() failed");
                         }
 
                     } else if (changeAttachOperation == Constants.CHANGE_OPERATION_CHANGED) {
@@ -914,10 +1240,136 @@ public class NGWVectorLayer
             }
             e.printStackTrace();
         }
-
         return !isError;
     }
 
+    public boolean processTransactionResults(String resultStr, List<int[]> tList){
+        // transaction success already - read it
+
+        String changeTableName = getChangeTableName();
+
+        try {
+            JSONArray array = new JSONArray(resultStr);
+            for (int i = 0; i < array.length(); i++) {
+                JSONArray pair = array.getJSONArray(i);
+                int key = pair.getInt(0);
+                JSONObject object = pair.getJSONObject(1);
+
+                Integer fid = null;
+                if (object.has("fid"))
+                    fid = object.getInt("fid");
+                String action = object.getString("action");
+
+
+                if (action.equals("feature.create")){
+//                    Log.d("TTRR", "process feature.create");
+                    // feature was created
+                    for (int[] item : tList){
+                        if (key == item[0]){
+                            // save 4 digits // pairID , featureID, chgangeID, lastChangeId (on send moment)
+                            int  changeFeatureId = item[1];
+                            int  changeRecordId = item[2];
+                            int lastChangeRecordId = item[3];
+
+                            Log.e("TTRR", "process feature  " + key + " : " + changeFeatureId + " : " + fid );
+
+                            if (fid != null)
+                                changeFeatureId(changeFeatureId, fid);
+
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                            FeatureChanges.removeChangesToLast(changeTableName, changeFeatureId,
+                                    Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                            break;
+                        }
+                    }
+                } else if (action.equals("feature.update")){
+//                    Log.d("TTRR", "process feature.update");
+                    // feature was created
+                    for (int[] item : tList){
+                        if (key == item[0]){
+
+                            int  changeFeatureId = item[1];
+                            int  changeRecordId = item[2];
+                            int lastChangeRecordId = item[3];
+                            Log.e("TTRR", "process feature update " + key + " : " + changeFeatureId);
+
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                            FeatureChanges.removeChangesToLast(changeTableName, changeFeatureId,
+                                    Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                            break;
+                        }
+                    }
+                }else if (action.equals("feature.delete")){
+//                    Log.d("TTRR", "process feature.delete");
+                    // feature was created
+                    for (int[] item : tList){
+                        if (key == item[0]){
+
+                            int  changeFeatureId = item[1];
+                            int  changeRecordId = item[2];
+                            Log.e("TTRR", "process feature deleted " + key + " : " + changeFeatureId );
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                            break;
+                        }
+                    }
+                } else if (action.equals("attachment.delete")){
+//                    Log.d("TTRR", "process attachment.delete");
+                    // feature was created
+                    for (int[] item : tList){
+                        if (key == item[0]){
+
+                            int  changeFeatureId = item[1];
+                            int  changeRecordId = item[2];
+                            Log.e("TTRR", "process attachment deleted " + key + " : " + changeFeatureId  + " " + changeRecordId);
+                            // FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                            // TODO
+                            break;
+                        }
+                    }
+                }  else if (action.equals("attachment.update")){
+//                    Log.d("TTRR", "process attachment.update");
+                    // feature was created
+                    for (int[] item : tList){
+                        if (key == item[0]){
+
+                            int  changeFeatureId = item[1];
+                            int  changeRecordId = item[2];
+                            int lastChangeRecordId = item[3];
+                            Log.e("TTRR", "process feature deleted " + key + " : " + changeFeatureId );
+
+                            // todo!!!
+                            //FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+//                            FeatureChanges.removeAttachChangesToLast(changeTableName,
+//                                    changeFeatureId, changeAttachId,Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                            break;
+                        }
+                    }
+                } else if (action.equals("attachment.create")){
+                    //Log.d("TTRR", "attachment.create");
+                    // feature was created
+                    for (int[] item : tList){
+                        if (key == item[0]){
+                            int  changeFeatureId = item[1];
+                            int  changeRecordId = item[2];
+                            int  attachId = item[3];
+
+                            FeatureChanges.removeAttachChanges(getChangeTableName(), changeFeatureId, changeRecordId);
+                            deleteAttach(String.valueOf(changeFeatureId), String.valueOf(attachId));
+
+                            FeatureChanges.removeChangeRecord(changeTableName, changeRecordId);
+                            // maybe not needed
+                            //FeatureChanges.removeAttachChangesToLast(changeTableName,changeFeatureId, changeAttachId,Constants.CHANGE_OPERATION_CHANGED, lastChangeRecordId);
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex){
+            Log.e("TTRR", "EXCEPTION!!!! " + ex.getMessage());
+            return false;
+        }
+        return true;
+    }
 
     private boolean changeAttachOnServer(
             long featureId,
@@ -1131,6 +1583,75 @@ public class NGWVectorLayer
         }
     }
 
+    protected String  uploadAttachOnServer(
+            long featureId,
+            long attachId,
+            boolean useTus,
+            SyncResult syncResult)
+    {
+        if (!mNet.isNetworkAvailable()) {
+            syncResult.stats.numIoExceptions++;
+            return null;
+        }
+
+        AttachItem attach = getAttach("" + featureId, "" + attachId);
+        if (null == attach) {   //just remove buggy item
+            return null;
+        }
+
+        try {
+            HttpResponse response;
+            JSONObject result;
+            if (useTus) {
+                response = sendAttachOnServerViaTus(featureId, attach);
+                if (!response.isOk()) {
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
+                    log(syncResult, response.getResponseCode() + "");
+                    return null;
+                }
+
+                result = new JSONObject(response.getResponseBody());
+                if (!proceedAttachFromTus(result, syncResult)) {
+                    return null;
+                }
+            } else {
+                response = sendAttachOnServerOldStyle(featureId, attach);
+
+                if (!response.isOk()) {
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with code" + response.getResponseCode());
+                    HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer FAILED with " + response.getResponseBody());
+                    log(syncResult, response.getResponseCode() + "");
+                    return null;
+                }
+                result = new JSONObject(response.getResponseBody());
+
+                if (!proceedAttachOldStyle(result, syncResult))
+                    return null;
+                result = (JSONObject) result.getJSONArray("upload_meta").get(0);
+            }
+            // attach uploaded - try add to feature
+            String payloadPart = getAttachCreatePayload(featureId, result.getString("id"), attach.getDisplayName(), attach.getDescription());
+            return  payloadPart;
+
+        } catch (IOException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IOException " + e.getMessage());
+            log(e, "sendAttachOnServer IOException");
+            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numInserts++;
+            return null;
+        }  catch (JSONException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer JSONException " + e.getMessage());
+            log(e, "sendAttachOnServer JSONException");
+            syncResult.stats.numParseExceptions++;
+            return null;
+        } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendAttachOnServer IllegalStateException " + e.getMessage());
+            log(e, "sendAttachOnServer IllegalStateException");
+            syncResult.stats.numAuthExceptions++;
+            return null;
+        }
+    }
 
     protected boolean proceedAttachFromTus(JSONObject result, SyncResult syncResult) throws JSONException {
         // get attach info // old json  answer
@@ -1385,9 +1906,7 @@ public class NGWVectorLayer
             return true;
         }
 
-        if (Constants.DEBUG_MODE) {
-            Log.d(Constants.TAG, "The network is available. Get changes from server");
-        }
+        Log.d(Constants.TAG, "The network is available. Get changes from server");
 
         List<Feature> features, added = new ArrayList<>(), deleted =  new ArrayList<>(), changed =  new ArrayList<>();
         List<Long> deleteItems = new ArrayList<>();
@@ -1395,13 +1914,11 @@ public class NGWVectorLayer
         ExistFeatureResult result =  getFeatures(syncResult, mTracked);
         if (result == null) {
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " null from getFeatures - stop getChangesFromServer");
-
             return false;
         }
 
         if (result.code == 404){
             HyperLog.v(Constants.TAG, "NGWVectorLayer: " + getName() + " 404 from getFeatures - stop getChangesFromServer");
-
             clearLayerSync(this);
             return false;
         }
@@ -1834,24 +2351,30 @@ public class NGWVectorLayer
 
         try {
             HttpURLConnection urlConnection = getConnection(accountData);
-            if (Constants.DEBUG_MODE)
-                Log.d("SSYNC", "url: " + urlConnection.getURL().toString());
+            Log.d("SSYNC", "url: " + urlConnection.getURL().toString());
 
-            int code = urlConnection.getResponseCode();
+            final HttpResponse response = getHttpResponse(urlConnection, true);
+
+            int code = response.getResponseCode();
+
             if (code == 404){
                 Log.d("SSYNC", "url: " + urlConnection.getURL().toString() + " = FAIL 404");
                 return new ExistFeatureResult(null, false, 404);
             }
 
-//            if (code == 403){
-//                return new ExistFeatureResult(null, false, 404);
-//            }
-            if (Constants.DEBUG_MODE)
-                Log.d(TAG, "code: " + code);
+            if (code == 401 || code == 403){
+                syncResult.stats.numAuthExceptions++;
+                Log.d("SSYNC", "url: " + urlConnection.getURL().toString() + " = FAIL 401/403");
+                return new ExistFeatureResult(null, false, code);
+            }
+            Log.d(TAG, "code: " + code);
 
-            InputStream in = new ProgressBufferedInputStream(urlConnection.getInputStream(),
+            InputStream in = new ProgressBufferedInputStream(
+                    response.getResponseStream(),
                     urlConnection.getContentLength());
-            JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+
+            JsonReader reader = new JsonReader(
+                    new InputStreamReader(in, "UTF-8"));
 
             if (tracked) {
                 List<Feature> added = new LinkedList<>(), changed = new LinkedList<>(), deleted = new LinkedList<>();
@@ -1908,8 +2431,6 @@ public class NGWVectorLayer
             syncResult.stats.numParseExceptions++;
             return new ExistFeatureResult(null, false, 0);
         }
-
-        //MapUtil.logFeatures(results);
         return new ExistFeatureResult(results, true, 200);
     }
 
@@ -1933,9 +2454,6 @@ public class NGWVectorLayer
             AccountUtil.AccountData accountData )
             throws SQLiteException
     {
-
-//        Log.e("FEA", "addFeatureOnServer " + featureId );
-
         if (!mNet.isNetworkAvailable()) {
             HyperLog.v(Constants.TAG, "addFeatureOnServer !mNet.isNetworkAvailable() no network!!! ");
             syncResult.stats.numIoExceptions++;
@@ -1968,7 +2486,6 @@ public class NGWVectorLayer
 
                 // post to NGW
                 HttpResponse response = addFeatureOnServer(payload, accountData);
-
 
                 // add 403 processinge
                 if (!response.isOk()) {
@@ -2030,11 +2547,300 @@ public class NGWVectorLayer
         }
     }
 
-    protected HttpResponse addFeatureOnServer(String payload, AccountUtil.AccountData accountData) throws IOException {
-//        AccountUtil.AccountData accountData = AccountUtil.getAccountData(mContext, mAccountName);
+    public boolean sendChangesViaNewTransaction(
+            String payloadPart,
+            SyncResult syncResult,
+            AccountUtil.AccountData accountData ,
+            boolean getEpochIfNeed) throws SQLiteException
+    {
+//        Log.d("TTRR", "---------------" );
+//        Log.d("TTRR", "sendChangesViaNewTransaction" );
 
+        if (!mNet.isNetworkAvailable()) {
+            Log.e("TTRR", "(!mNet.isNetworkAvailable()" );
+            HyperLog.v(Constants.TAG, "addFeatureOnServer !mNet.isNetworkAvailable() no network!!! ");
+            syncResult.stats.numIoExceptions++;
+            return false;
+        }
+
+        try {
+            String payload2 = "{}";
+            Integer epoch = loadEpoch(getContext(), mAccountName, getId());;
+            if (epoch != null){
+                payload2 = "{" + "  \"epoch\": "  + epoch +  "}";
+            }
+            Log.d("TTRR", "payload2 " + payload2 );
+            Log.d("TTRR", "addTransactionFeatureOnServer ");
+
+            HttpResponse responseTCreate = addTransactionFeatureOnServer(payload2, accountData);
+            if (responseTCreate.isOk()) {
+                Log.e("TTRR", "addTransactionFeatureOnServer  HTTP OK ");
+                JSONObject jsonObject = new JSONObject(responseTCreate.getResponseBody());
+                if (jsonObject.has("id")) {
+                    int tId = jsonObject.getInt("id");
+                    Log.e("TTRR", "addTransactionFeatureOnServer  tId " + tId);
+                    currentTransactionId =tId;
+                    saveCurrentTransactionId(getContext(), mAccountName, getId(), tId);
+                }
+                Log.e("TTRR", responseTCreate.getResponseBody());
+            } else {
+                if (responseTCreate.getResponseCode() == 422){
+                    // looks like no epoch - try to get/update from NGW
+                    if (getEpochIfNeed) {
+                        HttpResponse response = NetworkUtil.get(getResourceMetaUrl(accountData), accountData.login,
+                                accountData.password, false);
+                        if (response.isOk()){
+                            Integer epochUpdates = getEpochFromResponse(new JSONObject(response.getResponseBody()));
+                            if (epochUpdates!= null){
+                                saveEpoch(getContext(), mAccountName, getId(),epochUpdates );
+                                return sendChangesViaNewTransaction(payloadPart,
+                                        syncResult, accountData, false);
+                            }
+                        }
+                    }
+                    Log.e("TTRR", "addTransactionFeatureOnServer ERROR");
+                    Log.e("TTRR", "addTransactionFeatureOnServer ERROR" + responseTCreate.getResponseCode());
+                    Log.e("TTRR", "addTransactionFeatureOnServer ERROR" + responseTCreate.getResponseBody());
+                    syncResult.stats.numIoExceptions++;
+                    return false;
+                }
+                Log.e("TTRR", "addTransactionFeatureOnServer ERROR");
+                Log.e("TTRR", "addTransactionFeatureOnServer ERROR" + responseTCreate.getResponseCode());
+                Log.e("TTRR", "addTransactionFeatureOnServer ERROR" + responseTCreate.getResponseBody());
+                if (responseTCreate.getResponseCode() == 401 || responseTCreate.getResponseCode() == 403 )
+                    syncResult.stats.numAuthExceptions++;
+                else
+                    syncResult.stats.numIoExceptions++;
+                return false;
+            }
+
+            HttpResponse responseTPush = null;
+            if (currentTransactionId != null) {
+                String payload = "[" + payloadPart + "]";
+                Log.d("TTRR", "addFeaturesOnServerWithTransact " + payload);
+                responseTPush = addFeaturesOnServerWithTransact(payload, accountData, currentTransactionId);
+
+                if (responseTPush.isOk()) {
+                    Log.d("TTRR", "addFeaturesOnServerWithTransact OK" );
+                    Log.d("TTRR", "addFeatureOnServerWithTransact" + responseTPush.getResponseBody());
+
+                    // commit tran
+                    Log.d("TTRR", "addFeaturesOnServerWithTransact startt COMMIT " );
+                    HttpResponse responseT = NetworkUtil.post(
+                            NGWUtil.getTransactionFeaturesOperationUrl(accountData.url, mRemoteId, currentTransactionId) + appendix(),
+                            "", accountData.login, accountData.password, false);
+
+                    if (responseT.isOk()) {
+                        Log.d("TTRR", "addFeaturesOnServerWithTransact OK" );
+                        Log.d("TTRR", "responseT" + responseT.getResponseBody());
+
+                        Log.d("TTRR", "getTransactionFeaturesOperationUrl get results");
+                        // need get results
+                        HttpResponse responseTResult3 = NetworkUtil.get(
+                                NGWUtil.getTransactionFeaturesOperationUrl(accountData.url, mRemoteId, currentTransactionId)
+                                        + appendix(),
+                                accountData.login,
+                                accountData.password,
+                                true);
+
+                        if (responseTResult3.isOk()) {
+                            Log.d("TTRR", "get T results OK");
+                            Log.d("TTRR", "get T results OK " + responseTResult3.getResponseCode());
+
+                            // [[1,{"fid":14,"action":"feature.create"}]]
+                            Integer code3 = responseTResult3.getResponseCode();
+                            String result3 = responseTResult3.getResponseBody();
+                            Log.d("TTRR", "responseT code3 " + code3);
+                            Log.d("TTRR", "responseT result3 " + result3);
+
+                            boolean tProcessResult = processTransactionResults(responseTResult3.getResponseBody(),
+                                    loadCurrentTransactionsList(getContext(), mAccountName, getId()));
+                            clearCurrentTransactionId(getContext(), mAccountName, getId());
+                            clearCurrentTransactionList(getContext(), mAccountName, getId());
+                        } else {
+                            Log.e("TTRR", "get T results NOT OK" );
+                            Log.e("TTRR", "get T results ERROR" + responseTResult3.getResponseCode());
+                            Log.e("TTRR", "get T results ERROR" + responseTResult3.getResponseBody());
+                        }
+                        return true;
+                    } else {
+                        Log.e("TTRR", "addFeaturesOnServerWithTransact NOT OK" );
+                        Log.e("TTRR", "addFeaturesOnServerWithTransact ERROR" + responseT.getResponseCode());
+                        Log.e("TTRR", "addFeaturesOnServerWithTransact ERROR" + responseT.getResponseBody());
+                    }
+                } else {
+                    Log.e("TTRR", "addFeaturesOnServerWithTransact NOT OK" );
+                    Log.e("TTRR", "addFeaturesOnServerWithTransact ERROR" + responseTPush.getResponseCode());
+                    Log.e("TTRR", "addFeaturesOnServerWithTransact ERROR" + responseTPush.getResponseBody());
+                }
+            }
+
+            // todo
+//            // add 403 processinge
+//            if (!response.isOk()) {
+////                    Log.e("FEA", "addFeatureOnServer 403" );
+//                if (response.getResponseCode() == 403) {
+//                    // no access right
+//                    ((IGISApplication) mContext.getApplicationContext()).setError(
+//                            getAccountName(),
+//                            getContext().getResources().getString(R.string.error_no_access_403),
+//                            403);
+//                }
+//                HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, body: " + response.getResponseBody());
+//                HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, code: " + response.getResponseCode());
+//                HyperLog.v(Constants.TAG, "addFeatureOnServer response not OK, message: " + response.getResponseMessage());
+//                log(syncResult, response.getResponseCode() + "");
+//                return false;
+//            }
+//
+//            //set new id from server // like: {"id": 24}
+//            JSONObject result2 = new JSONObject(response.getResponseBody());
+//            if (result2.has(Constants.JSON_ID_KEY)) {
+//                long id = result2.getLong(Constants.JSON_ID_KEY);
+//                changeFeatureId(featureId, id);
+//            }
+//            return true;
+
+        }  catch (IOException e) {
+            if (e instanceof SocketException ){ // try usual way to send attaach
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: sendChangesViaNewTransaction IOException : SocketException " + e.getMessage());
+                HyperLog.v(Constants.TAG, "NGWVectorLayer: try to send not using TUS ");
+                return false;
+            }
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendChangesViaNewTransaction IOException " + e.getMessage());
+            log(e, "sendChangesViaNewTransaction IOException");
+            syncResult.stats.numIoExceptions++;
+            syncResult.stats.numInserts++;
+            return false;
+        }  catch (JSONException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendChangesViaNewTransaction JSONException " + e.getMessage());
+            log(e, "sendChangesViaNewTransaction JSONException");
+            syncResult.stats.numParseExceptions++;
+            return false;
+        } catch (IllegalStateException e) {
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendChangesViaNewTransaction IllegalStateException " + e.getMessage());
+            log(e, "sendChangesViaNewTransaction IllegalStateException");
+            syncResult.stats.numAuthExceptions++;
+            return false;
+        } catch (Exception ex){
+            HyperLog.v(Constants.TAG, "NGWVectorLayer: sendChangesViaNewTransaction excepton " + ex.getMessage());
+            Log.e("TTRR", "ex" + ex.getMessage() );
+            return false;
+        }
+        return true;
+    }
+
+    Integer getEpochFromResponse(JSONObject featureLayerJSONObject){
+        Integer epoch  = null;
+        try {
+            if  (featureLayerJSONObject != null && !TextUtils.isEmpty(featureLayerJSONObject.toString())){
+                if (featureLayerJSONObject.has("feature_layer")){
+                    JSONObject fl = (JSONObject) featureLayerJSONObject.get("feature_layer");
+                    if (fl.has("versioning")) {
+                        JSONObject versioning = (JSONObject)fl.get("versioning");
+                        if (versioning != null && versioning.has("enabled") && versioning.getBoolean("enabled"))
+                            epoch = versioning.getInt("epoch");
+                    }
+                }
+            }
+        } catch (Exception ex){
+        }
+        return epoch;
+    }
+
+    protected String getAddFeaturePayload(long featureId, boolean useCreate ) throws SQLiteException {
+        Uri uri = ContentUris.withAppendedId(getContentUri(), featureId);
+        uri = uri.buildUpon().fragment(NO_SYNC).build();
+
+        Cursor cursor = query(uri, null, null, null, "_id", null);
+        if (null == cursor) {
+            Log.d(Constants.TAG, "addFeatureOnServer: Get cursor failed");
+            HyperLog.v(Constants.TAG, "addFeatureOnServer return true - just remove buggy data ");
+            return ""; //just remove buggy data
+        }
+
+        try {
+            if (cursor.moveToFirst()) {
+                // feature to string
+                String payload = cursorToJson(cursor, true, useCreate);
+                return payload;
+            }
+        } catch (Exception ex) {
+            HyperLog.v(Constants.TAG, "cursorToJson fail " + ex.getMessage());
+            return "";
+        }
+        return "";
+    }
+
+    protected HttpResponse addFeatureOnServer(String payload, AccountUtil.AccountData accountData) throws IOException {
         return NetworkUtil.post(NGWUtil.getFeaturesUrl(accountData.url, mRemoteId) + appendix(),
                 payload, accountData.login, accountData.password, false);
+    }
+
+    protected HttpResponse addFeaturesOnServerWithTransact(String payload, AccountUtil.AccountData accountData, int tId) throws IOException {
+        return NetworkUtil.put(
+                NGWUtil.getTransactionFeaturesOperationUrl(accountData.url, mRemoteId, tId) + appendix(),
+                payload, accountData.login, accountData.password, false);
+    }
+
+    protected HttpResponse addTransactionFeatureOnServer(String payload, AccountUtil.AccountData accountData) throws IOException {
+        return NetworkUtil.post(NGWUtil.getTransactionFeaturesUrl(accountData.url, mRemoteId) + appendix(),
+                payload, accountData.login, accountData.password, false);
+    }
+
+    protected String getDeltePayload( long featureId)    {
+        try {
+            JSONObject result = new JSONObject();
+            result.put("action", "feature.delete");
+            result.put("fid", featureId);
+            return result.toString();
+        } catch ( Exception ex){
+            return "";
+        }
+    }
+
+    protected String getAttachCreatePayload(long featureId, String id, String filename, String descr)    {
+        try {
+            JSONObject result = new JSONObject();
+            result.put("action", "attachment.create");
+            result.put("fid", featureId);
+
+            JSONObject attach = new JSONObject();
+            attach.put("id", id);
+            result.put("source", attach);
+
+            result.put("name", filename);
+            result.put("description", descr);
+
+            return result.toString();
+        } catch ( Exception ex){
+            return "";
+        }
+    }
+
+    protected String getAttacheDeletePayload(long featureId, long attId)    {
+        try {                                       // attachment.delete", "fid": 1, "aid": 2}
+            JSONObject result = new JSONObject();
+            result.put("action", "attachment.delete");
+            result.put("fid", featureId);
+            result.put("aid", attId);
+            return result.toString();
+        } catch ( Exception ex){
+            return "";
+        }
+    }
+
+    protected String getAttachChangePayload(long featureId, long attId, String descr)    {
+        try {                                       // [2, {"action":"attachment.update", "fid": 1, "aid": 1, "description": "description changed"}],
+            JSONObject result = new JSONObject();
+            result.put("action", "attachment.update");
+            result.put("fid", featureId);
+            result.put("aid", attId);
+            result.put("description", descr);
+            return result.toString();
+        } catch ( Exception ex){
+            return "";
+        }
     }
 
     protected boolean deleteFeatureOnServer(
@@ -2255,11 +3061,115 @@ public class NGWVectorLayer
                 geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
                 if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
                     geometry.project(mCRS);
+
                 rootObject.put(NGWUtil.NGWKEY_GEOM, geometry.toWKT(true));
             }
             //rootObject.put("id", cursor.getLong(cursor.getColumnIndex(FIELD_ID)));
         }
 
+        return rootObject.toString();
+    }
+
+    protected String cursorToJson(Cursor cursor, boolean useWKB, boolean useCreate)
+            throws JSONException, IOException
+    {
+        JSONObject rootObject = new JSONObject();
+        rootObject.put("action", useCreate? "feature.create": "feature.update");
+        // fid for update action
+        if (!useCreate) {
+            if (cursor.getColumnIndex(FIELD_ID) > -1)
+                rootObject.put("fid", cursor.getInt(cursor.getColumnIndex(Constants.FIELD_ID)));
+        }
+
+        if (0 != (mSyncType & Constants.SYNC_ATTRIBUTES)) {
+            JSONObject valueObject = new JSONObject();
+            for (int i = 0; i < cursor.getColumnCount(); i++) {
+                String columnName = cursor.getColumnName(i);
+                if (columnName.equals(Constants.FIELD_ID) || columnName.equals(Constants.FIELD_GEOM)) {
+                    continue;
+                }
+
+                String fieldName = unNormalizeName(columnName);
+                Field field = mFields.get(columnName);
+                if (null == field) {
+                    continue;
+                }
+
+                int type = field.getType();
+
+                switch (type) {
+                    case GeoConstants.FTReal:
+                        valueObject.put(fieldName, cursor.getDouble(i));
+                        break;
+
+                    case GeoConstants.FTInteger:
+                        valueObject.put(fieldName, cursor.getInt(i));
+                        break;
+
+                    case GeoConstants.FTLong:
+                        valueObject.put(fieldName, cursor.getLong(i));
+                        break;
+
+                    case GeoConstants.FTString:
+                        String stringVal = cursor.getString(i);
+                        if (stringVal != null && !stringVal.equals("null")) {
+                            valueObject.put(fieldName, stringVal);
+                        }
+                        break;
+
+                    case GeoConstants.FTDateTime:
+                    case GeoConstants.FTDate:
+                    case GeoConstants.FTTime:
+                        if (cursor.isNull(i)) {
+                            valueObject.put(fieldName, JSONObject.NULL);
+                            break;
+                        }
+
+                        long millis = cursor.getLong(i);
+                        String ngwString = millisToNGWString(millis, type);
+
+                        if (ngwString != null) {
+                            valueObject.put(fieldName, ngwString);
+                        } else {
+                            valueObject.put(fieldName, JSONObject.NULL);
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+
+            rootObject.put(NGWUtil.NGWKEY_FIELDS, valueObject);
+        }
+
+        if (0 != (mSyncType & Constants.SYNC_GEOMETRY)) {
+            //may be found geometry in cache by id is faster
+            GeoGeometry geometry = GeoGeometryFactory.fromBlob(
+                    cursor.getBlob(cursor.getColumnIndex(Constants.FIELD_GEOM)));
+
+            geometry.setCRS(GeoConstants.CRS_WEB_MERCATOR);
+            if (mCRS != GeoConstants.CRS_WEB_MERCATOR)
+                geometry.project(mCRS);
+
+            String geom = geometry.toWKT(true);
+            //geom = "POINT (0 0)";
+            if (useWKB){
+                try {
+                    WKTReader reader = new WKTReader();
+                    Geometry geometryWKT = reader.read(geom);
+                    WKBWriter writer = new WKBWriter();
+
+                    byte[] wkb = writer.write(geometryWKT);
+
+                    //geom = WKBWriter.toHex(wkb);
+                    geom = Base64.encodeToString(wkb, Base64.NO_WRAP);
+                } catch (Exception ex){
+                    Log.e("dd", ex.getMessage());
+                }
+            }
+            rootObject.put(NGWUtil.NGWKEY_GEOM, geom);
+        }
         return rootObject.toString();
     }
 

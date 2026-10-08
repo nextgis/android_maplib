@@ -113,18 +113,13 @@ public class RemoteTMSLayer
     }
 
 
-    public synchronized void onPrepare()
-    {
-//        int diff = getMaxThreadCount() - mAvailable.availablePermits();
-//        if (diff > 0) {
-//            mAvailable.release(diff);
-//        }
-//
-//        if(Constants.DEBUG_MODE)
-//            Log.d(
-//                TAG, "Semaphore left: " + mAvailable.availablePermits() + " max thread: " +
-//                        getMaxThreadCount());
-    }
+//    public synchronized void onPrepare()
+//    {
+////        int diff = getMaxThreadCount() - mAvailable.availablePermits();
+////        if (diff > 0) {
+////            mAvailable.release(diff);
+////        }
+//    }
 
     public boolean downloadTile(TileItem tile, boolean tileExists)
     {

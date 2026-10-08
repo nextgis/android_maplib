@@ -272,9 +272,7 @@ public class GpsEventSource {
                     LocationManager.GPS_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
             Log.d("TRACCK", "GPSEVEntSRC  requestUpdates GPS" );
-
-            if(Constants.DEBUG_MODE)
-                Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.GPS_PROVIDER);
+            Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.GPS_PROVIDER);
         }
 
         if (0 != (mListenProviders & NETWORK_PROVIDER) &&
@@ -284,9 +282,7 @@ public class GpsEventSource {
                     LocationManager.NETWORK_PROVIDER, mUpdateMinTime, mUpdateMinDistance,
                     mGpsLocationListener);
             Log.d("TRACCK", "GPSEVEntSRC  requestUpdates NETWORK_PROVIDER" );
-
-            if(Constants.DEBUG_MODE)
-                Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.NETWORK_PROVIDER);
+            Log.d(Constants.TAG, "GpsEventSource request location updates for " + LocationManager.NETWORK_PROVIDER);
         }
     }
 

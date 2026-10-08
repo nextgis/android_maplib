@@ -300,8 +300,7 @@ public class NetworkUtil
             return;
         }
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            if(Constants.DEBUG_MODE)
-                Log.d(TAG, "Problem execute getStream: " + targetURL + " HTTP response: " +
+            Log.d(TAG, "Problem execute getStream: " + targetURL + " HTTP response: " +
                     responseCode + " username: " + username);
             throw new IOException("Response code is " + responseCode);
         }
@@ -336,15 +335,23 @@ public class NetworkUtil
                 }
 
                 errorBody = baos.toString("UTF-8");
-
+                if (code == -1 && !TextUtils.isEmpty(errorBody)){
+                    try {
+                        JSONObject jsonObject = new JSONObject(errorBody);
+                        if (jsonObject.has("status_code"))
+                            code = jsonObject.getInt("status_code");
+                    } catch (Exception ex){
+                        HyperLog.v(Constants.TAG, "read errorBody exception: " + ex.getMessage());
+                    }
+                }
             }
             Log.d(TAG, "HTTP ERROR code" +code + " " + message + "  " +errorBody );
+            Log.d("TTRR", "HTTP ERROR code" +code + " " + message + "  " +errorBody );
             HyperLog.v(Constants.TAG, "HTTP query error url" + conn.getURL() + " " +conn.getRequestMethod());
             HyperLog.v(Constants.TAG, "HTTP query res: code" +code + " " + message + " " +errorBody) ;
         }
 
         HttpResponse response = new HttpResponse(code, message);
-
 
         if (code == HttpURLConnection.HTTP_MOVED_PERM && conn.getURL().getProtocol().equals("http")) {
             if (method.equals("PUT") || method.equals("POST")) {
@@ -369,15 +376,16 @@ public class NetworkUtil
             return response;
         }
 
-        String body = responseToString(conn.getInputStream());
-        if (null == body) {
+        InputStream inputStream = conn.getInputStream();
+        if (inputStream == null) {
             response.setResponseCode(ERROR_DOWNLOAD_DATA);
             response.setResponseMessage(null);
             return response;
         }
 
-        response.setResponseBody(body);
+        response.setResponseStream(inputStream);
         response.setOk(true);
+
         return response;
     }
 
@@ -407,11 +415,8 @@ public class NetworkUtil
     {
         final HttpURLConnection conn = getHttpConnection(HTTP_POST, targetURL, username, password);
         if (null == conn) {
-
             HyperLog.v(Constants.TAG, "HTTP post error null == conn with url " + targetURL);
-
-            if (Constants.DEBUG_MODE)
-                Log.d(TAG, "Error get connection object: " + targetURL);
+            Log.d(TAG, "Error get connection object: " + targetURL);
             return new HttpResponse(ERROR_CONNECT_FAILED);
         }
         conn.setRequestProperty("Content-type", "application/json");

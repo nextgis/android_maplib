@@ -83,9 +83,7 @@ public class LocalTMSLayer
     {
         Bitmap ret = getBitmapFromCache(tile.getHash());
         if (null != ret) {
-            if(Constants.DEBUG_MODE) {
-                Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap from cache for: " + tile.toString());
-            }
+            Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap from cache for: " + tile.toString());
             return ret;
         }
 
@@ -97,14 +95,12 @@ public class LocalTMSLayer
             if (isExist) {
                 ret = BitmapFactory.decodeFile(tilePath.getAbsolutePath());
                 putBitmapToCache(tile.getHash(), ret);
-                if(Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap for: " + tile.toString() + ", path " + tilePath.getAbsolutePath() + " is valid - " + (ret != null));
-                }
+                Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap for: " + tile.toString() + ", path " + tilePath.getAbsolutePath() + " is valid - " + (ret != null));
                 return ret;
             }
         }
 
-        if(Constants.DEBUG_MODE && isInside) {
+        if(isInside) {
             Log.d(Constants.TAG, "Raster layer " + getName() + " getBitmap failed for: " + tile.toString());
         }
         return null;
@@ -173,10 +169,7 @@ public class LocalTMSLayer
                 int nMinY = jsonLevel.getInt(JSON_BBOX_MINY_KEY);
 
                 mLimits.put(nLevel, new TileCacheLevelDescItem(nMaxX, nMinX, nMaxY, nMinY));
-
-                if(Constants.DEBUG_MODE) {
-                    Log.d(Constants.TAG, "Raster layer " + getName() + " limits: zoom " + nLevel + " X[" + nMinX + "," + nMaxX + "] Y[" + nMinY + "," + nMaxY + "]");
-                }
+                Log.d(Constants.TAG, "Raster layer " + getName() + " limits: zoom " + nLevel + " X[" + nMinX + "," + nMaxX + "] Y[" + nMinY + "," + nMaxY + "]");
             }
         }
     }

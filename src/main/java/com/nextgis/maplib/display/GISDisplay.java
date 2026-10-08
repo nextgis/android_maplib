@@ -115,8 +115,7 @@ public class GISDisplay
         mWidth = w;
         mHeight = h;
 
-        if(Constants.DEBUG_MODE)
-            Log.d(TAG, "new size: " + w + " x " + h);
+        Log.d(TAG, "new size: " + w + " x " + h);
 
         mScreenBounds = new GeoEnvelope(0, w, 0, h);
         double extraX = (w * OFFSCREEN_EXTRASIZE_RATIO - w) * .5;
@@ -177,8 +176,7 @@ public class GISDisplay
         }
 
         int nZoom = (int) Math.floor(zoom);
-        if(Constants.DEBUG_MODE)
-            Log.d(TAG, "Zoom: " + zoom + ", Center: " + center.toString());
+        Log.d(TAG, "Zoom: " + zoom + ", Center: " + center.toString());
 
         double mapTileSize = 1 << nZoom;
         mapTileSize *= 1 + zoom - nZoom;
@@ -748,8 +746,7 @@ public class GISDisplay
         mMinZoomLevel = (float) Math.ceil(getZoomLevel() + zoom);
         mCenter = mGeoLimits.getCenter();
         setZoomAndCenter(mMinZoomLevel, mCenter);
-        if(Constants.DEBUG_MODE)
-            Log.d(TAG, "min zoom level: " + mMinZoomLevel + ", center:" + mCenter.toString());
+        Log.d(TAG, "min zoom level: " + mMinZoomLevel + ", center:" + mCenter.toString());
     }
 
 

@@ -184,10 +184,8 @@ public abstract class TMSLayer
             mCacheSizeMult = jsonObject.getInt(JSON_CACHE_SIZE_MULT);
         }
 
-        if(Constants.DEBUG_MODE) {
-            Log.d(Constants.TAG, "Raster layer " + getName() + " mTMSType " + mTMSType);
-            Log.d(Constants.TAG, "Raster layer " + getName() + " mCacheSizeMult " + mCacheSizeMult);
-        }
+        Log.d(Constants.TAG, "Raster layer " + getName() + " mTMSType " + mTMSType);
+        Log.d(Constants.TAG, "Raster layer " + getName() + " mCacheSizeMult " + mCacheSizeMult);
 
         mExtents.setMaxX(jsonObject.optDouble(Constants.JSON_BBOX_MAXX_KEY, MERCATOR_MAX));
         mExtents.setMinX(jsonObject.optDouble(Constants.JSON_BBOX_MINX_KEY, -MERCATOR_MAX));

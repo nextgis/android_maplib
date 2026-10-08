@@ -264,4 +264,8 @@ public interface IGISApplication
     void updateLocation(Location location);
 
     Context getSelfContext();
+
+    void sendNotification(Context context,
+                          String notificationType,
+                          String message);
 }

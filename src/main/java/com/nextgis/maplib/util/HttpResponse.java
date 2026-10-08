@@ -23,12 +23,22 @@
 
 package com.nextgis.maplib.util;
 
+import static com.nextgis.maplib.util.NetworkUtil.responseToString;
+
+import android.text.TextUtils;
+
+import com.hypertrack.hyperlog.HyperLog;
+
+import java.io.InputStream;
+
 public class HttpResponse
 {
     protected int    mResponseCode;
     protected String mResponseMessage;
     protected String mResponseBody;
     protected boolean mIsOk = false;
+
+    protected InputStream mResponseStream;
 
     public HttpResponse(int responseCode)
     {
@@ -75,6 +85,17 @@ public class HttpResponse
 
     public String getResponseBody()
     {
+        if (!TextUtils.isEmpty(mResponseBody))
+            return mResponseBody;
+        try {
+            if (mResponseStream != null) {
+                mResponseBody = responseToString(mResponseStream);
+                mResponseStream = null;
+            }
+        } catch (Exception ex){
+            mResponseBody = null;
+            HyperLog.v(Constants.TAG, "getResponseBody crash " + ex.getMessage());
+        }
         return mResponseBody;
     }
 
@@ -92,4 +113,15 @@ public class HttpResponse
     {
         mIsOk = ok;
     }
+
+    public InputStream getResponseStream()
+    {
+        return mResponseStream;
+    }
+
+    public void setResponseStream(InputStream responseStream)
+    {
+        mResponseStream = responseStream;
+    }
+
 }
