@@ -143,6 +143,7 @@ public class NetworkUtil
 
     public final static int ERROR_AUTH                = -401;
     public final static int ERROR_NETWORK_UNAVAILABLE = -1;
+    public final static int ERROR_PAYMENT = 402;
     public final static int ERROR_CONNECT_FAILED      = 0;
     public final static int ERROR_DOWNLOAD_DATA       = 1;
 
@@ -663,6 +664,8 @@ public class NetworkUtil
                 return context.getString(R.string.error_403);
             case HttpURLConnection.HTTP_NOT_FOUND:
                 return context.getString(R.string.error_404);
+            case ERROR_PAYMENT:
+                return context.getString(R.string.error_payment);
             case HttpURLConnection.HTTP_INTERNAL_ERROR:
                 return context.getString(R.string.error_500);
             default:

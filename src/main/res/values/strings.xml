@@ -26,6 +26,7 @@
     <string name="error_crs_unsupported">Unsupported spatial reference</string>
     <string name="error_empty_dataset">Dataset is empty</string>
     <string name="error_network_unavailable">Network is unavailable</string>
+    <string name="error_payment">Layers Limit</string>
     <string name="error_download_data">Download data failed</string>
     <string name="N">N</string>
     <string name="S">S</string>

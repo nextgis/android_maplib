@@ -139,7 +139,7 @@ public class SyncAdapter
                 null,null,0);
 
         ((IGISApplication)getContext().getApplicationContext()).stopHandler();
-        HyperLog.v(Constants.TAG, "SyncAdapter: onPerformSync for" + account.name + " ngw part start");
+        HyperLog.v(Constants.TAG, "SyncAdapter: onPerformSync for  "  + account.name + " ngw part start");
         Log.d(TAG, "onPerformSync");
 
         MapContentProviderHelper mapContentProviderHelper =(MapContentProviderHelper) MapBase.getInstance();
