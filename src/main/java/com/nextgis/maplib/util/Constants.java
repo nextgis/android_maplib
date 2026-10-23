@@ -396,4 +396,6 @@ public interface Constants
     String MESSAGE_EXTRA = "message_extra";
     String MESSAGE_TITLE_EXTRA = "message_title_extra";
     String MESSAGE_EXTRA_IS_PARENTFILL = "message_extra_parentfill";
+
+    int DEFAULT_COORDINATES_FRACTION_DIGITS = 6;
 }
