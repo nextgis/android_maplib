@@ -53,6 +53,7 @@ import android.widget.Toast;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hypertrack.hyperlog.HyperLog;
 import com.nextgis.maplib.R;
 import com.nextgis.maplib.api.IGISApplication;
 import com.nextgis.maplib.api.ILayer;
@@ -944,11 +945,17 @@ public class MapDrawable
                 }
             }
 
+
+
+            HyperLog.v("AREA", "loadLayersToMaplibre   ");
+
             final TrackLayer trackLayerFinal = trackLayerNGW;
             mainHandler.post(() -> {
                 maplibreMapView.get().addOnDidFinishLoadingStyleListener(new MapView.OnDidFinishLoadingStyleListener() {
                     @Override
                     public void onDidFinishLoadingStyle() {
+
+                        HyperLog.v("AREA", "onDidFinishLoadingStyle   ");
 
                         Style style = maplibreMap.get().getStyle();
                         updateMapBackground();
@@ -1205,10 +1212,16 @@ public class MapDrawable
                         mapContext.get().setMapLayersLoaded();
                         mapContext.get().checkCreateIfNeed();
 
+                        HyperLog.v("AREA", "getBordersWasApply   ");
+
                         if (! ((IGISApplication)getContext().getApplicationContext()).getBordersWasApply()
                                 && ((IGISApplication)getContext().getApplicationContext()).getPostponedExtent() != null){
+
+                            HyperLog.v("AREA", "! (getBordersWasApply() && getPostponedExtent() != null   ");
                             ((IGISApplication)getContext().getApplicationContext()).setBordersWasApply(true);
                             zoomToExtent(((IGISApplication)getContext().getApplicationContext()).getPostponedExtent());
+                        } else {
+                            HyperLog.v("AREA", "ELSE (getBordersWasApply() && getPostponedExtent() != null    no zoom toExtent");
                         }
 
 
