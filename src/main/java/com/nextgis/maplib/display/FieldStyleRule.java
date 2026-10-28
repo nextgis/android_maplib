@@ -31,6 +31,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,7 +46,14 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
 
     public FieldStyleRule(VectorLayer layer) {
         mLayer = layer;
-        mStyleRules = new TreeMap<>();
+        mStyleRules = new TreeMap<>(new Comparator<String>() {
+            @Override
+            public int compare(String a, String b) {
+                if (a == null) return (b == null) ? 0 : -1;   // null идёт первым
+                if (b == null) return 1;
+                return a.compareTo(b);
+            }
+        });// new TreeMap<>();
     }
 
     public void setKey(String key) {
@@ -124,7 +132,8 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
         JSONArray rules = new JSONArray();
         for (Map.Entry<String, Style> rule : mStyleRules.entrySet()) {
             JSONObject item = new JSONObject();
-            item.put(Constants.JSON_VALUE_KEY, rule.getKey());
+            item.put(Constants.JSON_VALUE_KEY,
+                    rule.getKey() != null ? rule.getKey() : JSONObject.NULL);
             item.put(SimpleFeatureRenderer.JSON_STYLE_KEY, rule.getValue().toJSON());
             rules.put(item);
         }
@@ -148,8 +157,8 @@ public class FieldStyleRule implements IStyleRule, IJSONStore {
                     AtomicReference<Style> reference = new AtomicReference<>();
                     SimpleFeatureRenderer.fromJSON(ruleObject, reference);
 
-                    if (reference.get() != null) {
-                        String value = ruleObject.getString(Constants.JSON_VALUE_KEY);
+                    if (reference.get() != null) { // xxx
+                        String value = ruleObject.isNull(Constants.JSON_VALUE_KEY)? null :   ruleObject.getString(Constants.JSON_VALUE_KEY);
                         mStyleRules.put(value, reference.get());
                     }
                 }

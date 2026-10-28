@@ -291,6 +291,75 @@ public class Feature
         return "";
     }
 
+    public String getFieldValueAsStringNullable(int index)
+    {
+        if (mFields.isEmpty() || mFieldValues.isEmpty() || index < 0 || index >= mFields.size() ||
+                index >= mFieldValues.size()) {
+            return "";
+        }
+        Object val = mFieldValues.get(index);
+        if (null == val) {
+            return null;
+        }
+        switch (mFields.get(index).getType()) {
+            case FTString:
+            case FTReal:
+            case FTInteger:
+            case FTLong:
+                return val.toString();
+            case FTDate:
+                if (val instanceof Long) {
+                    DateFormat dateFormat = DateFormat.getDateInstance();
+                    return dateFormat.format(new Date((Long) val));
+                }
+                break;
+            case FTTime:
+                if (val instanceof Long) {
+
+//                    Log.e("TTIIMMMEE", "getFieldValueAsString feature time convert");
+//                    Log.e("TTIIMMMEE", "getFieldValueAsString value to convert: " + val);
+                    /*
+                     Log.e("TTIIMMMEE", "feature time convert");
+                    Log.e("TTIIMMMEE", "value to convert: " + val);
+
+
+
+                    TimeZone timeZoneT = TimeZone.getDefault();
+
+                    TimeZone timeZoneUTC = TimeZone.getDefault();
+                    timeZoneUTC.setRawOffset(0); // set to UTC
+
+                    // time on device
+                    Date currentTime = new Date((Long)val);
+
+                    // convert time to UTC zone time
+                    Date targetTime = convertTime(currentTime, timeZoneT, timeZoneUTC);
+
+                    Calendar calendarT = Calendar.getInstance(timeZoneT);
+                    calendarT.setTimeInMillis(targetTime.getTime());
+
+                    String result = calendarT.get(Calendar.HOUR_OF_DAY) + ":" +
+                        calendarT.get(Calendar.MINUTE) + ":" +
+                        calendarT.get(Calendar.SECOND);
+
+                    return result;
+                    * */
+                    DateFormat dateFormat = DateFormat.getTimeInstance();
+                    String result =  dateFormat.format(new Date((Long) val));
+//                    Log.e("TTIIMMMEE", "getFieldValueAsString result : " + result);
+                    return result;
+                }
+                break;
+            case FTDateTime:
+                if (val instanceof Long) {
+                    DateFormat dateFormat = DateFormat.getDateTimeInstance();
+                    return dateFormat.format(new Date((Long) val));
+                }
+                break;
+        }
+        return "";
+    }
+
 
     @Override
     public JSONObject toJSON()

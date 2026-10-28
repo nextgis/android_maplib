@@ -584,7 +584,8 @@ public class MPLFeaturesUtils {
         String key = fsr.getKey();
         boolean isIdKey = "_id".equals(key);
 
-        String keyValue = isIdKey   ? String.valueOf(ngFeature.getId()): getNullableValue(ngFeature, key);
+        String keyValue = isIdKey   ? String.valueOf(ngFeature.getId()):
+                getRealNullableValue(ngFeature, key);
         com.nextgis.maplib.display.Style style = fsr.getStyleRules().get(keyValue);
 
         if (style != null) {
@@ -1489,6 +1490,10 @@ public class MPLFeaturesUtils {
 
     static public String getNullableValue(com.nextgis.maplib.datasource.Feature feature, String fieldStr ){
         return feature.getFieldValueAsString(feature.getFieldValueIndex(fieldStr));
+    }
+
+    static public String getRealNullableValue(com.nextgis.maplib.datasource.Feature feature, String fieldStr ){
+        return feature.getFieldValueAsStringNullable(feature.getFieldValueIndex(fieldStr));
     }
 
 }
