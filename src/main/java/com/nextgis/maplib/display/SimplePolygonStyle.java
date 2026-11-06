@@ -49,7 +49,7 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
     protected boolean mFill;
     protected String mField;
     protected String mText;
-    protected Float mTextSize = 10f; // default change to 10 - cos its reset on run due to default sizes = 3  6   10
+    //protected Float mTextSize = 10f; // default change to 10 - cos its reset on run due to default sizes = 3  6   10
 
     protected static final String JSON_FILL_KEY = "fill";
 
@@ -85,7 +85,7 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
 
     @Override
     public void onDraw(GeoGeometry geoGeometry, GISDisplay display) {
-        Float textSize = (null == mTextSize) ? null : 12f;
+        //Float textSize =  12f;
         float scaledTextSize = (float) (mTextSize * (mWidth / display.getScale()));
         GeoPoint center = geoGeometry.getEnvelope().getCenter();
         switch (geoGeometry.getType()) {
@@ -196,9 +196,9 @@ public class SimplePolygonStyle extends Style implements ITextStyle {
         if (null != mText) {
             rootConfig.put(JSON_DISPLAY_NAME, mText);
         }
-        if (null != mTextSize) {
+//        if (null != mTextSize) {
             rootConfig.put(JSON_TEXT_SIZE_KEY, mTextSize);
-        }
+//        }
         if (null != mField) {
             rootConfig.put(JSON_VALUE_KEY, mField);
         }

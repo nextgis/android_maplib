@@ -137,7 +137,10 @@ import static com.nextgis.maplib.map.MPLFeaturesUtils.prop_signature_text;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_namepart;
 import static com.nextgis.maplib.map.MPLFeaturesUtils.source_polygon_text;
 import static com.nextgis.maplib.util.Constants.MAP_LIMITS_Y;
+import static com.nextgis.maplib.util.Constants.MESSAGE_ALERT_INTENT;
+import static com.nextgis.maplib.util.Constants.MESSAGE_EXTRA;
 import static com.nextgis.maplib.util.Constants.MESSAGE_INTENT_STYLING;
+import static com.nextgis.maplib.util.Constants.MESSAGE_TITLE_EXTRA;
 import static com.nextgis.maplib.util.Constants.TAG;
 import static com.nextgis.maplib.util.GeoConstants.GTLineString;
 import static com.nextgis.maplib.util.GeoConstants.GTMultiLineString;
@@ -736,7 +739,19 @@ public class MapDrawable
                 msg.setPackage(getContext().getPackageName());
                 getContext().sendBroadcast(msg);
 
-                List<org.maplibre.geojson.Feature> vectorPolygonFeatures = createFeatureListFromLayer(layer);
+
+                List<org.maplibre.geojson.Feature> vectorPolygonFeatures = null;
+                try {
+                    vectorPolygonFeatures = createFeatureListFromLayer(layer);
+                } catch (Exception ex){
+                    Intent msgEx = new Intent(MESSAGE_ALERT_INTENT);
+                    msgEx.putExtra(MESSAGE_EXTRA, mContext.getString(R.string.layer_load_error) + layer.getName() + " " + ex.getMessage() );
+                    msgEx.putExtra(MESSAGE_TITLE_EXTRA, R.string.error);
+                    msgEx.setPackage(getContext().getPackageName());
+                    getContext().sendBroadcast(msgEx);
+                    return;
+                }
+
                 sourceFeaturesHashMap.put(layer.getId(), vectorPolygonFeatures);
                 sourcesOrder.put(layer.getId(), new ArrayList<>());
 
@@ -824,9 +839,28 @@ public class MapDrawable
                         layersType.put(layer.getId(), layer.getGeometryType());
                         layersPath.put(layer.getId(), layer.getPath().toString());
                         layersStyle.put(layer.getId(), layer.getDefaultStyleNoExcept());
-                        List<org.maplibre.geojson.Feature> vectorFeatures =
-                                (skipInvisibleLayers && !layer.isVisible())? new ArrayList<>()
-                                        : createFeatureListFromLayer(layer);
+
+                        List<org.maplibre.geojson.Feature> vectorFeatures = null;
+
+                        if (skipInvisibleLayers && !layer.isVisible())
+                            vectorFeatures = new ArrayList<>();
+                        else {
+
+                            try {
+                                vectorFeatures = createFeatureListFromLayer(layer);
+                            } catch (Exception ex){
+                                Intent msgEx = new Intent(MESSAGE_ALERT_INTENT);
+                                msgEx.putExtra(MESSAGE_EXTRA, "ошибка загрузки слоя на карту: " + layer.getName() + " " + ex.getMessage() );
+                                msgEx.putExtra(MESSAGE_TITLE_EXTRA, R.string.error);
+                                msgEx.setPackage(getContext().getPackageName());
+                                getContext().sendBroadcast(msgEx);
+                                continue;
+                            }
+                        }
+//                        List<org.maplibre.geojson.Feature> vectorFeatures =
+//                                (skipInvisibleLayers && !layer.isVisible())? new ArrayList<>()
+//                                        : createFeatureListFromLayer(layer);
+
                         sourceFeaturesHashMap.put(layer.getId(), vectorFeatures);
                         sourcesOrder.put(layer.getId(), new ArrayList<>());
                     } else if (iLayer instanceof TrackLayer) {

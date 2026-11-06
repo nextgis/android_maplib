@@ -102,6 +102,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -127,6 +128,9 @@ import static com.nextgis.maplib.util.Constants.JSON_RENDERERPROPS_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_STYLE_RULE_KEY;
 import static com.nextgis.maplib.util.Constants.LAYERTYPE_LOCAL_VECTOR;
 import static com.nextgis.maplib.util.Constants.MAX_CONTENT_LENGTH;
+import static com.nextgis.maplib.util.Constants.MESSAGE_ALERT_INTENT;
+import static com.nextgis.maplib.util.Constants.MESSAGE_EXTRA;
+import static com.nextgis.maplib.util.Constants.MESSAGE_TITLE_EXTRA;
 import static com.nextgis.maplib.util.Constants.MIN_LOCAL_FEATURE_ID;
 import static com.nextgis.maplib.util.Constants.NOT_FOUND;
 import static com.nextgis.maplib.util.Constants.TAG;
@@ -371,8 +375,7 @@ public class VectorLayer
     public void createFromGeoJson(
             Uri uri,
             IProgressor progressor)
-            throws IOException, JSONException, NGException, SQLiteException
-    {
+            throws IOException, JSONException, NGException, SQLiteException {
         InputStream inputStream, is;
         String url = uri.toString();
         if (NetworkUtil.isValidUri(url)) {
@@ -394,8 +397,43 @@ public class VectorLayer
 
         boolean isWGS84 = GeoJSONUtil.readGeoJSONCRS(is, getContext());
         GeoJSONUtil.createLayerFromGeoJSONStream(this, inputStream, progressor, isWGS84);
-    }
 
+        // let's check styleFile
+        String urlStyle = uri.toString();
+        if (urlStyle.endsWith(".geojson"))
+            urlStyle = urlStyle.substring(0, urlStyle.length() - ".geojson".length()) + ".ngmstyle.json";
+        else
+            return; // not geojson file
+
+//            urlStyle = urlStyle.replace(".geojson", ".ngmstyle.json");
+
+        try {
+//            File styleFile = new File(new URL(urlStyle).getFile());
+            File styleFile = new File(new URL(urlStyle).toURI());
+
+            if (styleFile.exists()) {
+                JSONObject styleJson = new JSONObject(FileUtil.readFromFile(styleFile));
+                // JSONObject rendererProps = styleJson.getJSONObject(Constants.JSON_RENDERERPROPS_KEY);
+                try {
+                    setRenderer(styleJson, true);
+                    save();
+                } catch (Exception ex) {
+                    Intent msg = new Intent(MESSAGE_ALERT_INTENT);
+                    msg.putExtra(MESSAGE_EXTRA, "ошибка добавления стиля из файла: " + ex.getMessage());
+                    msg.putExtra(MESSAGE_TITLE_EXTRA, R.string.error);
+                    msg.setPackage(getContext().getPackageName());
+                    getContext().sendBroadcast(msg);
+                }
+            }
+        }
+
+        catch (MalformedURLException mEx) {
+
+        }
+        catch (Exception ex){
+
+        }
+    }
 
     public void fillFromGeoJson(
             Uri uri,
@@ -779,7 +817,7 @@ public class VectorLayer
     }
 
 
-    public void setRenderer(JSONObject jsonObject)
+    public void setRenderer(JSONObject jsonObject, boolean useThisJson)
             throws JSONException
     {
         String renderName = "";
@@ -800,14 +838,13 @@ public class VectorLayer
         jsonStore.fromJSON(jsonObject);
 
         if (mRenderer instanceof RuleFeatureRenderer) {
-            IStyleRule rule = getStyleRule();
+            IStyleRule rule = useThisJson? getStyleRule(jsonObject) : getStyleRule();
             if (null != rule) {
                 RuleFeatureRenderer renderer = (RuleFeatureRenderer) mRenderer;
                 renderer.setStyleRule(rule);
             }
         }
     }
-
 
     protected IStyleRule getStyleRule()
     {
@@ -819,6 +856,20 @@ public class VectorLayer
             rule.fromJSON(jsonObject);
             return rule;
         } catch (JSONException | IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    protected IStyleRule getStyleRule(JSONObject commonRenderStyle)
+    {
+        try {
+            JSONObject jsonObject = commonRenderStyle.getJSONObject(JSON_STYLE_RULE_KEY);
+            FieldStyleRule rule = new FieldStyleRule(this);
+            rule.fromJSON(jsonObject);
+            return rule;
+        } catch (JSONException e) {
             e.printStackTrace();
         }
 
@@ -907,7 +958,7 @@ public class VectorLayer
         reloadCache();
 
         if (jsonObject.has(Constants.JSON_RENDERERPROPS_KEY)) {
-            setRenderer(jsonObject.getJSONObject(Constants.JSON_RENDERERPROPS_KEY));
+            setRenderer(jsonObject.getJSONObject(Constants.JSON_RENDERERPROPS_KEY), false);
         } else {
             setDefaultRenderer();
         }

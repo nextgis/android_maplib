@@ -127,5 +127,6 @@
     <string name="mbtiles_problem_vector">Only MBTiles with raster data supported.</string>
     <string name="mbtiles_problem_integry">mbtiles SQLite integrity check failed</string>
     <string name="mbtiles_problem_filecorrupted">mbtiles file corrupted</string>
+    <string name="layer_load_error">Error on load layer: </string>
 
 </resources>

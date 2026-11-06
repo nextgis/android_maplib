@@ -123,4 +123,5 @@
     <string name="mbtiles_problem_not_found">Файл для mbtiles не найден</string>
     <string name="mbtiles_problem_integry">mbtiles файл поврежден - SQLite integrity check failed</string>
     <string name="mbtiles_problem_filecorrupted">mbtiles файл поврежден</string>
+    <string name="layer_load_error">Ошибка загрузки слоя на карту: </string>
 </resources>

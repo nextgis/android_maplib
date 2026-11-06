@@ -139,7 +139,7 @@ public class Table implements ILayer, IJSONStore {
         return mPath;
     }
 
-    protected File getFileName()
+    public File getFileName()
     {
         // do we need this?
         try {

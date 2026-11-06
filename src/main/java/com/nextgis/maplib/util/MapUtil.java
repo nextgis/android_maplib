@@ -275,7 +275,11 @@ public class MapUtil {
         return result;
     }
 
-    public static boolean isZippedWithExtension(Context context, AtomicReference<Uri> uri, String targetExtension) {
+    // extractAll - extract all files with target // except when png found
+    public static boolean isZippedWithExtension(Context context, AtomicReference<Uri> uri,
+                                                String targetExtension,
+                                                boolean extractAll) {
+        boolean targetFound = false;
         try {
             InputStream inputStream = context.getContentResolver().openInputStream(uri.get());
             if (inputStream == null)
@@ -288,19 +292,28 @@ public class MapUtil {
             while ((ze = zis.getNextEntry()) != null) {
                 if (ze.getName().toLowerCase().endsWith(".png")) // we use isZippedWithExtension not for tiles zip
                     return false;
-                if (ze.getName().toLowerCase().endsWith(targetExtension)) { //".geojson"
+                if (ze.getName().toLowerCase().endsWith(targetExtension) ||
+                    extractAll) { //".geojson"
+                    if (ze.getName().toLowerCase().endsWith(targetExtension))
+                        targetFound = true;
                     File temp = prepareTempDir(context, null, false);
                     FileUtil.unzipEntry(zis, ze, buffer, temp);
-                    temp = new File(temp, ze.getName());
-                    uri.set(Uri.fromFile(temp));
+
+                    if (ze.getName().toLowerCase().endsWith(targetExtension)) {
+                        // st back extracted File to Uri
+                        temp = new File(temp, ze.getName());
+                        uri.set(Uri.fromFile(temp));
+                    }
+
                     zis.closeEntry();
-                    return true;
+                    if (!extractAll)
+                        return true;
                 }
             }
         } catch (IOException | RuntimeException e) {
             e.printStackTrace();
         }
-        return false;
+        return targetFound;
     }
 
     public static boolean isHasMapnikConfigFile(Context context, AtomicReference<Uri> uri) {

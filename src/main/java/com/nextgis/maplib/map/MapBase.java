@@ -117,7 +117,7 @@ public class MapBase
 
 
     @Override
-    protected File getFileName()
+    public File getFileName()
     {
         return new File(getPath(), mFileName);
     }
