@@ -1229,7 +1229,7 @@ public class MapDrawable
                                     featureToRestore,
                                     true,
                                     layerForWalkRestore.getDefaultStyleNoExcept(),
-                                    true);
+                                    true, null);
 
                             editingFeature = getFeatureFromNGFeature(featureToRestore.getGeometry());
                             editingObject.editingFeature = editingFeature;
@@ -1903,7 +1903,9 @@ public class MapDrawable
     public void startFeatureSelectionForEdit(final ILayer  ilayer, Integer layerGeoType,
                                              Feature originalSelectedFeature, boolean createNew,
                                              com.nextgis.maplib.display.Style ngstyle,
-                                             boolean isFillByWalking){
+                                             boolean isFillByWalking,
+                                             LatLng tappetOverlayPoint){
+
         Long selectedFeatureId = originalSelectedFeature.getId();
 
         // clear prev edit state
@@ -1953,13 +1955,15 @@ public class MapDrawable
             org.maplibre.geojson.Feature feature = null;
             int type = ((VectorLayer)ilayer).getGeometryType();
 
-            LatLng center = null;
+            LatLng center = tappetOverlayPoint;
 //            if (originalSelectedFeature != null && originalSelectedFeature.getGeometry() != null
 //                    && originalSelectedFeature.getGeometry() instanceof  GeoPoint){
 //                center = latLngPointFromGeoPoint((GeoPoint) originalSelectedFeature.getGeometry());
 //            } else {
 
+            if (center ==  null)
                 center = maplibreMap.get().getCameraPosition().target;
+
             Log.d("PPOOINTT", "startFeatureSelectionForEdit center is " + (center == null? " null" : " not null"));
             if (center != null)
                 Log.d("PPOOINTT", "startFeatureSelectionForEdit center is " + center.getLatitude() + " " + center.getLongitude() );
