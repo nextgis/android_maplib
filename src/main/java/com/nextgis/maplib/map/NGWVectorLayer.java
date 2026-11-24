@@ -3227,34 +3227,34 @@ public class NGWVectorLayer
         return mSyncType;
     }
 
-
-    protected synchronized void applySync(int syncType)
-    {
-        if (syncType == Constants.SYNC_NONE) {
-            FeatureChanges.removeAllChanges(getChangeTableName());
-        } else {
-            if (mTracked)
-                return;
-
-            for (Long featureId : query(null)) {
-                addChange(featureId, Constants.CHANGE_OPERATION_NEW);
-                //add attach
-                File attacheFolder = new File(mPath, "" + featureId);
-                if (attacheFolder.isDirectory()) {
-                    for (File attach : attacheFolder.listFiles()) {
-                        String attachId = attach.getName();
-                        if (attachId.equals(META)) {
-                            continue;
-                        }
-                        Long attachIdL = Long.parseLong(attachId);
-                        if (attachIdL >= Constants.MIN_LOCAL_FEATURE_ID) {
-                            addChange(featureId, attachIdL, Constants.CHANGE_OPERATION_NEW);
-                        }
-                    }
-                }
-            }
-        }
-    }
+//
+//    protected synchronized void applySync(int syncType)
+//    {
+//        if (syncType == Constants.SYNC_NONE) {
+//            FeatureChanges.removeAllChanges(getChangeTableName());
+//        } else {
+//            if (mTracked)
+//                return;
+//
+//            for (Long featureId : query(null)) {
+//                addChange(featureId, Constants.CHANGE_OPERATION_NEW);
+//                //add attach
+//                File attacheFolder = new File(mPath, "" + featureId);
+//                if (attacheFolder.isDirectory()) {
+//                    for (File attach : attacheFolder.listFiles()) {
+//                        String attachId = attach.getName();
+//                        if (attachId.equals(META)) {
+//                            continue;
+//                        }
+//                        Long attachIdL = Long.parseLong(attachId);
+//                        if (attachIdL >= Constants.MIN_LOCAL_FEATURE_ID) {
+//                            addChange(featureId, attachIdL, Constants.CHANGE_OPERATION_NEW);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
 
     @Override

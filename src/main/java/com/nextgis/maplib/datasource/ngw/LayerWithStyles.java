@@ -37,8 +37,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.nextgis.maplib.util.Constants.JSON_EXTENT_KEY;
 import static com.nextgis.maplib.util.Constants.JSON_MAX_LAT_KEY;
@@ -49,21 +49,16 @@ import static com.nextgis.maplib.util.Constants.JSON_MIN_LON_KEY;
 public class LayerWithStyles
         extends Resource
 {
-    private List<Long> mStyles;
-    private List<Long> mForms;
+    private Map<Long ,String> mStylesMap;
+    private Map<Long ,String> mFormsMap = new HashMap<>();
+
     private GeoEnvelope mExtent;
 
     protected LayerWithStyles(Parcel in)
     {
         super(in);
-        mStyles = new ArrayList<>();
-        mForms = new ArrayList<>();
-        int count = in.readInt();
-        for (int i = 0; i < count; i++)
-            mStyles.add(in.readLong());
-        count = in.readInt();
-        for (int i = 0; i < count; i++)
-            mForms.add(in.readLong());
+        mStylesMap = new HashMap<>();
+        mFormsMap = new HashMap<>();
     }
 
 
@@ -105,24 +100,15 @@ public class LayerWithStyles
             int i)
     {
         super.writeToParcel(parcel, i);
-        if (null == mStyles) {
+        if (null == mStylesMap) {
             parcel.writeInt(0);
         } else {
-            parcel.writeInt(mStyles.size());
-            for (Long style : mStyles) {
-                parcel.writeLong(style);
-            }
         }
-        if (null == mForms) {
+        if (null == mFormsMap) {
             parcel.writeInt(0);
         } else {
-            parcel.writeInt(mForms.size());
-            for (Long form : mForms) {
-                parcel.writeLong(form);
-            }
         }
     }
-
 
     @Override
     public int getChildrenCount()
@@ -138,12 +124,14 @@ public class LayerWithStyles
     }
 
 
-    public static boolean fillStyles(String url, String user, String pass, Long remoteId, List<Long> styles, List<Long> forms) {
+    public static void fillStyles(String url, String user, String pass, Long remoteId,
+                                     Map<Long ,String> stylesMap,
+                                     Map<Long ,String> formsMap) {
         try {
             String sURL = NGWUtil.getResourceChildrenUrl(url, remoteId);
             HttpResponse response = NetworkUtil.get(sURL, user, pass, false);
             if (!response.isOk())
-                return false;
+                return;
 
             JSONArray children = new JSONArray(response.getResponseBody());
             for (int i = 0; i < children.length(); i++) {
@@ -152,22 +140,25 @@ public class LayerWithStyles
                 //Style extends Resource
                 //mStyles.add(new Style(styleObject, mConnection);
                 JSONObject styleObject = children.getJSONObject(i);
-                JSONObject JSONResource = styleObject.getJSONObject("resource");
+                JSONObject jsonNResource = styleObject.getJSONObject("resource");
 
-                JSONArray interfaces = JSONResource.getJSONArray("interfaces");
+                JSONArray interfaces = jsonNResource.getJSONArray("interfaces");
                 for (int j = 0; j < interfaces.length(); j++) {
                     if (interfaces.getString(j).equals("IRenderableStyle")) {
-                        long cRemoteId = JSONResource.getLong("id");
-                        if (styles != null)
-                            styles.add(cRemoteId);
+                        long cRemoteId = jsonNResource.getLong("id");
+                        String name = jsonNResource.getString("display_name");
+                        if (stylesMap != null)
+                            stylesMap.put(cRemoteId, name);
                         break;
                     }
                 }
 
-                if (JSONResource.optString("cls", "").equals("formbuilder_form")) {
-                    long cRemoteId = JSONResource.getLong("id");
-                    if (forms != null)
-                        forms.add(cRemoteId);
+                if (jsonNResource.optString("cls", "").equals("formbuilder_form")) {
+                    long cRemoteId = jsonNResource.getLong("id");
+                    String name = jsonNResource.getString("display_name");
+                    if (formsMap != null) {
+                        formsMap.put(cRemoteId, name);
+                    }
                 }
             }
         } catch (IOException |  JSONException e) {
@@ -175,53 +166,68 @@ public class LayerWithStyles
 
         } catch (Exception  e) {
             e.printStackTrace();
-            return false;
+            return;
         }
-        return true;
     }
-
 
     public void fillStyles()
     {
-        mStyles = new ArrayList<>();
-        mForms = new ArrayList<>();
-        boolean resultFill = fillStyles(mConnection.getURL(), mConnection.getLogin(), mConnection.getPassword(), mRemoteId, mStyles, mForms);
+        mStylesMap = new HashMap<>();
+        mFormsMap = new HashMap<>();
+        fillStyles(mConnection.getURL(), mConnection.getLogin(), mConnection.getPassword(),
+                mRemoteId, mStylesMap, mFormsMap);
     }
-
 
     public int getStyleCount()
     {
-        if (null == mStyles) {
+        if (null == mStylesMap) {
             return 0;
         }
-        return mStyles.size();
+        return mStylesMap.size();
     }
-
 
     public int getFormCount()
     {
-        if (null == mForms) {
+        if (null == mFormsMap) {
             return 0;
         }
-        return mForms.size();
+        return mFormsMap.size();
     }
 
+
+    public Map<Long ,String> getForms()
+    {
+        return mFormsMap;
+    }
+
+    public Map<Long ,String> getStyles()
+    {
+        return mStylesMap;
+    }
 
     public Long getStyleId(int i)
     {
-        if (mStyles != null && mStyles.size() > 0)
-            return mStyles.get(i);
-
-        return mRemoteId;
+        if (mStylesMap.size() >0)
+            return mStylesMap.keySet().iterator().next();
+        return 0L;
     }
-
 
     public Long getFormId(int i)
     {
-        if (mForms != null && mForms.size() > 0)
-            return mForms.get(i);
+        if (!mFormsMap.isEmpty())
+            return mFormsMap.keySet().iterator().next();
+        else
+            return -1L;
+    }
 
-        return mRemoteId;
+    public String getTMSUrlByRemoteId(long remoteId)
+    {
+        Long id = mRemoteId;
+        if (getType() == Connection.NGWResourceTypePostgisLayer || getType() == Connection.NGWResourceTypeWMSClient ||
+                getType() == Connection.NGWResourceTypeRasterLayer || getType() == Connection.NGWResourceTypeVectorLayer)
+            id = remoteId;
+
+        return NGWUtil.getTMSUrl(mConnection.getURL(), new Long[]{id});
     }
 
 

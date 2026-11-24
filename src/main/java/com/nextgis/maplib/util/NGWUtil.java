@@ -364,6 +364,21 @@ public class NGWUtil
 
 
     /**
+     * The form url for vector layer
+     *
+     * @param server
+     *         URL
+     * @param remoteId
+     *         resource id
+     *
+     * @return URL to resource - JSON type
+     */
+    public static String getFormUrlJSONType(String server, long remoteId) {
+        return getResourceUrl(server, remoteId) ;
+    }
+
+
+    /**
      * The resource's children url
      *
      * @param server
