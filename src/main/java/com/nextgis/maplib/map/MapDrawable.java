@@ -374,7 +374,8 @@ public class MapDrawable
         List<org.maplibre.geojson.Feature> layerFeatures = sourceFeaturesHashMap.get(layerId);
         if (layerFeatures != null)
             for (org.maplibre.geojson.Feature feature : layerFeatures){
-                if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
+                if (feature.getStringProperty(prop_featureid) != null &&
+                        feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
                     feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
                     break;// only one feature with same id
                 }
@@ -382,7 +383,8 @@ public class MapDrawable
 
         if (polygonFeatures != null)
             for (org.maplibre.geojson.Feature feature : polygonFeatures){
-                if (feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
+                if (feature.getStringProperty(prop_featureid) != null &&
+                        feature.getStringProperty(prop_featureid).equals(oldFeatureIdString)) {
                     feature.addStringProperty(prop_featureid, String.valueOf(newFeatureId));
                     break;// only one feature with same id
                 }
